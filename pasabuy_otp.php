@@ -208,12 +208,33 @@ if ($action === 'verify_otp' || $action === 'verify') {
     echo json_encode([
         'success' => true,
         'message' => '🎉 OTP verified! Account recorded in database successfully.',
-        'dbRecorded' => $recordedInDb
+        'dbRecorded' => $recordedInDb,
+        'user' => [
+            'id' => $userId,
+            'userId' => $userId,
+            'email' => $userEmail,
+            'firstName' => $firstName,
+            'lastName' => $lastName,
+            'role' => 'STUDENT'
+        ]
     ]);
     exit;
 }
 
 // Action: SEND OTP
+$db = getPasaBuyDbConnection();
+if ($db) {
+    try {
+        $stmt = $db->prepare("SELECT Id FROM Users WHERE LOWER(Email) = ?");
+        $stmt->execute([$email]);
+        if ($stmt->fetch()) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => "❌ An account with '{$email}' already exists. Please log in or click 'Forgot Password?' to reset your password."]);
+            exit;
+        }
+    } catch (Exception $eCheck) {}
+}
+
 $otpCode = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 $regDataArr = [
     'email' => $email,
@@ -232,7 +253,6 @@ $_SESSION[$sessionKey] = [
     'regData' => $regDataArr
 ];
 
-$db = getPasaBuyDbConnection();
 if ($db) {
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `OtpVerifications` (

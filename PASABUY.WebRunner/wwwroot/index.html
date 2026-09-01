@@ -1697,7 +1697,17 @@
                     failedLoginAttempts = 0;
                     if (banner) banner.style.display = 'none';
 
-                    const studentUser = data.profile || data.user || { firstName: email.split('@')[0], email: email };
+                    const uObj = data.user || {};
+                    const pObj = data.profile || {};
+                    const realUserId = uObj.id || pObj.userId || data.id || data.userId || 1;
+
+                    const studentUser = {
+                        id: realUserId,
+                        userId: realUserId,
+                        firstName: pObj.firstName || uObj.firstName || email.split('@')[0],
+                        lastName: pObj.lastName || uObj.lastName || '',
+                        email: email
+                    };
                     localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
                     localStorage.setItem('pasabuy_student_logged_in', 'true');
 
@@ -1918,10 +1928,15 @@
                     if (otpVerifyModalInstance) otpVerifyModalInstance.hide();
                     alert('🎉 Registration successful! Welcome to PasaBuy Campus Marketplace.');
 
-                    const nameShow = pendingRegistrationEmail.split('@')[0];
+                    const uObj = data.user || {};
+                    const uId = uObj.id || uObj.userId || data.userId || data.id || Date.now();
+                    const nameShow = uObj.firstName || pendingRegistrationEmail.split('@')[0];
+
                     const studentUser = {
+                        id: uId,
+                        userId: uId,
                         firstName: nameShow,
-                        lastName: '',
+                        lastName: uObj.lastName || '',
                         email: pendingRegistrationEmail
                     };
                     localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
