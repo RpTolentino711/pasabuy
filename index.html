@@ -2429,6 +2429,21 @@
 
             const feeText = `₱${fee.toFixed(2)}`;
             document.getElementById('payAmountDisplay').innerText = feeText;
+
+            try {
+                const res = await fetch('/pasabuy_api.php?action=create_paymongo_checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: fee, title: title })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.checkout_url) {
+                        window.open(data.checkout_url, '_blank');
+                    }
+                }
+            } catch(e){}
+
             openPayMongoGatewayModal(feeText);
         }
 
