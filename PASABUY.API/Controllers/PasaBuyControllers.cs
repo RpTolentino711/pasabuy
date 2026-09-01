@@ -210,7 +210,7 @@ namespace PASABUY.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetListings([FromQuery] string? search, [FromQuery] int? categoryId, [FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice, [FromQuery] string? condition, [FromQuery] string? sort)
+        public async Task<IActionResult> GetListings([FromQuery] string? search, [FromQuery] int? categoryId, [FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice, [FromQuery] string? condition, [FromQuery] string? sort, [FromQuery] int? excludeSellerId)
         {
             var query = _db.Listings
                 .Include(l => l.Category)
@@ -218,6 +218,10 @@ namespace PASABUY.API.Controllers
                 .Include(l => l.Images)
                 .Include(l => l.Seller).ThenInclude(s => s!.StudentProfile)
                 .Where(l => l.Status == "ACTIVE");
+
+            // Exclude seller's own listings from marketplace
+            if (excludeSellerId.HasValue && excludeSellerId.Value > 0)
+                query = query.Where(l => l.SellerId != excludeSellerId.Value);
 
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(l => l.Title.Contains(search) || l.Description.Contains(search));
@@ -322,6 +326,9 @@ namespace PASABUY.API.Controllers
         {
             var listing = await _db.Listings.FindAsync(id);
             if (listing == null || listing.Status != "ACTIVE") return BadRequest(new { message = "Listing is not available for reservation." });
+            
+            // Prevent seller from reserving their own listing
+            if (buyerId == listing.SellerId) return BadRequest(new { message = "❌ You cannot reserve your own listing." });
 
             listing.Status = "RESERVED";
             listing.ReservedAt = DateTime.UtcNow;

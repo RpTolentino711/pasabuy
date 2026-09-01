@@ -1924,6 +1924,36 @@
             }
         }
 
+        function checkAndOpenChat(sellerId, sellerName, title, price) {
+            try {
+                const storedUser = localStorage.getItem('pasabuy_student_user');
+                if (storedUser) {
+                    const user = JSON.parse(storedUser);
+                    const currentUserId = user.userId || user.UserId || 0;
+                    if (currentUserId > 0 && currentUserId === sellerId) {
+                        alert('❌ You cannot message yourself. This is your own listing!');
+                        return;
+                    }
+                }
+            } catch (e) { }
+            openChat(sellerName, title, price);
+        }
+
+        function checkAndReserve(listingId, sellerId) {
+            try {
+                const storedUser = localStorage.getItem('pasabuy_student_user');
+                if (storedUser) {
+                    const user = JSON.parse(storedUser);
+                    const currentUserId = user.userId || user.UserId || 0;
+                    if (currentUserId > 0 && currentUserId === sellerId) {
+                        alert('❌ You cannot reserve your own listing!');
+                        return;
+                    }
+                }
+            } catch (e) { }
+            reserveItem(listingId);
+        }
+
         function switchTab(tabName) {
             const tabs = ['home', 'explore', 'sell', 'wanted', 'messages', 'profile'];
             tabs.forEach(t => {
@@ -2194,7 +2224,18 @@
 
             let products = [];
             try {
-                let res = await fetchApi('/listings');
+                // Get current user ID to exclude their own listings
+                let currentUserId = 0;
+                try {
+                    const storedUser = localStorage.getItem('pasabuy_student_user');
+                    if (storedUser) {
+                        const user = JSON.parse(storedUser);
+                        currentUserId = user.userId || user.UserId || 0;
+                    }
+                } catch (e) { }
+
+                const listingsUrl = currentUserId > 0 ? `/listings?excludeSellerId=${currentUserId}` : '/listings';
+                let res = await fetchApi(listingsUrl);
                 if (!res.ok) {
                     res = await fetch('/pasabuy_api.php?action=listings');
                 }
@@ -2270,8 +2311,8 @@
                             <span><i class="fa-solid fa-location-dot text-danger me-1"></i> ${p.location}</span>
                         </div>
                         <div class="d-flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="openChat('${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
-                            <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="reserveItem(${p.id})"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
+                            <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId})"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
                         </div>
                     </div>
                 </div>`;
