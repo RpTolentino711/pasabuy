@@ -228,7 +228,7 @@
 
                     <div class="text-start mb-3">
                         <label class="form-label fw-bold fs-7">School Email / Username</label>
-                        <input type="email" class="form-control rounded-3 fs-7" id="loginEmailInput" placeholder="e.g. john.doe@student.edu.ph" value="john.doe@student.edu.ph">
+                        <input type="email" class="form-control rounded-3 fs-7" id="loginEmailInput" placeholder="e.g. yourname@student.edu.ph" value="">
                     </div>
 
                     <div class="text-start mb-3">
@@ -237,7 +237,7 @@
                             <a href="#" class="text-decoration-none fs-8 text-primary fw-semibold" onclick="openForgotPasswordModal()">Forgot Password?</a>
                         </label>
                         <div class="input-group">
-                            <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="loginPasswordInput" placeholder="Enter your password" value="admin123">
+                            <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="loginPasswordInput" placeholder="Enter your password" value="">
                             <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" onclick="togglePasswordVisibility('loginPasswordInput', 'loginEyeIcon')">
                                 <i class="fa-solid fa-eye text-muted" id="loginEyeIcon"></i>
                             </button>
@@ -1227,28 +1227,15 @@
                     banner.style.display = 'block';
                 }
             } catch (e) {
-                // Fallback simulation for local testing
-                if (email === 'john.doe@student.edu.ph' && password === 'admin123') {
-                    failedLoginAttempts = 0;
-                    if (banner) banner.style.display = 'none';
-                    document.getElementById('profileName').innerText = 'John Doe';
-                    document.getElementById('homeWelcomeName').innerText = 'Good morning, John!';
-                    document.getElementById('profileSub').innerText = 'john.doe@student.edu.ph • Verified Student';
-                    document.getElementById('authScreen').style.display = 'none';
-                    document.querySelector('.app-tabbar').style.display = 'flex';
-                    document.getElementById('headerBadge').style.display = 'inline-flex';
-                    switchTab('home');
+                failedLoginAttempts++;
+                const remaining = 3 - failedLoginAttempts;
+                if (failedLoginAttempts >= 3) {
+                    bannerMsg.innerHTML = '🔒 <strong>Account Locked!</strong> Wrong password 3 times. Click <strong>"Forgot Password?"</strong> to reset via OTP.';
+                    document.getElementById('btnLoginSubmit').disabled = true;
                 } else {
-                    failedLoginAttempts++;
-                    const remaining = 3 - failedLoginAttempts;
-                    if (failedLoginAttempts >= 3) {
-                        bannerMsg.innerHTML = '🔒 <strong>Account Locked!</strong> Wrong password 3 times. Click <strong>"Forgot Password?"</strong> to reset via OTP.';
-                        document.getElementById('btnLoginSubmit').disabled = true;
-                    } else {
-                        bannerMsg.innerText = `Invalid credentials. (${remaining} attempt${remaining > 1 ? 's' : ''} left)`;
-                    }
-                    banner.style.display = 'block';
+                    bannerMsg.innerText = `Invalid credentials. (${remaining} attempt${remaining > 1 ? 's' : ''} left)`;
                 }
+                banner.style.display = 'block';
             }
         }
 
