@@ -73,7 +73,7 @@ if ($action === 'login') {
 
     if (!$user) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid email or password.']);
+        echo json_encode(['success' => false, 'message' => "❌ No account found for '{$email}'. Please click 'Create Student Account' below to register with OTP."]);
         exit;
     }
 
@@ -82,7 +82,7 @@ if ($action === 'login') {
 
     if (!$isValid) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid email or password.']);
+        echo json_encode(['success' => false, 'message' => '❌ Incorrect password. Click "Forgot Password?" above to reset your password via OTP.']);
         exit;
     }
 
