@@ -179,7 +179,7 @@ if ($action === 'admin_stats' || $action === 'get_users') {
 // 7. ADMIN FETCH STUDENTS
 // ---------------------------------------------------------
 if ($action === 'admin_students' || $action === 'users') {
-    $stmt = $db->query("SELECT u.Id, u.Email, u.Role, u.Status, sp.FirstName, sp.LastName, sp.StudentNumber, sp.Course, sp.YearLevel, sp.CreatedAt FROM Users u LEFT JOIN StudentProfiles sp ON u.Id = sp.UserId ORDER BY u.CreatedAt DESC");
+    $stmt = $db->query("SELECT u.Id, u.Email, u.Role, u.Status, sp.FirstName, sp.LastName, sp.StudentNumber, sp.Course, sp.YearLevel, sp.CreatedAt FROM Users u LEFT JOIN StudentProfiles sp ON u.Id = sp.UserId WHERE u.Role != 'ADMIN' AND LOWER(u.Email) != 'admin' ORDER BY u.CreatedAt DESC");
     $users = $stmt->fetchAll();
     echo json_encode($users);
     exit;
