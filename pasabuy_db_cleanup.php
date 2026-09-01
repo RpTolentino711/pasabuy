@@ -54,8 +54,8 @@ try {
 
     // Clean StudentProfiles (Keep Romeo 104 only)
     $pdo->exec("DELETE FROM StudentProfiles WHERE UserId != 104;");
-    $pdo->exec("INSERT IGNORE INTO StudentProfiles (Id, UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES 
-        (2, 104, 'Romeo Paolo', 'Tolentino', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', 'VERIFIED', 5.0, 0, NOW(), NOW());");
+    $pdo->exec("INSERT IGNORE INTO StudentProfiles (Id, UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, ProfileImage, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES 
+        (2, 104, 'Romeo Paolo', 'Tolentino', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', NULL, 'VERIFIED', 5.0, 0, NOW(), NOW());");
 
     $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
 
