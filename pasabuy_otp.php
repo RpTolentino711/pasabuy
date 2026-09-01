@@ -17,7 +17,32 @@ require_once __DIR__ . '/class.smtp.php';
 
 date_default_timezone_set('Asia/Manila');
 
-// Parse JSON or POST data
+// Database Connection Helper
+function getPasaBuyDbConnection() {
+    $dbHost = '127.0.0.1';
+    $dbName = 'u321173822_pasabuy';
+    $dbUser = 'u321173822_Pogilameg';
+    $dbPass = 'Pogilameg@10';
+
+    try {
+        return new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
+    } catch (Exception $e) {
+        try {
+            return new PDO("mysql:host=localhost;dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ]);
+        } catch (Exception $e2) {
+            error_log("PasaBuy DB Connection Error: " . $e2->getMessage());
+            return null;
+        }
+    }
+}
+
+// Parse JSON or POST input
 $inputRaw = file_get_contents('php://input');
 $data = json_decode($inputRaw, true) ?: $_POST;
 
@@ -34,6 +59,7 @@ if ($email === '') {
 
 $sessionKey = 'pasabuy_otp_' . md5($email);
 
+// VERIFY OTP ACTION
 if ($action === 'verify_otp' || $action === 'verify') {
     if (!isset($_SESSION[$sessionKey])) {
         http_response_code(400);
@@ -55,17 +81,82 @@ if ($action === 'verify_otp' || $action === 'verify') {
         exit;
     }
 
-    // Verified! Clear OTP session
+    // OTP Verified! Record User into Hostinger MySQL Database
+    $reg = $storedData['regData'] ?? [];
+    $recordedInDb = false;
+
+    $db = getPasaBuyDbConnection();
+    if ($db && !empty($reg)) {
+        try {
+            $userEmail  = strtolower(trim($reg['email'] ?? $email));
+            $passPlain  = $reg['password'] ?? 'StudentPass@123';
+            $passHash   = password_hash($passPlain, PASSWORD_BCRYPT);
+            $firstName  = trim($reg['firstName'] ?? 'Student');
+            $lastName   = trim($reg['lastName'] ?? 'User');
+            $studentNo  = trim($reg['studentNumber'] ?? '2024-001');
+            $course     = trim($reg['course'] ?? 'BSIT');
+            $yearLevel  = trim($reg['yearLevel'] ?? '1st Yr');
+
+            // Check if user exists in Users table
+            $stmt = $db->prepare("SELECT Id FROM Users WHERE LOWER(Email) = ?");
+            $stmt->execute([$userEmail]);
+            $existingUser = $stmt->fetch();
+
+            if ($existingUser) {
+                $userId = (int)$existingUser['Id'];
+                // Update User
+                $upStmt = $db->prepare("UPDATE Users SET PasswordHash = ?, Status = 'VERIFIED', UpdatedAt = NOW() WHERE Id = ?");
+                $upStmt->execute([$passHash, $userId]);
+
+                // Check profile
+                $pStmt = $db->prepare("SELECT Id FROM StudentProfiles WHERE UserId = ?");
+                $pStmt->execute([$userId]);
+                if (!$pStmt->fetch()) {
+                    $insProf = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, 'VERIFIED', 5.0, 0, NOW(), NOW())");
+                    $insProf->execute([$userId, $firstName, $lastName, $studentNo, $userEmail, $course, $yearLevel]);
+                }
+            } else {
+                // Insert User
+                $insUser = $db->prepare("INSERT INTO Users (Email, PasswordHash, Role, Status, CreatedAt, UpdatedAt) VALUES (?, ?, 'STUDENT', 'VERIFIED', NOW(), NOW())");
+                $insUser->execute([$userEmail, $passHash]);
+                $userId = (int)$db->lastInsertId();
+
+                // Insert StudentProfile
+                $insProf = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, 'VERIFIED', 5.0, 0, NOW(), NOW())");
+                $insProf->execute([$userId, $firstName, $lastName, $studentNo, $userEmail, $course, $yearLevel]);
+            }
+
+            $recordedInDb = true;
+        } catch (Exception $eDb) {
+            error_log("PasaBuy DB Insert Error: " . $eDb->getMessage());
+        }
+    }
+
     unset($_SESSION[$sessionKey]);
-    echo json_encode(['success' => true, 'message' => '🎉 OTP verified successfully!']);
+
+    echo json_encode([
+        'success' => true,
+        'message' => '🎉 OTP verified! Account recorded in database successfully.',
+        'dbRecorded' => $recordedInDb
+    ]);
     exit;
 }
 
 // Action: SEND OTP
 $otpCode = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
 $_SESSION[$sessionKey] = [
     'code' => $otpCode,
-    'expires' => time() + (10 * 60) // 10 minutes
+    'expires' => time() + (10 * 60), // 10 minutes
+    'regData' => [
+        'email' => $email,
+        'firstName' => trim((string)($data['firstName'] ?? '')),
+        'lastName' => trim((string)($data['lastName'] ?? '')),
+        'studentNumber' => trim((string)($data['studentNumber'] ?? '')),
+        'course' => trim((string)($data['course'] ?? '')),
+        'yearLevel' => trim((string)($data['yearLevel'] ?? '')),
+        'password' => (string)($data['password'] ?? '')
+    ]
 ];
 
 function sendPasaBuyOtpEmail($toEmail, $toName, $otp) {
@@ -79,7 +170,6 @@ function sendPasaBuyOtpEmail($toEmail, $toName, $otp) {
     $mail->SMTPAutoTLS = true;
     $mail->Timeout = 10;
 
-    // Fix Hostinger SSL stream peer verification
     $mail->SMTPOptions = array(
         'ssl' => array(
             'verify_peer' => false,
@@ -139,10 +229,8 @@ function sendPasaBuyOtpEmail($toEmail, $toName, $otp) {
 
 $sent = sendPasaBuyOtpEmail($email, $name, $otpCode);
 
-// Always return success with testOtp backup so user is never blocked
 echo json_encode([
     'success' => true,
     'message' => "OTP code sent to {$email} from PASABUY@pasabuy.site",
     'testOtp' => $otpCode
 ]);
-

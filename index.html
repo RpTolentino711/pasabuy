@@ -1395,7 +1395,17 @@
                     res = await fetch('/pasabuy_otp.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'send_otp', email: email, name: `${firstName} ${lastName}` })
+                        body: JSON.stringify({ 
+                            action: 'send_otp', 
+                            email: email, 
+                            name: `${firstName} ${lastName}`,
+                            firstName: firstName,
+                            lastName: lastName,
+                            studentNumber: studentNo,
+                            course: course,
+                            yearLevel: yearLevel,
+                            password: password
+                        })
                     });
                 }
 
