@@ -180,8 +180,8 @@
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Total Students</span>
                                     <div class="stat-icon bg-primary-subtle text-primary"><i class="fa-solid fa-users"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1" id="dashTotalStudents">142</h2>
-                                <span class="badge bg-success-subtle text-success fw-bold fs-9"><i class="fa-solid fa-check me-1"></i> 138 Verified</span>
+                                <h2 class="fw-extrabold mb-1" id="dashTotalStudents">0</h2>
+                                <span class="badge bg-success-subtle text-success fw-bold fs-9"><i class="fa-solid fa-check me-1"></i> <span id="dashVerifiedStudents">0</span> Verified</span>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -190,7 +190,7 @@
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Live Listings</span>
                                     <div class="stat-icon bg-success-subtle text-success"><i class="fa-solid fa-tags"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1" id="dashActiveListings">28</h2>
+                                <h2 class="fw-extrabold mb-1" id="dashActiveListings">0</h2>
                                 <span class="text-muted fs-8">Active on Campus</span>
                             </div>
                         </div>
@@ -200,7 +200,7 @@
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Deals Completed</span>
                                     <div class="stat-icon bg-info-subtle text-info"><i class="fa-solid fa-handshake"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1">94</h2>
+                                <h2 class="fw-extrabold mb-1" id="dashDealsCompleted">0</h2>
                                 <span class="text-muted fs-8">Student Meetups</span>
                             </div>
                         </div>
@@ -210,7 +210,7 @@
                                     <span class="text-warning fs-8 fw-bold text-uppercase">PayMongo Revenue</span>
                                     <div class="stat-icon bg-warning text-dark"><i class="fa-solid fa-wallet"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold text-warning mb-1" id="dashPayMongoRevenue">₱345.00</h2>
+                                <h2 class="fw-extrabold text-warning mb-1" id="dashPayMongoRevenue">₱0.00</h2>
                                 <span class="text-white-50 fs-8"><i class="fa-solid fa-bolt text-warning me-1"></i> Live GCash / Card Fees</span>
                             </div>
                         </div>
@@ -448,8 +448,13 @@
                 if (usersRes.ok) {
                     const users = await usersRes.json();
                     document.getElementById('dashTotalStudents').innerText = users.length || 0;
+                    const verifiedCount = users.filter(u => u.status === 'VERIFIED' || !u.status).length;
+                    document.getElementById('dashVerifiedStudents').innerText = verifiedCount || 0;
                 }
-            } catch (e) { document.getElementById('dashTotalStudents').innerText = '0'; }
+            } catch (e) {
+                document.getElementById('dashTotalStudents').innerText = '0';
+                document.getElementById('dashVerifiedStudents').innerText = '0';
+            }
 
             try {
                 const listRes = await fetch(`${API_BASE}/listings`);
@@ -464,10 +469,20 @@
                 if (payRes.ok) {
                     const pays = await payRes.json();
                     let totalRev = 0;
-                    pays.forEach(p => { if (p.status === 'PAID') totalRev += parseFloat(p.amount || 0); });
+                    let completedDeals = 0;
+                    pays.forEach(p => {
+                        if (p.status === 'PAID') {
+                            totalRev += parseFloat(p.amount || 0);
+                            completedDeals++;
+                        }
+                    });
                     document.getElementById('dashPayMongoRevenue').innerText = `₱${totalRev.toFixed(2)}`;
+                    document.getElementById('dashDealsCompleted').innerText = completedDeals || 0;
                 }
-            } catch (e) { document.getElementById('dashPayMongoRevenue').innerText = '₱0.00'; }
+            } catch (e) {
+                document.getElementById('dashPayMongoRevenue').innerText = '₱0.00';
+                document.getElementById('dashDealsCompleted').innerText = '0';
+            }
         }
 
         async function fetchAdminStudents() {
