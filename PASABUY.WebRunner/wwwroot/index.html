@@ -1225,27 +1225,31 @@
         };
 
         window.loginStudentWithPassword = async function() {
-            const emailInput = document.getElementById('loginEmail').value.trim();
-            const passwordInput = document.getElementById('loginPassword').value.trim();
-            const errorAlert = document.getElementById('authErrorAlert');
+            const emailEl = document.getElementById('loginEmailInput') || document.getElementById('loginEmail');
+            const passEl = document.getElementById('loginPasswordInput') || document.getElementById('loginPassword');
+            const bannerEl = document.getElementById('failedAttemptBanner') || document.getElementById('authErrorAlert');
+            const msgEl = document.getElementById('failedAttemptMsg');
+
+            const emailInput = emailEl ? emailEl.value.trim() : '';
+            const passwordInput = passEl ? passEl.value.trim() : '';
 
             if (!emailInput) {
-                if (errorAlert) {
-                    errorAlert.innerText = 'Please enter your school email or student username.';
-                    errorAlert.style.display = 'block';
+                if (bannerEl) {
+                    if (msgEl) msgEl.innerText = 'Please enter your school email or student username.';
+                    bannerEl.style.display = 'block';
                 } else { alert('Please enter your school email.'); }
                 return;
             }
 
             if (!passwordInput) {
-                if (errorAlert) {
-                    errorAlert.innerText = 'Please enter your account password.';
-                    errorAlert.style.display = 'block';
+                if (bannerEl) {
+                    if (msgEl) msgEl.innerText = 'Please enter your account password.';
+                    bannerEl.style.display = 'block';
                 } else { alert('Please enter your account password.'); }
                 return;
             }
 
-            if (errorAlert) errorAlert.style.display = 'none';
+            if (bannerEl) bannerEl.style.display = 'none';
 
             try {
                 const res = await fetch('/pasabuy_otp.php?action=login', {
@@ -1277,9 +1281,9 @@
                     checkStudentSessionOnLoad();
                     switchTab('home');
                 } else {
-                    if (errorAlert) {
-                        errorAlert.innerText = data.message || 'Invalid school email or password.';
-                        errorAlert.style.display = 'block';
+                    if (bannerEl) {
+                        if (msgEl) msgEl.innerText = data.message || 'Invalid school email or password.';
+                        bannerEl.style.display = 'block';
                     } else { alert(data.message || 'Invalid credentials.'); }
                 }
             } catch(e) {
