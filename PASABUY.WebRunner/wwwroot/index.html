@@ -1188,8 +1188,48 @@
             alert(`Report submitted to PasaBuy Admin! Our moderation team will investigate. If confirmed, the user account will be suspended.`);
         }
 
+        function checkStudentSessionOnLoad() {
+            try {
+                const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
+                const storedUserStr = localStorage.getItem('pasabuy_student_user');
+                if (isLoggedIn === 'true' && storedUserStr) {
+                    const studentUser = JSON.parse(storedUserStr);
+                    if (studentUser) {
+                        const firstName = studentUser.firstName || (studentUser.email ? studentUser.email.split('@')[0] : 'Student');
+                        const lastName = studentUser.lastName || '';
+                        const fullName = `${firstName} ${lastName}`.trim();
+                        const email = studentUser.email || studentUser.schoolEmail || '';
+
+                        document.getElementById('profileName').innerText = fullName;
+                        document.getElementById('homeWelcomeName').innerText = `Good day, ${firstName}!`;
+                        document.getElementById('profileSub').innerText = `${email} • Verified Student`;
+                        if (studentUser.profileImage) {
+                            document.getElementById('profileAvatar').src = studentUser.profileImage;
+                            document.getElementById('homeAvatar').src = studentUser.profileImage;
+                        }
+
+                        document.getElementById('authScreen').style.display = 'none';
+                        document.querySelector('.app-tabbar').style.display = 'flex';
+                        document.getElementById('headerBadge').style.display = 'inline-flex';
+                        switchTab('home');
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            document.getElementById('authScreen').style.display = 'block';
+            document.querySelector('.app-tabbar').style.display = 'none';
+            document.getElementById('headerBadge').style.display = 'none';
+            const tabs = ['tabHome', 'tabExplore', 'tabSell', 'tabWanted', 'tabMessages', 'tabProfile', 'chatView'];
+            tabs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+        }
+
+        window.addEventListener('DOMContentLoaded', checkStudentSessionOnLoad);
+
         function logoutStudent() {
             if (confirm('Are you sure you want to log out?')) {
+                localStorage.removeItem('pasabuy_student_user');
+                localStorage.removeItem('pasabuy_student_logged_in');
                 const tabs = ['tabHome', 'tabExplore', 'tabSell', 'tabWanted', 'tabMessages', 'tabProfile', 'chatView'];
                 tabs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
                 document.getElementById('authScreen').style.display = 'block';
@@ -1271,6 +1311,7 @@
 
                     const studentUser = data.profile || data.user || { firstName: email.split('@')[0], email: email };
                     localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
+                    localStorage.setItem('pasabuy_student_logged_in', 'true');
 
                     const nameShow = `${studentUser.firstName || email.split('@')[0]} ${studentUser.lastName || ''}`.trim();
                     document.getElementById('profileName').innerText = nameShow;
@@ -1490,6 +1531,14 @@
                     alert('🎉 Registration successful! Welcome to PasaBuy Campus Marketplace.');
                     
                     const nameShow = pendingRegistrationEmail.split('@')[0];
+                    const studentUser = {
+                        firstName: nameShow,
+                        lastName: '',
+                        email: pendingRegistrationEmail
+                    };
+                    localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
+                    localStorage.setItem('pasabuy_student_logged_in', 'true');
+
                     document.getElementById('profileName').innerText = nameShow;
                     document.getElementById('homeWelcomeName').innerText = `Good day, ${nameShow}!`;
                     document.getElementById('profileSub').innerText = `${pendingRegistrationEmail} • Verified Student`;
