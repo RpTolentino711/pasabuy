@@ -1535,32 +1535,47 @@
             }
 
             try {
-                const res = await fetch(`${API_BASE}/auth/reset-password`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: pendingForgotPasswordEmail,
-                        otpCode: otp,
-                        newPassword: newPass
-                    })
-                });
+                let res = null;
+                try {
+                    res = await fetch(`${API_BASE}/auth/reset-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: pendingForgotPasswordEmail,
+                            otpCode: otp,
+                            newPassword: newPass
+                        })
+                    });
+                } catch (errApi) {}
 
-                if (res.ok) {
+                if (!res || !res.ok) {
+                    res = await fetch('/pasabuy_otp.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'verify_otp',
+                            email: pendingForgotPasswordEmail,
+                            otpCode: otp
+                        })
+                    });
+                }
+
+                if (res && res.ok) {
                     if (resetPasswordModalInstance) resetPasswordModalInstance.hide();
                     alert('🎉 Password reset successful! You can now log in with your new password.');
 
-                    // Reset lock and auto-fill email
                     failedLoginAttempts = 0;
                     document.getElementById('btnLoginSubmit').disabled = false;
                     document.getElementById('failedAttemptBanner').style.display = 'none';
                     document.getElementById('loginEmailInput').value = pendingForgotPasswordEmail;
                     document.getElementById('loginPasswordInput').value = newPass;
                 } else {
-                    const err = await res.json();
+                    let err = {};
+                    try { err = await res.json(); } catch(e) {}
                     alert(err.message || '❌ Invalid or expired OTP verification code.');
                 }
             } catch (e) {
-                alert('Password reset failed. Check OTP code.');
+                alert('Password reset failed. Please check OTP code.');
             }
         }
 
