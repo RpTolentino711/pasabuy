@@ -487,11 +487,11 @@
 
                     <div class="d-flex justify-content-center gap-4 mt-3 pt-2 border-top">
                         <div>
-                            <div class="fw-bold text-dark fs-6">4.9 <i class="fa-solid fa-star text-warning"></i></div>
+                            <div class="fw-bold text-dark fs-6"><span id="profileRating">5.0</span> <i class="fa-solid fa-star text-warning"></i></div>
                             <div class="fs-8 text-muted">Rating</div>
                         </div>
                         <div>
-                            <div class="fw-bold text-dark fs-6" id="profileDeals">18</div>
+                            <div class="fw-bold text-dark fs-6" id="profileDeals">0</div>
                             <div class="fs-8 text-muted">Deals Done</div>
                         </div>
                     </div>
@@ -1257,6 +1257,8 @@
                         document.getElementById('profileName').innerText = fullName;
                         document.getElementById('homeWelcomeName').innerText = `Good day, ${firstName}!`;
                         document.getElementById('profileSub').innerText = `${email} • Verified Student`;
+                        document.getElementById('profileRating').innerText = studentUser.rating || '5.0';
+                        document.getElementById('profileDeals').innerText = studentUser.completedTransactions || 0;
                         if (studentUser.profileImage) {
                             document.getElementById('profileAvatar').src = studentUser.profileImage;
                             document.getElementById('homeAvatar').src = studentUser.profileImage;
