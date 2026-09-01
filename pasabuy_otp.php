@@ -221,9 +221,10 @@ if ($action === 'verify_otp' || $action === 'verify') {
     exit;
 }
 
-// Action: SEND OTP
+// Action: SEND OTP (FOR REGISTRATION OR FORGOT PASSWORD)
 $db = getPasaBuyDbConnection();
 $existingUserFound = false;
+
 if ($db) {
     try {
         $stmt = $db->prepare("SELECT Id FROM Users WHERE LOWER(Email) = ?");
@@ -232,6 +233,27 @@ if ($db) {
             $existingUserFound = true;
         }
     } catch (Exception $eCheck) {}
+}
+
+// If registering a new account, but the email is ALREADY registered:
+if (($action === 'send_otp' || $action === 'register_otp') && $existingUserFound) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'alreadyRegistered' => true,
+        'message' => "❌ An account with '{$email}' is ALREADY registered. Please click 'Log In' or use 'Forgot Password?' to reset your password."
+    ]);
+    exit;
+}
+
+// If doing forgot password, but no account exists for this email:
+if (($action === 'send_forgot_otp' || $action === 'forgot_otp') && !$existingUserFound) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'message' => "❌ No registered account found for '{$email}'. Please check your email or click 'Create Student Account'."
+    ]);
+    exit;
 }
 
 $otpCode = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
