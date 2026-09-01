@@ -207,7 +207,7 @@
                 <span>PasaBuy</span>
             </div>
             <div>
-                <span class="badge-verified" id="headerBadge"><i class="fa-solid fa-circle-check"></i> Verified Student</span>
+                <span class="badge-verified" id="headerBadge" style="display:none;"><i class="fa-solid fa-circle-check"></i> Verified Student</span>
             </div>
         </div>
 
@@ -254,7 +254,7 @@
             </div>
 
             <!-- HOME TAB -->
-            <div id="tabHome">
+            <div id="tabHome" style="display:none;">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <div>
                         <span class="text-muted fs-8 fw-semibold">WELCOME BACK</span>
@@ -509,7 +509,7 @@
         </div>
 
         <!-- App Bottom Tab Bar Navigation -->
-        <div class="app-tabbar">
+        <div class="app-tabbar" style="display:none;">
             <div class="tab-item active" onclick="switchTab('home')" id="tabNavHome">
                 <i class="fa-solid fa-house"></i>
                 <span>Home</span>
@@ -1135,9 +1135,13 @@
         function logoutStudent() {
             if (confirm('Are you sure you want to log out?')) {
                 const tabs = ['tabHome', 'tabExplore', 'tabSell', 'tabWanted', 'tabMessages', 'tabProfile', 'chatView'];
-                tabs.forEach(id => { document.getElementById(id).style.display = 'none'; });
+                tabs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
                 document.getElementById('authScreen').style.display = 'block';
                 document.querySelector('.app-tabbar').style.display = 'none';
+                document.getElementById('headerBadge').style.display = 'none';
+            }
+        }
+
         function togglePasswordVisibility(inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
@@ -1206,6 +1210,7 @@
 
                     document.getElementById('authScreen').style.display = 'none';
                     document.querySelector('.app-tabbar').style.display = 'flex';
+                    document.getElementById('headerBadge').style.display = 'inline-flex';
                     switchTab('home');
                     return;
                 } else {
@@ -1231,6 +1236,7 @@
                     document.getElementById('profileSub').innerText = 'john.doe@student.edu.ph • Verified Student';
                     document.getElementById('authScreen').style.display = 'none';
                     document.querySelector('.app-tabbar').style.display = 'flex';
+                    document.getElementById('headerBadge').style.display = 'inline-flex';
                     switchTab('home');
                 } else {
                     failedLoginAttempts++;
