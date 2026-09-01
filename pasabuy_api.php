@@ -91,7 +91,7 @@ if (isset($_GET['clean_db']) || strpos($_SERVER['REQUEST_URI'], 'clean_db') !== 
 if ($action === 'listings' || $action === 'get_listings') {
     $sellerId = (int)($_GET['seller_id'] ?? 0);
     if ($sellerId > 0) {
-        $sql = "SELECT l.*, sp.FirstName, sp.LastName, sp.SchoolEmail 
+        $sql = "SELECT l.*, sp.FirstName, sp.LastName, sp.SchoolEmail, sp.ProfileImage 
                 FROM Listings l 
                 LEFT JOIN StudentProfiles sp ON l.SellerId = sp.UserId 
                 WHERE l.SellerId = ? 
@@ -99,7 +99,7 @@ if ($action === 'listings' || $action === 'get_listings') {
         $stmt = $db->prepare($sql);
         $stmt->execute([$sellerId]);
     } else {
-        $sql = "SELECT l.*, sp.FirstName, sp.LastName, sp.SchoolEmail 
+        $sql = "SELECT l.*, sp.FirstName, sp.LastName, sp.SchoolEmail, sp.ProfileImage 
                 FROM Listings l 
                 LEFT JOIN StudentProfiles sp ON l.SellerId = sp.UserId 
                 WHERE (l.Status = 'ACTIVE' OR l.Status IS NULL) 
@@ -114,6 +114,7 @@ if ($action === 'listings' || $action === 'get_listings') {
         $imgs = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
         $item['images'] = $imgs ?: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'];
         $item['sellerName'] = trim(($item['FirstName'] ?? 'Campus') . ' ' . ($item['LastName'] ?? 'Seller'));
+        $item['sellerAvatar'] = $item['ProfileImage'] ?? '';
     }
 
     echo json_encode($listings);
@@ -369,8 +370,8 @@ if ($action === 'chat_conversations') {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     $stmt = $db->prepare("SELECT c1.*, 
-        spSender.FirstName as SenderFirstName, spSender.LastName as SenderLastName,
-        spReceiver.FirstName as ReceiverFirstName, spReceiver.LastName as ReceiverLastName
+        spSender.FirstName as SenderFirstName, spSender.LastName as SenderLastName, spSender.ProfileImage as SenderProfileImage,
+        spReceiver.FirstName as ReceiverFirstName, spReceiver.LastName as ReceiverLastName, spReceiver.ProfileImage as ReceiverProfileImage
         FROM ChatMessages c1 
         INNER JOIN (
             SELECT MAX(Id) as max_id FROM ChatMessages WHERE SenderId = ? OR ReceiverId = ? GROUP BY LEAST(SenderId, ReceiverId), GREATEST(SenderId, ReceiverId)
@@ -386,10 +387,12 @@ if ($action === 'chat_conversations') {
             $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
             $c['PartnerName'] = $rName !== '' ? $rName : 'Campus Seller';
             $c['PartnerId'] = (int)$c['ReceiverId'];
+            $c['PartnerAvatar'] = !empty($c['ReceiverProfileImage']) ? $c['ReceiverProfileImage'] : '';
         } else {
             $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
             $c['PartnerName'] = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
             $c['PartnerId'] = (int)$c['SenderId'];
+            $c['PartnerAvatar'] = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
         }
     }
 

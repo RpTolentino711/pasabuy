@@ -506,11 +506,12 @@
             <!-- CHAT VIEW (SUB-SCREEN) -->
             <div id="chatView" style="display:none; height:100%; flex-direction:column;">
                 <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom flex-shrink-0">
-                    <button class="btn btn-sm btn-light rounded-circle" onclick="closeChat()"><i
-                            class="fa-solid fa-arrow-left"></i></button>
-                    <span class="fw-bold fs-7" id="chatPartnerName">Student</span>
-                    <button class="btn btn-sm btn-outline-danger rounded-pill fs-8" onclick="openReportModal()">Report
-                        User</button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-light rounded-circle" onclick="closeChat()"><i class="fa-solid fa-arrow-left"></i></button>
+                        <img id="chatHeaderAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Student" class="rounded-circle border" width="36" height="36" style="object-fit:cover; background:#f0f3f8;">
+                        <span class="fw-bold fs-7" id="chatPartnerName">Student</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill fs-8" onclick="openReportModal()">Report User</button>
                 </div>
 
                 <!-- Attached Item Header -->
@@ -2173,10 +2174,14 @@
                 const partnerName = c.PartnerName || (c.SenderId == currentUserId ? 'Campus Seller' : (c.SenderName || 'Campus Buyer'));
                 const itemTitle = c.ItemTitle || 'Campus Item';
                 const lastMsg = c.MessageText || 'Tap to chat';
-                const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(partnerName)}`;
+                
+                let avatarUrl = c.PartnerAvatar || c.partnerAvatar || '';
+                if (!avatarUrl || avatarUrl === '') {
+                    avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(partnerName)}`;
+                }
 
                 html += `
-                <div class="p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center justify-content-between mb-2 position-relative" style="cursor:pointer;" onclick="checkAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${itemTitle.replace(/'/g, "\\'")}', '₱0.00')">
+                <div class="p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center justify-content-between mb-2 position-relative" style="cursor:pointer;" onclick="checkAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${itemTitle.replace(/'/g, "\\'")}', '₱0.00', '${avatarUrl.replace(/'/g, "\\'")}')">
                     <div class="d-flex align-items-center gap-3">
                         <div class="position-relative">
                             <img src="${avatarUrl}" class="rounded-circle border" width="50" height="50" style="object-fit:cover; background:#f0f3f8;">
@@ -2602,8 +2607,8 @@
                     }
                 } else {
                     buttonsHtml = `
-                    <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
-                    <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}', '${p.seller.replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>`;
+                    <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
+                    <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}', '${p.seller.replace(/'/g, "\\'")}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>`;
                 }
 
                 const cardHtml = `
@@ -2642,7 +2647,7 @@
 
         let currentActiveChatSellerId = 0;
 
-        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice) {
+        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar) {
             let storedUser = null;
             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
@@ -2657,6 +2662,14 @@
             const partnerNameEl = document.getElementById('chatPartnerName') || document.getElementById('chatRecipientName');
             if (partnerNameEl) partnerNameEl.innerText = sellerName;
             
+            let finalAvatar = partnerAvatar || '';
+            if (!finalAvatar || finalAvatar === '') {
+                finalAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(sellerName)}`;
+            }
+
+            const headerAvatarEl = document.getElementById('chatHeaderAvatar');
+            if (headerAvatarEl) headerAvatarEl.src = finalAvatar;
+
             const titleEl = document.getElementById('chatItemTitle');
             if (titleEl) titleEl.innerText = itemTitle;
             
@@ -2679,8 +2692,9 @@
                         msgs.forEach(m => {
                             const isMine = m.SenderId == currentUserId;
                             chatHtml += `
-                            <div class="d-flex ${isMine ? 'justify-content-end' : 'justify-content-start'} mb-2">
-                                <div class="p-2 rounded-3 fs-8 ${isMine ? 'bg-primary text-white' : 'bg-light text-dark'}" style="max-width:75%;">
+                            <div class="d-flex ${isMine ? 'justify-content-end' : 'justify-content-start'} align-items-end gap-2 mb-2">
+                                ${!isMine ? `<img src="${finalAvatar}" class="rounded-circle border mb-1" width="28" height="28" style="object-fit:cover; background:#f0f3f8;">` : ''}
+                                <div class="p-2.5 rounded-3 fs-8 ${isMine ? 'bg-primary text-white' : 'bg-light text-dark border'}" style="max-width:75%;">
                                     ${m.MessageText}
                                 </div>
                             </div>`;
