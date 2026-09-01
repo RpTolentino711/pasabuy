@@ -59,7 +59,7 @@ if ($action === '') {
 // ---------------------------------------------------------
 // 0. ADMIN PURGE DUMMY DATA & CLEAN DATABASE
 // ---------------------------------------------------------
-if ($action === 'admin_clean_database' || $action === 'clean_db') {
+if (strpos($_SERVER['REQUEST_URI'], 'clean_db') !== false || $action === 'admin_clean_database' || $action === 'clean_db') {
     try {
         $db->exec("SET FOREIGN_KEY_CHECKS = 0;");
         $db->exec("DELETE FROM ChatMessages;");
