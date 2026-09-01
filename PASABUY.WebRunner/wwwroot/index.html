@@ -1929,13 +1929,14 @@
                 const storedUser = localStorage.getItem('pasabuy_student_user');
                 if (storedUser) {
                     const user = JSON.parse(storedUser);
-                    const currentUserId = user.userId || user.UserId || 0;
-                    if (currentUserId > 0 && currentUserId === sellerId) {
+                    const currentUserId = user.id || user.userId || user.UserId || 0;
+                    console.log("Checking chat - Current:", currentUserId, "Seller:", sellerId);
+                    if (currentUserId > 0 && parseInt(currentUserId) === parseInt(sellerId)) {
                         alert('❌ You cannot message yourself. This is your own listing!');
                         return;
                     }
                 }
-            } catch (e) { }
+            } catch (e) { console.error("Chat check error:", e); }
             openChat(sellerName, title, price);
         }
 
@@ -1944,13 +1945,14 @@
                 const storedUser = localStorage.getItem('pasabuy_student_user');
                 if (storedUser) {
                     const user = JSON.parse(storedUser);
-                    const currentUserId = user.userId || user.UserId || 0;
-                    if (currentUserId > 0 && currentUserId === sellerId) {
+                    const currentUserId = user.id || user.userId || user.UserId || 0;
+                    console.log("Checking reserve - Current:", currentUserId, "Seller:", sellerId);
+                    if (currentUserId > 0 && parseInt(currentUserId) === parseInt(sellerId)) {
                         alert('❌ You cannot reserve your own listing!');
                         return;
                     }
                 }
-            } catch (e) { }
+            } catch (e) { console.error("Reserve check error:", e); }
             reserveItem(listingId);
         }
 
@@ -2278,17 +2280,18 @@
             const cond = document.getElementById('filterCondition') ? document.getElementById('filterCondition').value : 'All';
             const search = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
 
-            let products = [];
+            // Get current user ID at the very beginning
+            let currentUserId = 0;
             try {
-                // Get current user ID to exclude their own listings
-                let currentUserId = 0;
-                try {
-                    const storedUser = localStorage.getItem('pasabuy_student_user');
-                    if (storedUser) {
-                        const user = JSON.parse(storedUser);
-                        currentUserId = user.userId || user.UserId || 0;
-                    }
-                } catch (e) { }
+                const storedUser = localStorage.getItem('pasabuy_student_user');
+                if (storedUser) {
+                    const user = JSON.parse(storedUser);
+                    currentUserId = user.id || user.userId || user.UserId || 0;
+                    console.log("Current user ID:", currentUserId);
+                }
+            } catch (e) { console.error("Error getting user:", e); }
+
+            let products = [];
 
                 const listingsUrl = currentUserId > 0 ? `/listings?excludeSellerId=${currentUserId}` : '/listings';
                 let res = await fetchApi(listingsUrl);
@@ -2374,7 +2377,11 @@
                 </div>`;
 
                 html += cardHtml;
-                profileHtml += cardHtml;
+                
+                // Only add to profileHtml if it's the current user's listing
+                if (p.sellerId === currentUserId) {
+                    profileHtml += cardHtml;
+                }
             });
 
             if (exploreList) exploreList.innerHTML = html || '<div class="text-center text-muted py-4">No active marketplace items found.</div>';
