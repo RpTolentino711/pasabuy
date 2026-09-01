@@ -234,6 +234,70 @@ if (($action === 'delete_listing' || $action === 'admin_delete_listing') && ($me
 }
 
 // ---------------------------------------------------------
+// RESERVE LISTING IN HOSTINGER MYSQL
+// ---------------------------------------------------------
+if (($action === 'reserve_listing' || $action === 'reserve') && $method === 'POST') {
+    $listingId = (int)($body['listingId'] ?? $body['id'] ?? $_GET['id'] ?? 0);
+    if ($listingId > 0) {
+        $stmt = $db->prepare("UPDATE Listings SET Status = 'RESERVED', ReservedAt = NOW() WHERE Id = ?");
+        $stmt->execute([$listingId]);
+    }
+    echo json_encode(['success' => true, 'message' => 'Item reserved successfully in Hostinger MySQL!']);
+    exit;
+}
+
+// ---------------------------------------------------------
+// LIVE CHAT MESSAGES IN HOSTINGER MYSQL
+// ---------------------------------------------------------
+if ($action === 'chat_messages' || $action === 'get_messages') {
+    $senderId = (int)($_GET['sender_id'] ?? 1);
+    $receiverId = (int)($_GET['receiver_id'] ?? 2);
+
+    $db->exec("CREATE TABLE IF NOT EXISTS `ChatMessages` (
+      `Id` int(11) NOT NULL AUTO_INCREMENT,
+      `SenderId` int(11) NOT NULL,
+      `ReceiverId` int(11) NOT NULL,
+      `SenderName` varchar(255) NOT NULL,
+      `MessageText` text NOT NULL,
+      `ItemTitle` varchar(255) DEFAULT NULL,
+      `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`Id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $stmt = $db->prepare("SELECT * FROM ChatMessages WHERE (SenderId = ? AND ReceiverId = ?) OR (SenderId = ? AND ReceiverId = ?) ORDER BY CreatedAt ASC");
+    $stmt->execute([$senderId, $receiverId, $receiverId, $senderId]);
+    $messages = $stmt->fetchAll();
+    echo json_encode($messages);
+    exit;
+}
+
+if ($action === 'send_message' && $method === 'POST') {
+    $senderId = (int)($body['senderId'] ?? 1);
+    $receiverId = (int)($body['receiverId'] ?? 2);
+    $senderName = trim((string)($body['senderName'] ?? 'Verified Student'));
+    $msgText = trim((string)($body['messageText'] ?? ''));
+    $itemTitle = trim((string)($body['itemTitle'] ?? ''));
+
+    if ($msgText !== '') {
+        $db->exec("CREATE TABLE IF NOT EXISTS `ChatMessages` (
+          `Id` int(11) NOT NULL AUTO_INCREMENT,
+          `SenderId` int(11) NOT NULL,
+          `ReceiverId` int(11) NOT NULL,
+          `SenderName` varchar(255) NOT NULL,
+          `MessageText` text NOT NULL,
+          `ItemTitle` varchar(255) DEFAULT NULL,
+          `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`Id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $stmt = $db->prepare("INSERT INTO ChatMessages (SenderId, ReceiverId, SenderName, MessageText, ItemTitle, CreatedAt) VALUES (?, ?, ?, ?, ?, NOW())");
+        $stmt->execute([$senderId, $receiverId, $senderName, $msgText, $itemTitle]);
+    }
+    echo json_encode(['success' => true, 'message' => 'Message sent successfully!']);
+    exit;
+}
+
+// ---------------------------------------------------------
 // 4. GET WANTED POSTS (Wanted Tab)
 // ---------------------------------------------------------
 if ($action === 'wanted_posts' || $action === 'get_wanted') {

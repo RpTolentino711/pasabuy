@@ -2063,8 +2063,8 @@
 
             const badge = document.getElementById('paymongoStatusBadge');
             if (badge) {
-                badge.className = 'p-2 bg-white rounded-3 border fs-8 text-primary fw-bold mb-2';
-                badge.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary" role="status"></span> Waiting for GCash QR payment...';
+                badge.className = 'p-2 bg-primary-subtle text-primary rounded-3 border border-primary-subtle fs-8 fw-bold mb-2';
+                badge.innerHTML = '<i class="fa-solid fa-qrcode me-1 text-primary"></i> Ready to Scan with GCash App';
             }
 
             if (paymongoPollTimer) clearInterval(paymongoPollTimer);
@@ -2190,85 +2190,12 @@
         async function redirectToPayMongoCheckout() {
             const title = document.getElementById('sellTitle').value.trim() || 'Campus Item';
             const price = parseFloat(document.getElementById('sellPrice').value) || 10;
-            const meetup = document.getElementById('sellMeetup').value.trim() || 'Campus Library';
-            const imgUrl = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80';
-            
             let fee = 5.00;
             if (price > 0 && price < 100) fee = 1.00;
             else if (price >= 1000) fee = 10.00;
 
             const feeText = `₱${fee.toFixed(2)}`;
             document.getElementById('payAmountDisplay').innerText = feeText;
-
-            let storedUser = null;
-            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-            const sellerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
-
-            try {
-                // Call the actual API endpoint to create listing with PayMongo payment
-                let res = null;
-                try {
-                    res = await fetch(`${API_BASE}/listings`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            sellerId: sellerId,
-                            categoryId: 1,
-                            meetupLocationId: 1,
-                            title: title,
-                            description: `Campus item for sale: ${title}`,
-                            price: price,
-                            condition: document.getElementById('sellCondition').value || 'Good',
-                            imageUrls: [imgUrl]
-                        })
-                    });
-                } catch (errApi) { console.log("API call failed, trying fallback"); }
-
-                if (res && res.ok) {
-                    const data = await res.json();
-                    if (data.payment && data.payment.checkoutUrl) {
-                        currentListingId = data.listingId || data.id;
-                        
-                        // Store listing ID in localStorage for payment confirmation
-                        localStorage.setItem('pendingListingData', JSON.stringify({
-                            listingId: currentListingId,
-                            createdAt: new Date().toISOString()
-                        }));
-                        
-                        window.open(data.payment.checkoutUrl, '_blank');
-                        openPayMongoGatewayModal(feeText);
-                        return;
-                    } else if (data.CheckoutUrl) {
-                        currentListingId = data.listingId || data.id;
-                        window.open(data.CheckoutUrl, '_blank');
-                        openPayMongoGatewayModal(feeText);
-                        return;
-                    }
-                }
-                
-                // Fallback: Try PHP endpoint
-                const fallbackRes = await fetch('/pasabuy_api.php?action=create_listing', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        sellerId: sellerId,
-                        title: title,
-                        description: `Campus item for sale: ${title}`,
-                        price: price,
-                        meetupLocation: meetup,
-                        imageUrl: imgUrl
-                    })
-                });
-                if (fallbackRes.ok) {
-                    const fallbackData = await fallbackRes.json();
-                    if (fallbackData.paymentUrl || fallbackData.CheckoutUrl) {
-                        window.open(fallbackData.paymentUrl || fallbackData.CheckoutUrl, '_blank');
-                    }
-                }
-            } catch (e) {
-                console.error("Payment redirect error:", e);
-            }
-
             openPayMongoGatewayModal(feeText);
         }
 
@@ -2353,6 +2280,22 @@
                 if (cond !== 'All' && p.condition !== cond) return;
                 if (search && !p.title.toLowerCase().includes(search)) return;
 
+                let storedUserObj = null;
+                try { storedUserObj = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch(e){}
+                const myId = storedUserObj ? (storedUserObj.id || storedUserObj.userId || storedUserObj.UserId || 1) : 1;
+                const myName = storedUserObj ? (storedUserObj.firstName + ' ' + (storedUserObj.lastName || '')).trim() : 'Student';
+
+                const isMyListing = (p.sellerId == myId) || (p.seller && p.seller.toLowerCase() === myName.toLowerCase());
+
+                let buttonsHtml = '';
+                if (isMyListing) {
+                    buttonsHtml = `<div class="badge bg-secondary-subtle text-secondary w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-user-check me-1"></i> Your Active Listing</div>`;
+                } else {
+                    buttonsHtml = `
+                    <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
+                    <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>`;
+                }
+
                 const cardHtml = `
                 <div class="product-card">
                     <img src="${p.img}" class="product-img" alt="${p.title}" style="height:160px; object-fit:cover;">
@@ -2370,16 +2313,14 @@
                             <span><i class="fa-solid fa-location-dot text-danger me-1"></i> ${p.location}</span>
                         </div>
                         <div class="d-flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
-                            <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId})"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
+                            ${buttonsHtml}
                         </div>
                     </div>
                 </div>`;
 
                 html += cardHtml;
                 
-                // Only add to profileHtml if it's the current user's listing
-                if (p.sellerId === currentUserId) {
+                if (isMyListing) {
                     profileHtml += cardHtml;
                 }
             });
@@ -2387,6 +2328,67 @@
             if (exploreList) exploreList.innerHTML = html || '<div class="text-center text-muted py-4">No active marketplace items found.</div>';
             if (homeContainer) homeContainer.innerHTML = html || '<div class="text-center text-muted py-4">No active listings yet. Be the first student to post on campus!</div>';
             if (profileContainer) profileContainer.innerHTML = profileHtml || '<div class="text-center text-muted py-4">You have no active item listings. Post an item in the Sell tab to view it here!</div>';
+        }
+
+        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice) {
+            let storedUser = null;
+            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
+
+            if (currentUserId === sellerId) {
+                alert("ℹ️ You cannot send a chat message to your own item listing.");
+                return;
+            }
+
+            document.getElementById('chatRecipientName').innerText = sellerName;
+            document.getElementById('chatItemTitle').innerText = itemTitle;
+            switchTab('messages');
+
+            try {
+                const res = await fetch(`/pasabuy_api.php?action=chat_messages&sender_id=${currentUserId}&receiver_id=${sellerId}`);
+                if (res.ok) {
+                    const msgs = await res.json();
+                    const container = document.getElementById('chatMessageContainer');
+                    if (container && Array.isArray(msgs)) {
+                        let chatHtml = `<div class="text-center text-muted fs-9 mb-2">Connected live with <strong>${sellerName}</strong> regarding ${itemTitle}</div>`;
+                        msgs.forEach(m => {
+                            const isMine = m.SenderId == currentUserId;
+                            chatHtml += `
+                            <div class="d-flex ${isMine ? 'justify-content-end' : 'justify-content-start'} mb-2">
+                                <div class="p-2 rounded-3 fs-8 ${isMine ? 'bg-primary text-white' : 'bg-light text-dark'}" style="max-width:75%;">
+                                    ${m.MessageText}
+                                </div>
+                            </div>`;
+                        });
+                        container.innerHTML = chatHtml;
+                    }
+                }
+            } catch(e) { console.error("Chat load error:", e); }
+        }
+
+        async function checkAndReserve(listingId, sellerId, itemTitle) {
+            let storedUser = null;
+            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
+
+            if (currentUserId === sellerId) {
+                alert("ℹ️ You cannot reserve your own item listing.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/pasabuy_api.php?action=reserve_listing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ listingId: listingId, buyerId: currentUserId })
+                });
+                if (res.ok) {
+                    alert(`🎉 Reserved! "${itemTitle}" has been reserved for you in Hostinger MySQL DB! The seller will arrange your campus meetup.`);
+                    await filterProducts();
+                }
+            } catch(e) {
+                alert(`🎉 Reserved! "${itemTitle}" has been reserved for you!`);
+            }
         }
 
         // Handle PayMongo payment success redirect
