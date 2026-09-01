@@ -46,9 +46,11 @@ try {
     $pdo->exec("DELETE FROM Users WHERE Id NOT IN (100, 104);");
     
     // Ensure Admin & Romeo exist
-    $pdo->exec("INSERT IGNORE INTO Users (Id, Email, PasswordHash, Role, Status, CreatedAt, UpdatedAt) VALUES 
+    $hashRomeo = '$2y$10$MZvmGKUWO1qAZz8sb7GZRO6dY8AYR.FniTTV2azZBV2BZKBt5bs.C';
+    $stmtUser = $pdo->prepare("INSERT IGNORE INTO Users (Id, Email, PasswordHash, Role, Status, CreatedAt, UpdatedAt) VALUES 
         (100, 'admin', 'Pogilameg', 'ADMIN', 'VERIFIED', NOW(), NOW()),
-        (104, 'romeopaolotolentino@gmail.com', '$2y$10$MZvmGKUWO1qAZz8sb7GZRO6dY8AYR.FniTTV2azZBV2BZKBt5bs.C', 'STUDENT', 'VERIFIED', NOW(), NOW());");
+        (104, 'romeopaolotolentino@gmail.com', ?, 'STUDENT', 'VERIFIED', NOW(), NOW())");
+    $stmtUser->execute([$hashRomeo]);
 
     // Clean StudentProfiles (Keep Romeo 104 only)
     $pdo->exec("DELETE FROM StudentProfiles WHERE UserId != 104;");
