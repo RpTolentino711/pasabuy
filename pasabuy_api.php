@@ -263,6 +263,29 @@ if (($action === 'reserve_listing' || $action === 'reserve') && $method === 'POS
 // ---------------------------------------------------------
 // LIVE CHAT MESSAGES IN HOSTINGER MYSQL
 // ---------------------------------------------------------
+if ($action === 'chat_conversations') {
+    $userId = (int)($_GET['user_id'] ?? 1);
+
+    $db->exec("CREATE TABLE IF NOT EXISTS `ChatMessages` (
+      `Id` int(11) NOT NULL AUTO_INCREMENT,
+      `SenderId` int(11) NOT NULL,
+      `ReceiverId` int(11) NOT NULL,
+      `SenderName` varchar(255) NOT NULL,
+      `MessageText` text NOT NULL,
+      `ItemTitle` varchar(255) DEFAULT NULL,
+      `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`Id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $stmt = $db->prepare("SELECT c1.* FROM ChatMessages c1 INNER JOIN (
+        SELECT MAX(Id) as max_id FROM ChatMessages WHERE SenderId = ? OR ReceiverId = ? GROUP BY LEAST(SenderId, ReceiverId), GREATEST(SenderId, ReceiverId)
+    ) c2 ON c1.Id = c2.max_id ORDER BY c1.CreatedAt DESC");
+    $stmt->execute([$userId, $userId]);
+    $convs = $stmt->fetchAll();
+    echo json_encode($convs);
+    exit;
+}
+
 if ($action === 'chat_messages' || $action === 'get_messages') {
     $senderId = (int)($_GET['sender_id'] ?? 1);
     $receiverId = (int)($_GET['receiver_id'] ?? 2);

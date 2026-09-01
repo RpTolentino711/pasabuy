@@ -500,12 +500,19 @@
                 </div>
             </div>
 
-            <!-- MESSAGES TAB -->
+            <!-- MESSAGES TAB (MESSENGER-STYLE CHAT HEADS LIST) -->
             <div id="tabMessages" style="display:none;">
-                <h5 class="fw-bold mb-3">Messages</h5>
-                <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
-                    <i class="fa-solid fa-comments fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                    No chat conversations active yet.<br>Click "Message" on any listing to start chatting!
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold mb-0">Messages</h5>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fs-9 fw-bold"><i class="fa-solid fa-comments me-1"></i> Active Chats</span>
+                </div>
+
+                <!-- Chat Conversations List (Messenger Heads) -->
+                <div id="conversationHeadsList" class="d-flex flex-column gap-2">
+                    <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+                        <i class="fa-solid fa-comments fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                        No active chat conversations yet.<br>Click <strong>Message</strong> on any item listing to start chatting!
+                    </div>
                 </div>
             </div>
 
@@ -2118,6 +2125,83 @@
             document.getElementById('chatView').style.display = 'none';
             document.getElementById('authScreen').style.display = 'none';
             document.querySelector('.app-tabbar').style.display = 'flex';
+
+            if (tabName === 'messages') {
+                loadChatConversationsList();
+            }
+        }
+
+        async function loadChatConversationsList() {
+            const container = document.getElementById('conversationHeadsList');
+            if (!container) return;
+
+            let storedUser = null;
+            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
+
+            let convs = [];
+            try {
+                const res = await fetch(`/pasabuy_api.php?action=chat_conversations&user_id=${currentUserId}`);
+                if (res.ok) {
+                    convs = await res.json();
+                }
+            } catch(e){}
+
+            let localConvs = [];
+            try { localConvs = JSON.parse(localStorage.getItem('pasabuy_local_chat_heads')) || []; } catch(e){}
+
+            localConvs.forEach(lc => {
+                if (!convs.some(c => c.SenderId === lc.partnerId || c.ReceiverId === lc.partnerId)) {
+                    convs.push({
+                        SenderId: lc.partnerId,
+                        ReceiverId: currentUserId,
+                        SenderName: lc.partnerName,
+                        ItemTitle: lc.itemTitle,
+                        MessageText: lc.lastMessage || 'Click to view conversation',
+                        CreatedAt: lc.time || 'Just now'
+                    });
+                }
+            });
+
+            if (!Array.isArray(convs) || convs.length === 0) {
+                container.innerHTML = `
+                <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+                    <i class="fa-solid fa-comments fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                    No active chat conversations yet.<br>Click <strong>Message</strong> on any item listing to start chatting!
+                </div>`;
+                return;
+            }
+
+            let html = '';
+            convs.forEach(c => {
+                const partnerId = (c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId;
+                const partnerName = c.SenderName || 'Campus Student';
+                const itemTitle = c.ItemTitle || 'Campus Item';
+                const lastMsg = c.MessageText || 'Tap to chat';
+                const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(partnerName)}`;
+
+                html += `
+                <div class="p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center justify-content-between mb-2 position-relative" style="cursor:pointer;" onclick="checkAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${itemTitle.replace(/'/g, "\\'")}', '₱0.00')">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="position-relative">
+                            <img src="${avatarUrl}" class="rounded-circle border" width="50" height="50" style="object-fit:cover; background:#f0f3f8;">
+                            <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white" style="width:14px; height:14px;"></span>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="fw-bold mb-0 text-dark fs-7">${partnerName}</h6>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill fs-9 fw-semibold px-2 py-0.5">${itemTitle}</span>
+                            </div>
+                            <div class="text-muted fs-8 text-truncate" style="max-width:200px;">${lastMsg}</div>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
         }
 
         let uploadedPhotoUrls = [];
