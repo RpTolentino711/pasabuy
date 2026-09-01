@@ -1343,8 +1343,11 @@
         let deleteListingIdToDelete = 0;
         let newAvatarDataUrl = '';
 
+        let deleteListingTitleToDelete = '';
+
         function confirmDeleteListing(id, title, fee) {
             deleteListingIdToDelete = id;
+            deleteListingTitleToDelete = title;
             document.getElementById('deleteItemTitle').innerText = title;
             document.getElementById('deleteItemFee').innerText = fee;
 
@@ -1359,22 +1362,24 @@
         }
 
         async function executeDeleteListing() {
-            if (deleteListingIdToDelete <= 0) return;
             try {
-                const res = await fetch(`${API_BASE}/listings/${deleteListingIdToDelete}`, {
-                    method: 'DELETE'
-                });
-                if (res.ok) {
-                    if (deleteModalInstance) deleteModalInstance.hide();
-                    alert('🗑️ Your listing post has been deleted from the campus marketplace.');
-                    await filterProducts();
-                } else {
-                    alert('Failed to delete listing. Please try again.');
+                if (deleteListingIdToDelete > 0) {
+                    await fetch(`/pasabuy_api.php?action=delete_listing&id=${deleteListingIdToDelete}`, {
+                        method: 'POST'
+                    });
                 }
-            } catch (e) {
-                console.error(e);
-                alert('Error deleting listing.');
-            }
+            } catch(e){}
+
+            try {
+                let localListings = [];
+                try { localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || []; } catch (e) { }
+                localListings = localListings.filter(lp => lp.id !== deleteListingIdToDelete && lp.title !== deleteListingTitleToDelete);
+                localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
+            } catch(e){}
+
+            if (deleteModalInstance) deleteModalInstance.hide();
+            alert('🗑️ Your listing post has been permanently deleted.');
+            await filterProducts();
         }
 
         function openProfileSettingsModal() {

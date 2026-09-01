@@ -121,6 +121,20 @@ if ($action === 'create_listing' && $method === 'POST') {
     exit;
 }
 
+if ($action === 'delete_listing') {
+    $id = (int)($_GET['id'] ?? $body['id'] ?? 0);
+    if ($id > 0) {
+        $stmt = $db->prepare("DELETE FROM Listings WHERE Id = ?");
+        $stmt->execute([$id]);
+        $imgStmt = $db->prepare("DELETE FROM ListingImages WHERE ListingId = ?");
+        $imgStmt->execute([$id]);
+        echo json_encode(['success' => true, 'message' => 'Listing deleted from MySQL']);
+        exit;
+    }
+    echo json_encode(['success' => false, 'message' => 'Invalid listing ID']);
+    exit;
+}
+
 // ---------------------------------------------------------
 // OFFICIAL PAYMONGO API CHECKOUT SESSION CREATOR
 // ---------------------------------------------------------
