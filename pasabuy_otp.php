@@ -223,14 +223,13 @@ if ($action === 'verify_otp' || $action === 'verify') {
 
 // Action: SEND OTP
 $db = getPasaBuyDbConnection();
+$existingUserFound = false;
 if ($db) {
     try {
         $stmt = $db->prepare("SELECT Id FROM Users WHERE LOWER(Email) = ?");
         $stmt->execute([$email]);
         if ($stmt->fetch()) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => "❌ An account with '{$email}' already exists. Please log in or click 'Forgot Password?' to reset your password."]);
-            exit;
+            $existingUserFound = true;
         }
     } catch (Exception $eCheck) {}
 }
@@ -238,6 +237,7 @@ if ($db) {
 $otpCode = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 $regDataArr = [
     'email' => $email,
+    'isExisting' => $existingUserFound,
     'firstName' => trim((string)($data['firstName'] ?? '')),
     'lastName' => trim((string)($data['lastName'] ?? '')),
     'studentNumber' => trim((string)($data['studentNumber'] ?? '')),
