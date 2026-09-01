@@ -1918,6 +1918,24 @@
                     const data = await res.json();
                     if (data.id || data.listingId) currentListingId = data.id || data.listingId;
                 }
+
+                // Save locally so item displays instantly on Home Feed and Profile Tab
+                const newProduct = {
+                    id: currentListingId || Date.now(),
+                    title: title,
+                    price: `₱${price.toFixed(2)}`,
+                    fee: price >= 1000 ? '₱10.00' : (price >= 100 ? '₱5.00' : '₱1.00'),
+                    condition: document.getElementById('sellCondition').value || 'Good',
+                    seller: (storedUser ? (storedUser.firstName + ' ' + (storedUser.lastName || '')) : 'Verified Student').trim(),
+                    sellerId: sellerId,
+                    location: meetup,
+                    img: imgUrl
+                };
+
+                let localListings = [];
+                try { localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || []; } catch(e){}
+                localListings.unshift(newProduct);
+                localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
             } catch(e) {
                 console.error("Publish listing error:", e);
             }
@@ -2001,6 +2019,15 @@
             } catch (e) {
                 console.error("Fetch listings error:", e);
             }
+
+            let localListings = [];
+            try { localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || []; } catch(e){}
+
+            localListings.forEach(lp => {
+                if (!products.some(p => p.id === lp.id || p.title === lp.title)) {
+                    products.unshift(lp);
+                }
+            });
 
             function random_int_js() { return Math.floor(Math.random() * 10000); }
 
