@@ -9,50 +9,41 @@ function send_admin_otp_email(string $toEmail, string $toName, string $action, s
     $mail->CharSet = 'UTF-8';
     $mail->isSMTP();
     $mail->Host = $_ENV['SMTP_HOST'] ?? 'smtp.hostinger.com';
-    $mail->Port = (int)($_ENV['SMTP_PORT'] ?? 465);
+    $mail->Port = (int)($_ENV['SMTP_PORT'] ?? 587);
     $mail->SMTPAuth = true;
-    $mail->SMTPSecure = $_ENV['SMTP_SECURE'] ?? 'ssl';
-    $mail->SMTPAutoTLS = false;
+    $mail->SMTPSecure = $_ENV['SMTP_SECURE'] ?? 'tls';
+    $mail->SMTPAutoTLS = true;
     $mail->Timeout = 20;
 
-    // ✅ SDO SMTP Credentials
-    $mail->Username = get_env_var('SMTP_USER', 'identitrack@identitrack.site');
-    $mail->Password = get_env_var('SMTP_PASS', '');
+    // ✅ PasaBuy Hostinger SMTP Credentials
+    $mail->Username = get_env_var('SMTP_USER', 'PASABUY@pasabuy.site');
+    $mail->Password = get_env_var('SMTP_PASS', 'Vanossgaming@10');
 
-    $mail->setFrom($mail->Username, 'IdentiTrack Admin Verification');
+    $mail->setFrom($mail->Username, 'PasaBuy Campus Marketplace');
     $mail->addAddress($toEmail, $toName);
     $mail->isHTML(true);
-    $mail->Subject = "Verification Code: {$otp} for IdentiTrack Admin";
-
-    // Embed logo
-    $logoPath = realpath(__DIR__ . '/../assets/logo.png');
-    $cid = 'identitrack_logo';
-    $hasLogo = ($logoPath && is_readable($logoPath));
-    if ($hasLogo) {
-        $mail->addEmbeddedImage($logoPath, $cid, 'logo.png');
-    }
+    $mail->Subject = "🔑 Verification OTP Code: {$otp} - PasaBuy Campus";
 
     $actionLabel = ucwords(str_replace('_', ' ', $action));
-    $logoHtml = $hasLogo 
-        ? "<img src='cid:$cid' width='50' height='50' style='display:block;margin-bottom:15px;'>" 
-        : "<div style='font-size:24px;font-weight:bold;color:#3b4a9e;margin-bottom:15px;'>IdentiTrack</div>";
 
     $mail->Body = "
-    <div style='font-family: Arial, sans-serif; background-color: #f4f7ff; padding: 30px; color: #333;'>
-        <div style='max-width: 500px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;'>
-            $logoHtml
-            <h2 style='color: #1e293b; margin-top: 0; font-size: 20px;'>Verification Code</h2>
-            <p style='font-size: 15px; color: #475569; margin-top: 0;'>Hello <strong>$toName</strong>,</p>
-            <p style='font-size: 14px; color: #64748b; line-height: 1.5;'>Please use the 6-digit code below to complete your login verification:</p>
+    <div style='font-family: Arial, sans-serif; background-color: #f4f6f9; padding: 30px; color: #333;'>
+        <div style='max-width: 500px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; text-align: center;'>
+            <h2 style='color: #5F27CD; margin-top: 0; font-size: 24px;'>🛍️ PasaBuy Campus Marketplace</h2>
+            <p style='font-size: 14px; color: #64748b;'>Student &amp; Security Verification</p>
+            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
             
-            <div style='background: #f1f5f9; border-radius: 14px; padding: 22px; text-align: center; margin: 20px 0;'>
-                <span style='font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #1e293b;'>$otp</span>
+            <p style='font-size: 15px; color: #334155;'>Hello <strong>" . htmlspecialchars($toName) . "</strong>,</p>
+            <p style='font-size: 14px; color: #64748b; line-height: 1.5;'>Please use the 6-digit verification OTP code below for <strong>{$actionLabel}</strong>:</p>
+            
+            <div style='background: #5F27CD; color: #ffffff; border-radius: 14px; padding: 18px 24px; display: inline-block; margin: 20px 0;'>
+                <span style='font-size: 34px; font-weight: 900; letter-spacing: 8px;'>$otp</span>
             </div>
 
             <p style='font-size: 13px; color: #94a3b8; line-height: 1.5;'>This code is valid for 10 minutes. Do not share this code with anyone.</p>
             
             <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0;'>
-            <p style='font-size: 12px; color: #94a3b8; text-align: center;'>&copy; " . date('Y') . " IdentiTrack SDO System. All rights reserved.</p>
+            <p style='font-size: 12px; color: #94a3b8; text-align: center;'>&copy; " . date('Y') . " PasaBuy Campus Marketplace. All rights reserved.</p>
         </div>
     </div>
     ";

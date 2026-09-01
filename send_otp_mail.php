@@ -35,12 +35,10 @@ function makeMailer(): PHPMailer {
     $mail->Host = $_ENV['SMTP_HOST'] ?? 'smtp.hostinger.com';
     $mail->Port = 587;
     $mail->SMTPAuth = true;
-
-    // PHPMailer 5.2.28 uses string 'tls' (not PHPMailer::ENCRYPTION_STARTTLS)
     $mail->SMTPSecure = 'tls';
 
-    $mail->Username = get_env_var('SMTP_USER', 'identitrack@identitrack.site');
-    $mail->Password = get_env_var('SMTP_PASS', '');
+    $mail->Username = get_env_var('SMTP_USER', 'PASABUY@pasabuy.site');
+    $mail->Password = get_env_var('SMTP_PASS', 'Vanossgaming@10');
 
     $mail->Timeout = 30;
     return $mail;
@@ -66,9 +64,9 @@ function themeActionLabel(string $action): string {
 function sendOTPEmail(string $toEmail, string $toName, string $action, string $otp): bool {
     $mail = makeMailer();
 
-    $mail->setFrom($mail->Username, 'IdentiTrack Admin');
-    $mail->addAddress($toEmail, $toName ?: 'Admin');
-    $mail->addReplyTo('no-reply@identitrack.site', 'IdentiTrack');
+    $mail->setFrom($mail->Username, 'PasaBuy Campus Marketplace');
+    $mail->addAddress($toEmail, $toName ?: 'User');
+    $mail->addReplyTo('PASABUY@pasabuy.site', 'PasaBuy');
 
     $actionLabel = themeActionLabel($action);
     $mail->isHTML(true);
