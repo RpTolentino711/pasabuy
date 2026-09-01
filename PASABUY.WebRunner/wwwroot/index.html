@@ -1676,25 +1676,15 @@
             }
 
             try {
-                let res = null;
-                try {
-                    res = await fetch(`${API_BASE}/auth/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: email, password: password })
-                    });
-                } catch (errApi) { }
+                const res = await fetch('/pasabuy_otp.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'login', email: email, password: password })
+                });
 
-                if (!res || !res.ok) {
-                    res = await fetch('/pasabuy_otp.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'login', email: email, password: password })
-                    });
-                }
+                const data = await res.json();
 
-                if (res && res.ok) {
-                    const data = await res.json();
+                if (res.ok && data.success) {
                     failedLoginAttempts = 0;
                     if (banner) banner.style.display = 'none';
 
@@ -1712,9 +1702,9 @@
                     localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
                     localStorage.setItem('pasabuy_student_logged_in', 'true');
 
-                    const nameShow = `${studentUser.firstName || email.split('@')[0]} ${studentUser.lastName || ''}`.trim();
+                    const nameShow = `${studentUser.firstName} ${studentUser.lastName}`.trim();
                     document.getElementById('profileName').innerText = nameShow;
-                    document.getElementById('homeWelcomeName').innerText = `Good day, ${studentUser.firstName || email.split('@')[0]}!`;
+                    document.getElementById('homeWelcomeName').innerText = `Good day, ${studentUser.firstName}!`;
                     document.getElementById('profileSub').innerText = `${email} • Verified Student`;
 
                     document.getElementById('authScreen').style.display = 'none';
@@ -1723,8 +1713,6 @@
                     switchTab('home');
                     return;
                 } else {
-                    let err = {};
-                    try { err = await res.json(); } catch (e) { }
                     failedLoginAttempts++;
                     const remaining = Math.max(0, 3 - failedLoginAttempts);
 
@@ -1732,7 +1720,7 @@
                         bannerMsg.innerHTML = '🔒 <strong>Account Locked!</strong> You entered wrong credentials 3 times. Click <strong>"Forgot Password?"</strong> to reset via OTP.';
                         document.getElementById('btnLoginSubmit').disabled = true;
                     } else {
-                        bannerMsg.innerText = err.message || `Invalid credentials. (${remaining} attempt${remaining !== 1 ? 's' : ''} left)`;
+                        bannerMsg.innerText = data.message || `Invalid credentials. (${remaining} attempt${remaining !== 1 ? 's' : ''} left)`;
                     }
                     banner.style.display = 'block';
                 }
