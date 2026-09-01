@@ -138,13 +138,13 @@ if ($action === 'verify_otp' || $action === 'verify') {
     $recordedInDb = false;
 
     $db = getPasaBuyDbConnection();
-    if ($db && !empty($reg)) {
+    if ($db) {
         try {
             $userEmail  = strtolower(trim($reg['email'] ?? $email));
-            $passPlain  = $reg['password'] ?? 'StudentPass@123';
+            $passPlain  = !empty($reg['password']) ? $reg['password'] : 'StudentPass@123';
             $passHash   = password_hash($passPlain, PASSWORD_BCRYPT);
-            $firstName  = trim($reg['firstName'] ?? 'Student');
-            $lastName   = trim($reg['lastName'] ?? 'User');
+            $firstName  = trim($reg['firstName'] ?? explode('@', $userEmail)[0]);
+            $lastName   = trim($reg['lastName'] ?? '');
             $studentNo  = trim($reg['studentNumber'] ?? '2024-001');
             $course     = trim($reg['course'] ?? 'BSIT');
             $yearLevel  = trim($reg['yearLevel'] ?? '1st Yr');
