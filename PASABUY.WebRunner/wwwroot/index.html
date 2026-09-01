@@ -963,7 +963,22 @@
     <script>
         const API_BASE = (window.location.port === '5200' || window.location.hostname === 'localhost') 
             ? 'http://localhost:5000/api' 
-            : window.location.origin + '/api';
+            : window.location.origin + '/pasabuy_api.php';
+
+        async function fetchApi(endpoint, options = {}) {
+            let url = '';
+            if (window.location.hostname === 'localhost' || window.location.port === '5200') {
+                url = `http://localhost:5000/api${endpoint}`;
+            } else {
+                let cleanEp = endpoint.replace(/^\//, '');
+                let action = cleanEp.split('/')[0];
+                if (action === 'listings') action = 'listings';
+                else if (action === 'wanted') action = 'wanted_posts';
+                else if (action === 'reports') action = 'reports';
+                url = `/pasabuy_api.php?action=${action}`;
+            }
+            return fetch(url, options);
+        }
 
         let reportModalInstance = null;
         let wantedModalInstance = null;
