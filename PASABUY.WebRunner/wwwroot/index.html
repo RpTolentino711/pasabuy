@@ -263,8 +263,12 @@
                     <div id="failedAttemptBanner"
                         class="p-3 bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-3 fs-8 mb-3 text-start"
                         style="display:none;">
-                        <i class="fa-solid fa-shield-exclamation me-1"></i> <strong id="failedAttemptMsg">Invalid
-                            credentials.</strong>
+                        <i class="fa-solid fa-shield-exclamation me-1"></i> <strong id="failedAttemptMsg">Invalid credentials.</strong>
+                    </div>
+
+                    <!-- Quick Login Helper Button for Romeo -->
+                    <div class="p-2.5 bg-primary bg-opacity-10 text-primary rounded-3 fs-8 mb-3 text-center border border-primary-subtle" style="cursor:pointer; transition: all 0.2s ease;" onclick="quickFillRomeoCredentials()">
+                        <i class="fa-solid fa-bolt me-1 text-warning"></i> <strong>⚡ Tap Here for Quick Login as Romeo Paolo</strong>
                     </div>
 
                     <div class="text-start mb-3">
@@ -1648,9 +1652,13 @@
             }
         }
 
-        let failedLoginAttempts = 0;
-        let pendingRegistrationEmail = '';
-        let pendingForgotPasswordEmail = '';
+        function quickFillRomeoCredentials() {
+            const emailIn = document.getElementById('loginEmailInput');
+            const passIn = document.getElementById('loginPasswordInput');
+            if (emailIn) emailIn.value = 'romeopaolotolentino@gmail.com';
+            if (passIn) passIn.value = 'Pogilameg@10';
+            loginStudentWithPassword();
+        }
 
         async function loginStudentWithPassword() {
             const email = document.getElementById('loginEmailInput').value.trim();
