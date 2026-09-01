@@ -2527,6 +2527,8 @@
             if (profileContainer) profileContainer.innerHTML = profileHtml || '<div class="text-center text-muted py-4">You have no active item listings. Post an item in the Sell tab to view it here!</div>';
         }
 
+        let currentActiveChatSellerId = 0;
+
         async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice) {
             let storedUser = null;
             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
@@ -2537,16 +2539,29 @@
                 return;
             }
 
-            document.getElementById('chatRecipientName').innerText = sellerName;
-            document.getElementById('chatItemTitle').innerText = itemTitle;
+            currentActiveChatSellerId = sellerId;
+
+            const partnerNameEl = document.getElementById('chatPartnerName') || document.getElementById('chatRecipientName');
+            if (partnerNameEl) partnerNameEl.innerText = sellerName;
+            
+            const titleEl = document.getElementById('chatItemTitle');
+            if (titleEl) titleEl.innerText = itemTitle;
+            
+            const priceEl = document.getElementById('chatItemPrice');
+            if (priceEl) priceEl.innerText = itemPrice || '₱0.00';
+
             switchTab('messages');
+            const tabMsgs = document.getElementById('tabMessages');
+            const chatVw = document.getElementById('chatView');
+            if (tabMsgs) tabMsgs.style.display = 'none';
+            if (chatVw) chatVw.style.display = 'flex';
 
             try {
                 const res = await fetch(`/pasabuy_api.php?action=chat_messages&sender_id=${currentUserId}&receiver_id=${sellerId}`);
                 if (res.ok) {
                     const msgs = await res.json();
-                    const container = document.getElementById('chatMessageContainer');
-                    if (container && Array.isArray(msgs)) {
+                    const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
+                    if (stream && Array.isArray(msgs)) {
                         let chatHtml = `<div class="text-center text-muted fs-9 mb-2">Connected live with <strong>${sellerName}</strong> regarding ${itemTitle}</div>`;
                         msgs.forEach(m => {
                             const isMine = m.SenderId == currentUserId;
@@ -2557,10 +2572,56 @@
                                 </div>
                             </div>`;
                         });
-                        container.innerHTML = chatHtml;
+                        stream.innerHTML = chatHtml;
+                        stream.scrollTop = stream.scrollHeight;
                     }
                 }
             } catch(e) { console.error("Chat load error:", e); }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) return;
+
+            let storedUser = null;
+            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
+            const itemTitle = document.getElementById('chatItemTitle')?.innerText || 'Campus Item';
+
+            input.value = '';
+
+            const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
+            if (stream) {
+                stream.innerHTML += `
+                <div class="d-flex justify-content-end mb-2">
+                    <div class="p-2 rounded-3 fs-8 bg-primary text-white" style="max-width:75%;">
+                        ${text}
+                    </div>
+                </div>`;
+                stream.scrollTop = stream.scrollHeight;
+            }
+
+            try {
+                await fetch('/pasabuy_api.php?action=send_message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        senderId: currentUserId,
+                        receiverId: currentActiveChatSellerId || 1,
+                        messageText: text,
+                        itemTitle: itemTitle
+                    })
+                });
+            } catch(e) { console.error("Send chat error:", e); }
+        }
+
+        function closeChat() {
+            const chatVw = document.getElementById('chatView');
+            const tabMsgs = document.getElementById('tabMessages');
+            if (chatVw) chatVw.style.display = 'none';
+            if (tabMsgs) tabMsgs.style.display = 'block';
         }
 
         async function checkAndReserve(listingId, sellerId, itemTitle) {
