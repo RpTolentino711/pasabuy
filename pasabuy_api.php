@@ -60,15 +60,25 @@ if ($action === '') {
 // 1. GET ALL LISTINGS (Home / Explore)
 // ---------------------------------------------------------
 if ($action === 'listings' || $action === 'get_listings') {
-    $sql = "SELECT l.*, sp.FirstName, sp.LastName, sp.SchoolEmail 
-            FROM Listings l 
-            LEFT JOIN StudentProfiles sp ON l.SellerId = sp.UserId 
-            WHERE l.Status = 'ACTIVE' 
-            ORDER BY l.CreatedAt DESC";
-    $stmt = $db->query($sql);
+    $sellerId = (int)($_GET['seller_id'] ?? 0);
+    if ($sellerId > 0) {
+        $sql = "SELECT l.*, sp.FirstName, sp.LastName, sp.SchoolEmail 
+                FROM Listings l 
+                LEFT JOIN StudentProfiles sp ON l.SellerId = sp.UserId 
+                WHERE l.SellerId = ? 
+                ORDER BY l.CreatedAt DESC";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$sellerId]);
+    } else {
+        $sql = "SELECT l.*, sp.FirstName, sp.LastName, sp.SchoolEmail 
+                FROM Listings l 
+                LEFT JOIN StudentProfiles sp ON l.SellerId = sp.UserId 
+                WHERE (l.Status = 'ACTIVE' OR l.Status IS NULL) 
+                ORDER BY l.CreatedAt DESC";
+        $stmt = $db->query($sql);
+    }
     $listings = $stmt->fetchAll();
 
-    // Fetch images for each listing
     foreach ($listings as &$item) {
         $imgStmt = $db->prepare("SELECT ImageUrl FROM ListingImages WHERE ListingId = ?");
         $imgStmt->execute([(int)$item['Id']]);
@@ -287,6 +297,28 @@ if (($action === 'reserve_listing' || $action === 'reserve') && $method === 'POS
         $stmt->execute([$listingId]);
     }
     echo json_encode(['success' => true, 'message' => 'Item reserved successfully in Hostinger MySQL!']);
+    exit;
+}
+
+// UNRESERVE LISTING (PUT BACK PUBLIC)
+if (($action === 'unreserve_listing' || $action === 'unreserve') && $method === 'POST') {
+    $listingId = (int)($body['listingId'] ?? $body['id'] ?? $_GET['id'] ?? 0);
+    if ($listingId > 0) {
+        $stmt = $db->prepare("UPDATE Listings SET Status = 'ACTIVE' WHERE Id = ?");
+        $stmt->execute([$listingId]);
+    }
+    echo json_encode(['success' => true, 'message' => 'Item un-reserved! It is now back live on the public marketplace.']);
+    exit;
+}
+
+// MARK LISTING AS SOLD
+if (($action === 'mark_sold_listing' || $action === 'mark_sold') && $method === 'POST') {
+    $listingId = (int)($body['listingId'] ?? $body['id'] ?? $_GET['id'] ?? 0);
+    if ($listingId > 0) {
+        $stmt = $db->prepare("UPDATE Listings SET Status = 'SOLD' WHERE Id = ?");
+        $stmt->execute([$listingId]);
+    }
+    echo json_encode(['success' => true, 'message' => 'Item marked as SOLD! Deal complete.']);
     exit;
 }
 

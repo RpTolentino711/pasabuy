@@ -2499,6 +2499,7 @@
                                 seller: sellerName,
                                 sellerId: item.SellerId || item.sellerId || 1,
                                 location: location,
+                                status: item.Status || item.status || 'ACTIVE',
                                 img: img
                             };
                         });
@@ -2530,6 +2531,8 @@
 
                 const isMyListing = (p.sellerId == myId) || (p.seller && p.seller.toLowerCase() === myName.toLowerCase());
 
+                if (!isMyListing && (p.status === 'RESERVED' || p.status === 'SOLD')) return;
+
                 if (selectedCat === 'My Items' && !isMyListing) return;
                 if (selectedCat !== 'All' && selectedCat !== 'My Items' && p.condition !== selectedCat && p.category !== selectedCat) return;
                 if (cond !== 'All' && p.condition !== cond) return;
@@ -2537,15 +2540,31 @@
 
                 let buttonsHtml = '';
                 if (isMyListing) {
-                    buttonsHtml = `
-                    <div class="d-flex flex-column gap-2 w-100">
-                        <div class="badge bg-secondary-subtle text-secondary w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-user-check me-1"></i> Your Active Listing</div>
-                        <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
-                    </div>`;
+                    if (p.status === 'RESERVED') {
+                        buttonsHtml = `
+                        <div class="d-flex flex-column gap-2 w-100">
+                            <div class="badge bg-warning text-dark w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-bookmark me-1"></i> STATUS: RESERVED</div>
+                            <button class="btn btn-sm btn-outline-success rounded-pill w-100 fw-bold fs-8" onclick="executeUnreserveListing(${p.id})"><i class="fa-solid fa-rotate-left me-1"></i> Un-Reserve (Put Back Public)</button>
+                            <button class="btn btn-sm btn-success rounded-pill w-100 fw-bold fs-8" onclick="executeMarkSoldListing(${p.id})"><i class="fa-solid fa-circle-check me-1"></i> Mark as SOLD</button>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8 mt-1" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
+                        </div>`;
+                    } else if (p.status === 'SOLD') {
+                        buttonsHtml = `
+                        <div class="d-flex flex-column gap-2 w-100">
+                            <div class="badge bg-success text-white w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-check-circle me-1"></i> STATUS: SOLD</div>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
+                        </div>`;
+                    } else {
+                        buttonsHtml = `
+                        <div class="d-flex flex-column gap-2 w-100">
+                            <div class="badge bg-secondary-subtle text-secondary w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-user-check me-1"></i> Your Active Listing</div>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
+                        </div>`;
+                    }
                 } else {
                     buttonsHtml = `
                     <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
-                    <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>`;
+                    <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}', '${p.seller.replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>`;
                 }
 
                 const cardHtml = `
@@ -2679,7 +2698,7 @@
             if (tabMsgs) tabMsgs.style.display = 'block';
         }
 
-        async function checkAndReserve(listingId, sellerId, itemTitle) {
+        async function checkAndReserve(listingId, sellerId, itemTitle, sellerName) {
             let storedUser = null;
             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
@@ -2690,18 +2709,75 @@
             }
 
             try {
-                const res = await fetch('/pasabuy_api.php?action=reserve_listing', {
+                await fetch('/pasabuy_api.php?action=reserve_listing', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ listingId: listingId, buyerId: currentUserId })
                 });
-                if (res.ok) {
-                    alert(`🎉 Reserved! "${itemTitle}" has been reserved for you in Hostinger MySQL DB! The seller will arrange your campus meetup.`);
-                    await filterProducts();
-                }
-            } catch(e) {
-                alert(`🎉 Reserved! "${itemTitle}" has been reserved for you!`);
+            } catch(e) {}
+
+            try {
+                let localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || [];
+                localListings.forEach(l => {
+                    if (l.id == listingId || l.title === itemTitle) {
+                        l.status = 'RESERVED';
+                    }
+                });
+                localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
+            } catch(e){}
+
+            await checkAndOpenChat(sellerId, sellerName || 'Seller', itemTitle, '₱0.00');
+
+            const input = document.getElementById('chatInput');
+            if (input) {
+                input.value = `Hi ${sellerName || 'Seller'}! I have reserved your listing "${itemTitle}". I am interested in buying it! When and where can we meet up on campus?`;
+                sendChatMessage();
             }
+
+            alert(`🔖 Item Reserved! We opened a chat with ${sellerName || 'the seller'} so you can arrange your campus meetup & payment.`);
+            await filterProducts();
+        }
+
+        async function executeUnreserveListing(listingId) {
+            try {
+                await fetch('/pasabuy_api.php?action=unreserve_listing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ listingId: listingId })
+                });
+            } catch(e) {}
+
+            try {
+                let localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || [];
+                localListings.forEach(l => {
+                    if (l.id == listingId) l.status = 'ACTIVE';
+                });
+                localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
+            } catch(e){}
+
+            alert('✅ Item un-reserved! Your post is now back live on the public campus marketplace feed.');
+            await filterProducts();
+        }
+
+        async function executeMarkSoldListing(listingId) {
+            try {
+                await fetch('/pasabuy_api.php?action=mark_sold_listing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ listingId: listingId })
+                });
+            } catch(e) {}
+
+            try {
+                let localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || [];
+                localListings.forEach(l => {
+                    if (l.id == listingId) l.status = 'SOLD';
+                });
+                localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
+            } catch(e){}
+
+            alert('🎉 Item marked as SOLD! Deal complete.');
+            await filterProducts();
         }
 
         // Handle PayMongo payment success redirect
