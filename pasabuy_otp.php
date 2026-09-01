@@ -57,7 +57,59 @@ if ($email === '') {
     exit;
 }
 
-$sessionKey = 'pasabuy_otp_' . md5($email);
+// LOGIN ACTION
+if ($action === 'login') {
+    $password = (string)($data['password'] ?? '');
+    $db = getPasaBuyDbConnection();
+    if (!$db) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database connection error.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT * FROM Users WHERE LOWER(Email) = ?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid email or password.']);
+        exit;
+    }
+
+    $passHash = $user['PasswordHash'];
+    $isValid = password_verify($password, $passHash) || ($password === $passHash);
+
+    if (!$isValid) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid email or password.']);
+        exit;
+    }
+
+    // Fetch Student Profile
+    $pStmt = $db->prepare("SELECT * FROM StudentProfiles WHERE UserId = ?");
+    $pStmt->execute([(int)$user['Id']]);
+    $profile = $pStmt->fetch() ?: [];
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Login successful!',
+        'user' => [
+            'id' => $user['Id'],
+            'email' => $user['Email'],
+            'role' => $user['Role']
+        ],
+        'profile' => [
+            'firstName' => $profile['FirstName'] ?? explode('@', $email)[0],
+            'lastName' => $profile['LastName'] ?? '',
+            'studentNumber' => $profile['StudentNumber'] ?? '',
+            'course' => $profile['Course'] ?? '',
+            'yearLevel' => $profile['YearLevel'] ?? '',
+            'schoolEmail' => $profile['SchoolEmail'] ?? $email
+        ]
+    ]);
+    exit;
+}
 
 // VERIFY OTP ACTION
 if ($action === 'verify_otp' || $action === 'verify') {
