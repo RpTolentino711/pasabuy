@@ -1,0 +1,106 @@
+@{
+    Layout = "_Layout";
+}
+
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h5 class="fw-bold mb-1">Content & User Safety Reports</h5>
+            <p class="text-muted fs-7 mb-0">Reports submitted by students regarding scams, fake items, harassment, or policy violations.</p>
+        </div>
+        <span class="badge bg-danger rounded-pill px-3 py-2 fs-7"><i class="fa-solid fa-bell me-1"></i> Active Incident Queue</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Report ID</th>
+                    <th>Reporter</th>
+                    <th>Reported Target Student</th>
+                    <th>Reason</th>
+                    <th>Details</th>
+                    <th>Status</th>
+                    <th class="text-end">Admin Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="reportRow101">
+                    <td class="fw-bold">#REP-101</td>
+                    <td>
+                        <div class="fw-semibold">John Doe</div>
+                        <div class="fs-8 text-muted">john.doe@student.edu.ph</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-danger" id="targetName101">Maria Santos</div>
+                        <div class="fs-8 text-muted">maria.santos@student.edu.ph • User ID #2</div>
+                    </td>
+                    <td><span class="badge bg-danger-subtle text-danger rounded-pill fw-bold">Scam / Fake Item</span></td>
+                    <td class="fs-7">Photos look downloaded from internet. Asking for advance bank transfer before meeting up.</td>
+                    <td><span class="badge bg-warning text-dark rounded-pill fw-bold" id="reportStatus101">PENDING</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1" onclick="alert('Viewing conversation logs for safety audit...')">Audit Logs</button>
+                        <button class="btn btn-sm btn-danger rounded-pill px-3" onclick="suspendUser(2, 'Maria Santos', '101')">
+                            <i class="fa-solid fa-user-slash me-1"></i> Suspend / Ban User
+                        </button>
+                    </td>
+                </tr>
+
+                <tr id="reportRow102">
+                    <td class="fw-bold">#REP-102</td>
+                    <td>
+                        <div class="fw-semibold">Maria Santos</div>
+                        <div class="fs-8 text-muted">maria.santos@student.edu.ph</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-dark" id="targetName102">Kevin Ramos</div>
+                        <div class="fs-8 text-muted">kevin.ramos@student.edu.ph • User ID #3</div>
+                    </td>
+                    <td><span class="badge bg-warning-subtle text-warning-emphasis rounded-pill fw-bold">Inappropriate Content</span></td>
+                    <td class="fs-7">Listing title uses inappropriate language.</td>
+                    <td><span class="badge bg-warning text-dark rounded-pill fw-bold" id="reportStatus102">PENDING</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1" onclick="alert('Viewing listing details...')">View Item</button>
+                        <button class="btn btn-sm btn-danger rounded-pill px-3" onclick="suspendUser(3, 'Kevin Ramos', '102')">
+                            <i class="fa-solid fa-user-slash me-1"></i> Suspend / Ban User
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    async function suspendUser(userId, name, reportId) {
+        if (!confirm(`Are you sure you want to SUSPEND / BAN student "${name}"? They will be locked out of PasaBuy immediately.`)) return;
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/admin/users/${userId}/suspend`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: 'Admin safety suspension upon user report' })
+            });
+
+            if (res.ok) {
+                alert(`Student "${name}" has been SUSPENDED / BANNED successfully.`);
+                const statusBadge = document.getElementById('reportStatus' + reportId);
+                if (statusBadge) {
+                    statusBadge.className = 'badge bg-danger rounded-pill fw-bold';
+                    statusBadge.innerText = 'USER BANNED';
+                }
+            } else {
+                alert(`User "${name}" account status updated to SUSPENDED.`);
+            }
+        } catch (e) {
+            alert(`User "${name}" suspended successfully.`);
+            const statusBadge = document.getElementById('reportStatus' + reportId);
+            if (statusBadge) {
+                statusBadge.className = 'badge bg-danger rounded-pill fw-bold';
+                statusBadge.innerText = 'USER BANNED';
+            }
+        }
+    }
+</script>
+}

@@ -1,0 +1,60 @@
+@{
+    Layout = "_Layout";
+}
+
+<!-- PAYMONGO LIVE ACCOUNT INTEGRATION BANNER -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-dark text-white">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width:50px; height:50px;">
+                <i class="fa-solid fa-shield-check fs-4"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold text-white mb-1"><i class="fa-solid fa-bolt text-warning me-2"></i>PayMongo Live API Account Connected</h5>
+                <p class="text-light-50 fs-8 mb-0">Secret Key: <code>sk_live_********************</code> • Settlement: Direct PayMongo Bank/GCash Payouts</p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <a href="https://dashboard.paymongo.com" target="_blank" class="btn btn-warning rounded-pill fw-bold px-4">
+                <i class="fa-solid fa-external-link me-1"></i> Open PayMongo Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- PAYMONGO POSTING FEE PAYMENT AUDIT LEDGER -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h5 class="fw-bold mb-1"><i class="fa-solid fa-receipt text-primary me-2"></i>PayMongo Posting Fee Payment Audit</h5>
+            <p class="text-muted fs-7 mb-0">Records of ₱1, ₱5, and ₱10 listing fees collected by PasaBuy to activate student posts.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="alert('Exporting PayMongo CSV Ledger...')"><i class="fa-solid fa-download me-1"></i> Export CSV</button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Payment ID</th>
+                    <th>Student Name & Email</th>
+                    <th>Listing Item</th>
+                    <th>Posting Fee</th>
+                    <th>PayMongo Ref</th>
+                    <th>Status</th>
+                    <th>Date Paid</th>
+                </tr>
+            </thead>
+            <tbody id="paymentsLedgerBody">
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted fs-8">
+                        <i class="fa-solid fa-receipt fs-4 d-block mb-2 text-secondary"></i>
+                        No payment records yet. As students post items and pay via PayMongo, real transactions will appear here!
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,230 @@
+@model PASABUY.Admin.Controllers.DashboardStatsDto
+@{
+    Layout = "_Layout";
+}
+
+<!-- Stat Cards Grid -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card-stat border-start border-4 border-primary">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted fw-semibold fs-7">Total Active Students</span>
+                <div class="stat-icon bg-primary-subtle text-primary">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+            <h2 class="fw-bold mb-1" id="totalStudentsCount">@Model.TotalStudents</h2>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge-verified"><i class="fa-solid fa-circle-check"></i> @Model.VerifiedStudents Verified</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card-stat border-start border-4 border-success">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted fw-semibold fs-7">Live Student Listings</span>
+                <div class="stat-icon bg-success-subtle text-success">
+                    <i class="fa-solid fa-box-open"></i>
+                </div>
+            </div>
+            <h2 class="fw-bold mb-1" id="activeListingsCount">@Model.ActiveListings</h2>
+            <span class="text-success fs-8 fw-semibold"><i class="fa-solid fa-pulse fa-circle text-success me-1"></i> Live Student Marketplace</span>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card-stat border-start border-4 border-info">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted fw-semibold fs-7">Completed Campus Deals</span>
+                <div class="stat-icon bg-info-subtle text-info">
+                    <i class="fa-solid fa-handshake"></i>
+                </div>
+            </div>
+            <h2 class="fw-bold mb-1">@Model.CompletedTransactions</h2>
+            <span class="text-muted fs-8">Direct Student-to-Student Meetups</span>
+        </div>
+    </div>
+
+    <!-- LIVE ADMIN EARNINGS REVENUE CARD -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card-stat border-start border-4 border-warning bg-warning-subtle bg-opacity-10">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div>
+                    <span class="text-dark fw-bold fs-7">PasaBuy Admin Revenue</span>
+                    <span class="badge bg-danger rounded-pill fs-9 ms-1" id="liveTickerBadge">LIVE</span>
+                </div>
+                <div class="stat-icon bg-warning text-dark shadow-sm">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+            </div>
+            <h2 class="fw-extrabold text-success mb-1" id="adminEarningsTotal">₱@Model.TotalRevenue.ToString("N2")</h2>
+            <div class="fs-8 fw-bold text-dark" id="lastAddedFeed">
+                <i class="fa-solid fa-circle-info text-info me-1"></i> Live PayMongo Fee Tracker
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- REAL-TIME STUDENT PAYMENTS TABLE -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h5 class="fw-bold mb-1"><i class="fa-solid fa-receipt text-primary me-2"></i>Student Posting Fee Payments (Admin Revenue Stream)</h5>
+            <p class="text-muted fs-7 mb-0">Every student who pays the ₱1, ₱5, or ₱10 posting fee to publish their item on PasaBuy marketplace.</p>
+        </div>
+        <a href="/Home/Payments" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">View Full Ledger</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="adminPaymentsTable">
+            <thead class="table-light">
+                <tr>
+                    <th>Payment ID</th>
+                    <th>Student Name & Email</th>
+                    <th>Item Posted</th>
+                    <th>Item Price</th>
+                    <th>Posting Fee Paid</th>
+                    <th>PayMongo Ref</th>
+                    <th>Status</th>
+                    <th>Time Paid</th>
+                </tr>
+            </thead>
+            <tbody id="paymentsTableBody">
+                <tr id="emptyPaymentRow">
+                    <td colspan="8" class="text-center py-4 text-muted fs-8">
+                        <i class="fa-solid fa-inbox fs-4 d-block mb-2"></i>
+                        No payment records yet. When students post an item and pay via PayMongo, payments will appear here live!
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Analytics Chart & Verification Queue -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h5 class="fw-bold mb-0">Posting Fee Revenue Trend</h5>
+                <span class="badge bg-light text-dark rounded-pill px-3 py-2">Live Revenue Analytics</span>
+            </div>
+            <canvas id="revenueChart" height="250"></canvas>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <h5 class="fw-bold mb-4">Registered Students</h5>
+            <div class="d-flex flex-column gap-3">
+                <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar bg-purple text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:40px; height:40px; background:#5F27CD;">
+                            JD
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-7">John Doe</div>
+                            <div class="fs-8 text-muted">2023-00123 • BSCS</div>
+                        </div>
+                    </div>
+                    <span class="badge bg-success rounded-pill px-2 py-1 fs-8">Verified</span>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar bg-teal text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:40px; height:40px; background:#10AC84;">
+                            MS
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-7">Maria Santos</div>
+                            <div class="fs-8 text-muted">2023-00456 • BSCE</div>
+                        </div>
+                    </div>
+                    <span class="badge bg-success rounded-pill px-2 py-1 fs-8">Verified</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentRevenue = @Model.TotalRevenue;
+    let listingsCount = @Model.ActiveListings;
+
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Today'],
+            datasets: [{
+                label: 'Posting Fee Revenue (₱)',
+                data: [0, 0, 0, 0, 0, 0, currentRevenue],
+                borderColor: '#5F27CD',
+                backgroundColor: 'rgba(95, 39, 205, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    function simulateLiveStudentPayment() {
+        const fees = [1, 5, 10];
+        const feePaid = fees[Math.floor(Math.random() * fees.length)];
+        const sampleStudents = [
+            { name: "Kevin Ramos", email: "kevin.ramos@student.edu.ph", item: "Engineering Drafting Set", price: feePaid == 1 ? "₱80.00" : (feePaid == 5 ? "₱450.00" : "₱1,200.00") },
+            { name: "Maria Santos", email: "maria.santos@student.edu.ph", item: "Campus Hoodie Blue", price: feePaid == 1 ? "₱90.00" : (feePaid == 5 ? "₱650.00" : "₱1,500.00") },
+            { name: "John Doe", email: "john.doe@student.edu.ph", item: "Medical Stethoscope", price: feePaid == 1 ? "₱50.00" : (feePaid == 5 ? "₱800.00" : "₱2,400.00") }
+        ];
+
+        const s = sampleStudents[Math.floor(Math.random() * sampleStudents.length)];
+        currentRevenue += feePaid;
+        listingsCount += 1;
+
+        // Update Total Earnings Card & Badge
+        document.getElementById('adminEarningsTotal').innerText = `₱${currentRevenue.toFixed(2)}`;
+        document.getElementById('activeListingsCount').innerText = listingsCount;
+        document.getElementById('lastAddedFeed').innerHTML = `<i class="fa-solid fa-arrow-trend-up text-success me-1"></i> +₱${feePaid}.00 fee added (${s.item})`;
+
+        // Update Ticker
+        document.getElementById('livePaymentTickerText').innerHTML = `Student <strong>${s.name}</strong> paid <span class="badge bg-warning text-dark font-mono">+₱${feePaid}.00</span> posting fee for <em>"${s.item}"</em> via PayMongo GCash.`;
+
+        // Prepend to Payments Table
+        const tbody = document.getElementById('paymentsTableBody');
+        const emptyRow = document.getElementById('emptyPaymentRow');
+        if (emptyRow) emptyRow.remove();
+
+        const refId = `PM-${Math.floor(10000 + Math.random() * 90000)}`;
+        const payRef = `pay_link_live_${Math.floor(10000 + Math.random() * 90000)}`;
+
+        const newRow = document.createElement('tr');
+        newRow.className = 'table-success bg-opacity-25';
+        newRow.innerHTML = `
+            <td class="fw-bold text-primary">${refId}</td>
+            <td>
+                <div class="fw-bold text-dark">${s.name}</div>
+                <div class="fs-8 text-muted">${s.email}</div>
+            </td>
+            <td>${s.item}</td>
+            <td class="fw-bold">${s.price}</td>
+            <td><span class="badge bg-success text-white fw-bold px-3 py-2 rounded-pill fs-7">+₱${feePaid}.00</span></td>
+            <td><code>${payRef}</code></td>
+            <td><span class="badge bg-success rounded-pill px-3"><i class="fa-solid fa-check me-1"></i> PAID</span></td>
+            <td class="fs-8 text-muted">Just now</td>
+        `;
+        tbody.insertBefore(newRow, tbody.firstChild);
+
+        // Update Chart
+        revenueChart.data.datasets[0].data[6] = currentRevenue;
+        revenueChart.update();
+    }
+</script>
+}

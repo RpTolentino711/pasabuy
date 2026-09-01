@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PasaBuy Admin Portal</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome & Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --primary: #5F27CD;
+            --primary-hover: #341F97;
+            --secondary: #10AC84;
+            --dark: #1E272C;
+            --bg-light: #F4F6F9;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--dark);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .admin-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #1E272E;
+            color: #fff;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1000;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-brand {
+            padding: 24px 20px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(135deg, #5F27CD, #341F97);
+        }
+        .sidebar-brand i {
+            font-size: 1.6rem;
+            color: #FF9F43;
+        }
+        .sidebar-nav {
+            padding: 16px 12px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        .nav-header {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #8395A7;
+            margin: 16px 12px 6px;
+            font-weight: 700;
+        }
+        .sidebar .nav-link {
+            color: #C8D6E5;
+            padding: 11px 16px;
+            border-radius: 10px;
+            margin-bottom: 4px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background: rgba(95, 39, 205, 0.35);
+            transform: translateX(4px);
+        }
+        .sidebar .nav-link.active {
+            background: #5F27CD;
+            box-shadow: 0 4px 12px rgba(95, 39, 205, 0.4);
+        }
+        .sidebar .nav-link i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 30px;
+        }
+        .navbar-top {
+            background: #fff;
+            padding: 16px 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-stat {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.03);
+            transition: transform 0.2s ease;
+        }
+        .card-stat:hover {
+            transform: translateY(-4px);
+        }
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .badge-verified {
+            background-color: #E3FCEF;
+            color: #00875A;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-bag-shopping"></i>
+                <span>PasaBuy Admin</span>
+            </div>
+            <div class="sidebar-nav">
+                <div class="nav-header">Main Menu</div>
+                <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")" asp-controller="Home" asp-action="Index">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+
+                <div class="nav-header">Marketplace</div>
+                <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "Listings" ? "active" : "")" asp-controller="Home" asp-action="Listings">
+                    <i class="fa-solid fa-store"></i> Product Listings
+                </a>
+                <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "Categories" ? "active" : "")" asp-controller="Home" asp-action="Categories">
+                    <i class="fa-solid fa-list-check"></i> Categories
+                </a>
+                <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "Wanted" ? "active" : "")" asp-controller="Home" asp-action="Wanted">
+                    <i class="fa-solid fa-bullhorn"></i> Wanted Posts
+                </a>
+
+                <div class="nav-header">User & Safety</div>
+                <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "Students" ? "active" : "")" asp-controller="Home" asp-action="Students">
+                    <i class="fa-solid fa-user-graduate"></i> Students & Verification
+                </a>
+                <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")" asp-controller="Home" asp-action="Reports">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Reports & Disputes
+                </a>
+
+                <div class="nav-header">Finance & Operations</div>
+                <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "Payments" ? "active" : "")" asp-controller="Home" asp-action="Payments">
+                    <i class="fa-solid fa-wallet"></i> Posting Fee Payments
+                </a>
+                <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "Meetups" ? "active" : "")" asp-controller="Home" asp-action="Meetups">
+                    <i class="fa-solid fa-location-dot"></i> Campus Meetup Spots
+                </a>
+                <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "AuditLogs" ? "active" : "")" asp-controller="Home" asp-action="AuditLogs">
+                    <i class="fa-solid fa-shield-halved"></i> Security Audit Logs
+                </a>
+            </div>
+            <div class="p-3 border-top border-secondary">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle" width="40" height="40" alt="Admin Avatar">
+                    <div>
+                        <div class="fw-bold fs-7 text-white">System Admin</div>
+                        <div class="fs-8 text-secondary">admin@pasabuy.edu.ph</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="navbar-top">
+                <div>
+                    <h4 class="fw-bold mb-0">@ViewData["Title"]</h4>
+                    <span class="text-muted fs-7">PasaBuy Campus Marketplace Administrative Portal</span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="http://localhost:5000/swagger" target="_blank" class="btn btn-outline-primary rounded-pill px-3 py-2 btn-sm fw-semibold">
+                        <i class="fa-solid fa-code me-1"></i> API Docs
+                    </a>
+                    <a href="http://localhost:5200" target="_blank" class="btn btn-primary rounded-pill px-3 py-2 btn-sm fw-semibold">
+                        <i class="fa-solid fa-mobile-screen me-1"></i> Launch Student Web Runner
+                    </a>
+                </div>
+            </div>
+
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

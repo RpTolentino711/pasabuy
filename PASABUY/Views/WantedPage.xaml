@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PASABUY.Views.WantedPage"
+             Title="Wanted Posts"
+             BackgroundColor="#F4F6F9">
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Top App Bar Header -->
+        <Border Grid.Row="0"
+                BackgroundColor="#5F27CD"
+                StrokeThickness="0"
+                Padding="20,16">
+            <Grid ColumnDefinitions="*, Auto">
+                <HorizontalStackLayout Grid.Column="0" Spacing="8" VerticalOptions="Center">
+                    <Label Text="🛍️" FontSize="20" VerticalOptions="Center"/>
+                    <Label Text="PasaBuy"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           VerticalOptions="Center"/>
+                </HorizontalStackLayout>
+                
+                <Border Grid.Column="1"
+                        BackgroundColor="#E3FCEF"
+                        StrokeShape="RoundRectangle 20"
+                        StrokeThickness="0"
+                        Padding="10,4">
+                    <HorizontalStackLayout Spacing="4">
+                        <Label Text="✓" TextColor="#00875A" FontAttributes="Bold" FontSize="12"/>
+                        <Label Text="Verified Student" TextColor="#00875A" FontAttributes="Bold" FontSize="12"/>
+                    </HorizontalStackLayout>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Body Area -->
+        <ScrollView Grid.Row="1" Padding="16">
+            <VerticalStackLayout Spacing="16">
+                
+                <!-- Page Title Header + Post Wanted Button -->
+                <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
+                    <Label Grid.Column="0"
+                           Text="Wanted Posts"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#1E293B"
+                           VerticalOptions="Center"/>
+                           
+                    <Button Grid.Column="1"
+                            Text="+ Post Wanted"
+                            BackgroundColor="#2563EB"
+                            TextColor="White"
+                            FontAttributes="Bold"
+                            CornerRadius="20"
+                            Padding="16,8"
+                            HeightRequest="40"
+                            Clicked="OnPostWantedClicked"/>
+                </Grid>
+
+                <!-- Wanted Items Collection / Empty State Placeholder Card -->
+                <CollectionView x:Name="WantedCollectionView">
+                    <CollectionView.EmptyView>
+                        <Border BackgroundColor="White"
+                                StrokeShape="RoundRectangle 16"
+                                StrokeThickness="1"
+                                Stroke="#E2E8F0"
+                                Padding="24"
+                                HorizontalOptions="Fill">
+                            <VerticalStackLayout Spacing="12" HorizontalOptions="Center" VerticalOptions="Center">
+                                <!-- Megaphone / Horn Icon -->
+                                <Label Text="📣"
+                                       FontSize="40"
+                                       HorizontalOptions="Center"
+                                       TextColor="#94A3B8"/>
+                                       
+                                <Label Text="No active wanted posts right now."
+                                       FontSize="14"
+                                       TextColor="#64748B"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"/>
+                                       
+                                <Label Text="Click + Post Wanted to request items or food pasabuy!"
+                                       FontSize="13"
+                                       TextColor="#64748B"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"/>
+                            </VerticalStackLayout>
+                        </Border>
+                    </CollectionView.EmptyView>
+                    
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border BackgroundColor="White"
+                                    StrokeShape="RoundRectangle 16"
+                                    StrokeThickness="1"
+                                    Stroke="#E2E8F0"
+                                    Padding="16"
+                                    Margin="0,0,0,12">
+                                <VerticalStackLayout Spacing="8">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <Border Grid.Column="0"
+                                                BackgroundColor="#FEF2F2"
+                                                StrokeShape="RoundRectangle 12"
+                                                Padding="8,4"
+                                                HorizontalOptions="Start">
+                                            <Label Text="URGENT EXAM NEED" TextColor="#EF4444" FontSize="11" FontAttributes="Bold"/>
+                                        </Border>
+                                        <Label Grid.Column="1" Text="{Binding BudgetFormatted}" TextColor="#16A34A" FontAttributes="Bold" FontSize="13"/>
+                                    </Grid>
+                                    <Label Text="{Binding Title}" FontAttributes="Bold" FontSize="15" TextColor="#0F172A"/>
+                                    <Label Text="{Binding Description}" FontSize="13" TextColor="#64748B"/>
+                                    <Grid ColumnDefinitions="*, Auto" Padding="0,8,0,0">
+                                        <HorizontalStackLayout Spacing="4">
+                                            <Label Text="{Binding RequesterName}" FontAttributes="Bold" FontSize="12" TextColor="#334155"/>
+                                            <Label Text="📍" FontSize="12"/>
+                                            <Label Text="{Binding MeetupLocation}" FontSize="12" TextColor="#64748B"/>
+                                        </HorizontalStackLayout>
+                                        <Button Grid.Column="1"
+                                                Text="I Have This! / Offer"
+                                                BackgroundColor="Transparent"
+                                                TextColor="#2563EB"
+                                                BorderColor="#2563EB"
+                                                BorderWidth="1"
+                                                CornerRadius="16"
+                                                FontSize="12"
+                                                Padding="12,4"/>
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

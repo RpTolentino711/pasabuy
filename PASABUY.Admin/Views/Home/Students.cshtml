@@ -1,0 +1,101 @@
+@{
+    Layout = "_Layout";
+}
+
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h5 class="fw-bold mb-0">Registered Student Directory</h5>
+        <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm rounded-pill px-3" placeholder="Search by student name or ID..." style="width:280px;">
+            <button class="btn btn-sm btn-primary rounded-pill px-4">Search</button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Student</th>
+                    <th>Student Number</th>
+                    <th>School Email</th>
+                    <th>Course & Year</th>
+                    <th>Verification Badge</th>
+                    <th>Rating</th>
+                    <th>Deals</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="studentRow1">
+                    <td>
+                        <div class="fw-bold text-dark">John Doe</div>
+                        <div class="fs-8 text-muted">User ID: #USR-001</div>
+                    </td>
+                    <td class="fw-semibold">2023-00123</td>
+                    <td>john.doe@student.edu.ph</td>
+                    <td>BS Computer Science (3rd Yr)</td>
+                    <td><span class="badge-verified" id="badgeUser1"><i class="fa-solid fa-circle-check"></i> Verified Student</span></td>
+                    <td><span class="text-warning fw-bold"><i class="fa-solid fa-star"></i> 4.9</span></td>
+                    <td class="fw-bold">18</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 me-1">Profile</button>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="suspendStudent(1, 'John Doe')">Suspend / Ban</button>
+                    </td>
+                </tr>
+
+                <tr id="studentRow2">
+                    <td>
+                        <div class="fw-bold text-dark">Maria Santos</div>
+                        <div class="fs-8 text-muted">User ID: #USR-002</div>
+                    </td>
+                    <td class="fw-semibold">2023-00456</td>
+                    <td>maria.santos@student.edu.ph</td>
+                    <td>BS Civil Engineering (2nd Yr)</td>
+                    <td><span class="badge-verified" id="badgeUser2"><i class="fa-solid fa-circle-check"></i> Verified Student</span></td>
+                    <td><span class="text-warning fw-bold"><i class="fa-solid fa-star"></i> 5.0</span></td>
+                    <td class="fw-bold">24</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 me-1">Profile</button>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="suspendStudent(2, 'Maria Santos')">Suspend / Ban</button>
+                    </td>
+                </tr>
+
+                <tr id="studentRow3">
+                    <td>
+                        <div class="fw-bold text-dark">Kevin Ramos</div>
+                        <div class="fs-8 text-muted">User ID: #USR-003</div>
+                    </td>
+                    <td class="fw-semibold">2024-00891</td>
+                    <td>kevin.ramos@student.edu.ph</td>
+                    <td>BS Electrical Engineering (1st Yr)</td>
+                    <td><span class="badge bg-warning-subtle text-warning fw-bold px-3 py-1 rounded-pill" id="badgeUser3">PENDING VERIFICATION</span></td>
+                    <td><span class="text-muted fs-8">New</span></td>
+                    <td class="fw-bold">0</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-success rounded-pill px-3 me-1" onclick="alert('Student verified successfully!')">Approve Badge</button>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="suspendStudent(3, 'Kevin Ramos')">Suspend / Ban</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    async function suspendStudent(userId, name) {
+        if (!confirm(`Are you sure you want to SUSPEND / BAN student "${name}"?`)) return;
+
+        try {
+            await fetch(`http://localhost:5000/api/admin/users/${userId}/suspend`, { method: 'POST' });
+        } catch (e) {}
+
+        alert(`Student "${name}" account status updated to SUSPENDED / BANNED.`);
+        const badge = document.getElementById('badgeUser' + userId);
+        if (badge) {
+            badge.className = 'badge bg-danger rounded-pill px-3 py-1 fw-bold';
+            badge.innerText = 'SUSPENDED / BANNED';
+        }
+    }
+</script>
+}

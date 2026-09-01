@@ -1,0 +1,149 @@
+@{
+    Layout = "_Layout";
+}
+
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h5 class="fw-bold mb-0">Active Campus Listings</h5>
+        <div class="d-flex gap-2">
+            <input type="text" id="listingSearch" class="form-control form-control-sm rounded-pill px-3" placeholder="Search listing or seller..." style="width:250px;" onkeyup="loadAdminListings()">
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th>Selling Price</th>
+                    <th>Posting Fee</th>
+                    <th>Seller</th>
+                    <th>Meetup Location</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="adminListingsTbody">
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted fs-7">Loading campus listings...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal for Removing Listing -->
+<div class="modal fade" id="removeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-danger">Remove Listing</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fs-7 text-muted">Are you sure you want to remove this listing from the campus marketplace?</p>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Reason</label>
+                    <select class="form-select rounded-3" id="removeReason">
+                        <option>Prohibited Item</option>
+                        <option>Misleading Description / Fake Image</option>
+                        <option>Inappropriate Content</option>
+                        <option>Duplicate Listing</option>
+                        <option>Policy Violation</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4" onclick="confirmDeleteListing()">Confirm Removal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let targetListingId = 0;
+    let removeModalInstance = null;
+
+    async function loadAdminListings() {
+        const tbody = document.getElementById('adminListingsTbody');
+        const search = document.getElementById('listingSearch') ? document.getElementById('listingSearch').value.toLowerCase() : '';
+
+        try {
+            const res = await fetch('http://localhost:5000/api/admin/listings');
+            if (res.ok) {
+                const listings = await res.json();
+                let html = '';
+
+                listings.forEach(l => {
+                    if (search && !l.title.toLowerCase().includes(search) && (!l.seller || !l.seller.studentProfile || !l.seller.studentProfile.firstName.toLowerCase().includes(search))) return;
+
+                    const sellerName = l.seller && l.seller.studentProfile ? `${l.seller.studentProfile.firstName} ${l.seller.studentProfile.lastName}` : 'John Doe';
+                    const categoryName = l.category ? l.category.name : 'General';
+                    const meetupName = l.meetupLocation ? l.meetupLocation.name : 'Library Lobby';
+                    const imgUrl = l.images && l.images.length > 0 ? l.images[0].imageUrl : 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=100&q=80';
+                    const feeText = l.price >= 1000 ? '₱10.00' : (l.price >= 100 ? '₱5.00' : '₱1.00');
+
+                    const statusBadge = l.status === 'ACTIVE' 
+                        ? '<span class="badge bg-success rounded-pill">ACTIVE</span>'
+                        : '<span class="badge bg-danger rounded-pill">' + l.status + '</span>';
+
+                    html += `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="${imgUrl}" class="rounded-3" width="48" height="48" style="object-fit:cover;">
+                                <div>
+                                    <div class="fw-bold">${l.title}</div>
+                                    <div class="fs-8 text-muted">ID: #LST-${l.id} • Condition: ${l.condition || 'Good'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-secondary-subtle text-secondary rounded-pill">${categoryName}</span></td>
+                        <td class="fw-bold">₱${parseFloat(l.price).toFixed(2)}</td>
+                        <td><span class="badge bg-warning-subtle text-warning fw-bold">${feeText} Paid</span></td>
+                        <td>
+                            <div class="fw-semibold">${sellerName}</div>
+                            <span class="badge-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>
+                        </td>
+                        <td><i class="fa-solid fa-location-dot text-danger me-1"></i> ${meetupName}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-end">
+                            ${l.status === 'ACTIVE' ? `<button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="openRemoveModal(${l.id})">Remove</button>` : `<span class="text-muted fs-8">Archived</span>`}
+                        </td>
+                    </tr>`;
+                });
+
+                tbody.innerHTML = html || `<tr><td colspan="8" class="text-center py-4 text-muted fs-7">No campus listings posted yet.</td></tr>`;
+            }
+        } catch (e) {
+            console.error(e);
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger fs-7">Failed to load listings from API backend.</td></tr>`;
+        }
+    }
+
+    function openRemoveModal(id) {
+        targetListingId = id;
+        if (!removeModalInstance) {
+            removeModalInstance = new bootstrap.Modal(document.getElementById('removeModal'));
+        }
+        removeModalInstance.show();
+    }
+
+    async function confirmDeleteListing() {
+        if (targetListingId > 0) {
+            try {
+                const res = await fetch(`http://localhost:5000/api/admin/listings/${targetListingId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    if (removeModalInstance) removeModalInstance.hide();
+                    await loadAdminListings();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadAdminListings);
+</script>

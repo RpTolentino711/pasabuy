@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PasaBuy - Your Campus. Your Marketplace.</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome & Bootstrap -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <style>
+        :root {
+            --primary: #5F27CD;
+            --primary-gradient: linear-gradient(135deg, #5F27CD, #341F97);
+            --secondary: #10AC84;
+            --accent: #FF9F43;
+            --bg-light: #F4F6F9;
+            --card-shadow: 0 8px 24px rgba(0,0,0,0.04);
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #0F172A;
+            color: #1E293B;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0;
+            margin: 0;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 440px;
+            height: 880px;
+            background: #FFFFFF;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border: 8px solid #1E293B;
+        }
+        /* App Header */
+        .app-header {
+            background: var(--primary-gradient);
+            color: #fff;
+            padding: 20px 20px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .app-logo {
+            font-weight: 800;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .app-logo i {
+            color: var(--accent);
+        }
+        .badge-verified {
+            background: #E3FCEF;
+            color: #00875A;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        /* Main Body Scrollable Area */
+        .app-body {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg-light);
+            padding: 16px;
+        }
+        /* Bottom Tab Bar */
+        .app-tabbar {
+            height: 72px;
+            background: #FFFFFF;
+            border-top: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 8px;
+        }
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #94A3B8;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            width: 60px;
+        }
+        .tab-item i {
+            font-size: 1.25rem;
+        }
+        .tab-item.active {
+            color: var(--primary);
+        }
+        .tab-item.active i {
+            transform: translateY(-2px);
+        }
+        /* Cards & Buttons */
+        .product-card {
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            margin-bottom: 16px;
+            transition: transform 0.2s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-2px);
+        }
+        .product-img {
+            width: 100%;
+            height: 170px;
+            object-fit: cover;
+        }
+        .product-details {
+            padding: 14px;
+        }
+        .price-tag {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .category-chip {
+            background: #EDF2F7;
+            color: #475569;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .category-chip.active {
+            background: var(--primary);
+            color: #fff;
+        }
+        /* Posting Fee Info Box */
+        .fee-info-box {
+            background: #FFFBEB;
+            border: 1px solid #FCD34D;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+        }
+        .btn-pasabuy {
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+            border-radius: 14px;
+            padding: 12px 20px;
+            border: none;
+            width: 100%;
+            box-shadow: 0 4px 14px rgba(95, 39, 205, 0.3);
+        }
+        .btn-pasabuy:hover {
+            background: #341F97;
+            color: #fff;
+        }
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .chat-bubble.me {
+            background: var(--primary);
+            color: #fff;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-bubble.them {
+            background: #E2E8F0;
+            color: #1E293B;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- App Header -->
+        <div class="app-header">
+            <div class="app-logo">
+                <i class="fa-solid fa-bag-shopping"></i>
+                <span>PasaBuy</span>
+            </div>
+            <div>
+                <span class="badge-verified" id="headerBadge"><i class="fa-solid fa-circle-check"></i> Verified Student</span>
+            </div>
+        </div>
+
+        <!-- App Body (Dynamic Tab Views) -->
+        <div class="app-body" id="appBody">
+
+            <!-- LOGIN / REGISTER SCREEN (WHEN LOGGED OUT) -->
+            <div id="authScreen" style="display:none;">
+                <div class="text-center p-4 bg-white rounded-4 border shadow-sm my-3">
+                    <div class="display-5 text-primary mb-2"><i class="fa-solid fa-bag-shopping"></i></div>
+                    <h5 class="fw-bold mb-1">Welcome to PasaBuy</h5>
+                    <p class="text-muted fs-8 mb-4">Your Campus. Your Marketplace.</p>
+
+                    <div class="mb-3 text-start">
+                        <label class="form-label fw-bold fs-7">Select Student Account to Log In</label>
+                        <select class="form-select rounded-3 fs-7 mb-3" id="studentLoginSelect">
+                            <option value="john">John Doe (BSCS 3rd Yr) - john.doe@student.edu.ph</option>
+                            <option value="maria">Maria Santos (BSCE 2nd Yr) - maria.santos@student.edu.ph</option>
+                            <option value="kevin">Kevin Ramos (BSEE 1st Yr) - kevin.ramos@student.edu.ph</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-pasabuy mb-3" onclick="loginSelectedStudent()"><i class="fa-solid fa-right-to-bracket me-2"></i> Log In to Campus Marketplace</button>
+                </div>
+            </div>
+
+            <!-- HOME TAB -->
+            <div id="tabHome">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <span class="text-muted fs-8 fw-semibold">WELCOME BACK</span>
+                        <h5 class="fw-bold mb-0" id="homeWelcomeName">Good morning, John!</h5>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle" width="42" height="42" style="object-fit:cover;" id="homeAvatar">
+                </div>
+
+                <!-- Search Input -->
+                <div class="position-relative mb-3">
+                    <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left:14px; top:12px;"></i>
+                    <input type="text" class="form-control rounded-pill ps-5 pe-3 py-2 fs-7" placeholder="Search for calculators, books, tools..." id="searchInput" onkeyup="filterProducts()">
+                </div>
+
+                <!-- Categories Horizontal Scroll -->
+                <div class="d-flex gap-2 overflow-x-auto pb-2 mb-3">
+                    <span class="category-chip active">All Items</span>
+                    <span class="category-chip">School Supplies</span>
+                    <span class="category-chip">Electronics</span>
+                    <span class="category-chip">Books</span>
+                    <span class="category-chip">Gadgets</span>
+                    <span class="category-chip">Dorm Items</span>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold mb-0">Recommended for You</h6>
+                    <a href="#" class="text-decoration-none fs-8 fw-semibold text-primary" onclick="switchTab('explore')">See All</a>
+                </div>
+
+                <div id="homeProductContainer">
+                    <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+                        <i class="fa-solid fa-store-slash fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                        No campus listings published yet.<br>Go to <strong class="text-primary">+ Sell</strong> to post your first item!
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPLORE TAB -->
+            <div id="tabExplore" style="display:none;">
+                <h5 class="fw-bold mb-3">Explore Marketplace</h5>
+                <div class="d-flex gap-2 mb-3">
+                    <select class="form-select form-select-sm rounded-pill" id="filterCondition" onchange="filterProducts()">
+                        <option value="All">All Conditions</option>
+                        <option value="Like New">Like New</option>
+                        <option value="Good">Good</option>
+                    </select>
+                    <select class="form-select form-select-sm rounded-pill" id="filterSort" onchange="filterProducts()">
+                        <option value="newest">Newest First</option>
+                        <option value="lowest">Price: Low to High</option>
+                        <option value="highest">Price: High to Low</option>
+                    </select>
+                </div>
+                <div id="exploreList">
+                    <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+                        <i class="fa-solid fa-compass fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                        No items found in marketplace.
+                    </div>
+                </div>
+            </div>
+
+            <!-- SELL TAB (MULTI-STEP) -->
+            <div id="tabSell" style="display:none;">
+                <h5 class="fw-bold mb-2">Create New Listing</h5>
+                <p class="text-muted fs-8 mb-3">PasaBuy collects only a small posting fee via PayMongo. Product payment is arranged face-to-face!</p>
+
+                <div id="sellStep1">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Product Title</label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="sellTitle" placeholder="e.g. Scientific Calculator FX-991ES">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Category</label>
+                        <select class="form-select rounded-3 fs-7" id="sellCategory">
+                            <option value="School Supplies">School Supplies</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Books">Books</option>
+                            <option value="Gadgets">Gadgets</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Selling Price (₱)</label>
+                        <input type="number" class="form-control rounded-3 fs-7" id="sellPrice" value="500" oninput="calculateFeeLive()">
+                    </div>
+
+                    <!-- Server Fee Live Calculation Box -->
+                    <div class="fee-info-box">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="fw-bold fs-8 text-warning-emphasis"><i class="fa-solid fa-calculator me-1"></i> Calculated PasaBuy Fee:</span>
+                            <span class="fw-extrabold fs-6 text-dark" id="feeDisplay">₱5.00</span>
+                        </div>
+                        <p class="mb-0 fs-9 text-muted">
+                            ₱1–₱99 = ₱1 | ₱100–₱999 = ₱5 | ₱1,000+ = ₱10 fee.
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Condition</label>
+                        <select class="form-select rounded-3 fs-7" id="sellCondition">
+                            <option>Like New</option>
+                            <option selected>Good</option>
+                            <option>Fair</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Meetup Location <span class="text-muted fw-normal fs-8">(Optional)</span></label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="sellMeetup" placeholder="e.g. Library Lobby, Gate 1, Cafeteria, or Any (Optional)">
+                    </div>
+
+                    <!-- Photo Upload Section (Select Multiple Photos) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7 d-flex align-items-center justify-content-between">
+                            <span><i class="fa-solid fa-camera text-primary me-1"></i> Product Photos <span class="text-danger">*</span></span>
+                            <span class="text-muted fw-normal fs-8">Select 1 or multiple photos</span>
+                        </label>
+                        <input type="file" class="form-control rounded-3 fs-7 mb-2" id="sellPhotosInput" accept="image/*" multiple onchange="previewSellPhotos(event)">
+                        
+                        <!-- Image Preview Grid -->
+                        <div class="d-flex gap-2 flex-wrap mt-2" id="sellPhotosPreviewGrid">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-pasabuy" onclick="goToStep2()">Proceed to PayMongo Payment</button>
+                </div>
+
+                <!-- PayMongo Payment Step -->
+                <div id="sellStep2" style="display:none;">
+                    <div class="text-center p-4 bg-white rounded-4 border shadow-sm mb-4">
+                        <h6 class="fw-bold mb-1">Pay Posting Fee via PayMongo</h6>
+                        <p class="text-muted fs-8 mb-3">Pay via GCash, Maya, or Credit/Debit Card to activate post</p>
+                        <div class="fw-bold fs-3 text-primary mb-3" id="payAmountDisplay">₱5.00</div>
+                        
+                        <div class="p-3 bg-light rounded-3 mb-3 text-center border">
+                            <div class="d-flex justify-content-center align-items-center gap-2 mb-2 flex-wrap">
+                                <span class="badge bg-info text-white fw-bold px-3 py-2 rounded-pill"><i class="fa-solid fa-mobile-screen-button me-1"></i> GCash</span>
+                                <span class="badge bg-primary text-white fw-bold px-3 py-2 rounded-pill"><i class="fa-solid fa-wallet me-1"></i> Maya</span>
+                                <span class="badge bg-dark text-white fw-bold px-3 py-2 rounded-pill"><i class="fa-solid fa-credit-card me-1"></i> Card</span>
+                            </div>
+                            <p class="fs-9 text-muted mb-0">Click <strong>Pay Now on PayMongo</strong> below to open the official PayMongo checkout window where you can scan your live GCash QR!</p>
+                        </div>
+
+                        <div>
+                            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-8"><i class="fa-solid fa-shield-halved me-1"></i> PayMongo Live API Connected</span>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-pasabuy mb-2" onclick="redirectToPayMongoCheckout()"><i class="fa-solid fa-external-link me-1"></i> Pay Now on PayMongo (GCash / Maya / Card)</button>
+                    <button class="btn btn-outline-secondary w-100 rounded-pill fw-bold" onclick="simulatePaymentSuccess()"><i class="fa-solid fa-check-circle me-1"></i> Confirm Payment Completed</button>
+                </div>
+            </div>
+
+            <!-- WANTED TAB -->
+            <div id="tabWanted" style="display:none;">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold mb-0">Wanted Posts</h5>
+                    <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="openWantedModal()"><i class="fa-solid fa-plus me-1"></i> Post Wanted</button>
+                </div>
+
+                <div id="wantedListContainer">
+                    <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4" id="noWantedPlaceholder">
+                        <i class="fa-solid fa-bullhorn fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                        No active wanted posts right now.<br>Click <strong>+ Post Wanted</strong> to request items or food pasabuy!
+                    </div>
+                </div>
+            </div>
+
+            <!-- MESSAGES TAB -->
+            <div id="tabMessages" style="display:none;">
+                <h5 class="fw-bold mb-3">Messages</h5>
+                <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+                    <i class="fa-solid fa-comments fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                    No chat conversations active yet.<br>Click "Message" on any listing to start chatting!
+                </div>
+            </div>
+
+            <!-- CHAT VIEW (SUB-SCREEN) -->
+            <div id="chatView" style="display:none; height:100%; flex-direction:column;">
+                <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom flex-shrink-0">
+                    <button class="btn btn-sm btn-light rounded-circle" onclick="closeChat()"><i class="fa-solid fa-arrow-left"></i></button>
+                    <span class="fw-bold fs-7" id="chatPartnerName">Student</span>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill fs-8" onclick="openReportModal()">Report User</button>
+                </div>
+
+                <!-- Attached Item Header -->
+                <div class="p-2 bg-white rounded-3 border mb-2 d-flex align-items-center gap-2 flex-shrink-0">
+                    <img src="https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=100&q=80" class="rounded-2" width="40" height="40" style="object-fit:cover;">
+                    <div>
+                        <div class="fw-bold fs-8" id="chatItemTitle">Campus Item</div>
+                        <div class="text-primary fw-bold fs-8" id="chatItemPrice">₱0.00</div>
+                    </div>
+                </div>
+
+                <!-- Safety Reminder -->
+                <div class="p-2 bg-warning-subtle text-warning-emphasis rounded-3 fs-9 mb-2 flex-shrink-0">
+                    <i class="fa-solid fa-shield-halved me-1"></i> Meet in a safe public location and inspect the item before paying cash.
+                </div>
+
+                <!-- Chat Stream -->
+                <div id="chatStream" style="flex:1; overflow-y:auto; padding-right:4px;" class="mb-2">
+                </div>
+
+                <!-- Input Box -->
+                <div class="d-flex gap-2 pt-2 border-top bg-white flex-shrink-0" style="background:#ffffff; position:relative; z-index:100;">
+                    <input type="text" class="form-control rounded-pill fs-8" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                    <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px; height:38px;" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- PROFILE TAB WITH MY LISTINGS & INTERESTED BUYERS + LOGOUT -->
+            <div id="tabProfile" style="display:none;">
+                <div class="text-center p-3 bg-white rounded-4 border shadow-sm mb-3">
+                    <div class="position-relative d-inline-block mb-2">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle border shadow-sm" width="80" height="80" style="object-fit:cover;" id="profileAvatar">
+                        <button class="btn btn-primary btn-sm rounded-circle position-absolute bottom-0 end-0 p-1" style="width:28px; height:28px; transform:translate(10%, 10%);" onclick="openProfileSettingsModal()"><i class="fa-solid fa-camera fs-9"></i></button>
+                    </div>
+                    <h6 class="fw-bold mb-0" id="profileName">John Doe</h6>
+                    <span class="badge-verified mb-2" id="profileBadge"><i class="fa-solid fa-circle-check"></i> Verified Student</span>
+                    <div class="fs-8 text-muted mb-2" id="profileSub">2023-00123 • BS Computer Science (3rd Yr)</div>
+                    
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold mb-1" onclick="openProfileSettingsModal()"><i class="fa-solid fa-gear me-1"></i> Edit Profile & Settings</button>
+
+                    <div class="d-flex justify-content-center gap-4 mt-3 pt-2 border-top">
+                        <div>
+                            <div class="fw-bold text-dark fs-6">4.9 <i class="fa-solid fa-star text-warning"></i></div>
+                            <div class="fs-8 text-muted">Rating</div>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark fs-6" id="profileDeals">18</div>
+                            <div class="fs-8 text-muted">Deals Done</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MY SELLING ITEMS & INTERESTED BUYERS SECTION -->
+                <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-store text-primary me-2"></i>My Selling Items & Interested Buyers</h6>
+                    
+                    <div id="mySellingItemsContainer">
+                        <div class="text-center py-4 text-muted fs-8" id="noSellingItemsPlaceholder">
+                            <i class="fa-solid fa-box-open fs-3 d-block mb-2 text-secondary"></i>
+                            You have no active selling items yet. Go to <strong>+ Sell</strong> to post your first item!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOGOUT BUTTON -->
+                <button class="btn btn-outline-danger w-100 rounded-pill fw-bold py-2 mb-3" onclick="logoutStudent()"><i class="fa-solid fa-right-from-bracket me-2"></i> Log Out Account</button>
+            </div>
+
+        </div>
+
+        <!-- App Bottom Tab Bar Navigation -->
+        <div class="app-tabbar">
+            <div class="tab-item active" onclick="switchTab('home')" id="tabNavHome">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
+            </div>
+            <div class="tab-item" onclick="switchTab('explore')" id="tabNavExplore">
+                <i class="fa-solid fa-compass"></i>
+                <span>Explore</span>
+            </div>
+            <div class="tab-item" onclick="switchTab('sell')" id="tabNavSell">
+                <i class="fa-solid fa-circle-plus" style="font-size:1.6rem; color:var(--primary);"></i>
+                <span>Sell</span>
+            </div>
+            <div class="tab-item" onclick="switchTab('wanted')" id="tabNavWanted">
+                <i class="fa-solid fa-bullhorn"></i>
+                <span>Wanted</span>
+            </div>
+            <div class="tab-item" onclick="switchTab('messages')" id="tabNavMessages">
+                <i class="fa-solid fa-comments"></i>
+                <span>Messages</span>
+            </div>
+            <div class="tab-item" onclick="switchTab('profile')" id="tabNavProfile">
+                <i class="fa-solid fa-user"></i>
+                <span>Profile</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORT MODAL -->
+    <div class="modal fade" id="reportModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-3">
+                <div class="modal-header border-0">
+                    <h6 class="modal-title fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Submit Report to Admin</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="fs-8 text-muted mb-3">Reports are reviewed directly by PasaBuy Admin. If policy violations are found, the account will be suspended.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Report Reason</label>
+                        <select class="form-select rounded-3 fs-7" id="reportReason">
+                            <option>Scam / Fake Item</option>
+                            <option>Prohibited Item</option>
+                            <option>Misleading Description</option>
+                            <option>Inappropriate Content / Harassment</option>
+                            <option>Stolen Item</option>
+                            <option>Other Violation</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Details for Admin Review</label>
+                        <textarea class="form-control rounded-3 fs-7" id="reportDetails" rows="3" placeholder="Describe what happened..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4 fs-8" onclick="submitReportToAdmin()">Submit Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POST WANTED MODAL -->
+    <div class="modal fade" id="wantedModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-3">
+                <div class="modal-header border-0">
+                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-bullhorn me-2"></i>Post Wanted Item / Campus Request</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="fs-8 text-muted mb-3">Looking for something urgent or need a food pasabuy? Post your request and let fellow campus students offer!</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Item / Request Title</label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="wantedTitle" placeholder="e.g. Need Casio FX-991ES Calculator for 2PM Exam!">
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">Category</label>
+                            <select class="form-select rounded-3 fs-7" id="wantedCategory">
+                                <option>School Supplies</option>
+                                <option>Food / Pasabuy</option>
+                                <option>Textbooks / Books</option>
+                                <option>Electronics</option>
+                                <option>Lab Equipment</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">Max Budget (₱)</label>
+                            <input type="number" class="form-control rounded-3 fs-7" id="wantedBudget" placeholder="e.g. 400">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Urgency</label>
+                        <select class="form-select rounded-3 fs-7" id="wantedUrgency">
+                            <option value="URGENT">🔴 URGENT (Needed Today / Exam)</option>
+                            <option value="CLASS">🟡 Needed for Class This Week</option>
+                            <option value="GENERAL">🟢 General Request</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Preferred Meetup / Delivery Location <span class="text-muted fw-normal fs-8">(Optional)</span></label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="wantedMeetup" placeholder="e.g. Library Lobby, Gate 1, Cafeteria, or Any (Optional)">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Description / Specific Instructions</label>
+                        <textarea class="form-control rounded-3 fs-7" id="wantedDescription" rows="2" placeholder="e.g. Willing to meet before 2 PM at Library. Will pay cash or GCash."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold" onclick="submitWantedPost()"><i class="fa-solid fa-paper-plane me-1"></i> Publish Request</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAYMONGO LIVE GATEWAY MODAL -->
+    <div class="modal fade" id="payMongoGatewayModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4">
+                <div class="modal-header border-0 pb-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-credit-card text-primary fs-5"></i>
+                        <h6 class="modal-title fw-bold text-dark mb-0">PayMongo Live Checkout</h6>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- Step 1: Channel Selector -->
+                <div class="modal-body py-3" id="pmStep1">
+                    <div class="text-center p-3 bg-light rounded-4 border mb-3">
+                        <span class="text-muted fs-8">TOTAL POSTING FEE</span>
+                        <div class="fw-extrabold fs-2 text-primary" id="gatewayAmount">₱5.00</div>
+                        <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-9 mt-1"><i class="fa-solid fa-shield-halved me-1"></i> PayMongo Live API Active</span>
+                    </div>
+
+                    <label class="form-label fw-bold fs-7 mb-2">Select Payment Channel to Pay</label>
+                    <div class="d-grid gap-2 mb-2">
+                        <button class="btn btn-outline-primary rounded-3 text-start p-3 fw-bold d-flex align-items-center justify-content-between" onclick="showGcashStep()">
+                            <div>
+                                <i class="fa-solid fa-mobile-screen-button fs-5 text-info me-2"></i>
+                                <span>GCash E-Wallet / QRPh</span>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">Pay ₱5.00</span>
+                        </button>
+                        <button class="btn btn-outline-dark rounded-3 text-start p-3 fw-bold d-flex align-items-center justify-content-between" onclick="completePayMongoPayment()">
+                            <div>
+                                <i class="fa-solid fa-wallet fs-5 text-primary me-2"></i>
+                                <span>Maya Wallet</span>
+                            </div>
+                            <span class="badge bg-dark rounded-pill">Pay ₱5.00</span>
+                        </button>
+                        <button class="btn btn-outline-secondary rounded-3 text-start p-3 fw-bold d-flex align-items-center justify-content-between" onclick="completePayMongoPayment()">
+                            <div>
+                                <i class="fa-solid fa-credit-card fs-5 text-success me-2"></i>
+                                <span>Credit / Debit Card</span>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill">Pay ₱5.00</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: GCash Confirmation View -->
+                <div class="modal-body py-3 text-center" id="pmStep2" style="display:none;">
+                    <div class="p-3 bg-primary bg-opacity-10 rounded-4 border border-primary-subtle mb-3">
+                        <span class="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill fs-9 mb-2"><i class="fa-solid fa-mobile-screen-button me-1"></i> GCash Official Authorization</span>
+                        <div class="fw-extrabold fs-3 text-primary" id="gcashAmountDisplay">₱5.00</div>
+                        <div class="fs-9 text-muted">Merchant: PasaBuy Campus Marketplace</div>
+                    </div>
+
+                    <p class="fs-8 text-muted mb-3">Authorize <strong>₱5.00</strong> payment from your GCash account balance to complete your listing fee.</p>
+
+                    <button class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7 mb-2" onclick="completePayMongoPayment()"><i class="fa-solid fa-circle-check me-2"></i> Authorize & Confirm GCash Payment</button>
+                    <button class="btn btn-link text-muted fs-8" onclick="showPmStep1()"><i class="fa-solid fa-arrow-left me-1"></i> Back to Payment Options</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT PROFILE & ACCOUNT SETTINGS MODAL -->
+    <div class="modal fade" id="profileSettingsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-3">
+                <div class="modal-header border-0">
+                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-gear me-2"></i>Account Profile & Settings</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="fs-8 text-muted mb-3">Update your profile info and avatar picture visible to fellow campus students.</p>
+
+                    <!-- Avatar Change Box -->
+                    <div class="text-center mb-3">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle border shadow-sm mb-2" width="80" height="80" style="object-fit:cover;" id="settingsAvatarPreview">
+                        <div>
+                            <label class="btn btn-sm btn-outline-secondary rounded-pill fs-8">
+                                <i class="fa-solid fa-camera me-1"></i> Upload New Profile Picture
+                                <input type="file" id="settingsAvatarInput" accept="image/*" style="display:none;" onchange="previewSettingsAvatar(event)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">First Name</label>
+                            <input type="text" class="form-control rounded-3 fs-7" id="settingsFirstName" value="John">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">Last Name</label>
+                            <input type="text" class="form-control rounded-3 fs-7" id="settingsLastName" value="Doe">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Student Number</label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="settingsStudentNumber" value="2023-00123">
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-7">
+                            <label class="form-label fw-bold fs-7">Course / Program</label>
+                            <input type="text" class="form-control rounded-3 fs-7" id="settingsCourse" value="BS Computer Science">
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label fw-bold fs-7">Year Level</label>
+                            <select class="form-select rounded-3 fs-7" id="settingsYearLevel">
+                                <option value="1st Yr">1st Yr</option>
+                                <option value="2nd Yr">2nd Yr</option>
+                                <option value="3rd Yr" selected>3rd Yr</option>
+                                <option value="4th Yr">4th Yr</option>
+                                <option value="5th Yr">5th Yr</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold" onclick="saveProfileSettings()"><i class="fa-solid fa-floppy-disk me-1"></i> Save Changes</button>
+                </div>
+    <!-- DELETE LISTING CONFIRMATION MODAL -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 text-center">
+                <div class="modal-body py-2">
+                    <div class="text-danger mb-3">
+                        <i class="fa-solid fa-trash-can display-4"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Delete Selling Post?</h6>
+                    <p class="fs-8 text-muted mb-3">Are you sure you want to delete <strong class="text-dark" id="deleteItemTitle">this listing</strong>?</p>
+                    
+                    <div class="p-3 bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-3 text-start mb-3 fs-8">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>Note on Paid Posting Fee:</strong><br>
+                        You already paid <strong id="deleteItemFee" class="text-danger">₱5.00</strong> posting fee via PayMongo for this item post. Deleting this post is permanent and the posting fee is non-refundable.
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light rounded-pill w-100 fw-bold py-2 fs-8" data-bs-dismiss="modal">Keep Post</button>
+                    <button type="button" class="btn btn-danger rounded-pill w-100 fw-bold py-2 fs-8" onclick="executeDeleteListing()"><i class="fa-solid fa-trash me-1"></i> Yes, Delete Post</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = (window.location.port === '5200' || window.location.hostname === 'localhost') 
+            ? 'http://localhost:5000/api' 
+            : window.location.origin + '/api';
+
+        let reportModalInstance = null;
+        let wantedModalInstance = null;
+        let settingsModalInstance = null;
+        let deleteModalInstance = null;
+        let deleteListingIdToDelete = 0;
+        let newAvatarDataUrl = '';
+
+        function confirmDeleteListing(id, title, fee) {
+            deleteListingIdToDelete = id;
+            document.getElementById('deleteItemTitle').innerText = title;
+            document.getElementById('deleteItemFee').innerText = fee;
+
+            const modalEl = document.getElementById('deleteConfirmModal');
+            if (modalEl && modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            if (!deleteModalInstance) {
+                deleteModalInstance = new bootstrap.Modal(modalEl);
+            }
+            deleteModalInstance.show();
+        }
+
+        async function executeDeleteListing() {
+            if (deleteListingIdToDelete <= 0) return;
+            try {
+                const res = await fetch(`${API_BASE}/listings/${deleteListingIdToDelete}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    if (deleteModalInstance) deleteModalInstance.hide();
+                    alert('🗑️ Your listing post has been deleted from the campus marketplace.');
+                    await filterProducts();
+                } else {
+                    alert('Failed to delete listing. Please try again.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error deleting listing.');
+            }
+        }
+
+        function openProfileSettingsModal() {
+            const modalEl = document.getElementById('profileSettingsModal');
+            if (modalEl && modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            if (!settingsModalInstance) {
+                settingsModalInstance = new bootstrap.Modal(modalEl);
+            }
+            const name = document.getElementById('profileName').innerText.split(' ');
+            if (name.length >= 2) {
+                document.getElementById('settingsFirstName').value = name[0];
+                document.getElementById('settingsLastName').value = name.slice(1).join(' ');
+            }
+            const avatarSrc = document.getElementById('profileAvatar').src;
+            document.getElementById('settingsAvatarPreview').src = avatarSrc;
+            newAvatarDataUrl = avatarSrc;
+
+            settingsModalInstance.show();
+        }
+
+        function previewSettingsAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                newAvatarDataUrl = e.target.result;
+                document.getElementById('settingsAvatarPreview').src = newAvatarDataUrl;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function saveProfileSettings() {
+            const firstName = document.getElementById('settingsFirstName').value.trim() || 'Student';
+            const lastName = document.getElementById('settingsLastName').value.trim() || 'User';
+            const studentNo = document.getElementById('settingsStudentNumber').value.trim() || '2024-00123';
+            const course = document.getElementById('settingsCourse').value.trim() || 'BS Computer Science';
+            const yearLevel = document.getElementById('settingsYearLevel').value;
+
+            const fullName = `${firstName} ${lastName}`;
+            const subInfo = `${studentNo} • ${course} (${yearLevel})`;
+
+            try {
+                await fetch(`${API_BASE}/users/1/profile`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        firstName: firstName,
+                        lastName: lastName,
+                        studentNumber: studentNo,
+                        course: course,
+                        yearLevel: yearLevel,
+                        profileImage: newAvatarDataUrl
+                    })
+                });
+            } catch (e) {
+                console.error(e);
+            }
+
+            document.getElementById('profileName').innerText = fullName;
+            document.getElementById('profileSub').innerText = subInfo;
+            document.getElementById('homeWelcomeName').innerText = `Good morning, ${firstName}!`;
+            if (newAvatarDataUrl) {
+                document.getElementById('profileAvatar').src = newAvatarDataUrl;
+                document.getElementById('homeAvatar').src = newAvatarDataUrl;
+            }
+
+            if (settingsModalInstance) settingsModalInstance.hide();
+            alert('🎉 Account Profile & Settings saved successfully!');
+        }
+
+        function openReportModal() {
+            if (!reportModalInstance) {
+                reportModalInstance = new bootstrap.Modal(document.getElementById('reportModal'));
+            }
+            reportModalInstance.show();
+        }
+
+        function openWantedModal() {
+            if (!wantedModalInstance) {
+                wantedModalInstance = new bootstrap.Modal(document.getElementById('wantedModal'));
+            }
+            wantedModalInstance.show();
+        }
+
+        function submitWantedPost() {
+            const title = document.getElementById('wantedTitle').value || 'Requested Item / Food';
+            const category = document.getElementById('wantedCategory').value;
+            const budget = document.getElementById('wantedBudget').value || '300';
+            const urgency = document.getElementById('wantedUrgency').value;
+            const meetup = document.getElementById('wantedMeetup').value;
+            const desc = document.getElementById('wantedDescription').value || 'Need this on campus!';
+            const requester = document.getElementById('profileName').innerText;
+
+            const container = document.getElementById('wantedListContainer');
+            const placeholder = document.getElementById('noWantedPlaceholder');
+            if (placeholder) placeholder.remove();
+
+            let urgencyBadge = '';
+            if (urgency === 'URGENT') {
+                urgencyBadge = '<span class="badge bg-danger text-white fw-bold px-2 py-1 rounded-pill fs-9"><i class="fa-solid fa-fire me-1"></i> URGENT EXAM NEED</span>';
+            } else if (urgency === 'CLASS') {
+                urgencyBadge = '<span class="badge bg-warning text-dark fw-bold px-2 py-1 rounded-pill fs-9"><i class="fa-solid fa-clock me-1"></i> NEEDED THIS WEEK</span>';
+            } else {
+                urgencyBadge = '<span class="badge bg-info text-white fw-bold px-2 py-1 rounded-pill fs-9">PASABUY REQUEST</span>';
+            }
+
+            const card = document.createElement('div');
+            card.className = 'card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white';
+            card.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    ${urgencyBadge}
+                    <span class="fw-bold text-success fs-7">Budget: Up to ₱${budget}.00</span>
+                </div>
+                <h6 class="fw-bold mb-1 text-dark">${title}</h6>
+                <p class="text-muted fs-8 mb-2">${desc}</p>
+                <div class="d-flex align-items-center justify-content-between fs-8 pt-2 border-top">
+                    <div>
+                        <span class="fw-bold text-dark">${requester}</span>
+                        <span class="badge-verified ms-1"><i class="fa-solid fa-check"></i></span>
+                        <span class="text-muted ms-2"><i class="fa-solid fa-location-dot text-danger me-1"></i> ${meetup}</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="openChat('${requester}', '${title}', 'Max ₱${budget}.00')"><i class="fa-solid fa-hand-holding-dollar me-1"></i> I Have This! / Offer</button>
+                </div>
+            `;
+
+            container.insertBefore(card, container.firstChild);
+
+            if (wantedModalInstance) wantedModalInstance.hide();
+            alert('Your Wanted Request has been published! Campus students can now see your request and make offers.');
+        }
+
+        async function submitReportToAdmin() {
+            const reason = document.getElementById('reportReason').value;
+            const details = document.getElementById('reportDetails').value;
+            
+            try {
+                await fetch(`${API_BASE}/reports`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reporterId: 1,
+                        reportedUserId: 2,
+                        reason: reason,
+                        details: details
+                    })
+                });
+            } catch (e) {}
+
+            if (reportModalInstance) reportModalInstance.hide();
+            alert(`Report submitted to PasaBuy Admin! Our moderation team will investigate. If confirmed, the user account will be suspended.`);
+        }
+
+        function logoutStudent() {
+            if (confirm('Are you sure you want to log out?')) {
+                const tabs = ['tabHome', 'tabExplore', 'tabSell', 'tabWanted', 'tabMessages', 'tabProfile', 'chatView'];
+                tabs.forEach(id => { document.getElementById(id).style.display = 'none'; });
+                document.getElementById('authScreen').style.display = 'block';
+                document.querySelector('.app-tabbar').style.display = 'none';
+            }
+        }
+
+        function loginSelectedStudent() {
+            const val = document.getElementById('studentLoginSelect').value;
+            if (val === 'john') {
+                document.getElementById('profileName').innerText = 'John Doe';
+                document.getElementById('homeWelcomeName').innerText = 'Good morning, John!';
+                document.getElementById('profileSub').innerText = '2023-00123 • BS Computer Science (3rd Yr)';
+            } else if (val === 'maria') {
+                document.getElementById('profileName').innerText = 'Maria Santos';
+                document.getElementById('homeWelcomeName').innerText = 'Good morning, Maria!';
+                document.getElementById('profileSub').innerText = '2023-00456 • BS Civil Engineering (2nd Yr)';
+            } else {
+                document.getElementById('profileName').innerText = 'Kevin Ramos';
+                document.getElementById('homeWelcomeName').innerText = 'Good morning, Kevin!';
+                document.getElementById('profileSub').innerText = '2024-00891 • BS Electrical Engineering (1st Yr)';
+            }
+
+            document.getElementById('authScreen').style.display = 'none';
+            document.querySelector('.app-tabbar').style.display = 'flex';
+            switchTab('home');
+        }
+
+        function switchTab(tabName) {
+            const tabs = ['home', 'explore', 'sell', 'wanted', 'messages', 'profile'];
+            tabs.forEach(t => {
+                const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+                const nav = document.getElementById('tabNav' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (el) el.style.display = (t === tabName) ? 'block' : 'none';
+                if (nav) nav.classList.toggle('active', t === tabName);
+            });
+            document.getElementById('chatView').style.display = 'none';
+            document.getElementById('authScreen').style.display = 'none';
+            document.querySelector('.app-tabbar').style.display = 'flex';
+        }
+
+        let uploadedPhotoUrls = [];
+
+        function previewSellPhotos(event) {
+            const files = event.target.files;
+            const grid = document.getElementById('sellPhotosPreviewGrid');
+            grid.innerHTML = '';
+            uploadedPhotoUrls = [];
+
+            if (!files || files.length === 0) return;
+
+            Array.from(files).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const dataUrl = e.target.result;
+                    uploadedPhotoUrls.push(dataUrl);
+
+                    const div = document.createElement('div');
+                    div.style.position = 'relative';
+                    div.style.width = '75px';
+                    div.style.height = '75px';
+                    div.id = `photoThumb_${index}`;
+                    div.innerHTML = `
+                        <img src="${dataUrl}" class="rounded-3 border shadow-sm" style="width:75px; height:75px; object-fit:cover;">
+                        <span class="badge bg-danger rounded-circle position-absolute top-0 end-0 p-1 shadow-sm" style="cursor:pointer; transform:translate(25%, -25%);" onclick="removePhoto(${index})"><i class="fa-solid fa-xmark"></i></span>
+                    `;
+                    grid.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function removePhoto(index) {
+            uploadedPhotoUrls.splice(index, 1);
+            const el = document.getElementById(`photoThumb_${index}`);
+            if (el) el.remove();
+        }
+
+        function calculateFeeLive() {
+            const price = parseFloat(document.getElementById('sellPrice').value) || 0;
+            let fee = 0;
+            if (price > 0 && price < 100) fee = 1;
+            else if (price >= 100 && price < 1000) fee = 5;
+            else if (price >= 1000) fee = 10;
+            
+            document.getElementById('feeDisplay').innerText = `₱${fee.toFixed(2)}`;
+            document.getElementById('payAmountDisplay').innerText = `₱${fee.toFixed(2)}`;
+        }
+
+        function goToStep2() {
+            const title = document.getElementById('sellTitle').value.trim();
+            if (!title) {
+                alert('Please enter a Product Title before proceeding!');
+                return;
+            }
+            if (uploadedPhotoUrls.length === 0) {
+                alert('📸 Please select at least 1 photo for your item before proceeding to payment!');
+                return;
+            }
+            calculateFeeLive();
+            document.getElementById('sellStep1').style.display = 'none';
+            document.getElementById('sellStep2').style.display = 'block';
+        }
+
+        let currentListingId = 0;
+        let payMongoGatewayModalInstance = null;
+
+        function openPayMongoGatewayModal(amountText) {
+            if (!payMongoGatewayModalInstance) {
+                payMongoGatewayModalInstance = new bootstrap.Modal(document.getElementById('payMongoGatewayModal'));
+            }
+            if (amountText) {
+                document.getElementById('gatewayAmount').innerText = amountText;
+                document.getElementById('gcashAmountDisplay').innerText = amountText;
+            }
+            showPmStep1();
+            payMongoGatewayModalInstance.show();
+        }
+
+        function showGcashStep() {
+            document.getElementById('pmStep1').style.display = 'none';
+            document.getElementById('pmStep2').style.display = 'block';
+        }
+
+        function showPmStep1() {
+            document.getElementById('pmStep1').style.display = 'block';
+            document.getElementById('pmStep2').style.display = 'none';
+        }
+
+        async function completePayMongoPayment() {
+            if (currentListingId > 0) {
+                try {
+                    await fetch(`${API_BASE}/payments/confirm-simulation/${currentListingId}`, { method: 'POST' });
+                } catch (e) {}
+            }
+            if (payMongoGatewayModalInstance) payMongoGatewayModalInstance.hide();
+            alert('🎉 PayMongo GCash Payment Verified! Your listing is now ACTIVE on campus marketplace.');
+            document.getElementById('sellStep2').style.display = 'none';
+            document.getElementById('sellStep1').style.display = 'block';
+            await filterProducts();
+            switchTab('home');
+        }
+
+        async function redirectToPayMongoCheckout() {
+            const title = document.getElementById('sellTitle').value || 'Casio Calculator';
+            const price = parseFloat(document.getElementById('sellPrice').value) || 500;
+            const category = document.getElementById('sellCategory').value || 'School Supplies';
+            const meetup = document.getElementById('sellMeetup').value || 'Library Lobby';
+            const feeText = document.getElementById('payAmountDisplay').innerText || '₱5.00';
+
+            try {
+                const res = await fetch(`${API_BASE}/listings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sellerId: 1,
+                        categoryId: 1,
+                        meetupLocationId: 1,
+                        title: title,
+                        description: `Campus item for sale: ${title}`,
+                        price: price,
+                        condition: document.getElementById('sellCondition').value || 'Good',
+                        imageUrls: uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls : ['https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80']
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.listingId) currentListingId = data.listingId;
+                    if (data.payment && data.payment.checkoutUrl && data.payment.checkoutUrl.includes('/cs_')) {
+                        window.open(data.payment.checkoutUrl, '_blank');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+
+            openPayMongoGatewayModal(feeText);
+        }
+
+        async function filterProducts() {
+            const exploreList = document.getElementById('exploreList');
+            const homeContainer = document.getElementById('homeProductContainer');
+            const profileContainer = document.getElementById('mySellingItemsContainer');
+
+            const cond = document.getElementById('filterCondition') ? document.getElementById('filterCondition').value : 'All';
+            const search = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+
+            let products = [];
+            try {
+                const res = await fetch(`${API_BASE}/listings`);
+                if (res.ok) {
+                    const data = await res.json();
+                    products = data.map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        price: `₱${parseFloat(item.price).toFixed(2)}`,
+                        fee: item.price >= 1000 ? '₱10.00' : (item.price >= 100 ? '₱5.00' : '₱1.00'),
+                        condition: item.condition || 'Good',
+                        seller: item.seller ? (item.seller.studentProfile ? `${item.seller.studentProfile.firstName} ${item.seller.studentProfile.lastName}` : 'Verified Student') : 'John Doe',
+                        sellerId: item.sellerId,
+                        location: item.meetupLocation ? item.meetupLocation.name : 'Library Lobby',
+                        img: (item.images && item.images.length > 0) ? item.images[0].imageUrl : 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80'
+                    }));
+                }
+            } catch (e) {
+                console.error(e);
+            }
+
+            let html = '';
+            let profileHtml = '';
+
+            products.forEach(p => {
+                if (cond !== 'All' && p.condition !== cond) return;
+                if (search && !p.title.toLowerCase().includes(search)) return;
+
+                html += `
+                <div class="product-card">
+                    <img src="${p.img}" class="product-img" alt="${p.title}">
+                    <div class="product-details">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="price-tag">${p.price}</span>
+                            <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1 rounded-pill fs-8">${p.fee} Fee Paid</span>
+                        </div>
+                        <h6 class="fw-bold mb-1">${p.title}</h6>
+                        <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2 fs-8">
+                            <div>
+                                <span class="fw-bold text-dark">${p.seller}</span>
+                                <span class="badge-verified ms-1"><i class="fa-solid fa-check"></i> Verified</span>
+                            </div>
+                            <span class="text-muted"><i class="fa-solid fa-location-dot text-danger me-1"></i> ${p.location}</span>
+                        </div>
+                        <div class="d-flex gap-2 mt-3">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold" onclick="openChat('${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
+                            <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold" onclick="reserveItem(${p.id})"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
+                        </div>
+                    </div>
+                </div>`;
+
+                profileHtml += `
+                <div class="product-card">
+                    <img src="${p.img}" class="product-img" alt="${p.title}">
+                    <div class="product-details">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="price-tag">${p.price}</span>
+                            <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1 rounded-pill fs-8">${p.fee} Fee Paid</span>
+                        </div>
+                        <h6 class="fw-bold mb-1">${p.title}</h6>
+                        <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2 fs-8">
+                            <div>
+                                <span class="fw-bold text-dark">${p.seller}</span>
+                                <span class="badge-verified ms-1"><i class="fa-solid fa-check"></i> Verified</span>
+                            </div>
+                            <span class="text-muted"><i class="fa-solid fa-location-dot text-danger me-1"></i> ${p.location}</span>
+                        </div>
+                        <div class="d-flex gap-2 mt-3">
+                            <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Post</button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            if (exploreList) {
+                exploreList.innerHTML = html || `
+                <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+                    <i class="fa-solid fa-compass fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                    No active items found in marketplace.
+                </div>`;
+            }
+
+            if (homeContainer) {
+                homeContainer.innerHTML = html || `
+                <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+                    <i class="fa-solid fa-store-slash fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                    No campus listings published yet.<br>Go to <strong class="text-primary">+ Sell</strong> to post your first item!
+                </div>`;
+            }
+
+            if (profileContainer) {
+                profileContainer.innerHTML = profileHtml || `
+                <div class="text-center py-4 text-muted fs-8" id="noSellingItemsPlaceholder">
+                    <i class="fa-solid fa-box-open fs-3 d-block mb-2 text-secondary"></i>
+                    You have no active selling items yet. Go to <strong>+ Sell</strong> to post your first item!
+                </div>`;
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            filterProducts();
+        });
+    </script>
+</body>
+</html>
