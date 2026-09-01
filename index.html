@@ -233,6 +233,7 @@
                 background: #FFFFFF !important;
                 display: block !important;
             }
+
             .app-container {
                 max-width: 100% !important;
                 height: 100vh !important;
@@ -241,6 +242,7 @@
                 border: none !important;
                 box-shadow: none !important;
             }
+
             .app-body {
                 padding: 12px !important;
             }
@@ -283,13 +285,15 @@
                     <div id="failedAttemptBanner"
                         class="p-3 bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-3 fs-8 mb-3 text-start"
                         style="display:none;">
-                        <i class="fa-solid fa-shield-exclamation me-1"></i> <strong id="failedAttemptMsg">Invalid credentials.</strong>
+                        <i class="fa-solid fa-shield-exclamation me-1"></i> <strong id="failedAttemptMsg">Invalid
+                            credentials.</strong>
                     </div>
 
                     <div class="text-start mb-3">
                         <label class="form-label fw-bold fs-7">School Email / Username</label>
                         <input type="email" class="form-control rounded-3 fs-7" id="loginEmailInput"
-                            placeholder="e.g. yourname@student.edu.ph" value="" onkeydown="if(event.key==='Enter') loginStudentWithPassword()">
+                            placeholder="e.g. yourname@student.edu.ph" value=""
+                            onkeydown="if(event.key==='Enter') loginStudentWithPassword()">
                     </div>
 
                     <div class="text-start mb-3">
@@ -300,7 +304,8 @@
                         </label>
                         <div class="input-group">
                             <input type="password" class="form-control border-end-0 rounded-start-3 fs-7"
-                                id="loginPasswordInput" placeholder="Enter your password" value="" onkeydown="if(event.key==='Enter') loginStudentWithPassword()">
+                                id="loginPasswordInput" placeholder="Enter your password" value=""
+                                onkeydown="if(event.key==='Enter') loginStudentWithPassword()">
                             <button type="button"
                                 class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white"
                                 onclick="togglePasswordVisibility('loginPasswordInput', 'loginEyeIcon')">
@@ -344,8 +349,10 @@
                 <!-- Categories Horizontal Scroll -->
                 <div class="d-flex gap-2 overflow-x-auto pb-2 mb-3" id="homeCategoryChips">
                     <span class="category-chip active" onclick="selectCategoryFilter(this, 'All')">All Items</span>
-                    <span class="category-chip text-primary fw-bold" onclick="selectCategoryFilter(this, 'My Items')"><i class="fa-solid fa-user-check me-1"></i> My Items</span>
-                    <span class="category-chip" onclick="selectCategoryFilter(this, 'School Supplies')">School Supplies</span>
+                    <span class="category-chip text-primary fw-bold" onclick="selectCategoryFilter(this, 'My Items')"><i
+                            class="fa-solid fa-user-check me-1"></i> My Items</span>
+                    <span class="category-chip" onclick="selectCategoryFilter(this, 'School Supplies')">School
+                        Supplies</span>
                     <span class="category-chip" onclick="selectCategoryFilter(this, 'Electronics')">Electronics</span>
                     <span class="category-chip" onclick="selectCategoryFilter(this, 'Books')">Books</span>
                     <span class="category-chip" onclick="selectCategoryFilter(this, 'Gadgets')">Gadgets</span>
@@ -473,18 +480,25 @@
                         <p class="text-muted fs-8 mb-3">Pay via GCash E-Wallet to publish item post live</p>
                         <div class="fw-bold fs-3 text-primary mb-3" id="payAmountDisplay">₱1.00</div>
 
-                        <div class="p-3 bg-primary bg-opacity-10 rounded-4 mb-3 text-center border border-primary-subtle">
-                            <span class="badge bg-primary text-white fw-bold px-3 py-2 rounded-pill mb-2"><i class="fa-solid fa-mobile-screen-button me-1"></i> Official GCash Payment</span>
-                            <p class="fs-9 text-muted mb-0">Click <strong>Pay via GCash App</strong> below to open the official PayMongo GCash payment window!</p>
+                        <div
+                            class="p-3 bg-primary bg-opacity-10 rounded-4 mb-3 text-center border border-primary-subtle">
+                            <span class="badge bg-primary text-white fw-bold px-3 py-2 rounded-pill mb-2"><i
+                                    class="fa-solid fa-mobile-screen-button me-1"></i> Official GCash Payment</span>
+                            <p class="fs-9 text-muted mb-0">Click <strong>Pay via GCash App</strong> below to open the
+                                official PayMongo GCash payment window!</p>
                         </div>
 
                         <div>
-                            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-8"><i class="fa-solid fa-shield-halved me-1"></i> PayMongo GCash Live API Connected</span>
+                            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-8"><i
+                                    class="fa-solid fa-shield-halved me-1"></i> PayMongo GCash Live API Connected</span>
                         </div>
                     </div>
 
-                    <button class="btn btn-pasabuy mb-2" onclick="redirectToPayMongoCheckout()"><i class="fa-solid fa-mobile-screen me-1"></i> Pay via GCash App</button>
-                    <button class="btn btn-outline-secondary w-100 rounded-pill fw-bold" onclick="simulatePaymentSuccess()"><i class="fa-solid fa-check-circle me-1"></i> Confirm Payment Completed & Post Live</button>
+                    <button class="btn btn-pasabuy mb-2" onclick="redirectToPayMongoCheckout()"><i
+                            class="fa-solid fa-mobile-screen me-1"></i> Pay via GCash App</button>
+                    <button class="btn btn-outline-secondary w-100 rounded-pill fw-bold"
+                        onclick="simulatePaymentSuccess()"><i class="fa-solid fa-check-circle me-1"></i> Confirm Payment
+                        Completed & Post Live</button>
                 </div>
             </div>
 
@@ -510,14 +524,16 @@
             <div id="tabMessages" style="display:none;">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <h5 class="fw-bold mb-0">Messages</h5>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fs-9 fw-bold"><i class="fa-solid fa-comments me-1"></i> Active Chats</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fs-9 fw-bold"><i
+                            class="fa-solid fa-comments me-1"></i> Active Chats</span>
                 </div>
 
                 <!-- Chat Conversations List (Messenger Heads) -->
                 <div id="conversationHeadsList" class="d-flex flex-column gap-2">
                     <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
                         <i class="fa-solid fa-comments fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                        No active chat conversations yet.<br>Click <strong>Message</strong> on any item listing to start chatting!
+                        No active chat conversations yet.<br>Click <strong>Message</strong> on any item listing to start
+                        chatting!
                     </div>
                 </div>
             </div>
@@ -526,11 +542,15 @@
             <div id="chatView" style="display:none; height:100%; flex-direction:column;">
                 <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom flex-shrink-0">
                     <div class="d-flex align-items-center gap-2">
-                        <button class="btn btn-sm btn-light rounded-circle" onclick="closeChat()"><i class="fa-solid fa-arrow-left"></i></button>
-                        <img id="chatHeaderAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Student" class="rounded-circle border" width="36" height="36" style="object-fit:cover; background:#f0f3f8;">
+                        <button class="btn btn-sm btn-light rounded-circle" onclick="closeChat()"><i
+                                class="fa-solid fa-arrow-left"></i></button>
+                        <img id="chatHeaderAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Student"
+                            class="rounded-circle border" width="36" height="36"
+                            style="object-fit:cover; background:#f0f3f8;">
                         <span class="fw-bold fs-7" id="chatPartnerName">Student</span>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger rounded-pill fs-8" onclick="openReportModal()">Report User</button>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill fs-8" onclick="openReportModal()">Report
+                        User</button>
                 </div>
 
                 <!-- Attached Item Header -->
@@ -1061,7 +1081,8 @@
                     <h5 class="fw-extrabold text-dark mb-1">OTP Verification Code Sent!</h5>
                     <p class="fs-8 text-muted mb-3">We sent a 6-digit security code to <br><strong
                             class="text-primary fs-7" id="otpTargetEmail">user@gmail.com</strong> from
-                        <code>PASABUY@pasabuy.site</code></p>
+                        <code>PASABUY@pasabuy.site</code>
+                    </p>
 
                     <!-- OTP Code Input Box -->
                     <div class="p-3 bg-light rounded-4 border mb-3">
@@ -1129,7 +1150,8 @@
                     <p class="fs-8 text-muted mb-2">Account: <strong class="text-dark"
                             id="resetDisplayUsername">user@pasabuy.edu.ph</strong></p>
                     <p class="fs-8 text-muted mb-3">Enter the 6-digit OTP code sent from
-                        <code>PASABUY@pasabuy.site</code> and your new password.</p>
+                        <code>PASABUY@pasabuy.site</code> and your new password.
+                    </p>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">6-Digit OTP Code</label>
@@ -1163,7 +1185,8 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 p-4 shadow-lg text-center">
                 <div class="modal-header border-0 pb-0">
-                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-wallet me-2"></i>PayMongo GCash Payment</h6>
+                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-wallet me-2"></i>PayMongo GCash
+                        Payment</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-3">
@@ -1171,22 +1194,31 @@
                         <p class="fs-8 text-muted mb-2">Posting Fee Amount:</p>
                         <div class="fw-extrabold fs-2 text-primary mb-3" id="gatewayAmount">₱1.00</div>
 
-                        <div class="p-3 bg-primary bg-opacity-10 rounded-4 border border-primary-subtle mb-3 text-center">
-                            <span class="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill fs-9 mb-2"><i class="fa-solid fa-shield-check me-1"></i> Official PayMongo GCash Checkout</span>
+                        <div
+                            class="p-3 bg-primary bg-opacity-10 rounded-4 border border-primary-subtle mb-3 text-center">
+                            <span class="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill fs-9 mb-2"><i
+                                    class="fa-solid fa-shield-check me-1"></i> Official PayMongo GCash Checkout</span>
                             <div class="fs-8 text-dark fw-bold mb-2">Merchant: PasaBuy Campus Marketplace</div>
-                            
-                            <a href="#" id="pmDirectCheckoutBtn" target="_blank" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold py-3 shadow-sm mb-3" onclick="setTimeout(completePayMongoPayment, 2000)">
+
+                            <a href="#" id="pmDirectCheckoutBtn" target="_blank"
+                                class="btn btn-primary btn-lg w-100 rounded-pill fw-bold py-3 shadow-sm mb-3"
+                                onclick="setTimeout(completePayMongoPayment, 2000)">
                                 <i class="fa-solid fa-mobile-screen me-2"></i> 📱 Tap Here to Pay via GCash
                             </a>
 
-                            <div class="p-2.5 bg-warning-subtle text-warning-emphasis rounded-3 border border-warning-subtle fs-9 text-start">
-                                <i class="fa-solid fa-info-circle me-1 text-warning-emphasis"></i> <strong>How to Pay:</strong><br>
-                                • <strong>Single Phone</strong>: Tap the big blue button above to pay directly inside GCash.<br>
-                                • <strong>2nd Phone Scanner</strong>: Tap the button to open PayMongo, which displays the official GCash EMVCo QR code on screen!
+                            <div
+                                class="p-2.5 bg-warning-subtle text-warning-emphasis rounded-3 border border-warning-subtle fs-9 text-start">
+                                <i class="fa-solid fa-info-circle me-1 text-warning-emphasis"></i> <strong>How to
+                                    Pay:</strong><br>
+                                • <strong>Single Phone</strong>: Tap the big blue button above to pay directly inside
+                                GCash.<br>
+                                • <strong>2nd Phone Scanner</strong>: Tap the button to open PayMongo, which displays
+                                the official GCash EMVCo QR code on screen!
                             </div>
                         </div>
 
-                        <button type="button" class="btn btn-success w-100 rounded-pill fw-bold py-2 fs-7 mb-2" onclick="completePayMongoPayment()">
+                        <button type="button" class="btn btn-success w-100 rounded-pill fw-bold py-2 fs-7 mb-2"
+                            onclick="completePayMongoPayment()">
                             <i class="fa-solid fa-circle-check me-1"></i> Confirm Payment Completed & Post Live
                         </button>
                     </div>
@@ -1276,7 +1308,7 @@
             }
         };
 
-        window.loginStudentWithPassword = async function() {
+        window.loginStudentWithPassword = async function () {
             const emailEl = document.getElementById('loginEmailInput') || document.getElementById('loginEmail');
             const passEl = document.getElementById('loginPasswordInput') || document.getElementById('loginPassword');
             const bannerEl = document.getElementById('failedAttemptBanner') || document.getElementById('authErrorAlert');
@@ -1338,7 +1370,7 @@
                         bannerEl.style.display = 'block';
                     } else { alert(data.message || 'Invalid credentials.'); }
                 }
-            } catch(e) {
+            } catch (e) {
                 console.error("Login error:", e);
                 const fallbackUser = {
                     id: 1,
@@ -1360,7 +1392,7 @@
             }
         };
 
-        window.logoutStudent = function() {
+        window.logoutStudent = function () {
             localStorage.removeItem('pasabuy_student_logged_in');
             localStorage.removeItem('pasabuy_student_user');
             document.getElementById('authScreen').style.display = 'block';
@@ -1419,14 +1451,14 @@
                         method: 'POST'
                     });
                 }
-            } catch(e){}
+            } catch (e) { }
 
             try {
                 let localListings = [];
                 try { localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || []; } catch (e) { }
                 localListings = localListings.filter(lp => lp.id !== deleteListingIdToDelete && lp.title !== deleteListingTitleToDelete);
                 localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
-            } catch(e){}
+            } catch (e) { }
 
             if (deleteModalInstance) deleteModalInstance.hide();
             alert('🗑️ Your listing post has been permanently deleted.');
@@ -2120,10 +2152,10 @@
                 if (res.ok) {
                     convs = await res.json();
                 }
-            } catch(e){}
+            } catch (e) { }
 
             let localConvs = [];
-            try { localConvs = JSON.parse(localStorage.getItem('pasabuy_local_chat_heads')) || []; } catch(e){}
+            try { localConvs = JSON.parse(localStorage.getItem('pasabuy_local_chat_heads')) || []; } catch (e) { }
 
             localConvs.forEach(lc => {
                 if (lc.myId && lc.myId != currentUserId) return;
@@ -2161,7 +2193,7 @@
                 const partnerName = c.PartnerName || (c.SenderId == currentUserId ? 'Campus Seller' : (c.SenderName || 'Campus Buyer'));
                 const itemTitle = c.ItemTitle || 'Campus Item';
                 const lastMsg = c.MessageText || 'Tap to chat';
-                
+
                 let avatarUrl = c.PartnerAvatar || c.partnerAvatar || '';
                 if (!avatarUrl || avatarUrl === '') {
                     avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(partnerName)}`;
@@ -2284,7 +2316,7 @@
                     if (directBtn) directBtn.href = url;
                     if (linkBtn) linkBtn.href = url;
                 }
-            } catch(e){}
+            } catch (e) { }
         }
 
         let paymongoPollTimer = null;
@@ -2311,7 +2343,7 @@
                         checkoutUrl = data.checkout_url || data.CheckoutUrl;
                     }
                 }
-            } catch(e){ console.error("PayMongo Checkout QR fetch error:", e); }
+            } catch (e) { console.error("PayMongo Checkout QR fetch error:", e); }
 
             if (qrImg) {
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(checkoutUrl)}`;
@@ -2347,11 +2379,12 @@
             const title = document.getElementById('sellTitle').value.trim() || 'Campus Item';
             const price = parseFloat(document.getElementById('sellPrice').value) || 10;
             const meetup = document.getElementById('sellMeetup').value.trim() || 'Campus Library';
+            const condition = document.getElementById('sellCondition').value || 'Good';
             const imgUrl = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80';
 
             let storedUser = null;
             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-            const sellerId = storedUser ? (storedUser.id || 1) : 1;
+            const sellerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
 
             try {
                 const res = await fetch('/pasabuy_api.php?action=create_listing', {
@@ -2362,7 +2395,7 @@
                         description: `Campus item for sale: ${title}`,
                         price: price,
                         sellerId: sellerId,
-                        condition: document.getElementById('sellCondition').value || 'Good',
+                        condition: condition,
                         meetupLocation: meetup,
                         imageUrl: imgUrl
                     })
@@ -2379,7 +2412,7 @@
                     title: title,
                     price: `₱${price.toFixed(2)}`,
                     fee: price >= 1000 ? '₱10.00' : (price >= 100 ? '₱5.00' : '₱1.00'),
-                    condition: document.getElementById('sellCondition').value || 'Good',
+                    condition: condition,
                     seller: (storedUser ? (storedUser.firstName + ' ' + (storedUser.lastName || '')) : 'Verified Student').trim(),
                     sellerId: sellerId,
                     location: meetup,
@@ -2401,7 +2434,22 @@
                 paymongoPollTimer = null;
             }
             await publishListingToDatabase();
-            if (payMongoGatewayModalInstance) payMongoGatewayModalInstance.hide();
+
+            const modalEl = document.getElementById('payMongoGatewayModal');
+            if (payMongoGatewayModalInstance) {
+                try { payMongoGatewayModalInstance.hide(); } catch(e){}
+            }
+            if (modalEl) {
+                try {
+                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                    if (bsModal) bsModal.hide();
+                } catch(e){}
+                modalEl.style.display = 'none';
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(b => b.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+            }
 
             document.getElementById('sellTitle').value = '';
             document.getElementById('sellPrice').value = '';
@@ -2413,8 +2461,8 @@
             document.getElementById('sellStep1').style.display = 'block';
 
             await filterProducts();
-            switchTab('home');
-            alert('🎉 PayMongo GCash Payment Verified! Your listing is now LIVE on campus marketplace.');
+            switchTab('explore');
+            alert('🎉 Item Post Published Live! Your listing is now active on campus marketplace for all students to see.');
         }
 
         async function redirectToPayMongoCheckout() {
@@ -2439,7 +2487,7 @@
                         window.open(data.checkout_url, '_blank');
                     }
                 }
-            } catch(e){}
+            } catch (e) { }
 
             openPayMongoGatewayModal(feeText);
         }
@@ -2476,11 +2524,7 @@
 
             let products = [];
             try {
-                const listingsUrl = currentUserId > 0 ? `/listings?excludeSellerId=${currentUserId}` : '/listings';
-                let res = await fetchApi(listingsUrl);
-                if (!res.ok) {
-                    res = await fetch('/pasabuy_api.php?action=listings');
-                }
+                const res = await fetch('/pasabuy_api.php?action=listings');
                 if (res.ok) {
                     const data = await res.json();
                     if (Array.isArray(data)) {
@@ -2537,7 +2581,7 @@
 
             products.forEach(p => {
                 let storedUserObj = null;
-                try { storedUserObj = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch(e){}
+                try { storedUserObj = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
                 const myId = storedUserObj ? (storedUserObj.id || storedUserObj.userId || storedUserObj.UserId || 1) : 1;
                 const myName = storedUserObj ? (storedUserObj.firstName + ' ' + (storedUserObj.lastName || '')).trim() : 'Student';
 
@@ -2602,7 +2646,7 @@
                 </div>`;
 
                 html += cardHtml;
-                
+
                 if (isMyListing) {
                     profileHtml += cardHtml;
                 }
@@ -2629,7 +2673,7 @@
 
             const partnerNameEl = document.getElementById('chatPartnerName') || document.getElementById('chatRecipientName');
             if (partnerNameEl) partnerNameEl.innerText = sellerName;
-            
+
             let finalAvatar = partnerAvatar || '';
             if (!finalAvatar || finalAvatar === '') {
                 finalAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(sellerName)}`;
@@ -2640,7 +2684,7 @@
 
             const titleEl = document.getElementById('chatItemTitle');
             if (titleEl) titleEl.innerText = itemTitle;
-            
+
             const priceEl = document.getElementById('chatItemPrice');
             if (priceEl) priceEl.innerText = itemPrice || '₱0.00';
 
@@ -2671,7 +2715,7 @@
                         stream.scrollTop = stream.scrollHeight;
                     }
                 }
-            } catch(e) { console.error("Chat load error:", e); }
+            } catch (e) { console.error("Chat load error:", e); }
         }
 
         async function sendChatMessage() {
@@ -2709,7 +2753,7 @@
                         itemTitle: itemTitle
                     })
                 });
-            } catch(e) { console.error("Send chat error:", e); }
+            } catch (e) { console.error("Send chat error:", e); }
         }
 
         function closeChat() {
@@ -2735,7 +2779,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ listingId: listingId, buyerId: currentUserId })
                 });
-            } catch(e) {}
+            } catch (e) { }
 
             try {
                 let localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || [];
@@ -2745,7 +2789,7 @@
                     }
                 });
                 localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
-            } catch(e){}
+            } catch (e) { }
 
             await checkAndOpenChat(sellerId, sellerName || 'Seller', itemTitle, '₱0.00');
 
@@ -2766,7 +2810,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ listingId: listingId })
                 });
-            } catch(e) {}
+            } catch (e) { }
 
             try {
                 let localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || [];
@@ -2774,7 +2818,7 @@
                     if (l.id == listingId) l.status = 'ACTIVE';
                 });
                 localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
-            } catch(e){}
+            } catch (e) { }
 
             alert('✅ Item un-reserved! Your post is now back live on the public campus marketplace feed.');
             await filterProducts();
@@ -2787,7 +2831,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ listingId: listingId })
                 });
-            } catch(e) {}
+            } catch (e) { }
 
             try {
                 let localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || [];
@@ -2795,7 +2839,7 @@
                     if (l.id == listingId) l.status = 'SOLD';
                 });
                 localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
-            } catch(e){}
+            } catch (e) { }
 
             alert('🎉 Item marked as SOLD! Deal complete.');
             await filterProducts();
@@ -2807,15 +2851,15 @@
             if (params.get('payment') === 'success' || params.get('status') === 'success') {
                 console.log("Payment success detected, confirming listing...");
                 window.history.replaceState({}, document.title, window.location.pathname);
-                
+
                 try {
                     const listingData = localStorage.getItem('pendingListingData');
                     if (!listingData) return;
-                    
+
                     const data = JSON.parse(listingData);
                     alert('✅ PayMongo GCash Payment verified! Your listing is now live on campus marketplace.');
                     localStorage.removeItem('pendingListingData');
-                    
+
                     if (localStorage.getItem('pasabuy_student_logged_in') === 'true') {
                         switchTab('explore');
                     }
@@ -2824,7 +2868,7 @@
                 }
             }
         }
-        
+
         // Single Consolidated Initialization on Page Load
         window.addEventListener('DOMContentLoaded', async () => {
             // Auto-upgrade version cache breaker
@@ -2838,7 +2882,7 @@
                         return;
                     }
                 }
-            } catch(e){}
+            } catch (e) { }
 
             checkStudentSessionOnLoad();
             await filterProducts();
