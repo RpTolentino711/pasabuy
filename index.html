@@ -843,23 +843,38 @@
         </div>
     </div>
 
-    <!-- OTP VERIFICATION MODAL (BEFORE SAVING TO DB) -->
+    <!-- OTP VERIFICATION MODAL (PREMIUM UI DESIGN) -->
     <div class="modal fade" id="otpVerifyModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0 p-4 text-center">
-                <div class="modal-body py-3">
-                    <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:60px; height:60px;">
-                        <i class="fa-solid fa-shield-halved fs-2"></i>
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg text-center position-relative overflow-hidden">
+                <!-- Glowing Top Accent Header Gradient -->
+                <div style="height:6px; background: linear-gradient(90deg, #5F27CD, #00d2d3, #ff9f43); position:absolute; top:0; left:0; right:0;"></div>
+                
+                <div class="modal-body py-2">
+                    <!-- Success Sent Icon Badge -->
+                    <div class="mb-3 position-relative d-inline-block">
+                        <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width:72px; height:72px;">
+                            <i class="fa-solid fa-paper-plane fs-2"></i>
+                        </div>
+                        <span class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center border border-2 border-white shadow-sm" style="width:26px; height:26px; font-size:11px;">
+                            <i class="fa-solid fa-check"></i>
+                        </span>
                     </div>
-                    <h6 class="fw-bold text-dark mb-1">Verify Email Security OTP</h6>
-                    <p class="fs-8 text-muted mb-3">We sent a 6-digit OTP code to <strong class="text-dark" id="otpTargetEmail">your email</strong> from <code>PASABUY@pasabuy.site</code>.<br><span class="text-danger fw-bold">Note: Your account will NOT be recorded in the database if the OTP is incorrect!</span></p>
 
-                    <div class="mb-3">
-                        <input type="text" class="form-control text-center fw-extrabold fs-3 rounded-3 letter-spacing-2" id="otpInputCode" maxlength="6" placeholder="000000" style="letter-spacing: 6px;">
+                    <h5 class="fw-extrabold text-dark mb-1">OTP Verification Code Sent!</h5>
+                    <p class="fs-8 text-muted mb-3">We sent a 6-digit security code to <br><strong class="text-primary fs-7" id="otpTargetEmail">user@gmail.com</strong> from <code>PASABUY@pasabuy.site</code></p>
+
+                    <!-- OTP Code Input Box -->
+                    <div class="p-3 bg-light rounded-4 border mb-3">
+                        <label class="form-label fw-bold fs-8 text-uppercase text-muted tracking-wider mb-2">Enter 6-Digit Verification Code</label>
+                        <input type="text" class="form-control text-center fw-extrabold fs-2 rounded-3 border-2 border-primary bg-white shadow-sm" id="otpInputCode" maxlength="6" placeholder="0 0 0 0 0 0" style="letter-spacing: 10px; font-family: monospace;">
+                        <span class="fs-9 text-muted mt-2 d-block"><i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i> Code expires in <strong class="text-dark">10 minutes</strong></span>
                     </div>
 
-                    <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7 mb-2" onclick="verifyOtpAndCompleteRegistration()"><i class="fa-solid fa-check-circle me-1"></i> Verify OTP & Complete Registration</button>
-                    <button type="button" class="btn btn-link text-muted fs-8" data-bs-dismiss="modal">Cancel Registration</button>
+                    <div id="otpVerifyErrorAlert" class="alert alert-danger rounded-3 fs-8 p-2 mb-3" style="display:none;"></div>
+
+                    <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2.5 fs-7 shadow-sm mb-2" onclick="verifyOtpAndCompleteRegistration()"><i class="fa-solid fa-shield-check me-1"></i> Verify OTP & Complete Registration</button>
+                    <button type="button" class="btn btn-light w-100 rounded-pill text-muted fs-8 fw-semibold" data-bs-dismiss="modal">Cancel Registration</button>
                 </div>
             </div>
         </div>
@@ -1377,11 +1392,14 @@
                     if (registerModalInstance) registerModalInstance.hide();
 
                     document.getElementById('otpTargetEmail').innerText = email;
+                    document.getElementById('otpInputCode').value = '';
+                    const errEl = document.getElementById('otpVerifyErrorAlert');
+                    if (errEl) errEl.style.display = 'none';
+
                     if (!otpVerifyModalInstance) {
                         otpVerifyModalInstance = new bootstrap.Modal(document.getElementById('otpVerifyModal'));
                     }
                     otpVerifyModalInstance.show();
-                    alert(`📧 OTP code sent to ${email} from PASABUY@pasabuy.site! Check your inbox.`);
                 } else {
                     let err = {};
                     try { err = await res.json(); } catch(e) {}
