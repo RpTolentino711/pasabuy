@@ -62,24 +62,15 @@ if ($action === '') {
 if (isset($_GET['clean_db']) || strpos($_SERVER['REQUEST_URI'], 'clean_db') !== false || $action === 'admin_clean_database' || $action === 'clean_db') {
     try {
         $db->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        $db->exec("TRUNCATE TABLE ChatMessages;");
+        $db->exec("TRUNCATE TABLE ListingImages;");
+        $db->exec("TRUNCATE TABLE Listings;");
+        $db->exec("TRUNCATE TABLE PaymentRecords;");
+        $db->exec("TRUNCATE TABLE Reports;");
+        $db->exec("TRUNCATE TABLE WantedPosts;");
 
-        $tables = ['ChatMessages', 'ListingImages', 'Listings', 'PaymentRecords', 'Reports', 'WantedPosts', 'AuditLogs', 'OtpVerifications'];
-        foreach ($tables as $tbl) {
-            try { $db->exec("DELETE FROM `{$tbl}`;"); } catch (Exception $eTbl) {}
-        }
-
-        try { $db->exec("DELETE FROM Users WHERE Id NOT IN (100, 104);"); } catch (Exception $eUser) {}
-        
-        $hashRomeo = '$2y$10$MZvmGKUWO1qAZz8sb7GZRO6dY8AYR.FniTTV2azZBV2BZKBt5bs.C';
-        $stmtUser = $db->prepare("INSERT IGNORE INTO Users (Id, Email, PasswordHash, Role, Status, CreatedAt, UpdatedAt) VALUES 
-            (100, 'admin', 'Pogilameg', 'ADMIN', 'VERIFIED', NOW(), NOW()),
-            (104, 'romeopaolotolentino@gmail.com', ?, 'STUDENT', 'VERIFIED', NOW(), NOW())");
-        $stmtUser->execute([$hashRomeo]);
-
-        try { $db->exec("DELETE FROM StudentProfiles WHERE UserId != 104;"); } catch (Exception $eProf) {}
-        $stmtProf = $db->prepare("INSERT IGNORE INTO StudentProfiles (Id, UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, ProfileImage, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES 
-            (2, 104, 'Romeo Paolo', 'Tolentino', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', NULL, 'VERIFIED', 5.0, 0, NOW(), NOW())");
-        $stmtProf->execute();
+        $db->exec("DELETE FROM Users WHERE Id NOT IN (100, 104);");
+        $db->exec("DELETE FROM StudentProfiles WHERE UserId != 104;");
 
         $db->exec("SET FOREIGN_KEY_CHECKS = 1;");
 
