@@ -831,6 +831,7 @@
                         <div class="fw-bold mb-1 text-dark fs-8">Password Security Checklist:</div>
                         <div id="regReqLen" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 8 characters long</div>
                         <div id="regReqCapital" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1 Capital Letter (A-Z)</div>
+                        <div id="regReqNumber" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1 Number (0-9)</div>
                         <div id="regReqSymbol" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1 Special Symbol (!@#$%^&*...)</div>
                         <hr class="my-2">
                         <div id="regMatchStatus" class="fw-bold text-muted"><i class="fa-solid fa-lock me-1"></i> Enter matching passwords</div>
@@ -1255,11 +1256,13 @@
 
             const reqLen = document.getElementById('regReqLen');
             const reqCapital = document.getElementById('regReqCapital');
+            const reqNumber = document.getElementById('regReqNumber');
             const reqSymbol = document.getElementById('regReqSymbol');
             const matchStatus = document.getElementById('regMatchStatus');
 
             const isLengthValid = pw.length >= 8;
             const isCapitalValid = /[A-Z]/.test(pw);
+            const isNumberValid = /[0-9]/.test(pw);
             const isSymbolValid = /[\W_]/.test(pw);
 
             if (isLengthValid) {
@@ -1276,6 +1279,14 @@
             } else {
                 reqCapital.className = 'text-danger fw-semibold';
                 reqCapital.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Required: Missing Capital Letter (A-Z)';
+            }
+
+            if (isNumberValid) {
+                reqNumber.className = 'text-success fw-bold';
+                reqNumber.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> At least 1 Number (0-9) ✓';
+            } else {
+                reqNumber.className = 'text-danger fw-semibold';
+                reqNumber.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Required: Missing Number (0-9)';
             }
 
             if (isSymbolValid) {
@@ -1297,7 +1308,7 @@
                 matchStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Passwords Do Not Match ✕';
             }
 
-            return isLengthValid && isCapitalValid && isSymbolValid && (pw === confirmPw && pw !== '');
+            return isLengthValid && isCapitalValid && isNumberValid && isSymbolValid && (pw === confirmPw && pw !== '');
         }
 
         function openRegisterModal() {
