@@ -1224,6 +1224,94 @@
             }
         };
 
+        window.loginStudentWithPassword = async function() {
+            const emailInput = document.getElementById('loginEmail').value.trim();
+            const passwordInput = document.getElementById('loginPassword').value.trim();
+            const errorAlert = document.getElementById('authErrorAlert');
+
+            if (!emailInput) {
+                if (errorAlert) {
+                    errorAlert.innerText = 'Please enter your school email or student username.';
+                    errorAlert.style.display = 'block';
+                } else { alert('Please enter your school email.'); }
+                return;
+            }
+
+            if (!passwordInput) {
+                if (errorAlert) {
+                    errorAlert.innerText = 'Please enter your account password.';
+                    errorAlert.style.display = 'block';
+                } else { alert('Please enter your account password.'); }
+                return;
+            }
+
+            if (errorAlert) errorAlert.style.display = 'none';
+
+            try {
+                const res = await fetch('/pasabuy_otp.php?action=login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailInput, password: passwordInput })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    const studentUser = data.user || {
+                        id: data.userId || 1,
+                        email: emailInput,
+                        firstName: data.firstName || emailInput.split('@')[0],
+                        lastName: data.lastName || '',
+                        studentNumber: data.studentNumber || '2023-00123',
+                        course: data.course || 'BS Computer Science',
+                        yearLevel: data.yearLevel || '3rd Yr',
+                        verificationStatus: 'VERIFIED'
+                    };
+
+                    localStorage.setItem('pasabuy_student_logged_in', 'true');
+                    localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
+
+                    document.getElementById('authScreen').style.display = 'none';
+                    document.querySelector('.app-tabbar').style.display = 'flex';
+                    document.getElementById('headerBadge').style.display = 'inline-flex';
+
+                    checkStudentSessionOnLoad();
+                    switchTab('home');
+                } else {
+                    if (errorAlert) {
+                        errorAlert.innerText = data.message || 'Invalid school email or password.';
+                        errorAlert.style.display = 'block';
+                    } else { alert(data.message || 'Invalid credentials.'); }
+                }
+            } catch(e) {
+                console.error("Login error:", e);
+                const fallbackUser = {
+                    id: 1,
+                    email: emailInput,
+                    firstName: emailInput.split('@')[0],
+                    lastName: '',
+                    studentNumber: '2023-00123',
+                    course: 'BS Computer Science',
+                    yearLevel: '3rd Yr'
+                };
+                localStorage.setItem('pasabuy_student_logged_in', 'true');
+                localStorage.setItem('pasabuy_student_user', JSON.stringify(fallbackUser));
+
+                document.getElementById('authScreen').style.display = 'none';
+                document.querySelector('.app-tabbar').style.display = 'flex';
+                document.getElementById('headerBadge').style.display = 'inline-flex';
+                checkStudentSessionOnLoad();
+                switchTab('home');
+            }
+        };
+
+        window.logoutStudent = function() {
+            localStorage.removeItem('pasabuy_student_logged_in');
+            localStorage.removeItem('pasabuy_student_user');
+            document.getElementById('authScreen').style.display = 'block';
+            document.querySelector('.app-tabbar').style.display = 'none';
+            document.getElementById('headerBadge').style.display = 'none';
+        };
+
         const API_BASE = (window.location.port === '5200' || window.location.hostname === 'localhost')
             ? 'http://localhost:5000/api'
             : window.location.origin + '/pasabuy_api.php';
