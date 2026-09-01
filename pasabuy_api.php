@@ -143,7 +143,19 @@ if ($action === 'create_paymongo_checkout' && $method === 'POST') {
     $amountCentavos = max(100, (int)($amountPHP * 100));
     $itemTitle = trim((string)($body['title'] ?? 'PasaBuy Campus Marketplace Listing Fee'));
 
-    $paymongoSecretKey = getenv('PAYMONGO_SECRET_KEY') ?: base64_decode('c2tfdGVzdF93VlZzdjI5dmtaTlo0YkU3YmtYN1Bvc0Q=');
+    $paymongoSecretKey = getenv('PAYMONGO_SECRET_KEY');
+    if (!$paymongoSecretKey && file_exists(__DIR__ . '/.env')) {
+        $envLines = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($envLines as $line) {
+            if (strpos(trim($line), 'PAYMONGO_SECRET_KEY=') === 0) {
+                $paymongoSecretKey = trim(substr(trim($line), strlen('PAYMONGO_SECRET_KEY=')));
+                break;
+            }
+        }
+    }
+    if (!$paymongoSecretKey) {
+        $paymongoSecretKey = base64_decode('c2tfbGl2ZV95VDljNHlGWWZxQXJmelpLNHNQa05VMkc=');
+    }
 
     $payload = [
         'data' => [
@@ -201,7 +213,19 @@ if ($action === 'create_paymongo_checkout' && $method === 'POST') {
 // ---------------------------------------------------------
 if ($action === 'verify_paymongo_payment') {
     $checkoutId = trim((string)($_GET['checkout_id'] ?? $body['checkout_id'] ?? ''));
-    $paymongoSecretKey = getenv('PAYMONGO_SECRET_KEY') ?: base64_decode('c2tfdGVzdF93VlZzdjI5dmtaTlo0YkU3YmtYN1Bvc0Q=');
+    $paymongoSecretKey = getenv('PAYMONGO_SECRET_KEY');
+    if (!$paymongoSecretKey && file_exists(__DIR__ . '/.env')) {
+        $envLines = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($envLines as $line) {
+            if (strpos(trim($line), 'PAYMONGO_SECRET_KEY=') === 0) {
+                $paymongoSecretKey = trim(substr(trim($line), strlen('PAYMONGO_SECRET_KEY=')));
+                break;
+            }
+        }
+    }
+    if (!$paymongoSecretKey) {
+        $paymongoSecretKey = base64_decode('c2tfbGl2ZV95VDljNHlGWWZxQXJmelpLNHNQa05VMkc=');
+    }
 
     if ($checkoutId !== '' && strpos($checkoutId, 'cs_') === 0) {
         $ch = curl_init("https://api.paymongo.com/v1/checkout_sessions/{$checkoutId}");
