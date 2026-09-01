@@ -2226,6 +2226,13 @@
                     const data = await res.json();
                     if (data.payment && data.payment.checkoutUrl) {
                         currentListingId = data.listingId || data.id;
+                        
+                        // Store listing ID in localStorage for payment confirmation
+                        localStorage.setItem('pendingListingData', JSON.stringify({
+                            listingId: currentListingId,
+                            createdAt: new Date().toISOString()
+                        }));
+                        
                         window.open(data.payment.checkoutUrl, '_blank');
                         openPayMongoGatewayModal(feeText);
                         return;
@@ -2375,8 +2382,61 @@
             if (profileContainer) profileContainer.innerHTML = profileHtml || '<div class="text-center text-muted py-4">You have no active item listings. Post an item in the Sell tab to view it here!</div>';
         }
 
+        // Handle PayMongo payment success redirect
+        async function handlePaymentSuccess() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('payment') === 'success') {
+                console.log("Payment success detected, confirming listing...");
+                
+                // Remove the payment=success parameter from URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                try {
+                    // Get the listing ID from localStorage
+                    const listingData = localStorage.getItem('pendingListingData');
+                    if (!listingData) {
+                        console.log("No pending listing data found");
+                        return;
+                    }
+                    
+                    const data = JSON.parse(listingData);
+                    const listingId = data.listingId;
+                    
+                    if (!listingId) {
+                        console.error("No listing ID in pending data");
+                        return;
+                    }
+                    
+                    // Confirm payment with backend
+                    const confirmRes = await fetch(`${API_BASE}/payments/confirm/${listingId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (confirmRes.ok) {
+                        const confirmData = await confirmRes.json();
+                        console.log("Payment confirmed:", confirmData);
+                        
+                        // Show success message
+                        alert('✅ Payment successful! Your listing is now active.');
+                        
+                        // Clear pending data
+                        localStorage.removeItem('pendingListingData');
+                        
+                        // Switch to Explore tab to show the active listing
+                        switchTab('explore');
+                    } else {
+                        console.error("Failed to confirm payment:", confirmRes.status);
+                    }
+                } catch (err) {
+                    console.error("Payment confirmation error:", err);
+                }
+            }
+        }
+        
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
+            handlePaymentSuccess();
             filterProducts();
         });
     </script>
