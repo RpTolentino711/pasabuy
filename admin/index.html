@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PasaBuy - Admin & Moderation Portal</title>
+    <title>PasaBuy - Admin Portal Login</title>
     <!-- Google Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,232 +70,284 @@
             overflow: hidden;
             border: 1px solid #E2E8F0;
         }
+        .auth-card {
+            max-width: 440px;
+            margin: 80px auto 0;
+            background: #FFFFFF;
+            border-radius: 24px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 20px 40px rgba(15,23,42,0.08);
+            overflow: hidden;
+        }
+        .auth-header {
+            background: linear-gradient(135deg, #1E1B4B, #312E81);
+            color: #FFFFFF;
+            padding: 32px 24px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Admin Top Navbar -->
-    <nav class="admin-navbar navbar navbar-expand-lg navbar-dark shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-extrabold d-flex align-items-center gap-2" href="#">
-                <i class="fa-solid fa-shield-halved text-warning fs-4"></i>
-                <span class="fs-5 text-white">PasaBuy <span class="badge bg-warning text-dark fs-9 rounded-pill ms-1">ADMIN PORTAL</span></span>
-            </a>
-            <div class="d-flex align-items-center gap-3">
-                <span class="text-white-50 fs-8"><i class="fa-solid fa-circle text-success me-1"></i> Connected to Hostinger MySQL &amp; PayMongo Live</span>
-                <a href="../index.html" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold"><i class="fa-solid fa-store me-1"></i> Student App</a>
+    <!-- ADMIN LOGIN LANDING VIEW (DEFAULT WHEN UNAUTHENTICATED) -->
+    <div id="adminAuthView" style="display:block;">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:54px; height:54px;">
+                    <i class="fa-solid fa-shield-halved fs-3"></i>
+                </div>
+                <h4 class="fw-extrabold mb-1">PasaBuy Admin Portal</h4>
+                <p class="text-white-50 fs-8 mb-0">Campus Marketplace Management System</p>
+            </div>
+            <div class="p-4">
+                
+                <div id="adminErrorBanner" class="p-3 bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-3 fs-8 mb-3" style="display:none;">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i> <span id="adminErrorMsg">Invalid admin credentials.</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold fs-7">Admin Username / Email</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-user text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 fs-7" id="adminUsernameInput" placeholder="admin" value="admin">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold fs-7">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-key text-muted"></i></span>
+                        <input type="password" class="form-control border-start-0 fs-7" id="adminPasswordInput" placeholder="Pogilameg" value="Pogilameg">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7 mb-3 shadow-sm" style="background:var(--admin-primary); border:none;" onclick="executeAdminLogin()"><i class="fa-solid fa-right-to-bracket me-2"></i> Log In to Admin Dashboard</button>
+
+                <div class="text-center pt-3 border-top">
+                    <a href="../index.html" class="text-decoration-none fs-8 text-muted fw-semibold"><i class="fa-solid fa-store me-1"></i> Return to Student Marketplace App</a>
+                </div>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <div class="d-flex">
-        <!-- Sidebar Navigation -->
-        <aside class="admin-sidebar p-3">
-            <div class="text-uppercase text-muted fw-bold fs-9 mb-3 px-2">Moderation &amp; Control</div>
-            <nav class="nav flex-column">
-                <a href="#" class="nav-link-admin active" onclick="showAdminSection('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Overview Dashboard</a>
-                <a href="#" class="nav-link-admin" onclick="showAdminSection('students', this)"><i class="fa-solid fa-user-graduate"></i> Student Verification</a>
-                <a href="#" class="nav-link-admin" onclick="showAdminSection('listings', this)"><i class="fa-solid fa-box-open"></i> Marketplace Listings</a>
-                <a href="#" class="nav-link-admin" onclick="showAdminSection('payments', this)"><i class="fa-solid fa-receipt text-success"></i> PayMongo Live Fees</a>
-                <a href="#" class="nav-link-admin" onclick="showAdminSection('reports', this)"><i class="fa-solid fa-flag text-danger"></i> Scam Reports</a>
-                <a href="#" class="nav-link-admin" onclick="showAdminSection('meetups', this)"><i class="fa-solid fa-location-dot"></i> Meetup Locations</a>
-            </nav>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="flex-grow-1 p-4">
-
-            <!-- Section 1: Dashboard Overview -->
-            <div id="sectionDashboard">
-                <h4 class="fw-bold mb-1">Campus Marketplace Overview</h4>
-                <p class="text-muted fs-8 mb-4">Monitor student activity, live listings, and PayMongo fee revenues.</p>
-
-                <!-- Stat Cards Row -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3">
-                        <div class="card-stat border-start border-4 border-primary">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="text-muted fs-8 fw-bold text-uppercase">Total Students</span>
-                                <div class="stat-icon bg-primary-subtle text-primary"><i class="fa-solid fa-users"></i></div>
-                            </div>
-                            <h2 class="fw-extrabold mb-1" id="dashTotalStudents">142</h2>
-                            <span class="badge bg-success-subtle text-success fw-bold fs-9"><i class="fa-solid fa-check me-1"></i> 138 Verified</span>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card-stat border-start border-4 border-success">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="text-muted fs-8 fw-bold text-uppercase">Live Listings</span>
-                                <div class="stat-icon bg-success-subtle text-success"><i class="fa-solid fa-tags"></i></div>
-                            </div>
-                            <h2 class="fw-extrabold mb-1" id="dashActiveListings">28</h2>
-                            <span class="text-muted fs-8">Active on Campus</span>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card-stat border-start border-4 border-info">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="text-muted fs-8 fw-bold text-uppercase">Deals Completed</span>
-                                <div class="stat-icon bg-info-subtle text-info"><i class="fa-solid fa-handshake"></i></div>
-                            </div>
-                            <h2 class="fw-extrabold mb-1">94</h2>
-                            <span class="text-muted fs-8">Student Meetups</span>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card-stat border-start border-4 border-warning bg-dark text-white">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="text-warning fs-8 fw-bold text-uppercase">PayMongo Revenue</span>
-                                <div class="stat-icon bg-warning text-dark"><i class="fa-solid fa-wallet"></i></div>
-                            </div>
-                            <h2 class="fw-extrabold text-warning mb-1" id="dashPayMongoRevenue">₱345.00</h2>
-                            <span class="text-white-50 fs-8"><i class="fa-solid fa-bolt text-warning me-1"></i> Live GCash / Card Fees</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PayMongo Live Account Banner -->
-                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-dark text-white">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width:48px; height:48px;">
-                                <i class="fa-solid fa-shield-check fs-4"></i>
-                            </div>
-                            <div>
-                                <h5 class="fw-bold text-white mb-1"><i class="fa-solid fa-bolt text-warning me-2"></i>PayMongo Live API Account Connected</h5>
-                                <p class="text-white-50 fs-8 mb-0">Public Key: <code>pk_live_vNqaV125GXHhGtsY8Atqgbxc</code> • Domain: <strong>pasabuy.site</strong></p>
-                            </div>
-                        </div>
-                        <a href="https://dashboard.paymongo.com" target="_blank" class="btn btn-warning rounded-pill fw-bold px-4"><i class="fa-solid fa-external-link me-1"></i> PayMongo Dashboard</a>
-                    </div>
+    <!-- MAIN ADMIN DASHBOARD VIEW (SHOWN AFTER AUTHENTICATION) -->
+    <div id="adminMainDashboardView" style="display:none;">
+        
+        <!-- Admin Top Navbar -->
+        <nav class="admin-navbar navbar navbar-expand-lg navbar-dark shadow-sm">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-extrabold d-flex align-items-center gap-2" href="#">
+                    <i class="fa-solid fa-shield-halved text-warning fs-4"></i>
+                    <span class="fs-5 text-white">PasaBuy <span class="badge bg-warning text-dark fs-9 rounded-pill ms-1">ADMIN PORTAL</span></span>
+                </a>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-white-50 fs-8"><i class="fa-solid fa-circle text-success me-1"></i> Connected to Hostinger MySQL &amp; PayMongo Live</span>
+                    <button class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold text-white" onclick="logoutAdmin()"><i class="fa-solid fa-right-from-bracket me-1"></i> Log Out</button>
                 </div>
             </div>
+        </nav>
 
-            <!-- Section 2: Student Verification -->
-            <div id="sectionStudents" style="display:none;">
-                <h4 class="fw-bold mb-1">Student Account Verifications</h4>
-                <p class="text-muted fs-8 mb-4">Approve or suspend student marketplace accounts.</p>
-                
-                <div class="table-custom p-3">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Student Name</th>
-                                <th>Student #</th>
-                                <th>Course &amp; Year</th>
-                                <th>School Email</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong class="text-dark">John Doe</strong></td>
-                                <td><code>2023-00123</code></td>
-                                <td>BS Computer Science (3rd Yr)</td>
-                                <td>john.doe@student.edu.ph</td>
-                                <td><span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill">VERIFIED</span></td>
-                                <td><button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="alert('Student suspended.')">Suspend</button></td>
-                            </tr>
-                            <tr>
-                                <td><strong class="text-dark">Maria Santos</strong></td>
-                                <td><code>2023-00456</code></td>
-                                <td>BS Civil Engineering (2nd Yr)</td>
-                                <td>maria.santos@student.edu.ph</td>
-                                <td><span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill">VERIFIED</span></td>
-                                <td><button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="alert('Student suspended.')">Suspend</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="d-flex">
+            <!-- Sidebar Navigation -->
+            <aside class="admin-sidebar p-3">
+                <div class="text-uppercase text-muted fw-bold fs-9 mb-3 px-2">Moderation &amp; Control</div>
+                <nav class="nav flex-column">
+                    <a href="#" class="nav-link-admin active" onclick="showAdminSection('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Overview Dashboard</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('students', this)"><i class="fa-solid fa-user-graduate"></i> Student Verification</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('listings', this)"><i class="fa-solid fa-box-open"></i> Marketplace Listings</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('payments', this)"><i class="fa-solid fa-receipt text-success"></i> PayMongo Live Fees</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('reports', this)"><i class="fa-solid fa-flag text-danger"></i> Scam Reports</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('meetups', this)"><i class="fa-solid fa-location-dot"></i> Meetup Locations</a>
+                </nav>
+            </aside>
 
-            <!-- Section 3: Listings Moderation -->
-            <div id="sectionListings" style="display:none;">
-                <h4 class="fw-bold mb-1">Marketplace Listings Moderation</h4>
-                <p class="text-muted fs-8 mb-4">View and delete prohibited or spam listings.</p>
-                <div id="adminListingsContainer" class="row g-3">
-                    <!-- Populated dynamically via API -->
-                </div>
-            </div>
+            <!-- Main Content Area -->
+            <main class="flex-grow-1 p-4">
 
-            <!-- Section 4: PayMongo Payments Ledger -->
-            <div id="sectionPayments" style="display:none;">
-                <h4 class="fw-bold mb-1">PayMongo Live Fee Collection Ledger</h4>
-                <p class="text-muted fs-8 mb-4">Audit log of all ₱1.00 / ₱5.00 / ₱10.00 posting fees paid via GCash.</p>
-                
-                <div class="table-custom p-3">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Transaction Ref</th>
-                                <th>Student Seller</th>
-                                <th>Listing Title</th>
-                                <th>Fee Amount</th>
-                                <th>Status</th>
-                                <th>Date &amp; Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code>PM-CHK-99214</code></td>
-                                <td>John Doe</td>
-                                <td>Casio Scientific Calculator FX-991ES</td>
-                                <td><strong class="text-success">₱5.00</strong></td>
-                                <td><span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-check me-1"></i> PAID</span></td>
-                                <td>Just now</td>
-                            </tr>
-                            <tr>
-                                <td><code>PM-CHK-88310</code></td>
-                                <td>Maria Santos</td>
-                                <td>Rotring Mechanical Pencil 0.5mm</td>
-                                <td><strong class="text-success">₱5.00</strong></td>
-                                <td><span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-check me-1"></i> PAID</span></td>
-                                <td>10 mins ago</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                <!-- Section 1: Dashboard Overview -->
+                <div id="sectionDashboard">
+                    <h4 class="fw-bold mb-1">Campus Marketplace Overview</h4>
+                    <p class="text-muted fs-8 mb-4">Monitor student activity, live listings, and PayMongo fee revenues.</p>
 
-            <!-- Section 5: Scam & Abuse Reports -->
-            <div id="sectionReports" style="display:none;">
-                <h4 class="fw-bold mb-1">Scam &amp; Moderation Reports</h4>
-                <p class="text-muted fs-8 mb-4">Investigate student safety reports.</p>
-                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white text-center py-5 text-muted">
-                    <i class="fa-solid fa-shield-cat fs-1 text-secondary opacity-50 mb-2"></i>
-                    <h6>No Pending Reports</h6>
-                    <p class="fs-8 text-muted">Campus marketplace community guidelines are currently clean.</p>
-                </div>
-            </div>
-
-            <!-- Section 6: Meetup Locations -->
-            <div id="sectionMeetups" style="display:none;">
-                <h4 class="fw-bold mb-1">Approved Campus Meetup Locations</h4>
-                <p class="text-muted fs-8 mb-4">Manage safe campus pickup locations for student transactions.</p>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                            <h6 class="fw-bold mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Library Lobby</h6>
-                            <p class="fs-8 text-muted mb-0">Main Campus University Library Ground Floor</p>
+                    <!-- Stat Cards Row -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-primary">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Total Students</span>
+                                    <div class="stat-icon bg-primary-subtle text-primary"><i class="fa-solid fa-users"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1" id="dashTotalStudents">142</h2>
+                                <span class="badge bg-success-subtle text-success fw-bold fs-9"><i class="fa-solid fa-check me-1"></i> 138 Verified</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-success">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Live Listings</span>
+                                    <div class="stat-icon bg-success-subtle text-success"><i class="fa-solid fa-tags"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1" id="dashActiveListings">28</h2>
+                                <span class="text-muted fs-8">Active on Campus</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-info">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Deals Completed</span>
+                                    <div class="stat-icon bg-info-subtle text-info"><i class="fa-solid fa-handshake"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1">94</h2>
+                                <span class="text-muted fs-8">Student Meetups</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-warning bg-dark text-white">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-warning fs-8 fw-bold text-uppercase">PayMongo Revenue</span>
+                                    <div class="stat-icon bg-warning text-dark"><i class="fa-solid fa-wallet"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold text-warning mb-1" id="dashPayMongoRevenue">₱345.00</h2>
+                                <span class="text-white-50 fs-8"><i class="fa-solid fa-bolt text-warning me-1"></i> Live GCash / Card Fees</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                            <h6 class="fw-bold mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Student Cafeteria</h6>
-                            <p class="fs-8 text-muted mb-0">Central Food Court &amp; Dining Area</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                            <h6 class="fw-bold mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Main Gate Entrance</h6>
-                            <p class="fs-8 text-muted mb-0">Main Campus Pedestrian Entrance near Guard Post</p>
+
+                    <!-- PayMongo Live Account Banner -->
+                    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-dark text-white">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width:48px; height:48px;">
+                                    <i class="fa-solid fa-shield-check fs-4"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold text-white mb-1"><i class="fa-solid fa-bolt text-warning me-2"></i>PayMongo Live API Account Connected</h5>
+                                    <p class="text-white-50 fs-8 mb-0">Public Key: <code>pk_live_vNqaV125GXHhGtsY8Atqgbxc</code> • Domain: <strong>pasabuy.site</strong></p>
+                                </div>
+                            </div>
+                            <a href="https://dashboard.paymongo.com" target="_blank" class="btn btn-warning rounded-pill fw-bold px-4"><i class="fa-solid fa-external-link me-1"></i> PayMongo Dashboard</a>
                         </div>
                     </div>
                 </div>
-            </div>
 
-        </main>
+                <!-- Section 2: Student Verification -->
+                <div id="sectionStudents" style="display:none;">
+                    <h4 class="fw-bold mb-1">Student Account Verifications</h4>
+                    <p class="text-muted fs-8 mb-4">Approve or suspend student marketplace accounts.</p>
+                    
+                    <div class="table-custom p-3">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Student #</th>
+                                    <th>Course &amp; Year</th>
+                                    <th>School Email</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong class="text-dark">John Doe</strong></td>
+                                    <td><code>2023-00123</code></td>
+                                    <td>BS Computer Science (3rd Yr)</td>
+                                    <td>john.doe@student.edu.ph</td>
+                                    <td><span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill">VERIFIED</span></td>
+                                    <td><button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="alert('Student suspended.')">Suspend</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="text-dark">Maria Santos</strong></td>
+                                    <td><code>2023-00456</code></td>
+                                    <td>BS Civil Engineering (2nd Yr)</td>
+                                    <td>maria.santos@student.edu.ph</td>
+                                    <td><span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill">VERIFIED</span></td>
+                                    <td><button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="alert('Student suspended.')">Suspend</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section 3: Listings Moderation -->
+                <div id="sectionListings" style="display:none;">
+                    <h4 class="fw-bold mb-1">Marketplace Listings Moderation</h4>
+                    <p class="text-muted fs-8 mb-4">View and delete prohibited or spam listings.</p>
+                    <div id="adminListingsContainer" class="row g-3">
+                        <!-- Populated dynamically via API -->
+                    </div>
+                </div>
+
+                <!-- Section 4: PayMongo Payments Ledger -->
+                <div id="sectionPayments" style="display:none;">
+                    <h4 class="fw-bold mb-1">PayMongo Live Fee Collection Ledger</h4>
+                    <p class="text-muted fs-8 mb-4">Audit log of all ₱1.00 / ₱5.00 / ₱10.00 posting fees paid via GCash.</p>
+                    
+                    <div class="table-custom p-3">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Transaction Ref</th>
+                                    <th>Student Seller</th>
+                                    <th>Listing Title</th>
+                                    <th>Fee Amount</th>
+                                    <th>Status</th>
+                                    <th>Date &amp; Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>PM-CHK-99214</code></td>
+                                    <td>John Doe</td>
+                                    <td>Casio Scientific Calculator FX-991ES</td>
+                                    <td><strong class="text-success">₱5.00</strong></td>
+                                    <td><span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-check me-1"></i> PAID</span></td>
+                                    <td>Just now</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section 5: Scam & Abuse Reports -->
+                <div id="sectionReports" style="display:none;">
+                    <h4 class="fw-bold mb-1">Scam &amp; Moderation Reports</h4>
+                    <p class="text-muted fs-8 mb-4">Investigate student safety reports.</p>
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white text-center py-5 text-muted">
+                        <i class="fa-solid fa-shield-cat fs-1 text-secondary opacity-50 mb-2"></i>
+                        <h6>No Pending Reports</h6>
+                        <p class="fs-8 text-muted">Campus marketplace community guidelines are currently clean.</p>
+                    </div>
+                </div>
+
+                <!-- Section 6: Meetup Locations -->
+                <div id="sectionMeetups" style="display:none;">
+                    <h4 class="fw-bold mb-1">Approved Campus Meetup Locations</h4>
+                    <p class="text-muted fs-8 mb-4">Manage safe campus pickup locations for student transactions.</p>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                                <h6 class="fw-bold mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Library Lobby</h6>
+                                <p class="fs-8 text-muted mb-0">Main Campus University Library Ground Floor</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                                <h6 class="fw-bold mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Student Cafeteria</h6>
+                                <p class="fs-8 text-muted mb-0">Central Food Court &amp; Dining Area</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                                <h6 class="fw-bold mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Main Gate Entrance</h6>
+                                <p class="fs-8 text-muted mb-0">Main Campus Pedestrian Entrance near Guard Post</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -303,6 +355,54 @@
         const API_BASE = (window.location.port === '5200' || window.location.hostname === 'localhost') 
             ? 'http://localhost:5000/api' 
             : window.location.origin + '/api';
+
+        async function executeAdminLogin() {
+            const user = document.getElementById('adminUsernameInput').value.trim();
+            const pass = document.getElementById('adminPasswordInput').value.trim();
+            const errBanner = document.getElementById('adminErrorBanner');
+            const errMsg = document.getElementById('adminErrorMsg');
+
+            if (!user || !pass) {
+                errMsg.innerText = 'Please enter both Admin username and password.';
+                errBanner.style.display = 'block';
+                return;
+            }
+
+            // Accept admin / Pogilameg or admin@pasabuy.site / Pogilameg or API login
+            if ((user.toLowerCase() === 'admin' || user.toLowerCase() === 'admin@pasabuy.site') && pass === 'Pogilameg') {
+                errBanner.style.display = 'none';
+                document.getElementById('adminAuthView').style.display = 'none';
+                document.getElementById('adminMainDashboardView').style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: user, password: pass })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.role === 'ADMIN' || user.toLowerCase().includes('admin')) {
+                        errBanner.style.display = 'none';
+                        document.getElementById('adminAuthView').style.display = 'none';
+                        document.getElementById('adminMainDashboardView').style.display = 'block';
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            errMsg.innerText = 'Invalid Admin credentials! Use username: admin and password: Pogilameg';
+            errBanner.style.display = 'block';
+        }
+
+        function logoutAdmin() {
+            document.getElementById('adminMainDashboardView').style.display = 'none';
+            document.getElementById('adminAuthView').style.display = 'block';
+            document.getElementById('adminPasswordInput').value = '';
+        }
 
         function showAdminSection(sectionName, element) {
             const sections = ['dashboard', 'students', 'listings', 'payments', 'reports', 'meetups'];
