@@ -7,6 +7,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+using static System.StringComparison;
+
 namespace PASABUY.API.Services
 {
     public class PayMongoPaymentResponse
@@ -36,13 +38,12 @@ namespace PASABUY.API.Services
 
         public async Task<PayMongoPaymentResponse> CreatePostingFeePaymentAsync(int listingId, decimal amount, string title)
         {
-            var secretKey = _config["PayMongo:SecretKey"];
-            var testSecretKey = _config["PayMongo:TestSecretKey"] ?? "YOUR_PAYMONGO_TEST_SECRET_KEY";
+            var configuredSecretKey = GetSetting("PayMongo:SecretKey", "PAYMONGO_SECRET_KEY");
+            var testSecretKey = GetSetting("PayMongo:TestSecretKey", "PAYMONGO_TEST_SECRET_KEY");
 
-            // Try SecretKey first, fallback to TestSecretKey if unauthorized or inactive
             var keysToTry = new List<string>();
-            if (!string.IsNullOrWhiteSpace(secretKey)) keysToTry.Add(secretKey);
-            if (!string.IsNullOrWhiteSpace(testSecretKey) && testSecretKey != secretKey) keysToTry.Add(testSecretKey);
+            if (!string.IsNullOrWhiteSpace(configuredSecretKey) && !configuredSecretKey.Contains("PAYMONGO_SECRET_KEY", OrdinalIgnoreCase)) keysToTry.Add(configuredSecretKey);
+            if (!string.IsNullOrWhiteSpace(testSecretKey) && !testSecretKey.Contains("PAYMONGO_TEST_SECRET_KEY", OrdinalIgnoreCase) && testSecretKey != configuredSecretKey) keysToTry.Add(testSecretKey);
 
             foreach (var key in keysToTry)
             {
@@ -53,9 +54,9 @@ namespace PASABUY.API.Services
                     requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authBytes));
 
                     var amountInCents = (int)(amount * 100);
-                    if (amountInCents < 100) amountInCents = 100; // PayMongo minimum 100 cents (₱1.00)
+                    if (amountInCents < 100) amountInCents = 100;
 
-                    var appBaseUrl = _config["PayMongo:AppBaseUrl"] ?? "http://localhost:5200";
+                    var appBaseUrl = GetSetting("PayMongo:AppBaseUrl", "PASABUY_APP_BASE_URL") ?? "http://localhost:5200";
                     if (appBaseUrl.EndsWith("/")) appBaseUrl = appBaseUrl.TrimEnd('/');
 
                     var payload = new
@@ -107,10 +108,8 @@ namespace PASABUY.API.Services
                             Status = "PENDING"
                         };
                     }
-                    else
-                    {
-                        Console.WriteLine($"[PayMongo API Key '{key.Substring(0, Math.Min(10, key.Length))}...'] Returned Status: {response.StatusCode}, Content: {json}");
-                    }
+
+                    Console.WriteLine($"[PayMongo API Key '{key.Substring(0, Math.Min(10, key.Length))}...'] Returned Status: {response.StatusCode}, Content: {json}");
                 }
                 catch (Exception ex)
                 {
@@ -118,16 +117,32 @@ namespace PASABUY.API.Services
                 }
             }
 
-            // Fallback Simulation Mode
             var refId = $"PM-{DateTime.UtcNow.Ticks.ToString().Substring(10)}";
             return new PayMongoPaymentResponse
             {
                 PaymentId = refId,
                 Amount = amount,
                 QrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=PAYMONGO_PASABUY_FEE_{refId}_{amount}",
-                CheckoutUrl = $"https://www.paymongo.com",
-                Status = "PENDING"
+                CheckoutUrl = "https://dashboard.paymongo.com",
+                Status = "SIMULATION_REQUIRED"
             };
+        }
+
+        private string? GetSetting(string configKey, string envName)
+        {
+            var configValue = _config[configKey];
+            if (!string.IsNullOrWhiteSpace(configValue) && !configValue.Contains("PAYMONGO", StringComparison.OrdinalIgnoreCase))
+                return configValue;
+
+            var envValue = Environment.GetEnvironmentVariable(envName) ?? Environment.GetEnvironmentVariable(envName.Replace("__", ":"));
+            if (!string.IsNullOrWhiteSpace(envValue) && !envValue.Contains("PAYMONGO", StringComparison.OrdinalIgnoreCase))
+                return envValue;
+
+            var legacyValue = _config[configKey.Replace(":", "__")];
+            if (!string.IsNullOrWhiteSpace(legacyValue) && !legacyValue.Contains("PAYMONGO", StringComparison.OrdinalIgnoreCase))
+                return legacyValue;
+
+            return configValue;
         }
     }
 }

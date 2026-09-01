@@ -62,7 +62,9 @@
     </div>
 </div>
 
+@using System
 <script>
+    const apiBase = "@(Environment.GetEnvironmentVariable("PASABUY_API_URL") ?? "http://localhost:5000/api")";
     let targetListingId = 0;
     let removeModalInstance = null;
 
@@ -71,7 +73,7 @@
         const search = document.getElementById('listingSearch') ? document.getElementById('listingSearch').value.toLowerCase() : '';
 
         try {
-            const res = await fetch('http://localhost:5000/api/admin/listings');
+            const res = await fetch(`${apiBase}/admin/listings`);
             if (res.ok) {
                 const listings = await res.json();
                 let html = '';
@@ -134,7 +136,7 @@
     async function confirmDeleteListing() {
         if (targetListingId > 0) {
             try {
-                const res = await fetch(`http://localhost:5000/api/admin/listings/${targetListingId}`, { method: 'DELETE' });
+                const res = await fetch(`${apiBase}/admin/listings/${targetListingId}`, { method: 'DELETE' });
                 if (res.ok) {
                     if (removeModalInstance) removeModalInstance.hide();
                     await loadAdminListings();

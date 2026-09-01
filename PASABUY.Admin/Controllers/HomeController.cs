@@ -5,16 +5,20 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Configuration;
+
 namespace PASABUY.Admin.Controllers
 {
     public class HomeController : Controller
     {
         private readonly HttpClient _http;
+        private readonly string _apiBaseUrl;
 
-        public HomeController(IHttpClientFactory httpClientFactory)
+        public HomeController(IHttpClientFactory httpClientFactory, IConfiguration config)
         {
             _http = httpClientFactory.CreateClient();
-            _http.BaseAddress = new Uri("http://localhost:5000");
+            _apiBaseUrl = config["ApiBaseUrl"] ?? Environment.GetEnvironmentVariable("PASABUY_API_URL") ?? "http://localhost:5000/api";
+            _http.BaseAddress = new Uri(_apiBaseUrl.TrimEnd('/') + "/");
         }
 
         public async Task<IActionResult> Index()

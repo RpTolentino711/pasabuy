@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +11,8 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <!-- FontAwesome & Bootstrap -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
@@ -21,8 +23,9 @@
             --secondary: #10AC84;
             --accent: #FF9F43;
             --bg-light: #F4F6F9;
-            --card-shadow: 0 8px 24px rgba(0,0,0,0.04);
+            --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
         }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: #0F172A;
@@ -34,6 +37,7 @@
             padding: 20px 0;
             margin: 0;
         }
+
         .app-container {
             width: 100%;
             max-width: 440px;
@@ -47,6 +51,7 @@
             position: relative;
             border: 8px solid #1E293B;
         }
+
         /* App Header */
         .app-header {
             background: var(--primary-gradient);
@@ -56,6 +61,7 @@
             align-items: center;
             justify-content: space-between;
         }
+
         .app-logo {
             font-weight: 800;
             font-size: 1.3rem;
@@ -63,9 +69,11 @@
             align-items: center;
             gap: 8px;
         }
+
         .app-logo i {
             color: var(--accent);
         }
+
         .badge-verified {
             background: #E3FCEF;
             color: #00875A;
@@ -77,6 +85,7 @@
             align-items: center;
             gap: 4px;
         }
+
         /* Main Body Scrollable Area */
         .app-body {
             flex: 1;
@@ -84,6 +93,7 @@
             background: var(--bg-light);
             padding: 16px;
         }
+
         /* Bottom Tab Bar */
         .app-tabbar {
             height: 72px;
@@ -94,6 +104,7 @@
             justify-content: space-around;
             padding: 0 8px;
         }
+
         .tab-item {
             display: flex;
             flex-direction: column;
@@ -107,15 +118,19 @@
             transition: all 0.2s ease;
             width: 60px;
         }
+
         .tab-item i {
             font-size: 1.25rem;
         }
+
         .tab-item.active {
             color: var(--primary);
         }
+
         .tab-item.active i {
             transform: translateY(-2px);
         }
+
         /* Cards & Buttons */
         .product-card {
             background: #fff;
@@ -126,22 +141,27 @@
             margin-bottom: 16px;
             transition: transform 0.2s ease;
         }
+
         .product-card:hover {
             transform: translateY(-2px);
         }
+
         .product-img {
             width: 100%;
             height: 170px;
             object-fit: cover;
         }
+
         .product-details {
             padding: 14px;
         }
+
         .price-tag {
             font-size: 1.15rem;
             font-weight: 800;
             color: var(--primary);
         }
+
         .category-chip {
             background: #EDF2F7;
             color: #475569;
@@ -153,10 +173,12 @@
             display: inline-block;
             cursor: pointer;
         }
+
         .category-chip.active {
             background: var(--primary);
             color: #fff;
         }
+
         /* Posting Fee Info Box */
         .fee-info-box {
             background: #FFFBEB;
@@ -165,6 +187,7 @@
             padding: 12px 14px;
             margin-bottom: 16px;
         }
+
         .btn-pasabuy {
             background: var(--primary);
             color: #fff;
@@ -175,10 +198,12 @@
             width: 100%;
             box-shadow: 0 4px 14px rgba(95, 39, 205, 0.3);
         }
+
         .btn-pasabuy:hover {
             background: #341F97;
             color: #fff;
         }
+
         .chat-bubble {
             max-width: 80%;
             padding: 10px 14px;
@@ -186,12 +211,14 @@
             font-size: 0.85rem;
             margin-bottom: 8px;
         }
+
         .chat-bubble.me {
             background: var(--primary);
             color: #fff;
             margin-left: auto;
             border-bottom-right-radius: 4px;
         }
+
         .chat-bubble.them {
             background: #E2E8F0;
             color: #1E293B;
@@ -200,19 +227,22 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="app-container">
         <!-- App Header -->
         <div class="app-header">
             <div class="app-logo">
-                <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center p-1 shadow-sm" style="width:36px; height:36px; flex-shrink:0;">
+                <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center p-1 shadow-sm"
+                    style="width:36px; height:36px; flex-shrink:0;">
                     <img src="LOGO.png" alt="PasaBuy Logo" style="height:24px; width:auto; object-fit:contain;">
                 </div>
                 <span>PasaBuy</span>
             </div>
             <div>
-                <span class="badge-verified" id="headerBadge" style="display:none;"><i class="fa-solid fa-circle-check"></i> Verified Student</span>
+                <span class="badge-verified" id="headerBadge" style="display:none;"><i
+                        class="fa-solid fa-circle-check"></i> Verified Student</span>
             </div>
         </div>
 
@@ -223,39 +253,51 @@
             <div id="authScreen" style="display:block;">
                 <div class="text-center p-4 bg-white rounded-4 border shadow-sm my-3">
                     <div class="mb-3 text-center">
-                        <img src="LOGO.png" alt="PasaBuy Logo" style="height:75px; width:auto; object-fit:contain; filter: drop-shadow(0 4px 10px rgba(95, 39, 205, 0.2));">
+                        <img src="LOGO.png" alt="PasaBuy Logo"
+                            style="height:75px; width:auto; object-fit:contain; filter: drop-shadow(0 4px 10px rgba(95, 39, 205, 0.2));">
                     </div>
                     <h5 class="fw-bold mb-1">PasaBuy Campus Marketplace</h5>
                     <p class="text-muted fs-8 mb-3">Your Campus. Your Marketplace.</p>
 
                     <!-- Failed Attempt Banner -->
-                    <div id="failedAttemptBanner" class="p-3 bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-3 fs-8 mb-3 text-start" style="display:none;">
-                        <i class="fa-solid fa-shield-exclamation me-1"></i> <strong id="failedAttemptMsg">Invalid credentials.</strong>
+                    <div id="failedAttemptBanner"
+                        class="p-3 bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-3 fs-8 mb-3 text-start"
+                        style="display:none;">
+                        <i class="fa-solid fa-shield-exclamation me-1"></i> <strong id="failedAttemptMsg">Invalid
+                            credentials.</strong>
                     </div>
 
                     <div class="text-start mb-3">
                         <label class="form-label fw-bold fs-7">School Email / Username</label>
-                        <input type="email" class="form-control rounded-3 fs-7" id="loginEmailInput" placeholder="e.g. yourname@student.edu.ph" value="">
+                        <input type="email" class="form-control rounded-3 fs-7" id="loginEmailInput"
+                            placeholder="e.g. yourname@student.edu.ph" value="">
                     </div>
 
                     <div class="text-start mb-3">
                         <label class="form-label fw-bold fs-7 d-flex justify-content-between">
                             <span>Password</span>
-                            <a href="javascript:void(0)" class="text-decoration-none fs-8 text-primary fw-semibold" onclick="openForgotPasswordModal(); return false;">Forgot Password?</a>
+                            <a href="javascript:void(0)" class="text-decoration-none fs-8 text-primary fw-semibold"
+                                onclick="openForgotPasswordModal(); return false;">Forgot Password?</a>
                         </label>
                         <div class="input-group">
-                            <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="loginPasswordInput" placeholder="Enter your password" value="">
-                            <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" onclick="togglePasswordVisibility('loginPasswordInput', 'loginEyeIcon')">
+                            <input type="password" class="form-control border-end-0 rounded-start-3 fs-7"
+                                id="loginPasswordInput" placeholder="Enter your password" value="">
+                            <button type="button"
+                                class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white"
+                                onclick="togglePasswordVisibility('loginPasswordInput', 'loginEyeIcon')">
                                 <i class="fa-solid fa-eye text-muted" id="loginEyeIcon"></i>
                             </button>
                         </div>
                     </div>
 
-                    <button class="btn btn-pasabuy mb-3" id="btnLoginSubmit" onclick="loginStudentWithPassword()"><i class="fa-solid fa-right-to-bracket me-2"></i> Log In to Account</button>
+                    <button class="btn btn-pasabuy mb-3" id="btnLoginSubmit" onclick="loginStudentWithPassword()"><i
+                            class="fa-solid fa-right-to-bracket me-2"></i> Log In to Account</button>
 
                     <div class="pt-3 border-top text-center">
                         <span class="fs-8 text-muted">New to PasaBuy Campus?</span><br>
-                        <button class="btn btn-outline-primary rounded-pill fw-bold px-4 fs-8 mt-2" onclick="openRegisterModal()"><i class="fa-solid fa-user-plus me-1"></i> Create Student Account</button>
+                        <button class="btn btn-outline-primary rounded-pill fw-bold px-4 fs-8 mt-2"
+                            onclick="openRegisterModal()"><i class="fa-solid fa-user-plus me-1"></i> Create Student
+                            Account</button>
                     </div>
                 </div>
             </div>
@@ -267,13 +309,17 @@
                         <span class="text-muted fs-8 fw-semibold">WELCOME BACK</span>
                         <h5 class="fw-bold mb-0" id="homeWelcomeName">Good morning, John!</h5>
                     </div>
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle" width="42" height="42" style="object-fit:cover;" id="homeAvatar">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
+                        class="rounded-circle" width="42" height="42" style="object-fit:cover;" id="homeAvatar">
                 </div>
 
                 <!-- Search Input -->
                 <div class="position-relative mb-3">
-                    <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left:14px; top:12px;"></i>
-                    <input type="text" class="form-control rounded-pill ps-5 pe-3 py-2 fs-7" placeholder="Search for calculators, books, tools..." id="searchInput" onkeyup="filterProducts()">
+                    <i class="fa-solid fa-magnifying-glass position-absolute text-muted"
+                        style="left:14px; top:12px;"></i>
+                    <input type="text" class="form-control rounded-pill ps-5 pe-3 py-2 fs-7"
+                        placeholder="Search for calculators, books, tools..." id="searchInput"
+                        onkeyup="filterProducts()">
                 </div>
 
                 <!-- Categories Horizontal Scroll -->
@@ -288,13 +334,15 @@
 
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <h6 class="fw-bold mb-0">Recommended for You</h6>
-                    <a href="#" class="text-decoration-none fs-8 fw-semibold text-primary" onclick="switchTab('explore')">See All</a>
+                    <a href="#" class="text-decoration-none fs-8 fw-semibold text-primary"
+                        onclick="switchTab('explore')">See All</a>
                 </div>
 
                 <div id="homeProductContainer">
                     <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
                         <i class="fa-solid fa-store-slash fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                        No campus listings published yet.<br>Go to <strong class="text-primary">+ Sell</strong> to post your first item!
+                        No campus listings published yet.<br>Go to <strong class="text-primary">+ Sell</strong> to post
+                        your first item!
                     </div>
                 </div>
             </div>
@@ -303,7 +351,8 @@
             <div id="tabExplore" style="display:none;">
                 <h5 class="fw-bold mb-3">Explore Marketplace</h5>
                 <div class="d-flex gap-2 mb-3">
-                    <select class="form-select form-select-sm rounded-pill" id="filterCondition" onchange="filterProducts()">
+                    <select class="form-select form-select-sm rounded-pill" id="filterCondition"
+                        onchange="filterProducts()">
                         <option value="All">All Conditions</option>
                         <option value="Like New">Like New</option>
                         <option value="Good">Good</option>
@@ -325,12 +374,14 @@
             <!-- SELL TAB (MULTI-STEP) -->
             <div id="tabSell" style="display:none;">
                 <h5 class="fw-bold mb-2">Create New Listing</h5>
-                <p class="text-muted fs-8 mb-3">PasaBuy collects only a small posting fee via PayMongo. Product payment is arranged face-to-face!</p>
+                <p class="text-muted fs-8 mb-3">PasaBuy collects only a small posting fee via PayMongo. Product payment
+                    is arranged face-to-face!</p>
 
                 <div id="sellStep1">
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Product Title</label>
-                        <input type="text" class="form-control rounded-3 fs-7" id="sellTitle" placeholder="e.g. Scientific Calculator FX-991ES">
+                        <input type="text" class="form-control rounded-3 fs-7" id="sellTitle"
+                            placeholder="e.g. Scientific Calculator FX-991ES">
                     </div>
 
                     <div class="mb-3">
@@ -345,13 +396,15 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Selling Price (₱)</label>
-                        <input type="number" class="form-control rounded-3 fs-7" id="sellPrice" value="500" oninput="calculateFeeLive()">
+                        <input type="number" class="form-control rounded-3 fs-7" id="sellPrice" value="500"
+                            oninput="calculateFeeLive()">
                     </div>
 
                     <!-- Server Fee Live Calculation Box -->
                     <div class="fee-info-box">
                         <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="fw-bold fs-8 text-warning-emphasis"><i class="fa-solid fa-calculator me-1"></i> Calculated PasaBuy Fee:</span>
+                            <span class="fw-bold fs-8 text-warning-emphasis"><i class="fa-solid fa-calculator me-1"></i>
+                                Calculated PasaBuy Fee:</span>
                             <span class="fw-extrabold fs-6 text-dark" id="feeDisplay">₱5.00</span>
                         </div>
                         <p class="mb-0 fs-9 text-muted">
@@ -369,18 +422,22 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold fs-7">Meetup Location <span class="text-muted fw-normal fs-8">(Optional)</span></label>
-                        <input type="text" class="form-control rounded-3 fs-7" id="sellMeetup" placeholder="e.g. Library Lobby, Gate 1, Cafeteria, or Any (Optional)">
+                        <label class="form-label fw-bold fs-7">Meetup Location <span
+                                class="text-muted fw-normal fs-8">(Optional)</span></label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="sellMeetup"
+                            placeholder="e.g. Library Lobby, Gate 1, Cafeteria, or Any (Optional)">
                     </div>
 
                     <!-- Photo Upload Section (Select Multiple Photos) -->
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7 d-flex align-items-center justify-content-between">
-                            <span><i class="fa-solid fa-camera text-primary me-1"></i> Product Photos <span class="text-danger">*</span></span>
+                            <span><i class="fa-solid fa-camera text-primary me-1"></i> Product Photos <span
+                                    class="text-danger">*</span></span>
                             <span class="text-muted fw-normal fs-8">Select 1 or multiple photos</span>
                         </label>
-                        <input type="file" class="form-control rounded-3 fs-7 mb-2" id="sellPhotosInput" accept="image/*" multiple onchange="previewSellPhotos(event)">
-                        
+                        <input type="file" class="form-control rounded-3 fs-7 mb-2" id="sellPhotosInput"
+                            accept="image/*" multiple onchange="previewSellPhotos(event)">
+
                         <!-- Image Preview Grid -->
                         <div class="d-flex gap-2 flex-wrap mt-2" id="sellPhotosPreviewGrid">
                         </div>
@@ -395,23 +452,32 @@
                         <h6 class="fw-bold mb-1">Pay Posting Fee via PayMongo</h6>
                         <p class="text-muted fs-8 mb-3">Pay via GCash, Maya, or Credit/Debit Card to activate post</p>
                         <div class="fw-bold fs-3 text-primary mb-3" id="payAmountDisplay">₱5.00</div>
-                        
+
                         <div class="p-3 bg-light rounded-3 mb-3 text-center border">
                             <div class="d-flex justify-content-center align-items-center gap-2 mb-2 flex-wrap">
-                                <span class="badge bg-info text-white fw-bold px-3 py-2 rounded-pill"><i class="fa-solid fa-mobile-screen-button me-1"></i> GCash</span>
-                                <span class="badge bg-primary text-white fw-bold px-3 py-2 rounded-pill"><i class="fa-solid fa-wallet me-1"></i> Maya</span>
-                                <span class="badge bg-dark text-white fw-bold px-3 py-2 rounded-pill"><i class="fa-solid fa-credit-card me-1"></i> Card</span>
+                                <span class="badge bg-info text-white fw-bold px-3 py-2 rounded-pill"><i
+                                        class="fa-solid fa-mobile-screen-button me-1"></i> GCash</span>
+                                <span class="badge bg-primary text-white fw-bold px-3 py-2 rounded-pill"><i
+                                        class="fa-solid fa-wallet me-1"></i> Maya</span>
+                                <span class="badge bg-dark text-white fw-bold px-3 py-2 rounded-pill"><i
+                                        class="fa-solid fa-credit-card me-1"></i> Card</span>
                             </div>
-                            <p class="fs-9 text-muted mb-0">Click <strong>Pay Now on PayMongo</strong> below to open the official PayMongo checkout window where you can scan your live GCash QR!</p>
+                            <p class="fs-9 text-muted mb-0">Click <strong>Pay Now on PayMongo</strong> below to open the
+                                official PayMongo checkout window where you can scan your live GCash QR!</p>
                         </div>
 
                         <div>
-                            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-8"><i class="fa-solid fa-shield-halved me-1"></i> PayMongo Live API Connected</span>
+                            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-8"><i
+                                    class="fa-solid fa-shield-halved me-1"></i> PayMongo Live API Connected</span>
                         </div>
                     </div>
 
-                    <button class="btn btn-pasabuy mb-2" onclick="redirectToPayMongoCheckout()"><i class="fa-solid fa-external-link me-1"></i> Pay Now on PayMongo (GCash / Maya / Card)</button>
-                    <button class="btn btn-outline-secondary w-100 rounded-pill fw-bold" onclick="simulatePaymentSuccess()"><i class="fa-solid fa-check-circle me-1"></i> Confirm Payment Completed</button>
+                    <button class="btn btn-pasabuy mb-2" onclick="redirectToPayMongoCheckout()"><i
+                            class="fa-solid fa-external-link me-1"></i> Pay Now on PayMongo (GCash / Maya /
+                        Card)</button>
+                    <button class="btn btn-outline-secondary w-100 rounded-pill fw-bold"
+                        onclick="simulatePaymentSuccess()"><i class="fa-solid fa-check-circle me-1"></i> Confirm Payment
+                        Completed</button>
                 </div>
             </div>
 
@@ -419,13 +485,16 @@
             <div id="tabWanted" style="display:none;">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <h5 class="fw-bold mb-0">Wanted Posts</h5>
-                    <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="openWantedModal()"><i class="fa-solid fa-plus me-1"></i> Post Wanted</button>
+                    <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="openWantedModal()"><i
+                            class="fa-solid fa-plus me-1"></i> Post Wanted</button>
                 </div>
 
                 <div id="wantedListContainer">
-                    <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4" id="noWantedPlaceholder">
+                    <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4"
+                        id="noWantedPlaceholder">
                         <i class="fa-solid fa-bullhorn fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                        No active wanted posts right now.<br>Click <strong>+ Post Wanted</strong> to request items or food pasabuy!
+                        No active wanted posts right now.<br>Click <strong>+ Post Wanted</strong> to request items or
+                        food pasabuy!
                     </div>
                 </div>
             </div>
@@ -442,14 +511,17 @@
             <!-- CHAT VIEW (SUB-SCREEN) -->
             <div id="chatView" style="display:none; height:100%; flex-direction:column;">
                 <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom flex-shrink-0">
-                    <button class="btn btn-sm btn-light rounded-circle" onclick="closeChat()"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button class="btn btn-sm btn-light rounded-circle" onclick="closeChat()"><i
+                            class="fa-solid fa-arrow-left"></i></button>
                     <span class="fw-bold fs-7" id="chatPartnerName">Student</span>
-                    <button class="btn btn-sm btn-outline-danger rounded-pill fs-8" onclick="openReportModal()">Report User</button>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill fs-8" onclick="openReportModal()">Report
+                        User</button>
                 </div>
 
                 <!-- Attached Item Header -->
                 <div class="p-2 bg-white rounded-3 border mb-2 d-flex align-items-center gap-2 flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=100&q=80" class="rounded-2" width="40" height="40" style="object-fit:cover;">
+                    <img src="https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=100&q=80" class="rounded-2"
+                        width="40" height="40" style="object-fit:cover;">
                     <div>
                         <div class="fw-bold fs-8" id="chatItemTitle">Campus Item</div>
                         <div class="text-primary fw-bold fs-8" id="chatItemPrice">₱0.00</div>
@@ -458,7 +530,8 @@
 
                 <!-- Safety Reminder -->
                 <div class="p-2 bg-warning-subtle text-warning-emphasis rounded-3 fs-9 mb-2 flex-shrink-0">
-                    <i class="fa-solid fa-shield-halved me-1"></i> Meet in a safe public location and inspect the item before paying cash.
+                    <i class="fa-solid fa-shield-halved me-1"></i> Meet in a safe public location and inspect the item
+                    before paying cash.
                 </div>
 
                 <!-- Chat Stream -->
@@ -466,9 +539,14 @@
                 </div>
 
                 <!-- Input Box -->
-                <div class="d-flex gap-2 pt-2 border-top bg-white flex-shrink-0" style="background:#ffffff; position:relative; z-index:100;">
-                    <input type="text" class="form-control rounded-pill fs-8" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
-                    <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px; height:38px;" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                <div class="d-flex gap-2 pt-2 border-top bg-white flex-shrink-0"
+                    style="background:#ffffff; position:relative; z-index:100;">
+                    <input type="text" class="form-control rounded-pill fs-8" id="chatInput"
+                        placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                    <button
+                        class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                        style="width:38px; height:38px;" onclick="sendChatMessage()"><i
+                            class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
 
@@ -476,18 +554,26 @@
             <div id="tabProfile" style="display:none;">
                 <div class="text-center p-3 bg-white rounded-4 border shadow-sm mb-3">
                     <div class="position-relative d-inline-block mb-2">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle border shadow-sm" width="80" height="80" style="object-fit:cover;" id="profileAvatar">
-                        <button class="btn btn-primary btn-sm rounded-circle position-absolute bottom-0 end-0 p-1" style="width:28px; height:28px; transform:translate(10%, 10%);" onclick="openProfileSettingsModal()"><i class="fa-solid fa-camera fs-9"></i></button>
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
+                            class="rounded-circle border shadow-sm" width="80" height="80" style="object-fit:cover;"
+                            id="profileAvatar">
+                        <button class="btn btn-primary btn-sm rounded-circle position-absolute bottom-0 end-0 p-1"
+                            style="width:28px; height:28px; transform:translate(10%, 10%);"
+                            onclick="openProfileSettingsModal()"><i class="fa-solid fa-camera fs-9"></i></button>
                     </div>
                     <h6 class="fw-bold mb-0" id="profileName">John Doe</h6>
-                    <span class="badge-verified mb-2" id="profileBadge"><i class="fa-solid fa-circle-check"></i> Verified Student</span>
+                    <span class="badge-verified mb-2" id="profileBadge"><i class="fa-solid fa-circle-check"></i>
+                        Verified Student</span>
                     <div class="fs-8 text-muted mb-2" id="profileSub">2023-00123 • BS Computer Science (3rd Yr)</div>
-                    
-                    <button class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold mb-1" onclick="openProfileSettingsModal()"><i class="fa-solid fa-gear me-1"></i> Edit Profile & Settings</button>
+
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold mb-1"
+                        onclick="openProfileSettingsModal()"><i class="fa-solid fa-gear me-1"></i> Edit Profile &
+                        Settings</button>
 
                     <div class="d-flex justify-content-center gap-4 mt-3 pt-2 border-top">
                         <div>
-                            <div class="fw-bold text-dark fs-6"><span id="profileRating">0.0</span> <i class="fa-solid fa-star text-warning"></i></div>
+                            <div class="fw-bold text-dark fs-6"><span id="profileRating">0.0</span> <i
+                                    class="fa-solid fa-star text-warning"></i></div>
                             <div class="fs-8 text-muted">Rating</div>
                         </div>
                         <div>
@@ -499,8 +585,9 @@
 
                 <!-- MY SELLING ITEMS & INTERESTED BUYERS SECTION -->
                 <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
-                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-store text-primary me-2"></i>My Selling Items & Interested Buyers</h6>
-                    
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-store text-primary me-2"></i>My Selling Items &
+                        Interested Buyers</h6>
+
                     <div id="mySellingItemsContainer">
                         <div class="text-center py-4 text-muted fs-8" id="noSellingItemsPlaceholder">
                             <i class="fa-solid fa-box-open fs-3 d-block mb-2 text-secondary"></i>
@@ -510,7 +597,8 @@
                 </div>
 
                 <!-- LOGOUT BUTTON -->
-                <button class="btn btn-outline-danger w-100 rounded-pill fw-bold py-2 mb-3" onclick="logoutStudent()"><i class="fa-solid fa-right-from-bracket me-2"></i> Log Out Account</button>
+                <button class="btn btn-outline-danger w-100 rounded-pill fw-bold py-2 mb-3" onclick="logoutStudent()"><i
+                        class="fa-solid fa-right-from-bracket me-2"></i> Log Out Account</button>
             </div>
 
         </div>
@@ -549,12 +637,14 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 p-3">
                 <div class="modal-header border-0">
-                    <h6 class="modal-title fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Submit Report to Admin</h6>
+                    <h6 class="modal-title fw-bold text-danger"><i
+                            class="fa-solid fa-triangle-exclamation me-2"></i>Submit Report to Admin</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="fs-8 text-muted mb-3">Reports are reviewed directly by PasaBuy Admin. If policy violations are found, the account will be suspended.</p>
-                    
+                    <p class="fs-8 text-muted mb-3">Reports are reviewed directly by PasaBuy Admin. If policy violations
+                        are found, the account will be suspended.</p>
+
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Report Reason</label>
                         <select class="form-select rounded-3 fs-7" id="reportReason">
@@ -569,12 +659,15 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Details for Admin Review</label>
-                        <textarea class="form-control rounded-3 fs-7" id="reportDetails" rows="3" placeholder="Describe what happened..."></textarea>
+                        <textarea class="form-control rounded-3 fs-7" id="reportDetails" rows="3"
+                            placeholder="Describe what happened..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger rounded-pill px-4 fs-8" onclick="submitReportToAdmin()">Submit Report</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4 fs-8"
+                        onclick="submitReportToAdmin()">Submit Report</button>
                 </div>
             </div>
         </div>
@@ -585,15 +678,18 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 p-3">
                 <div class="modal-header border-0">
-                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-bullhorn me-2"></i>Post Wanted Item / Campus Request</h6>
+                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-bullhorn me-2"></i>Post Wanted
+                        Item / Campus Request</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="fs-8 text-muted mb-3">Looking for something urgent or need a food pasabuy? Post your request and let fellow campus students offer!</p>
-                    
+                    <p class="fs-8 text-muted mb-3">Looking for something urgent or need a food pasabuy? Post your
+                        request and let fellow campus students offer!</p>
+
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Item / Request Title</label>
-                        <input type="text" class="form-control rounded-3 fs-7" id="wantedTitle" placeholder="e.g. Need Casio FX-991ES Calculator for 2PM Exam!">
+                        <input type="text" class="form-control rounded-3 fs-7" id="wantedTitle"
+                            placeholder="e.g. Need Casio FX-991ES Calculator for 2PM Exam!">
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -609,7 +705,8 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">Max Budget (₱)</label>
-                            <input type="number" class="form-control rounded-3 fs-7" id="wantedBudget" placeholder="e.g. 400">
+                            <input type="number" class="form-control rounded-3 fs-7" id="wantedBudget"
+                                placeholder="e.g. 400">
                         </div>
                     </div>
 
@@ -623,18 +720,24 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold fs-7">Preferred Meetup / Delivery Location <span class="text-muted fw-normal fs-8">(Optional)</span></label>
-                        <input type="text" class="form-control rounded-3 fs-7" id="wantedMeetup" placeholder="e.g. Library Lobby, Gate 1, Cafeteria, or Any (Optional)">
+                        <label class="form-label fw-bold fs-7">Preferred Meetup / Delivery Location <span
+                                class="text-muted fw-normal fs-8">(Optional)</span></label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="wantedMeetup"
+                            placeholder="e.g. Library Lobby, Gate 1, Cafeteria, or Any (Optional)">
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Description / Specific Instructions</label>
-                        <textarea class="form-control rounded-3 fs-7" id="wantedDescription" rows="2" placeholder="e.g. Willing to meet before 2 PM at Library. Will pay cash or GCash."></textarea>
+                        <textarea class="form-control rounded-3 fs-7" id="wantedDescription" rows="2"
+                            placeholder="e.g. Willing to meet before 2 PM at Library. Will pay cash or GCash."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold" onclick="submitWantedPost()"><i class="fa-solid fa-paper-plane me-1"></i> Publish Request</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold"
+                        onclick="submitWantedPost()"><i class="fa-solid fa-paper-plane me-1"></i> Publish
+                        Request</button>
                 </div>
             </div>
         </div>
@@ -657,26 +760,33 @@
                     <div class="text-center p-3 bg-light rounded-4 border mb-3">
                         <span class="text-muted fs-8">TOTAL POSTING FEE</span>
                         <div class="fw-extrabold fs-2 text-primary" id="gatewayAmount">₱5.00</div>
-                        <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-9 mt-1"><i class="fa-solid fa-shield-halved me-1"></i> PayMongo Live API Active</span>
+                        <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-9 mt-1"><i
+                                class="fa-solid fa-shield-halved me-1"></i> PayMongo Live API Active</span>
                     </div>
 
                     <label class="form-label fw-bold fs-7 mb-2">Select Payment Channel to Pay</label>
                     <div class="d-grid gap-2 mb-2">
-                        <button class="btn btn-outline-primary rounded-3 text-start p-3 fw-bold d-flex align-items-center justify-content-between" onclick="showGcashStep()">
+                        <button
+                            class="btn btn-outline-primary rounded-3 text-start p-3 fw-bold d-flex align-items-center justify-content-between"
+                            onclick="showGcashStep()">
                             <div>
                                 <i class="fa-solid fa-mobile-screen-button fs-5 text-info me-2"></i>
                                 <span>GCash E-Wallet / QRPh</span>
                             </div>
                             <span class="badge bg-primary rounded-pill">Pay ₱5.00</span>
                         </button>
-                        <button class="btn btn-outline-dark rounded-3 text-start p-3 fw-bold d-flex align-items-center justify-content-between" onclick="completePayMongoPayment()">
+                        <button
+                            class="btn btn-outline-dark rounded-3 text-start p-3 fw-bold d-flex align-items-center justify-content-between"
+                            onclick="completePayMongoPayment()">
                             <div>
                                 <i class="fa-solid fa-wallet fs-5 text-primary me-2"></i>
                                 <span>Maya Wallet</span>
                             </div>
                             <span class="badge bg-dark rounded-pill">Pay ₱5.00</span>
                         </button>
-                        <button class="btn btn-outline-secondary rounded-3 text-start p-3 fw-bold d-flex align-items-center justify-content-between" onclick="completePayMongoPayment()">
+                        <button
+                            class="btn btn-outline-secondary rounded-3 text-start p-3 fw-bold d-flex align-items-center justify-content-between"
+                            onclick="completePayMongoPayment()">
                             <div>
                                 <i class="fa-solid fa-credit-card fs-5 text-success me-2"></i>
                                 <span>Credit / Debit Card</span>
@@ -689,29 +799,38 @@
                 <!-- Step 2: PayMongo GCash Live QR Code View -->
                 <div class="modal-body py-3 text-center" id="pmStep2" style="display:none;">
                     <div class="p-3 bg-primary bg-opacity-10 rounded-4 border border-primary-subtle mb-3">
-                        <span class="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill fs-9 mb-2"><i class="fa-solid fa-qrcode me-1"></i> PayMongo Live QRPh / GCash Code</span>
+                        <span class="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill fs-9 mb-2"><i
+                                class="fa-solid fa-qrcode me-1"></i> PayMongo Live QRPh / GCash Code</span>
                         <div class="fw-extrabold fs-2 text-primary mb-1" id="gcashAmountDisplay">₱5.00</div>
                         <div class="fs-9 text-muted mb-2">Merchant: <strong>PasaBuy Campus Marketplace</strong></div>
-                        
+
                         <!-- Generated Live PayMongo GCash QR Code Image -->
-                        <div class="bg-white p-3 rounded-4 border d-inline-block shadow-sm mb-2" style="max-width: 240px;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://pasabuy.site/pasabuy_api.php?action=paymongo_gcash_qr" id="paymongoQrImage" alt="PayMongo GCash QR Code" class="img-fluid rounded-3 mb-2" style="width: 180px; height: 180px;">
-                            <div class="fw-bold fs-9 text-dark"><i class="fa-solid fa-camera me-1 text-primary"></i> Scan with GCash App</div>
+                        <div class="bg-white p-3 rounded-4 border d-inline-block shadow-sm mb-2"
+                            style="max-width: 240px;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://pasabuy.site/pasabuy_api.php?action=paymongo_gcash_qr"
+                                id="paymongoQrImage" alt="PayMongo GCash QR Code" class="img-fluid rounded-3 mb-2"
+                                style="width: 180px; height: 180px;">
+                            <div class="fw-bold fs-9 text-dark"><i class="fa-solid fa-camera me-1 text-primary"></i>
+                                Scan with GCash App</div>
                         </div>
-                        
+
                         <!-- Real-Time Auto Detection Status Badge -->
-                        <div id="paymongoStatusBadge" class="p-2 bg-white rounded-3 border fs-8 text-primary fw-bold mb-2">
+                        <div id="paymongoStatusBadge"
+                            class="p-2 bg-white rounded-3 border fs-8 text-primary fw-bold mb-2">
                             <span class="spinner-border spinner-border-sm me-1 text-primary" role="status"></span>
                             Waiting for GCash QR payment...
                         </div>
 
-                        <p class="fs-9 text-muted mb-0">Scan QR with GCash app. Payment auto-detects and closes automatically!</p>
+                        <p class="fs-9 text-muted mb-0">Scan QR with GCash app. Payment auto-detects and closes
+                            automatically!</p>
                     </div>
 
-                    <button type="button" class="btn btn-success w-100 rounded-pill fw-bold py-2 fs-7 mb-2" id="btnAutoVerifyPayMongo" onclick="completePayMongoPayment()">
+                    <button type="button" class="btn btn-success w-100 rounded-pill fw-bold py-2 fs-7 mb-2"
+                        id="btnAutoVerifyPayMongo" onclick="completePayMongoPayment()">
                         <i class="fa-solid fa-circle-check me-1"></i> Verify & Post Live Now
                     </button>
-                    <button type="button" class="btn btn-link text-muted fs-8" onclick="showPmStep1()"><i class="fa-solid fa-arrow-left me-1"></i> Back to Payment Options</button>
+                    <button type="button" class="btn btn-link text-muted fs-8" onclick="showPmStep1()"><i
+                            class="fa-solid fa-arrow-left me-1"></i> Back to Payment Options</button>
                 </div>
 
             </div>
@@ -723,19 +842,24 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 p-3">
                 <div class="modal-header border-0">
-                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-gear me-2"></i>Account Profile & Settings</h6>
+                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-gear me-2"></i>Account Profile &
+                        Settings</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="fs-8 text-muted mb-3">Update your profile info and avatar picture visible to fellow campus students.</p>
+                    <p class="fs-8 text-muted mb-3">Update your profile info and avatar picture visible to fellow campus
+                        students.</p>
 
                     <!-- Avatar Change Box -->
                     <div class="text-center mb-3">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle border shadow-sm mb-2" width="80" height="80" style="object-fit:cover;" id="settingsAvatarPreview">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
+                            class="rounded-circle border shadow-sm mb-2" width="80" height="80"
+                            style="object-fit:cover;" id="settingsAvatarPreview">
                         <div>
                             <label class="btn btn-sm btn-outline-secondary rounded-pill fs-8">
                                 <i class="fa-solid fa-camera me-1"></i> Upload New Profile Picture
-                                <input type="file" id="settingsAvatarInput" accept="image/*" style="display:none;" onchange="previewSettingsAvatar(event)">
+                                <input type="file" id="settingsAvatarInput" accept="image/*" style="display:none;"
+                                    onchange="previewSettingsAvatar(event)">
                             </label>
                         </div>
                     </div>
@@ -743,23 +867,27 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">First Name</label>
-                            <input type="text" class="form-control rounded-3 fs-7" id="settingsFirstName" placeholder="First Name">
+                            <input type="text" class="form-control rounded-3 fs-7" id="settingsFirstName"
+                                placeholder="First Name">
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">Last Name</label>
-                            <input type="text" class="form-control rounded-3 fs-7" id="settingsLastName" placeholder="Last Name">
+                            <input type="text" class="form-control rounded-3 fs-7" id="settingsLastName"
+                                placeholder="Last Name">
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Student Number</label>
-                        <input type="text" class="form-control rounded-3 fs-7" id="settingsStudentNumber" placeholder="Student Number">
+                        <input type="text" class="form-control rounded-3 fs-7" id="settingsStudentNumber"
+                            placeholder="Student Number">
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-7">
                             <label class="form-label fw-bold fs-7">Course / Program</label>
-                            <input type="text" class="form-control rounded-3 fs-7" id="settingsCourse" placeholder="Course / Program">
+                            <input type="text" class="form-control rounded-3 fs-7" id="settingsCourse"
+                                placeholder="Course / Program">
                         </div>
                         <div class="col-5">
                             <label class="form-label fw-bold fs-7">Year Level</label>
@@ -774,8 +902,11 @@
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold" onclick="saveProfileSettings()"><i class="fa-solid fa-floppy-disk me-1"></i> Save & Update Profile</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold"
+                        onclick="saveProfileSettings()"><i class="fa-solid fa-floppy-disk me-1"></i> Save & Update
+                        Profile</button>
                 </div>
             </div>
         </div>
@@ -786,37 +917,44 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 p-4">
                 <div class="modal-header border-0 pb-0">
-                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-user-plus me-2"></i>Create PasaBuy Student Account</h6>
+                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-user-plus me-2"></i>Create
+                        PasaBuy Student Account</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-3">
-                    <p class="fs-8 text-muted mb-3">Register your campus student info. We will send a 6-digit OTP to your email to verify before saving your account to the database.</p>
-                    
+                    <p class="fs-8 text-muted mb-3">Register your campus student info. We will send a 6-digit OTP to
+                        your email to verify before saving your account to the database.</p>
+
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">First Name</label>
-                            <input type="text" class="form-control rounded-3 fs-7" id="regFirstName" placeholder="e.g. Juan">
+                            <input type="text" class="form-control rounded-3 fs-7" id="regFirstName"
+                                placeholder="e.g. Juan">
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">Last Name</label>
-                            <input type="text" class="form-control rounded-3 fs-7" id="regLastName" placeholder="e.g. Dela Cruz">
+                            <input type="text" class="form-control rounded-3 fs-7" id="regLastName"
+                                placeholder="e.g. Dela Cruz">
                         </div>
                     </div>
 
                     <div class="mb-2">
                         <label class="form-label fw-bold fs-7">School Email Address</label>
-                        <input type="email" class="form-control rounded-3 fs-7" id="regEmail" placeholder="e.g. juan.delacruz@student.edu.ph">
+                        <input type="email" class="form-control rounded-3 fs-7" id="regEmail"
+                            placeholder="e.g. juan.delacruz@student.edu.ph">
                     </div>
 
                     <div class="mb-2">
                         <label class="form-label fw-bold fs-7">Student Number</label>
-                        <input type="text" class="form-control rounded-3 fs-7" id="regStudentNumber" placeholder="e.g. 2024-00982">
+                        <input type="text" class="form-control rounded-3 fs-7" id="regStudentNumber"
+                            placeholder="e.g. 2024-00982">
                     </div>
 
                     <div class="row g-2 mb-2">
                         <div class="col-7">
                             <label class="form-label fw-bold fs-7">Course / Program</label>
-                            <input type="text" class="form-control rounded-3 fs-7" id="regCourse" placeholder="e.g. BS Computer Science">
+                            <input type="text" class="form-control rounded-3 fs-7" id="regCourse"
+                                placeholder="e.g. BS Computer Science">
                         </div>
                         <div class="col-5">
                             <label class="form-label fw-bold fs-7">Year Level</label>
@@ -833,8 +971,12 @@
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="regPassword" placeholder="Min 8 chars" oninput="validateRegistrationPasswordLive()">
-                                <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" onclick="togglePasswordVisibility('regPassword', 'regEyeIcon')">
+                                <input type="password" class="form-control border-end-0 rounded-start-3 fs-7"
+                                    id="regPassword" placeholder="Min 8 chars"
+                                    oninput="validateRegistrationPasswordLive()">
+                                <button type="button"
+                                    class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white"
+                                    onclick="togglePasswordVisibility('regPassword', 'regEyeIcon')">
                                     <i class="fa-solid fa-eye text-muted fs-8" id="regEyeIcon"></i>
                                 </button>
                             </div>
@@ -842,8 +984,12 @@
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">Confirm Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="regConfirmPassword" placeholder="Re-type password" oninput="validateRegistrationPasswordLive()">
-                                <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" onclick="togglePasswordVisibility('regConfirmPassword', 'regConfirmEyeIcon')">
+                                <input type="password" class="form-control border-end-0 rounded-start-3 fs-7"
+                                    id="regConfirmPassword" placeholder="Re-type password"
+                                    oninput="validateRegistrationPasswordLive()">
+                                <button type="button"
+                                    class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white"
+                                    onclick="togglePasswordVisibility('regConfirmPassword', 'regConfirmEyeIcon')">
                                     <i class="fa-solid fa-eye text-muted fs-8" id="regConfirmEyeIcon"></i>
                                 </button>
                             </div>
@@ -853,15 +999,22 @@
                     <!-- Live Password Checker & Match Feedback -->
                     <div class="p-3 bg-light rounded-3 border mb-3 text-start fs-8">
                         <div class="fw-bold mb-1 text-dark fs-8">Password Security Checklist:</div>
-                        <div id="regReqLen" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 8 characters long</div>
-                        <div id="regReqCapital" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1 Capital Letter (A-Z)</div>
-                        <div id="regReqNumber" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1 Number (0-9)</div>
-                        <div id="regReqSymbol" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1 Special Symbol (!@#$%^&*...)</div>
+                        <div id="regReqLen" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 8
+                            characters long</div>
+                        <div id="regReqCapital" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least
+                            1 Capital Letter (A-Z)</div>
+                        <div id="regReqNumber" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1
+                            Number (0-9)</div>
+                        <div id="regReqSymbol" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1
+                            Special Symbol (!@#$%^&*...)</div>
                         <hr class="my-2">
-                        <div id="regMatchStatus" class="fw-bold text-muted"><i class="fa-solid fa-lock me-1"></i> Enter matching passwords</div>
+                        <div id="regMatchStatus" class="fw-bold text-muted"><i class="fa-solid fa-lock me-1"></i> Enter
+                            matching passwords</div>
                     </div>
 
-                    <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7" onclick="submitRegistrationSendOtp()"><i class="fa-solid fa-paper-plane me-1"></i> Send OTP Verification Code</button>
+                    <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7"
+                        onclick="submitRegistrationSendOtp()"><i class="fa-solid fa-paper-plane me-1"></i> Send OTP
+                        Verification Code</button>
                 </div>
             </div>
         </div>
@@ -872,33 +1025,50 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 p-4 shadow-lg text-center position-relative overflow-hidden">
                 <!-- Glowing Top Accent Header Gradient -->
-                <div style="height:6px; background: linear-gradient(90deg, #5F27CD, #00d2d3, #ff9f43); position:absolute; top:0; left:0; right:0;"></div>
-                
+                <div
+                    style="height:6px; background: linear-gradient(90deg, #5F27CD, #00d2d3, #ff9f43); position:absolute; top:0; left:0; right:0;">
+                </div>
+
                 <div class="modal-body py-2">
                     <!-- Success Sent Icon Badge -->
                     <div class="mb-3 position-relative d-inline-block">
-                        <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width:72px; height:72px;">
+                        <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+                            style="width:72px; height:72px;">
                             <i class="fa-solid fa-paper-plane fs-2"></i>
                         </div>
-                        <span class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center border border-2 border-white shadow-sm" style="width:26px; height:26px; font-size:11px;">
+                        <span
+                            class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center border border-2 border-white shadow-sm"
+                            style="width:26px; height:26px; font-size:11px;">
                             <i class="fa-solid fa-check"></i>
                         </span>
                     </div>
 
                     <h5 class="fw-extrabold text-dark mb-1">OTP Verification Code Sent!</h5>
-                    <p class="fs-8 text-muted mb-3">We sent a 6-digit security code to <br><strong class="text-primary fs-7" id="otpTargetEmail">user@gmail.com</strong> from <code>PASABUY@pasabuy.site</code></p>
+                    <p class="fs-8 text-muted mb-3">We sent a 6-digit security code to <br><strong
+                            class="text-primary fs-7" id="otpTargetEmail">user@gmail.com</strong> from
+                        <code>PASABUY@pasabuy.site</code></p>
 
                     <!-- OTP Code Input Box -->
                     <div class="p-3 bg-light rounded-4 border mb-3">
-                        <label class="form-label fw-bold fs-8 text-uppercase text-muted tracking-wider mb-2">Enter 6-Digit Verification Code</label>
-                        <input type="text" class="form-control text-center fw-extrabold fs-2 rounded-3 border-2 border-primary bg-white shadow-sm" id="otpInputCode" maxlength="6" placeholder="0 0 0 0 0 0" style="letter-spacing: 10px; font-family: monospace;">
-                        <span class="fs-9 text-muted mt-2 d-block"><i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i> Code expires in <strong class="text-dark">10 minutes</strong></span>
+                        <label class="form-label fw-bold fs-8 text-uppercase text-muted tracking-wider mb-2">Enter
+                            6-Digit Verification Code</label>
+                        <input type="text"
+                            class="form-control text-center fw-extrabold fs-2 rounded-3 border-2 border-primary bg-white shadow-sm"
+                            id="otpInputCode" maxlength="6" placeholder="0 0 0 0 0 0"
+                            style="letter-spacing: 10px; font-family: monospace;">
+                        <span class="fs-9 text-muted mt-2 d-block"><i
+                                class="fa-solid fa-clock-rotate-left me-1 text-warning"></i> Code expires in <strong
+                                class="text-dark">10 minutes</strong></span>
                     </div>
 
-                    <div id="otpVerifyErrorAlert" class="alert alert-danger rounded-3 fs-8 p-2 mb-3" style="display:none;"></div>
+                    <div id="otpVerifyErrorAlert" class="alert alert-danger rounded-3 fs-8 p-2 mb-3"
+                        style="display:none;"></div>
 
-                    <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2.5 fs-7 shadow-sm mb-2" onclick="verifyOtpAndCompleteRegistration()"><i class="fa-solid fa-shield-check me-1"></i> Verify OTP & Complete Registration</button>
-                    <button type="button" class="btn btn-light w-100 rounded-pill text-muted fs-8 fw-semibold" data-bs-dismiss="modal">Cancel Registration</button>
+                    <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2.5 fs-7 shadow-sm mb-2"
+                        onclick="verifyOtpAndCompleteRegistration()"><i class="fa-solid fa-shield-check me-1"></i>
+                        Verify OTP & Complete Registration</button>
+                    <button type="button" class="btn btn-light w-100 rounded-pill text-muted fs-8 fw-semibold"
+                        data-bs-dismiss="modal">Cancel Registration</button>
                 </div>
             </div>
         </div>
@@ -909,18 +1079,23 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 p-4">
                 <div class="modal-header border-0 pb-0">
-                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-key me-2"></i>Forgot Account Password</h6>
+                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-key me-2"></i>Forgot Account
+                        Password</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-3">
-                    <p class="fs-8 text-muted mb-3">Enter your registered school email. We will send an OTP code to verify your identity before allowing password reset.</p>
+                    <p class="fs-8 text-muted mb-3">Enter your registered school email. We will send an OTP code to
+                        verify your identity before allowing password reset.</p>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Registered School Email</label>
-                        <input type="email" class="form-control rounded-3 fs-7" id="forgotEmailInput" placeholder="e.g. john.doe@student.edu.ph">
+                        <input type="email" class="form-control rounded-3 fs-7" id="forgotEmailInput"
+                            placeholder="e.g. john.doe@student.edu.ph">
                     </div>
 
-                    <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7" onclick="submitForgotPasswordSendOtp()"><i class="fa-solid fa-paper-plane me-1"></i> Send Password Reset OTP</button>
+                    <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7"
+                        onclick="submitForgotPasswordSendOtp()"><i class="fa-solid fa-paper-plane me-1"></i> Send
+                        Password Reset OTP</button>
                 </div>
             </div>
         </div>
@@ -931,29 +1106,38 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 p-4">
                 <div class="modal-header border-0 pb-0">
-                    <h6 class="modal-title fw-bold text-success"><i class="fa-solid fa-lock-open me-2"></i>Reset Account Password</h6>
+                    <h6 class="modal-title fw-bold text-success"><i class="fa-solid fa-lock-open me-2"></i>Reset Account
+                        Password</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-3">
-                    <p class="fs-8 text-muted mb-2">Account: <strong class="text-dark" id="resetDisplayUsername">user@pasabuy.edu.ph</strong></p>
-                    <p class="fs-8 text-muted mb-3">Enter the 6-digit OTP code sent from <code>PASABUY@pasabuy.site</code> and your new password.</p>
+                    <p class="fs-8 text-muted mb-2">Account: <strong class="text-dark"
+                            id="resetDisplayUsername">user@pasabuy.edu.ph</strong></p>
+                    <p class="fs-8 text-muted mb-3">Enter the 6-digit OTP code sent from
+                        <code>PASABUY@pasabuy.site</code> and your new password.</p>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">6-Digit OTP Code</label>
-                        <input type="text" class="form-control text-center fw-bold fs-4 rounded-3" id="resetOtpInput" maxlength="6" placeholder="000000" style="letter-spacing: 4px;">
+                        <input type="text" class="form-control text-center fw-bold fs-4 rounded-3" id="resetOtpInput"
+                            maxlength="6" placeholder="000000" style="letter-spacing: 4px;">
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">New Password</label>
                         <div class="input-group">
-                            <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="resetNewPasswordInput" placeholder="Enter new password">
-                            <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" onclick="togglePasswordVisibility('resetNewPasswordInput', 'resetEyeIcon')">
+                            <input type="password" class="form-control border-end-0 rounded-start-3 fs-7"
+                                id="resetNewPasswordInput" placeholder="Enter new password">
+                            <button type="button"
+                                class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white"
+                                onclick="togglePasswordVisibility('resetNewPasswordInput', 'resetEyeIcon')">
                                 <i class="fa-solid fa-eye text-muted" id="resetEyeIcon"></i>
                             </button>
                         </div>
                     </div>
 
-                    <button type="button" class="btn btn-success w-100 rounded-pill fw-bold py-2 fs-7" onclick="executePasswordReset()"><i class="fa-solid fa-floppy-disk me-1"></i> Save New Password & Log In</button>
+                    <button type="button" class="btn btn-success w-100 rounded-pill fw-bold py-2 fs-7"
+                        onclick="executePasswordReset()"><i class="fa-solid fa-floppy-disk me-1"></i> Save New Password
+                        & Log In</button>
                 </div>
             </div>
         </div>
@@ -968,16 +1152,24 @@
                         <i class="fa-solid fa-trash-can display-4"></i>
                     </div>
                     <h6 class="fw-bold text-dark mb-2">Delete Selling Post?</h6>
-                    <p class="fs-8 text-muted mb-3">Are you sure you want to delete <strong class="text-dark" id="deleteItemTitle">this listing</strong>?</p>
-                    
-                    <div class="p-3 bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-3 text-start mb-3 fs-8">
-                        <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>Note on Paid Posting Fee:</strong><br>
-                        You already paid <strong id="deleteItemFee" class="text-danger">₱5.00</strong> posting fee via PayMongo for this item post. Deleting this post is permanent and the posting fee is non-refundable.
+                    <p class="fs-8 text-muted mb-3">Are you sure you want to delete <strong class="text-dark"
+                            id="deleteItemTitle">this listing</strong>?</p>
+
+                    <div
+                        class="p-3 bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-3 text-start mb-3 fs-8">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>Note on Paid Posting
+                            Fee:</strong><br>
+                        You already paid <strong id="deleteItemFee" class="text-danger">₱5.00</strong> posting fee via
+                        PayMongo for this item post. Deleting this post is permanent and the posting fee is
+                        non-refundable.
                     </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-light rounded-pill w-100 fw-bold py-2 fs-8" data-bs-dismiss="modal">Keep Post</button>
-                    <button type="button" class="btn btn-danger rounded-pill w-100 fw-bold py-2 fs-8" onclick="executeDeleteListing()"><i class="fa-solid fa-trash me-1"></i> Yes, Delete Post</button>
+                    <button type="button" class="btn btn-light rounded-pill w-100 fw-bold py-2 fs-8"
+                        data-bs-dismiss="modal">Keep Post</button>
+                    <button type="button" class="btn btn-danger rounded-pill w-100 fw-bold py-2 fs-8"
+                        onclick="executeDeleteListing()"><i class="fa-solid fa-trash me-1"></i> Yes, Delete
+                        Post</button>
                 </div>
             </div>
         </div>
@@ -990,7 +1182,7 @@
         let forgotPasswordModalInstance = null;
         let resetPasswordModalInstance = null;
 
-        window.togglePasswordVisibility = function(inputId, iconId) {
+        window.togglePasswordVisibility = function (inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
             if (!input) return;
@@ -1006,7 +1198,7 @@
             }
         };
 
-        window.openRegisterModal = function() {
+        window.openRegisterModal = function () {
             const modalEl = document.getElementById('registerModal');
             if (modalEl) {
                 if (modalEl.parentElement !== document.body) {
@@ -1019,7 +1211,7 @@
             }
         };
 
-        window.openForgotPasswordModal = function() {
+        window.openForgotPasswordModal = function () {
             const modalEl = document.getElementById('forgotPasswordModal');
             if (modalEl) {
                 if (modalEl.parentElement !== document.body) {
@@ -1032,8 +1224,8 @@
             }
         };
 
-        const API_BASE = (window.location.port === '5200' || window.location.hostname === 'localhost') 
-            ? 'http://localhost:5000/api' 
+        const API_BASE = (window.location.port === '5200' || window.location.hostname === 'localhost')
+            ? 'http://localhost:5000/api'
             : window.location.origin + '/pasabuy_api.php';
 
         async function fetchApi(endpoint, options = {}) {
@@ -1103,7 +1295,7 @@
 
             const storedUserStr = localStorage.getItem('pasabuy_student_user');
             let studentUser = {};
-            try { studentUser = storedUserStr ? JSON.parse(storedUserStr) : {}; } catch(e) {}
+            try { studentUser = storedUserStr ? JSON.parse(storedUserStr) : {}; } catch (e) { }
 
             const currentProfName = document.getElementById('profileName').innerText || '';
             const nameParts = currentProfName.split(' ');
@@ -1127,7 +1319,7 @@
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 newAvatarDataUrl = e.target.result;
                 document.getElementById('settingsAvatarPreview').src = newAvatarDataUrl;
             };
@@ -1238,7 +1430,7 @@
         async function submitReportToAdmin() {
             const reason = document.getElementById('reportReason').value;
             const details = document.getElementById('reportDetails').value;
-            
+
             try {
                 await fetch(`${API_BASE}/reports`, {
                     method: 'POST',
@@ -1250,7 +1442,7 @@
                         details: details
                     })
                 });
-            } catch (e) {}
+            } catch (e) { }
 
             if (reportModalInstance) reportModalInstance.hide();
             alert(`Report submitted to PasaBuy Admin! Our moderation team will investigate. If confirmed, the user account will be suspended.`);
@@ -1285,7 +1477,7 @@
                         return;
                     }
                 }
-            } catch (e) {}
+            } catch (e) { }
 
             document.getElementById('authScreen').style.display = 'block';
             document.querySelector('.app-tabbar').style.display = 'none';
@@ -1361,7 +1553,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: email, password: password })
                     });
-                } catch (errApi) {}
+                } catch (errApi) { }
 
                 if (!res || !res.ok) {
                     res = await fetch('/pasabuy_otp.php', {
@@ -1392,7 +1584,7 @@
                     return;
                 } else {
                     let err = {};
-                    try { err = await res.json(); } catch(e) {}
+                    try { err = await res.json(); } catch (e) { }
                     failedLoginAttempts++;
                     const remaining = Math.max(0, 3 - failedLoginAttempts);
 
@@ -1524,15 +1716,15 @@
                             yearLevel: yearLevel
                         })
                     });
-                } catch (errApi) {}
+                } catch (errApi) { }
 
                 if (!res || !res.ok) {
                     res = await fetch('/pasabuy_otp.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            action: 'send_otp', 
-                            email: email, 
+                        body: JSON.stringify({
+                            action: 'send_otp',
+                            email: email,
                             name: `${firstName} ${lastName}`,
                             firstName: firstName,
                             lastName: lastName,
@@ -1559,7 +1751,7 @@
                     otpVerifyModalInstance.show();
                 } else {
                     let err = {};
-                    try { err = await res.json(); } catch(e) {}
+                    try { err = await res.json(); } catch (e) { }
                     alert(err.message || 'Error sending OTP verification code.');
                 }
             } catch (e) {
@@ -1582,7 +1774,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: pendingRegistrationEmail, otpCode: code })
                     });
-                } catch (errApi) {}
+                } catch (errApi) { }
 
                 if (!res || !res.ok) {
                     res = await fetch('/pasabuy_otp.php', {
@@ -1596,7 +1788,7 @@
                     const data = await res.json();
                     if (otpVerifyModalInstance) otpVerifyModalInstance.hide();
                     alert('🎉 Registration successful! Welcome to PasaBuy Campus Marketplace.');
-                    
+
                     const nameShow = pendingRegistrationEmail.split('@')[0];
                     const studentUser = {
                         firstName: nameShow,
@@ -1616,7 +1808,7 @@
                     switchTab('home');
                 } else {
                     let err = {};
-                    try { err = await res.json(); } catch(e) {}
+                    try { err = await res.json(); } catch (e) { }
                     alert(err.message || '❌ Invalid or expired OTP verification code.');
                 }
             } catch (e) {
@@ -1648,7 +1840,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: email })
                     });
-                } catch (errApi) {}
+                } catch (errApi) { }
 
                 if (!res || !res.ok) {
                     res = await fetch('/pasabuy_otp.php', {
@@ -1670,7 +1862,7 @@
                     alert(`📧 Password reset OTP code sent to ${email} from PASABUY@pasabuy.site!`);
                 } else {
                     let err = {};
-                    try { err = await res.json(); } catch(e) {}
+                    try { err = await res.json(); } catch (e) { }
                     alert(err.message || 'No account found matching this email.');
                 }
             } catch (e) {
@@ -1699,7 +1891,7 @@
                             newPassword: newPass
                         })
                     });
-                } catch (errApi) {}
+                } catch (errApi) { }
 
                 if (!res || !res.ok) {
                     res = await fetch('/pasabuy_otp.php', {
@@ -1724,7 +1916,7 @@
                     document.getElementById('loginPasswordInput').value = newPass;
                 } else {
                     let err = {};
-                    try { err = await res.json(); } catch(e) {}
+                    try { err = await res.json(); } catch (e) { }
                     alert(err.message || '❌ Invalid or expired OTP verification code.');
                 }
             } catch (e) {
@@ -1757,7 +1949,7 @@
 
             Array.from(files).forEach((file, index) => {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     const dataUrl = e.target.result;
                     uploadedPhotoUrls.push(dataUrl);
 
@@ -1788,7 +1980,7 @@
             if (price > 0 && price < 100) fee = 1;
             else if (price >= 100 && price < 1000) fee = 5;
             else if (price >= 1000) fee = 10;
-            
+
             document.getElementById('feeDisplay').innerText = `₱${fee.toFixed(2)}`;
             document.getElementById('payAmountDisplay').innerText = `₱${fee.toFixed(2)}`;
         }
@@ -1877,7 +2069,7 @@
             const imgUrl = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80';
 
             let storedUser = null;
-            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch(e){}
+            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
             const sellerId = storedUser ? (storedUser.id || 1) : 1;
 
             try {
@@ -1897,7 +2089,7 @@
                             imageUrls: [imgUrl]
                         })
                     });
-                } catch(errApi){}
+                } catch (errApi) { }
 
                 if (!res || !res.ok) {
                     res = await fetch('/pasabuy_api.php?action=create_listing', {
@@ -1933,10 +2125,10 @@
                 };
 
                 let localListings = [];
-                try { localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || []; } catch(e){}
+                try { localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || []; } catch (e) { }
                 localListings.unshift(newProduct);
                 localStorage.setItem('pasabuy_local_published_listings', JSON.stringify(localListings));
-            } catch(e) {
+            } catch (e) {
                 console.error("Publish listing error:", e);
             }
         }
@@ -1948,7 +2140,7 @@
             }
             await publishListingToDatabase();
             if (payMongoGatewayModalInstance) payMongoGatewayModalInstance.hide();
-            
+
             document.getElementById('sellTitle').value = '';
             document.getElementById('sellPrice').value = '';
             document.getElementById('sellMeetup').value = '';
@@ -1957,7 +2149,7 @@
 
             document.getElementById('sellStep2').style.display = 'none';
             document.getElementById('sellStep1').style.display = 'block';
-            
+
             await filterProducts();
             switchTab('home');
             alert('🎉 PayMongo GCash Payment Verified! Your listing is now LIVE on campus marketplace.');
@@ -1987,7 +2179,7 @@
                         return;
                     }
                 }
-            } catch(e){}
+            } catch (e) { }
 
             openPayMongoGatewayModal(feeText);
         }
@@ -2017,7 +2209,7 @@
                             const condition = item.Condition || item.condition || 'Good';
                             const sellerName = item.sellerName || (item.FirstName ? `${item.FirstName} ${item.LastName}` : 'Verified Student');
                             const location = item.MeetupLocation || item.meetupLocation || 'Campus Library';
-                            
+
                             let img = 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80';
                             if (item.images && item.images.length > 0) {
                                 img = item.images[0].imageUrl || item.images[0];
@@ -2044,7 +2236,7 @@
             }
 
             let localListings = [];
-            try { localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || []; } catch(e){}
+            try { localListings = JSON.parse(localStorage.getItem('pasabuy_local_published_listings')) || []; } catch (e) { }
 
             localListings.forEach(lp => {
                 if (!products.some(p => p.id === lp.id || p.title === lp.title)) {
@@ -2099,4 +2291,5 @@
         });
     </script>
 </body>
+
 </html>

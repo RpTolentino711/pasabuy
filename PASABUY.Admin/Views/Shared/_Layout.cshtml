@@ -212,10 +212,10 @@
                     <span class="text-muted fs-7">PasaBuy Campus Marketplace Administrative Portal</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">
-                    <a href="http://localhost:5000/swagger" target="_blank" class="btn btn-outline-primary rounded-pill px-3 py-2 btn-sm fw-semibold">
+                    <a href="@(Environment.GetEnvironmentVariable("PASABUY_API_URL") ?? "http://localhost:5000/api")/swagger" target="_blank" class="btn btn-outline-primary rounded-pill px-3 py-2 btn-sm fw-semibold">
                         <i class="fa-solid fa-code me-1"></i> API Docs
                     </a>
-                    <a href="http://localhost:5200" target="_blank" class="btn btn-primary rounded-pill px-3 py-2 btn-sm fw-semibold">
+                    <a href="@(Environment.GetEnvironmentVariable("PASABUY_WEB_URL") ?? "http://localhost:5200")" target="_blank" class="btn btn-primary rounded-pill px-3 py-2 btn-sm fw-semibold">
                         <i class="fa-solid fa-mobile-screen me-1"></i> Launch Student Web Runner
                     </a>
                 </div>
