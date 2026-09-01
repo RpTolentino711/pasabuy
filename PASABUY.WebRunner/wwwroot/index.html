@@ -1362,7 +1362,9 @@
                             yearLevel: yearLevel
                         })
                     });
-                } catch (errApi) {
+                } catch (errApi) {}
+
+                if (!res || !res.ok) {
                     res = await fetch('/pasabuy_otp.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1405,7 +1407,9 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: pendingRegistrationEmail, otpCode: code })
                     });
-                } catch (errApi) {
+                } catch (errApi) {}
+
+                if (!res || !res.ok) {
                     res = await fetch('/pasabuy_otp.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1461,7 +1465,9 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: email })
                     });
-                } catch (errApi) {
+                } catch (errApi) {}
+
+                if (!res || !res.ok) {
                     res = await fetch('/pasabuy_otp.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
