@@ -2009,42 +2009,6 @@
             if (homeContainer) homeContainer.innerHTML = html || '<div class="text-center text-muted py-4">No active listings yet. Be the first student to post on campus!</div>';
             if (profileContainer) profileContainer.innerHTML = profileHtml || '<div class="text-center text-muted py-4">You have no active item listings. Post an item in the Sell tab to view it here!</div>';
         }
-                                <span class="fw-bold text-dark">${p.seller}</span>
-                                <span class="badge-verified ms-1"><i class="fa-solid fa-check"></i> Verified</span>
-                            </div>
-                            <span class="text-muted"><i class="fa-solid fa-location-dot text-danger me-1"></i> ${p.location}</span>
-                        </div>
-                        <div class="d-flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Post</button>
-                        </div>
-                    </div>
-                </div>`;
-            });
-
-            if (exploreList) {
-                exploreList.innerHTML = html || `
-                <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
-                    <i class="fa-solid fa-compass fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                    No active items found in marketplace.
-                </div>`;
-            }
-
-            if (homeContainer) {
-                homeContainer.innerHTML = html || `
-                <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
-                    <i class="fa-solid fa-store-slash fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                    No campus listings published yet.<br>Go to <strong class="text-primary">+ Sell</strong> to post your first item!
-                </div>`;
-            }
-
-            if (profileContainer) {
-                profileContainer.innerHTML = profileHtml || `
-                <div class="text-center py-4 text-muted fs-8" id="noSellingItemsPlaceholder">
-                    <i class="fa-solid fa-box-open fs-3 d-block mb-2 text-secondary"></i>
-                    You have no active selling items yet. Go to <strong>+ Sell</strong> to post your first item!
-                </div>`;
-            }
-        }
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
