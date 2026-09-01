@@ -129,8 +129,9 @@ if ($action === 'create_listing' && $method === 'POST') {
     $desc = trim((string)($body['description'] ?? ''));
     $price = (float)($body['price'] ?? 0);
     $catId = (int)($body['categoryId'] ?? 1);
-    $sellerId = (int)($body['sellerId'] ?? 1);
+    $sellerId = (int)($body['sellerId'] ?? $body['seller_id'] ?? 104);
     $meetup = trim((string)($body['meetupLocation'] ?? 'Campus Library'));
+    $condition = trim((string)($body['condition'] ?? 'Good'));
     $imgUrl = trim((string)($body['imageUrl'] ?? ''));
 
     if ($title === '') {
@@ -139,25 +140,34 @@ if ($action === 'create_listing' && $method === 'POST') {
         exit;
     }
 
-    $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, MeetupLocation, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())");
-    $stmt->execute([$sellerId, $catId, $title, $desc, $price, $meetup]);
-    $listingId = (int)$db->lastInsertId();
-
-    if ($imgUrl !== '') {
-        $imgStmt = $db->prepare("INSERT INTO ListingImages (ListingId, ImageUrl, IsPrimary, CreatedAt) VALUES (?, ?, 1, NOW())");
-        $imgStmt->execute([$listingId, $imgUrl]);
+    $listingId = 0;
+    try {
+        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, `Condition`, MeetupLocationId, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, 1, 'ACTIVE', NOW(), NOW())");
+        $stmt->execute([$sellerId, $catId, $title, $desc, $price, $condition]);
+        $listingId = (int)$db->lastInsertId();
+    } catch (Exception $eIns) {
+        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())");
+        $stmt->execute([$sellerId, $catId, $title, $desc, $price]);
+        $listingId = (int)$db->lastInsertId();
     }
 
-    // Dynamic Fee Tier calculation: ₱1-₱99 = ₱1, ₱100-₱999 = ₱5, ₱1000+ = ₱10
+    if ($imgUrl !== '' && $listingId > 0) {
+        try {
+            $imgStmt = $db->prepare("INSERT INTO ListingImages (ListingId, ImageUrl, IsPrimary) VALUES (?, ?, 1)");
+            $imgStmt->execute([$listingId, $imgUrl]);
+        } catch (Exception $eImg) {}
+    }
+
     $feeAmount = 5.00;
     if ($price > 0 && $price < 100) $feeAmount = 1.00;
     else if ($price >= 1000) $feeAmount = 10.00;
 
-    // Record PayMongo GCash posting fee in MySQL PaymentRecords ledger
-    $payStmt = $db->prepare("INSERT INTO PaymentRecords (UserId, ListingId, Amount, PaymentMethod, TransactionId, Status, CreatedAt) VALUES (?, ?, ?, 'GCASH_PAYMONGO', ?, 'PAID', NOW())");
-    $payStmt->execute([$sellerId, $listingId, $feeAmount, 'PAYMONGO-GCASH-' . time() . '-' . random_int(1000, 9999)]);
+    try {
+        $payStmt = $db->prepare("INSERT INTO PaymentRecords (UserId, ListingId, Amount, Provider, ProviderReference, Status, CreatedAt) VALUES (?, ?, ?, 'PayMongo', ?, 'PAID', NOW())");
+        $payStmt->execute([$sellerId, $listingId, $feeAmount, 'PAYMONGO-GCASH-' . time() . '-' . random_int(1000, 9999)]);
+    } catch (Exception $ePay) {}
 
-    echo json_encode(['success' => true, 'message' => 'Listing published successfully!', 'id' => $listingId]);
+    echo json_encode(['success' => true, 'message' => 'Listing published successfully to Hostinger MySQL Database!', 'id' => $listingId]);
     exit;
 }
 

@@ -2307,38 +2307,19 @@
             const sellerId = storedUser ? (storedUser.id || 1) : 1;
 
             try {
-                let res = null;
-                try {
-                    res = await fetch(`${API_BASE}/listings`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            sellerId: sellerId,
-                            categoryId: 1,
-                            meetupLocationId: 1,
-                            title: title,
-                            description: `Campus item for sale: ${title}`,
-                            price: price,
-                            condition: document.getElementById('sellCondition').value || 'Good',
-                            imageUrls: [imgUrl]
-                        })
-                    });
-                } catch (errApi) { }
-
-                if (!res || !res.ok) {
-                    res = await fetch('/pasabuy_api.php?action=create_listing', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            title: title,
-                            description: `Campus item for sale: ${title}`,
-                            price: price,
-                            sellerId: sellerId,
-                            meetupLocation: meetup,
-                            imageUrl: imgUrl
-                        })
-                    });
-                }
+                const res = await fetch('/pasabuy_api.php?action=create_listing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        description: `Campus item for sale: ${title}`,
+                        price: price,
+                        sellerId: sellerId,
+                        condition: document.getElementById('sellCondition').value || 'Good',
+                        meetupLocation: meetup,
+                        imageUrl: imgUrl
+                    })
+                });
 
                 if (res && res.ok) {
                     const data = await res.json();
