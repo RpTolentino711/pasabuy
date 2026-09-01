@@ -1970,6 +1970,9 @@
             if (price > 0 && price < 100) fee = 1.00;
             else if (price >= 1000) fee = 10.00;
 
+            const feeText = `₱${fee.toFixed(2)}`;
+            document.getElementById('payAmountDisplay').innerText = feeText;
+
             try {
                 const res = await fetch('/pasabuy_api.php?action=create_paymongo_checkout', {
                     method: 'POST',
@@ -1979,15 +1982,13 @@
                 if (res.ok) {
                     const data = await res.json();
                     if (data.checkout_url && data.checkout_url.startsWith('http')) {
-                        await publishListingToDatabase();
                         window.open(data.checkout_url, '_blank');
+                        openPayMongoGatewayModal(feeText);
                         return;
                     }
                 }
             } catch(e){}
 
-            await publishListingToDatabase();
-            const feeText = document.getElementById('payAmountDisplay').innerText || '₱5.00';
             openPayMongoGatewayModal(feeText);
         }
 
