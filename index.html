@@ -323,13 +323,14 @@
                 </div>
 
                 <!-- Categories Horizontal Scroll -->
-                <div class="d-flex gap-2 overflow-x-auto pb-2 mb-3">
-                    <span class="category-chip active">All Items</span>
-                    <span class="category-chip">School Supplies</span>
-                    <span class="category-chip">Electronics</span>
-                    <span class="category-chip">Books</span>
-                    <span class="category-chip">Gadgets</span>
-                    <span class="category-chip">Dorm Items</span>
+                <div class="d-flex gap-2 overflow-x-auto pb-2 mb-3" id="homeCategoryChips">
+                    <span class="category-chip active" onclick="selectCategoryFilter(this, 'All')">All Items</span>
+                    <span class="category-chip text-primary fw-bold" onclick="selectCategoryFilter(this, 'My Items')"><i class="fa-solid fa-user-check me-1"></i> My Items</span>
+                    <span class="category-chip" onclick="selectCategoryFilter(this, 'School Supplies')">School Supplies</span>
+                    <span class="category-chip" onclick="selectCategoryFilter(this, 'Electronics')">Electronics</span>
+                    <span class="category-chip" onclick="selectCategoryFilter(this, 'Books')">Books</span>
+                    <span class="category-chip" onclick="selectCategoryFilter(this, 'Gadgets')">Gadgets</span>
+                    <span class="category-chip" onclick="selectCategoryFilter(this, 'Dorm Items')">Dorm Items</span>
                 </div>
 
                 <div class="d-flex align-items-center justify-content-between mb-2">
@@ -2141,16 +2142,32 @@
 
         let paymongoPollTimer = null;
 
-        function showGcashStep() {
+        async function showGcashStep() {
             document.getElementById('pmStep1').style.display = 'none';
             document.getElementById('pmStep2').style.display = 'block';
 
             const amountText = document.getElementById('gcashAmountDisplay').innerText || '₱5.00';
+            const feeVal = parseFloat(amountText.replace(/[^\d.]/g, '')) || 5.00;
+            const title = document.getElementById('sellTitle').value.trim() || 'PasaBuy Item Posting Fee';
             const qrImg = document.getElementById('paymongoQrImage');
+
+            let checkoutUrl = `https://pasabuy.site/pasabuy_api.php?action=paymongo_gcash_qr&amount=${feeVal}&item=${encodeURIComponent(title)}`;
+            try {
+                const res = await fetch('/pasabuy_api.php?action=create_paymongo_checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: feeVal, title: title })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.checkout_url || data.CheckoutUrl) {
+                        checkoutUrl = data.checkout_url || data.CheckoutUrl;
+                    }
+                }
+            } catch(e){ console.error("PayMongo Checkout QR fetch error:", e); }
+
             if (qrImg) {
-                const title = encodeURIComponent(document.getElementById('sellTitle').value || 'PasaBuy Item Posting Fee');
-                const qrData = encodeURIComponent(`https://pasabuy.site/pasabuy_api.php?action=paymongo_gcash_qr&amount=${amountText}&item=${title}`);
-                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${qrData}`;
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(checkoutUrl)}`;
             }
 
             const badge = document.getElementById('paymongoStatusBadge');
@@ -2279,6 +2296,17 @@
             openPayMongoGatewayModal(feeText);
         }
 
+        window.currentSelectedCategory = 'All';
+
+        function selectCategoryFilter(el, categoryName) {
+            const chips = document.querySelectorAll('#homeCategoryChips .category-chip');
+            chips.forEach(c => c.classList.remove('active'));
+            if (el) el.classList.add('active');
+
+            window.currentSelectedCategory = categoryName;
+            filterProducts();
+        }
+
         async function filterProducts() {
             const exploreList = document.getElementById('exploreList');
             const homeContainer = document.getElementById('homeProductContainer');
@@ -2286,6 +2314,7 @@
 
             const cond = document.getElementById('filterCondition') ? document.getElementById('filterCondition').value : 'All';
             const search = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+            const selectedCat = window.currentSelectedCategory || 'All';
 
             // Get current user ID at the very beginning
             let currentUserId = 0;
@@ -2294,7 +2323,6 @@
                 if (storedUser) {
                     const user = JSON.parse(storedUser);
                     currentUserId = user.id || user.userId || user.UserId || 0;
-                    console.log("Current user ID:", currentUserId);
                 }
             } catch (e) { console.error("Error getting user:", e); }
 
@@ -2314,6 +2342,7 @@
                             const priceStr = `₱${priceVal.toFixed(2)}`;
                             const feeStr = priceVal >= 1000 ? '₱10.00' : (priceVal >= 100 ? '₱5.00' : '₱1.00');
                             const condition = item.Condition || item.condition || 'Good';
+                            const category = item.CategoryName || item.category || 'School Supplies';
                             const sellerName = item.sellerName || (item.FirstName ? `${item.FirstName} ${item.LastName}` : 'Verified Student');
                             const location = item.MeetupLocation || item.meetupLocation || 'Campus Library';
 
@@ -2330,6 +2359,7 @@
                                 price: priceStr,
                                 fee: feeStr,
                                 condition: condition,
+                                category: category,
                                 seller: sellerName,
                                 sellerId: item.SellerId || item.sellerId || 1,
                                 location: location,
@@ -2357,15 +2387,17 @@
             let profileHtml = '';
 
             products.forEach(p => {
-                if (cond !== 'All' && p.condition !== cond) return;
-                if (search && !p.title.toLowerCase().includes(search)) return;
-
                 let storedUserObj = null;
                 try { storedUserObj = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch(e){}
                 const myId = storedUserObj ? (storedUserObj.id || storedUserObj.userId || storedUserObj.UserId || 1) : 1;
                 const myName = storedUserObj ? (storedUserObj.firstName + ' ' + (storedUserObj.lastName || '')).trim() : 'Student';
 
                 const isMyListing = (p.sellerId == myId) || (p.seller && p.seller.toLowerCase() === myName.toLowerCase());
+
+                if (selectedCat === 'My Items' && !isMyListing) return;
+                if (selectedCat !== 'All' && selectedCat !== 'My Items' && p.condition !== selectedCat && p.category !== selectedCat) return;
+                if (cond !== 'All' && p.condition !== cond) return;
+                if (search && !p.title.toLowerCase().includes(search)) return;
 
                 let buttonsHtml = '';
                 if (isMyListing) {
