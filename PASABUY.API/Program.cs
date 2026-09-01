@@ -34,6 +34,7 @@ builder.Services.AddDbContext<PasaBuyDbContext>(options =>
 // Services Dependency Injection
 builder.Services.AddScoped<IFeeCalculationService, FeeCalculationService>();
 builder.Services.AddScoped<IPayMongoService, PayMongoService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // CORS policy for Web Admin and Mobile App
 builder.Services.AddCors(options =>
