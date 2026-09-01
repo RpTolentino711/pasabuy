@@ -447,38 +447,25 @@
                     <button class="btn btn-pasabuy" onclick="goToStep2()">Proceed to PayMongo Payment</button>
                 </div>
 
-                <!-- PayMongo Payment Step -->
+                <!-- PayMongo GCash Payment Step -->
                 <div id="sellStep2" style="display:none;">
                     <div class="text-center p-4 bg-white rounded-4 border shadow-sm mb-4">
-                        <h6 class="fw-bold mb-1">Pay Posting Fee via PayMongo</h6>
-                        <p class="text-muted fs-8 mb-3">Pay via GCash, Maya, or Credit/Debit Card to activate post</p>
-                        <div class="fw-bold fs-3 text-primary mb-3" id="payAmountDisplay">₱5.00</div>
+                        <h6 class="fw-bold mb-1">Pay Posting Fee via GCash</h6>
+                        <p class="text-muted fs-8 mb-3">Pay via GCash E-Wallet to publish item post live</p>
+                        <div class="fw-bold fs-3 text-primary mb-3" id="payAmountDisplay">₱1.00</div>
 
-                        <div class="p-3 bg-light rounded-3 mb-3 text-center border">
-                            <div class="d-flex justify-content-center align-items-center gap-2 mb-2 flex-wrap">
-                                <span class="badge bg-info text-white fw-bold px-3 py-2 rounded-pill"><i
-                                        class="fa-solid fa-mobile-screen-button me-1"></i> GCash</span>
-                                <span class="badge bg-primary text-white fw-bold px-3 py-2 rounded-pill"><i
-                                        class="fa-solid fa-wallet me-1"></i> Maya</span>
-                                <span class="badge bg-dark text-white fw-bold px-3 py-2 rounded-pill"><i
-                                        class="fa-solid fa-credit-card me-1"></i> Card</span>
-                            </div>
-                            <p class="fs-9 text-muted mb-0">Click <strong>Pay Now on PayMongo</strong> below to open the
-                                official PayMongo checkout window where you can scan your live GCash QR!</p>
+                        <div class="p-3 bg-primary bg-opacity-10 rounded-4 mb-3 text-center border border-primary-subtle">
+                            <span class="badge bg-primary text-white fw-bold px-3 py-2 rounded-pill mb-2"><i class="fa-solid fa-mobile-screen-button me-1"></i> Official GCash Payment</span>
+                            <p class="fs-9 text-muted mb-0">Click <strong>Pay via GCash App</strong> below to open the official PayMongo GCash payment window!</p>
                         </div>
 
                         <div>
-                            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-8"><i
-                                    class="fa-solid fa-shield-halved me-1"></i> PayMongo Live API Connected</span>
+                            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-8"><i class="fa-solid fa-shield-halved me-1"></i> PayMongo GCash Live API Connected</span>
                         </div>
                     </div>
 
-                    <button class="btn btn-pasabuy mb-2" onclick="redirectToPayMongoCheckout()"><i
-                            class="fa-solid fa-external-link me-1"></i> Pay Now on PayMongo (GCash / Maya /
-                        Card)</button>
-                    <button class="btn btn-outline-secondary w-100 rounded-pill fw-bold"
-                        onclick="simulatePaymentSuccess()"><i class="fa-solid fa-check-circle me-1"></i> Confirm Payment
-                        Completed</button>
+                    <button class="btn btn-pasabuy mb-2" onclick="redirectToPayMongoCheckout()"><i class="fa-solid fa-mobile-screen me-1"></i> Pay via GCash App</button>
+                    <button class="btn btn-outline-secondary w-100 rounded-pill fw-bold" onclick="simulatePaymentSuccess()"><i class="fa-solid fa-check-circle me-1"></i> Confirm Payment Completed & Post Live</button>
                 </div>
             </div>
 

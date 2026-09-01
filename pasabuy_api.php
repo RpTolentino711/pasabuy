@@ -163,7 +163,7 @@ if ($action === 'create_paymongo_checkout' && $method === 'POST') {
                 'send_email_receipt' => true,
                 'show_description' => true,
                 'show_line_items' => true,
-                'payment_method_types' => ['gcash', 'paymaya', 'card'],
+                'payment_method_types' => ['gcash'],
                 'line_items' => [
                     [
                         'currency' => 'PHP',
