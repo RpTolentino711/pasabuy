@@ -2156,25 +2156,13 @@
             const badge = document.getElementById('paymongoStatusBadge');
             if (badge) {
                 badge.className = 'p-2 bg-primary-subtle text-primary rounded-3 border border-primary-subtle fs-8 fw-bold mb-2';
-                badge.innerHTML = '<i class="fa-solid fa-qrcode me-1 text-primary"></i> Ready to Scan with GCash App';
+                badge.innerHTML = '<i class="fa-solid fa-qrcode me-1 text-primary"></i> Scan QR code with GCash app to pay';
             }
 
-            if (paymongoPollTimer) clearInterval(paymongoPollTimer);
-            let pollCount = 0;
-            paymongoPollTimer = setInterval(async () => {
-                pollCount++;
-                if (pollCount >= 2) {
-                    clearInterval(paymongoPollTimer);
-                    paymongoPollTimer = null;
-                    if (badge) {
-                        badge.className = 'p-2 bg-success-subtle text-success rounded-3 border border-success-subtle fs-8 fw-bold mb-2';
-                        badge.innerHTML = '<i class="fa-solid fa-circle-check me-1 text-success"></i> PayMongo GCash Payment Verified! Publishing Post...';
-                    }
-                    setTimeout(async () => {
-                        await completePayMongoPayment();
-                    }, 1000);
-                }
-            }, 2500);
+            if (paymongoPollTimer) {
+                clearInterval(paymongoPollTimer);
+                paymongoPollTimer = null;
+            }
         }
 
         function showPmStep1() {
@@ -2381,7 +2369,11 @@
 
                 let buttonsHtml = '';
                 if (isMyListing) {
-                    buttonsHtml = `<div class="badge bg-secondary-subtle text-secondary w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-user-check me-1"></i> Your Active Listing</div>`;
+                    buttonsHtml = `
+                    <div class="d-flex flex-column gap-2 w-100">
+                        <div class="badge bg-secondary-subtle text-secondary w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-user-check me-1"></i> Your Active Listing</div>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
+                    </div>`;
                 } else {
                     buttonsHtml = `
                     <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
