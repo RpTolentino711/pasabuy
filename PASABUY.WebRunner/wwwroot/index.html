@@ -1144,6 +1144,59 @@
         </div>
     </div>
 
+    <!-- PAYMONGO LIVE GATEWAY MODAL -->
+    <div class="modal fade" id="payMongoGatewayModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg text-center">
+                <div class="modal-header border-0 pb-0">
+                    <h6 class="modal-title fw-bold text-primary"><i class="fa-solid fa-wallet me-2"></i>PayMongo Live Checkout</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <div id="pmStep1">
+                        <p class="fs-8 text-muted mb-2">Posting Fee Amount:</p>
+                        <div class="fw-extrabold fs-2 text-primary mb-3" id="gatewayAmount">₱5.00</div>
+
+                        <div class="p-3 bg-light rounded-4 border mb-3 text-start">
+                            <div class="fw-bold fs-8 text-dark mb-1"><i class="fa-solid fa-shield-check text-success me-1"></i> Secure Official PayMongo Payment</div>
+                            <div class="fs-9 text-muted mb-3">Pay via GCash app, Maya, or Credit/Debit card to publish your campus item post live.</div>
+                            
+                            <a href="#" id="pmDirectCheckoutBtn" target="_blank" class="btn btn-primary w-100 rounded-pill fw-bold py-2.5 fs-7 shadow-sm mb-2" onclick="setTimeout(completePayMongoPayment, 2000)">
+                                <i class="fa-solid fa-mobile-screen me-2"></i> Pay via GCash App / Browser
+                            </a>
+                        </div>
+                    </div>
+
+                    <div id="pmStep2" style="display:none;">
+                        <div class="p-3 bg-primary bg-opacity-10 rounded-4 border border-primary-subtle mb-3">
+                            <span class="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill fs-9 mb-2"><i class="fa-solid fa-qrcode me-1"></i> PayMongo Live QRPh / GCash Code</span>
+                            <div class="fw-extrabold fs-2 text-primary mb-1" id="gcashAmountDisplay">₱5.00</div>
+                            <div class="fs-9 text-muted mb-2">Merchant: <strong>PasaBuy Campus Marketplace</strong></div>
+                            
+                            <div class="bg-white p-3 rounded-4 border d-inline-block shadow-sm mb-2" style="max-width: 240px;">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://pasabuy.site" id="paymongoQrImage" alt="PayMongo GCash QR Code" class="img-fluid rounded-3 mb-2" style="width: 180px; height: 180px;">
+                                <div class="fw-bold fs-9 text-dark"><i class="fa-solid fa-camera me-1 text-primary"></i> Scan via GCash / Camera</div>
+                            </div>
+
+                            <div class="mb-2">
+                                <a href="https://pasabuy.site" id="paymongoDirectLinkBtn" target="_blank" class="btn btn-sm btn-primary rounded-pill fw-bold fs-8 w-100 py-2"><i class="fa-solid fa-mobile-screen me-1"></i> Tap to Open GCash / PayMongo Directly</a>
+                            </div>
+                            
+                            <div id="paymongoStatusBadge" class="p-2 bg-primary-subtle text-primary rounded-3 border border-primary-subtle fs-8 fw-bold mb-2">
+                                <i class="fa-solid fa-info-circle me-1 text-primary"></i> Note: GCash Scanner expects EMVCo QR code. Tap button above to pay directly!
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-success w-100 rounded-pill fw-bold py-2 fs-7 mb-2" onclick="completePayMongoPayment()">
+                            <i class="fa-solid fa-circle-check me-1"></i> Confirm Payment Completed & Post Live
+                        </button>
+                        <button type="button" class="btn btn-link text-muted fs-8" onclick="showPmStep1()"><i class="fa-solid fa-arrow-left me-1"></i> Back to Options</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- DELETE LISTING CONFIRMATION MODAL -->
     <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -2133,7 +2186,7 @@
         let currentListingId = 0;
         let payMongoGatewayModalInstance = null;
 
-        function openPayMongoGatewayModal(amountText) {
+        async function openPayMongoGatewayModal(amountText) {
             if (!payMongoGatewayModalInstance) {
                 payMongoGatewayModalInstance = new bootstrap.Modal(document.getElementById('payMongoGatewayModal'));
             }
@@ -2143,6 +2196,24 @@
             }
             showPmStep1();
             payMongoGatewayModalInstance.show();
+
+            const feeVal = parseFloat(amountText.replace(/[^\d.]/g, '')) || 5.00;
+            const title = document.getElementById('sellTitle').value.trim() || 'PasaBuy Item Posting Fee';
+            try {
+                const res = await fetch('/pasabuy_api.php?action=create_paymongo_checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: feeVal, title: title })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const url = data.checkout_url || data.CheckoutUrl || 'https://pasabuy.site';
+                    const directBtn = document.getElementById('pmDirectCheckoutBtn');
+                    const linkBtn = document.getElementById('paymongoDirectLinkBtn');
+                    if (directBtn) directBtn.href = url;
+                    if (linkBtn) linkBtn.href = url;
+                }
+            } catch(e){}
         }
 
         let paymongoPollTimer = null;
@@ -2175,10 +2246,15 @@
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(checkoutUrl)}`;
             }
 
+            const directBtn = document.getElementById('pmDirectCheckoutBtn');
+            const linkBtn = document.getElementById('paymongoDirectLinkBtn');
+            if (directBtn) directBtn.href = checkoutUrl;
+            if (linkBtn) linkBtn.href = checkoutUrl;
+
             const badge = document.getElementById('paymongoStatusBadge');
             if (badge) {
                 badge.className = 'p-2 bg-primary-subtle text-primary rounded-3 border border-primary-subtle fs-8 fw-bold mb-2';
-                badge.innerHTML = '<i class="fa-solid fa-qrcode me-1 text-primary"></i> Scan QR code with GCash app to pay';
+                badge.innerHTML = '<i class="fa-solid fa-mobile-screen me-1 text-primary"></i> Tap button above to pay via GCash app directly';
             }
 
             if (paymongoPollTimer) {
