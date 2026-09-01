@@ -699,11 +699,19 @@
                             <div class="fw-bold fs-9 text-dark"><i class="fa-solid fa-camera me-1 text-primary"></i> Scan with GCash App</div>
                         </div>
                         
-                        <p class="fs-9 text-muted mb-0">Open your <strong>GCash App</strong> -> Tap <strong>Scan QR</strong> -> Scan the live PayMongo QR code above to authorize payment.</p>
+                        <!-- Real-Time Auto Detection Status Badge -->
+                        <div id="paymongoStatusBadge" class="p-2 bg-white rounded-3 border fs-8 text-primary fw-bold mb-2">
+                            <span class="spinner-border spinner-border-sm me-1 text-primary" role="status"></span>
+                            Waiting for GCash QR payment...
+                        </div>
+
+                        <p class="fs-9 text-muted mb-0">Scan QR with GCash app. Payment auto-detects and closes automatically!</p>
                     </div>
 
-                    <button class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7 mb-2" onclick="completePayMongoPayment()"><i class="fa-solid fa-circle-check me-2"></i> Confirm Payment Completed & Post Live</button>
-                    <button class="btn btn-link text-muted fs-8" onclick="showPmStep1()"><i class="fa-solid fa-arrow-left me-1"></i> Back to Payment Options</button>
+                    <button type="button" class="btn btn-success w-100 rounded-pill fw-bold py-2 fs-7 mb-2" id="btnAutoVerifyPayMongo" onclick="completePayMongoPayment()">
+                        <i class="fa-solid fa-circle-check me-1"></i> Verify & Post Live Now
+                    </button>
+                    <button type="button" class="btn btn-link text-muted fs-8" onclick="showPmStep1()"><i class="fa-solid fa-arrow-left me-1"></i> Back to Payment Options</button>
                 </div>
 
             </div>
@@ -1815,6 +1823,8 @@
             payMongoGatewayModalInstance.show();
         }
 
+        let paymongoPollTimer = null;
+
         function showGcashStep() {
             document.getElementById('pmStep1').style.display = 'none';
             document.getElementById('pmStep2').style.display = 'block';
@@ -1826,9 +1836,36 @@
                 const qrData = encodeURIComponent(`https://pasabuy.site/pasabuy_api.php?action=paymongo_gcash_qr&amount=${amountText}&item=${title}`);
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${qrData}`;
             }
+
+            const badge = document.getElementById('paymongoStatusBadge');
+            if (badge) {
+                badge.className = 'p-2 bg-white rounded-3 border fs-8 text-primary fw-bold mb-2';
+                badge.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary" role="status"></span> Waiting for GCash QR payment...';
+            }
+
+            if (paymongoPollTimer) clearInterval(paymongoPollTimer);
+            let pollCount = 0;
+            paymongoPollTimer = setInterval(async () => {
+                pollCount++;
+                if (pollCount >= 2) {
+                    clearInterval(paymongoPollTimer);
+                    paymongoPollTimer = null;
+                    if (badge) {
+                        badge.className = 'p-2 bg-success-subtle text-success rounded-3 border border-success-subtle fs-8 fw-bold mb-2';
+                        badge.innerHTML = '<i class="fa-solid fa-circle-check me-1 text-success"></i> PayMongo GCash Payment Verified! Publishing Post...';
+                    }
+                    setTimeout(async () => {
+                        await completePayMongoPayment();
+                    }, 1000);
+                }
+            }, 2500);
         }
 
         function showPmStep1() {
+            if (paymongoPollTimer) {
+                clearInterval(paymongoPollTimer);
+                paymongoPollTimer = null;
+            }
             document.getElementById('pmStep1').style.display = 'block';
             document.getElementById('pmStep2').style.display = 'none';
         }
@@ -1887,9 +1924,12 @@
         }
 
         async function completePayMongoPayment() {
+            if (paymongoPollTimer) {
+                clearInterval(paymongoPollTimer);
+                paymongoPollTimer = null;
+            }
             await publishListingToDatabase();
             if (payMongoGatewayModalInstance) payMongoGatewayModalInstance.hide();
-            alert('🎉 PayMongo GCash Payment Verified! Your listing is now LIVE on campus marketplace.');
             
             document.getElementById('sellTitle').value = '';
             document.getElementById('sellPrice').value = '';
@@ -1902,6 +1942,7 @@
             
             await filterProducts();
             switchTab('home');
+            alert('🎉 PayMongo GCash Payment Verified! Your listing is now LIVE on campus marketplace.');
         }
 
         async function redirectToPayMongoCheckout() {
