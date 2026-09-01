@@ -722,30 +722,30 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">First Name</label>
-                            <input type="text" class="form-control rounded-3 fs-7" id="settingsFirstName" value="John">
+                            <input type="text" class="form-control rounded-3 fs-7" id="settingsFirstName" placeholder="First Name">
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">Last Name</label>
-                            <input type="text" class="form-control rounded-3 fs-7" id="settingsLastName" value="Doe">
+                            <input type="text" class="form-control rounded-3 fs-7" id="settingsLastName" placeholder="Last Name">
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Student Number</label>
-                        <input type="text" class="form-control rounded-3 fs-7" id="settingsStudentNumber" value="2023-00123">
+                        <input type="text" class="form-control rounded-3 fs-7" id="settingsStudentNumber" placeholder="Student Number">
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-7">
                             <label class="form-label fw-bold fs-7">Course / Program</label>
-                            <input type="text" class="form-control rounded-3 fs-7" id="settingsCourse" value="BS Computer Science">
+                            <input type="text" class="form-control rounded-3 fs-7" id="settingsCourse" placeholder="Course / Program">
                         </div>
                         <div class="col-5">
                             <label class="form-label fw-bold fs-7">Year Level</label>
                             <select class="form-select rounded-3 fs-7" id="settingsYearLevel">
                                 <option value="1st Yr">1st Yr</option>
                                 <option value="2nd Yr">2nd Yr</option>
-                                <option value="3rd Yr" selected>3rd Yr</option>
+                                <option value="3rd Yr">3rd Yr</option>
                                 <option value="4th Yr">4th Yr</option>
                                 <option value="5th Yr">5th Yr</option>
                             </select>
@@ -1014,11 +1014,22 @@
             if (!settingsModalInstance) {
                 settingsModalInstance = new bootstrap.Modal(modalEl);
             }
-            const name = document.getElementById('profileName').innerText.split(' ');
-            if (name.length >= 2) {
-                document.getElementById('settingsFirstName').value = name[0];
-                document.getElementById('settingsLastName').value = name.slice(1).join(' ');
+
+            const storedUserStr = localStorage.getItem('pasabuy_student_user');
+            let studentUser = {};
+            try { studentUser = storedUserStr ? JSON.parse(storedUserStr) : {}; } catch(e) {}
+
+            const currentProfName = document.getElementById('profileName').innerText || '';
+            const nameParts = currentProfName.split(' ');
+
+            document.getElementById('settingsFirstName').value = studentUser.firstName || nameParts[0] || '';
+            document.getElementById('settingsLastName').value = studentUser.lastName || (nameParts.slice(1).join(' ')) || '';
+            document.getElementById('settingsStudentNumber').value = studentUser.studentNumber || '';
+            document.getElementById('settingsCourse').value = studentUser.course || '';
+            if (studentUser.yearLevel) {
+                document.getElementById('settingsYearLevel').value = studentUser.yearLevel;
             }
+
             const avatarSrc = document.getElementById('profileAvatar').src;
             document.getElementById('settingsAvatarPreview').src = avatarSrc;
             newAvatarDataUrl = avatarSrc;
@@ -1038,35 +1049,36 @@
         }
 
         async function saveProfileSettings() {
-            const firstName = document.getElementById('settingsFirstName').value.trim() || 'Student';
-            const lastName = document.getElementById('settingsLastName').value.trim() || 'User';
-            const studentNo = document.getElementById('settingsStudentNumber').value.trim() || '2024-00123';
-            const course = document.getElementById('settingsCourse').value.trim() || 'BS Computer Science';
+            const firstName = document.getElementById('settingsFirstName').value.trim();
+            const lastName = document.getElementById('settingsLastName').value.trim();
+            const studentNo = document.getElementById('settingsStudentNumber').value.trim();
+            const course = document.getElementById('settingsCourse').value.trim();
             const yearLevel = document.getElementById('settingsYearLevel').value;
 
-            const fullName = `${firstName} ${lastName}`;
-            const subInfo = `${studentNo} • ${course} (${yearLevel})`;
-
-            try {
-                await fetch(`${API_BASE}/users/1/profile`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        firstName: firstName,
-                        lastName: lastName,
-                        studentNumber: studentNo,
-                        course: course,
-                        yearLevel: yearLevel,
-                        profileImage: newAvatarDataUrl
-                    })
-                });
-            } catch (e) {
-                console.error(e);
+            if (!firstName || !lastName) {
+                alert('Please enter your First Name and Last Name.');
+                return;
             }
+
+            const fullName = `${firstName} ${lastName}`;
+            let subParts = [];
+            if (studentNo) subParts.push(studentNo);
+            if (course) subParts.push(`${course} (${yearLevel})`);
+            const subInfo = subParts.length > 0 ? subParts.join(' • ') : 'Verified Student';
+
+            const updatedUser = {
+                firstName: firstName,
+                lastName: lastName,
+                studentNumber: studentNo,
+                course: course,
+                yearLevel: yearLevel,
+                profileImage: newAvatarDataUrl
+            };
+            localStorage.setItem('pasabuy_student_user', JSON.stringify(updatedUser));
 
             document.getElementById('profileName').innerText = fullName;
             document.getElementById('profileSub').innerText = subInfo;
-            document.getElementById('homeWelcomeName').innerText = `Good morning, ${firstName}!`;
+            document.getElementById('homeWelcomeName').innerText = `Good day, ${firstName}!`;
             if (newAvatarDataUrl) {
                 document.getElementById('profileAvatar').src = newAvatarDataUrl;
                 document.getElementById('homeAvatar').src = newAvatarDataUrl;
