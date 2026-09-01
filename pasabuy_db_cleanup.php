@@ -64,6 +64,5 @@ try {
         'message' => '🧹 Hostinger MySQL Database cleaned successfully! Purged all dummy users, listings, chats, and records. Admin (100) and Romeo (104) preserved!'
     ]);
 } catch (Exception $ex) {
-    http_response_code(500);
     echo json_encode(['success' => false, 'error' => $ex->getMessage()]);
 }
