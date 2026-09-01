@@ -15,21 +15,54 @@ namespace PASABUY.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly PasaBuyDbContext _db;
-        public AuthController(PasaBuyDbContext db) { _db = db; }
+        private readonly IEmailService _emailService;
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, OtpRecord> _otpCache = new();
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest req)
+        public AuthController(PasaBuyDbContext db, IEmailService emailService)
         {
-            if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Password))
-                return BadRequest(new { message = "Email and Password are required." });
+            _db = db;
+            _emailService = emailService;
+        }
+
+        [HttpPost("send-otp")]
+        public async Task<IActionResult> SendOtp([FromBody] RegisterRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Email))
+                return BadRequest(new { message = "Email is required." });
 
             if (await _db.Users.AnyAsync(u => u.Email == req.Email))
+                return BadRequest(new { message = "An account with this email is already registered." });
+
+            var otpCode = Random.Shared.Next(100000, 999999).ToString();
+            _otpCache[req.Email.ToLower().Trim()] = new OtpRecord
+            {
+                Code = otpCode,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                Payload = req
+            };
+
+            await _emailService.SendOtpEmailAsync(req.Email, otpCode);
+            return Ok(new { message = $"OTP code sent successfully to {req.Email}. Please check your inbox.", testOtp = otpCode });
+        }
+
+        [HttpPost("verify-and-register")]
+        public async Task<IActionResult> VerifyAndRegister([FromBody] OtpVerifyRequest req)
+        {
+            var key = req.Email.ToLower().Trim();
+            if (!_otpCache.TryGetValue(key, out var record) || record.Code != req.OtpCode || record.ExpiresAt < DateTime.UtcNow)
+            {
+                return BadRequest(new { message = "❌ Invalid or expired OTP verification code. Account was NOT recorded in database." });
+            }
+
+            var payload = record.Payload ?? new RegisterRequest { Email = req.Email, Password = "DefaultPassword123!" };
+
+            if (await _db.Users.AnyAsync(u => u.Email == payload.Email))
                 return BadRequest(new { message = "An account with this email already exists." });
 
             var user = new User
             {
-                Email = req.Email,
-                PasswordHash = req.Password, // Hashed in production
+                Email = payload.Email,
+                PasswordHash = payload.Password,
                 Role = "STUDENT",
                 Status = "VERIFIED"
             };
@@ -39,12 +72,12 @@ namespace PASABUY.API.Controllers
             var profile = new StudentProfile
             {
                 UserId = user.Id,
-                FirstName = req.FirstName ?? "Student",
-                LastName = req.LastName ?? "User",
-                StudentNumber = req.StudentNumber ?? $"2024-{Random.Shared.Next(10000, 99999)}",
-                SchoolEmail = req.SchoolEmail ?? req.Email,
-                Course = req.Course ?? "BS General",
-                YearLevel = req.YearLevel ?? "1st Year",
+                FirstName = payload.FirstName ?? "Student",
+                LastName = payload.LastName ?? "User",
+                StudentNumber = payload.StudentNumber ?? $"2024-{Random.Shared.Next(10000, 99999)}",
+                SchoolEmail = payload.SchoolEmail ?? payload.Email,
+                Course = payload.Course ?? "BS Computer Science",
+                YearLevel = payload.YearLevel ?? "1st Year",
                 VerificationStatus = "VERIFIED",
                 Rating = 5.0,
                 CompletedTransactions = 0
@@ -52,13 +85,58 @@ namespace PASABUY.API.Controllers
             _db.StudentProfiles.Add(profile);
             await _db.SaveChangesAsync();
 
-            return Ok(new { token = $"jwt_token_simulated_{user.Id}", userId = user.Id, email = user.Email, name = $"{profile.FirstName} {profile.LastName}", role = user.Role });
+            _otpCache.TryRemove(key, out _);
+
+            return Ok(new { message = "🎉 OTP Verified! Account registered successfully.", token = $"jwt_token_simulated_{user.Id}", userId = user.Id, email = user.Email, name = $"{profile.FirstName} {profile.LastName}", role = user.Role });
+        }
+
+        [HttpPost("forgot-password-otp")]
+        public async Task<IActionResult> ForgotPasswordOtp([FromBody] ForgotPasswordRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Email))
+                return BadRequest(new { message = "Email is required." });
+
+            var user = await _db.Users.Include(u => u.StudentProfile).FirstOrDefaultAsync(u => u.Email.ToLower() == req.Email.ToLower().Trim());
+            if (user == null)
+                return BadRequest(new { message = "No account found matching this registered email." });
+
+            var otpCode = Random.Shared.Next(100000, 999999).ToString();
+            _otpCache["reset_" + req.Email.ToLower().Trim()] = new OtpRecord
+            {
+                Code = otpCode,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10)
+            };
+
+            await _emailService.SendOtpEmailAsync(req.Email, otpCode);
+            var userName = user.StudentProfile != null ? $"{user.StudentProfile.FirstName} {user.StudentProfile.LastName}" : user.Email;
+            return Ok(new { message = $"Password reset OTP sent to {req.Email}.", registeredEmail = user.Email, registeredName = userName, testOtp = otpCode });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest req)
+        {
+            var key = "reset_" + req.Email.ToLower().Trim();
+            if (!_otpCache.TryGetValue(key, out var record) || record.Code != req.OtpCode || record.ExpiresAt < DateTime.UtcNow)
+            {
+                return BadRequest(new { message = "❌ Invalid or expired OTP verification code." });
+            }
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == req.Email.ToLower().Trim());
+            if (user == null)
+                return BadRequest(new { message = "Account not found." });
+
+            user.PasswordHash = req.NewPassword;
+            await _db.SaveChangesAsync();
+
+            _otpCache.TryRemove(key, out _);
+
+            return Ok(new { message = "🎉 Password reset successful! You can now log in with your new password.", email = user.Email });
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest req)
         {
-            var user = await _db.Users.Include(u => u.StudentProfile).FirstOrDefaultAsync(u => u.Email == req.Email);
+            var user = await _db.Users.Include(u => u.StudentProfile).FirstOrDefaultAsync(u => u.Email.ToLower() == req.Email.ToLower().Trim());
             if (user == null || user.PasswordHash != req.Password)
                 return BadRequest(new { message = "Invalid email or password." });
 
@@ -71,6 +149,31 @@ namespace PASABUY.API.Controllers
             var profileName = user.StudentProfile != null ? $"{user.StudentProfile.FirstName} {user.StudentProfile.LastName}" : "Campus User";
             return Ok(new { token = $"jwt_token_simulated_{user.Id}", userId = user.Id, email = user.Email, name = profileName, role = user.Role, status = user.Status, profile = user.StudentProfile });
         }
+    }
+
+    public class OtpRecord
+    {
+        public string Code { get; set; } = string.Empty;
+        public DateTime ExpiresAt { get; set; }
+        public RegisterRequest? Payload { get; set; }
+    }
+
+    public class OtpVerifyRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string OtpCode { get; set; } = string.Empty;
+    }
+
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string OtpCode { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
     }
 
     public class RegisterRequest
