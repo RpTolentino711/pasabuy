@@ -686,17 +686,23 @@
                     </div>
                 </div>
 
-                <!-- Step 2: GCash Confirmation View -->
+                <!-- Step 2: PayMongo GCash Live QR Code View -->
                 <div class="modal-body py-3 text-center" id="pmStep2" style="display:none;">
                     <div class="p-3 bg-primary bg-opacity-10 rounded-4 border border-primary-subtle mb-3">
-                        <span class="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill fs-9 mb-2"><i class="fa-solid fa-mobile-screen-button me-1"></i> GCash Official Authorization</span>
-                        <div class="fw-extrabold fs-3 text-primary" id="gcashAmountDisplay">₱5.00</div>
-                        <div class="fs-9 text-muted">Merchant: PasaBuy Campus Marketplace</div>
+                        <span class="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill fs-9 mb-2"><i class="fa-solid fa-qrcode me-1"></i> PayMongo Live QRPh / GCash Code</span>
+                        <div class="fw-extrabold fs-2 text-primary mb-1" id="gcashAmountDisplay">₱5.00</div>
+                        <div class="fs-9 text-muted mb-2">Merchant: <strong>PasaBuy Campus Marketplace</strong></div>
+                        
+                        <!-- Generated Live PayMongo GCash QR Code Image -->
+                        <div class="bg-white p-3 rounded-4 border d-inline-block shadow-sm mb-2" style="max-width: 240px;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://pasabuy.site/pasabuy_api.php?action=paymongo_gcash_qr" id="paymongoQrImage" alt="PayMongo GCash QR Code" class="img-fluid rounded-3 mb-2" style="width: 180px; height: 180px;">
+                            <div class="fw-bold fs-9 text-dark"><i class="fa-solid fa-camera me-1 text-primary"></i> Scan with GCash App</div>
+                        </div>
+                        
+                        <p class="fs-9 text-muted mb-0">Open your <strong>GCash App</strong> -> Tap <strong>Scan QR</strong> -> Scan the live PayMongo QR code above to authorize payment.</p>
                     </div>
 
-                    <p class="fs-8 text-muted mb-3">Authorize <strong>₱5.00</strong> payment from your GCash account balance to complete your listing fee.</p>
-
-                    <button class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7 mb-2" onclick="completePayMongoPayment()"><i class="fa-solid fa-circle-check me-2"></i> Authorize & Confirm GCash Payment</button>
+                    <button class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7 mb-2" onclick="completePayMongoPayment()"><i class="fa-solid fa-circle-check me-2"></i> Confirm Payment Completed & Post Live</button>
                     <button class="btn btn-link text-muted fs-8" onclick="showPmStep1()"><i class="fa-solid fa-arrow-left me-1"></i> Back to Payment Options</button>
                 </div>
 
@@ -1812,6 +1818,14 @@
         function showGcashStep() {
             document.getElementById('pmStep1').style.display = 'none';
             document.getElementById('pmStep2').style.display = 'block';
+
+            const amountText = document.getElementById('gcashAmountDisplay').innerText || '₱5.00';
+            const qrImg = document.getElementById('paymongoQrImage');
+            if (qrImg) {
+                const title = encodeURIComponent(document.getElementById('sellTitle').value || 'PasaBuy Item Posting Fee');
+                const qrData = encodeURIComponent(`https://pasabuy.site/pasabuy_api.php?action=paymongo_gcash_qr&amount=${amountText}&item=${title}`);
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${qrData}`;
+            }
         }
 
         function showPmStep1() {

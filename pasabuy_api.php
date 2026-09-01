@@ -108,9 +108,14 @@ if ($action === 'create_listing' && $method === 'POST') {
         $imgStmt->execute([$listingId, $imgUrl]);
     }
 
-    // Record PayMongo ₱5.00 posting fee
-    $payStmt = $db->prepare("INSERT INTO PaymentRecords (UserId, ListingId, Amount, PaymentMethod, TransactionId, Status, CreatedAt) VALUES (?, ?, 5.00, 'GCash / PayMongo', ?, 'PAID', NOW())");
-    $payStmt->execute([$sellerId, $listingId, 'PM-' . time() . '-' . random_int(1000, 9999)]);
+    // Dynamic Fee Tier calculation: ₱1-₱99 = ₱1, ₱100-₱999 = ₱5, ₱1000+ = ₱10
+    $feeAmount = 5.00;
+    if ($price > 0 && $price < 100) $feeAmount = 1.00;
+    else if ($price >= 1000) $feeAmount = 10.00;
+
+    // Record PayMongo GCash posting fee in MySQL PaymentRecords ledger
+    $payStmt = $db->prepare("INSERT INTO PaymentRecords (UserId, ListingId, Amount, PaymentMethod, TransactionId, Status, CreatedAt) VALUES (?, ?, ?, 'GCASH_PAYMONGO', ?, 'PAID', NOW())");
+    $payStmt->execute([$sellerId, $listingId, $feeAmount, 'PAYMONGO-GCASH-' . time() . '-' . random_int(1000, 9999)]);
 
     echo json_encode(['success' => true, 'message' => 'Listing published successfully!', 'id' => $listingId]);
     exit;
