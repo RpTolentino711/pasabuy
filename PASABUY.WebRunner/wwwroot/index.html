@@ -2188,6 +2188,9 @@
         async function redirectToPayMongoCheckout() {
             const title = document.getElementById('sellTitle').value.trim() || 'Campus Item';
             const price = parseFloat(document.getElementById('sellPrice').value) || 10;
+            const meetup = document.getElementById('sellMeetup').value.trim() || 'Campus Library';
+            const imgUrl = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80';
+            
             let fee = 5.00;
             if (price > 0 && price < 100) fee = 1.00;
             else if (price >= 1000) fee = 10.00;
@@ -2195,21 +2198,67 @@
             const feeText = `₱${fee.toFixed(2)}`;
             document.getElementById('payAmountDisplay').innerText = feeText;
 
+            let storedUser = null;
+            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+            const sellerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
+
             try {
-                const res = await fetch('/pasabuy_api.php?action=create_paymongo_checkout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: fee, title: title })
-                });
-                if (res.ok) {
+                // Call the actual API endpoint to create listing with PayMongo payment
+                let res = null;
+                try {
+                    res = await fetch(`${API_BASE}/listings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sellerId: sellerId,
+                            categoryId: 1,
+                            meetupLocationId: 1,
+                            title: title,
+                            description: `Campus item for sale: ${title}`,
+                            price: price,
+                            condition: document.getElementById('sellCondition').value || 'Good',
+                            imageUrls: [imgUrl]
+                        })
+                    });
+                } catch (errApi) { console.log("API call failed, trying fallback"); }
+
+                if (res && res.ok) {
                     const data = await res.json();
-                    if (data.checkout_url && data.checkout_url.startsWith('http')) {
-                        window.open(data.checkout_url, '_blank');
+                    if (data.payment && data.payment.checkoutUrl) {
+                        currentListingId = data.listingId || data.id;
+                        window.open(data.payment.checkoutUrl, '_blank');
+                        openPayMongoGatewayModal(feeText);
+                        return;
+                    } else if (data.CheckoutUrl) {
+                        currentListingId = data.listingId || data.id;
+                        window.open(data.CheckoutUrl, '_blank');
                         openPayMongoGatewayModal(feeText);
                         return;
                     }
                 }
-            } catch (e) { }
+                
+                // Fallback: Try PHP endpoint
+                const fallbackRes = await fetch('/pasabuy_api.php?action=create_listing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sellerId: sellerId,
+                        title: title,
+                        description: `Campus item for sale: ${title}`,
+                        price: price,
+                        meetupLocation: meetup,
+                        imageUrl: imgUrl
+                    })
+                });
+                if (fallbackRes.ok) {
+                    const fallbackData = await fallbackRes.json();
+                    if (fallbackData.paymentUrl || fallbackData.CheckoutUrl) {
+                        window.open(fallbackData.paymentUrl || fallbackData.CheckoutUrl, '_blank');
+                    }
+                }
+            } catch (e) {
+                console.error("Payment redirect error:", e);
+            }
 
             openPayMongoGatewayModal(feeText);
         }
