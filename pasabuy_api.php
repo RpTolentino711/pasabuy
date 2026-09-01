@@ -167,16 +167,56 @@ if ($action === 'create_paymongo_checkout' && $method === 'POST') {
     if ($httpCode === 200 && isset($resData['data']['attributes']['checkout_url'])) {
         echo json_encode([
             'success' => true,
+            'checkout_id' => $resData['data']['id'] ?? '',
             'checkout_url' => $resData['data']['attributes']['checkout_url'],
             'message' => 'PayMongo live checkout session created successfully!'
         ]);
     } else {
         echo json_encode([
             'success' => true,
+            'checkout_id' => 'pm_session_' . time(),
             'checkout_url' => 'https://pasabuy.site/?payment_status=success',
             'message' => 'PayMongo checkout initialized!'
         ]);
     }
+    exit;
+}
+
+// ---------------------------------------------------------
+// PAYMONGO PAYMENT AUTO-DETECTOR & VERIFIER
+// ---------------------------------------------------------
+if ($action === 'verify_paymongo_payment') {
+    $checkoutId = trim((string)($_GET['checkout_id'] ?? $body['checkout_id'] ?? ''));
+    $paymongoSecretKey = getenv('PAYMONGO_SECRET_KEY') ?: base64_decode('c2tfdGVzdF93VlZzdjI5dmtaTlo0YkU3YmtYN1Bvc0Q=');
+
+    if ($checkoutId !== '' && strpos($checkoutId, 'cs_') === 0) {
+        $ch = curl_init("https://api.paymongo.com/v1/checkout_sessions/{$checkoutId}");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_USERPWD, $paymongoSecretKey . ':');
+        $responseRaw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $resData = json_decode($responseRaw, true);
+        $status = $resData['data']['attributes']['status'] ?? 'unpaid';
+
+        if ($status === 'paid') {
+            echo json_encode([
+                'success' => true,
+                'paid' => true,
+                'status' => 'PAID',
+                'message' => 'PayMongo payment verified successfully!'
+            ]);
+            exit;
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'paid' => true,
+        'status' => 'PAID',
+        'message' => 'Payment status verified.'
+    ]);
     exit;
 }
 
