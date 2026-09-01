@@ -1304,10 +1304,10 @@
             if (bannerEl) bannerEl.style.display = 'none';
 
             try {
-                const res = await fetch('/pasabuy_otp.php?action=login', {
+                const res = await fetch('/pasabuy_otp.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: emailInput, password: passwordInput })
+                    body: JSON.stringify({ action: 'login', email: emailInput, password: passwordInput })
                 });
 
                 const data = await res.json();
