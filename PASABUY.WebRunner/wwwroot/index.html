@@ -1816,8 +1816,12 @@
         }
 
         function openRegisterModal() {
+            const modalEl = document.getElementById('registerModal');
+            if (modalEl && modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
             if (!registerModalInstance) {
-                registerModalInstance = new bootstrap.Modal(document.getElementById('registerModal'));
+                registerModalInstance = new bootstrap.Modal(modalEl);
             }
             registerModalInstance.show();
         }
@@ -1875,8 +1879,12 @@
                     const errEl = document.getElementById('otpVerifyErrorAlert');
                     if (errEl) errEl.style.display = 'none';
 
+                    const otpModalEl = document.getElementById('otpVerifyModal');
+                    if (otpModalEl && otpModalEl.parentElement !== document.body) {
+                        document.body.appendChild(otpModalEl);
+                    }
                     if (!otpVerifyModalInstance) {
-                        otpVerifyModalInstance = new bootstrap.Modal(document.getElementById('otpVerifyModal'));
+                        otpVerifyModalInstance = new bootstrap.Modal(otpModalEl);
                     }
                     otpVerifyModalInstance.show();
                     alert(`📧 Verification OTP code sent to ${email} from PASABUY@pasabuy.site!`);
@@ -1938,8 +1946,12 @@
         }
 
         function openForgotPasswordModal() {
+            const modalEl = document.getElementById('forgotPasswordModal');
+            if (modalEl && modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
             if (!forgotPasswordModalInstance) {
-                forgotPasswordModalInstance = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+                forgotPasswordModalInstance = new bootstrap.Modal(modalEl);
             }
             forgotPasswordModalInstance.show();
         }
@@ -1965,8 +1977,12 @@
                     if (forgotPasswordModalInstance) forgotPasswordModalInstance.hide();
 
                     document.getElementById('resetDisplayUsername').innerText = data.registeredName || email;
+                    const resetModalEl = document.getElementById('resetPasswordModal');
+                    if (resetModalEl && resetModalEl.parentElement !== document.body) {
+                        document.body.appendChild(resetModalEl);
+                    }
                     if (!resetPasswordModalInstance) {
-                        resetPasswordModalInstance = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+                        resetPasswordModalInstance = new bootstrap.Modal(resetModalEl);
                     }
                     resetPasswordModalInstance.show();
                     alert(`📧 Password reset OTP code sent to ${email} from PASABUY@pasabuy.site!`);
