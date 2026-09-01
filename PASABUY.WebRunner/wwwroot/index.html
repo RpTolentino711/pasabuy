@@ -1285,6 +1285,28 @@
         let forgotPasswordModalInstance = null;
         let resetPasswordModalInstance = null;
 
+        function openRegisterModal() {
+            const modalEl = document.getElementById('registerModal');
+            if (modalEl && modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            if (!registerModalInstance) {
+                registerModalInstance = new bootstrap.Modal(modalEl);
+            }
+            registerModalInstance.show();
+        }
+
+        function openForgotPasswordModal() {
+            const modalEl = document.getElementById('forgotPasswordModal');
+            if (modalEl && modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            if (!forgotPasswordModalInstance) {
+                forgotPasswordModalInstance = new bootstrap.Modal(modalEl);
+            }
+            forgotPasswordModalInstance.show();
+        }
+
         async function loginStudentWithPassword() {
             const email = document.getElementById('loginEmailInput').value.trim();
             const password = document.getElementById('loginPasswordInput').value.trim();
