@@ -1766,55 +1766,80 @@
             document.getElementById('pmStep2').style.display = 'none';
         }
 
-        async function completePayMongoPayment() {
-            if (currentListingId > 0) {
+        async function publishListingToDatabase() {
+            const title = document.getElementById('sellTitle').value.trim() || 'Campus Item';
+            const price = parseFloat(document.getElementById('sellPrice').value) || 10;
+            const meetup = document.getElementById('sellMeetup').value.trim() || 'Campus Library';
+            const imgUrl = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80';
+
+            let storedUser = null;
+            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch(e){}
+            const sellerId = storedUser ? (storedUser.id || 1) : 1;
+
+            try {
+                let res = null;
                 try {
-                    await fetch(`${API_BASE}/payments/confirm-simulation/${currentListingId}`, { method: 'POST' });
-                } catch (e) {}
+                    res = await fetch(`${API_BASE}/listings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sellerId: sellerId,
+                            categoryId: 1,
+                            meetupLocationId: 1,
+                            title: title,
+                            description: `Campus item for sale: ${title}`,
+                            price: price,
+                            condition: document.getElementById('sellCondition').value || 'Good',
+                            imageUrls: [imgUrl]
+                        })
+                    });
+                } catch(errApi){}
+
+                if (!res || !res.ok) {
+                    res = await fetch('/pasabuy_api.php?action=create_listing', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: title,
+                            description: `Campus item for sale: ${title}`,
+                            price: price,
+                            sellerId: sellerId,
+                            meetupLocation: meetup,
+                            imageUrl: imgUrl
+                        })
+                    });
+                }
+
+                if (res && res.ok) {
+                    const data = await res.json();
+                    if (data.id || data.listingId) currentListingId = data.id || data.listingId;
+                }
+            } catch(e) {
+                console.error("Publish listing error:", e);
             }
+        }
+
+        async function completePayMongoPayment() {
+            await publishListingToDatabase();
             if (payMongoGatewayModalInstance) payMongoGatewayModalInstance.hide();
-            alert('🎉 PayMongo GCash Payment Verified! Your listing is now ACTIVE on campus marketplace.');
+            alert('🎉 PayMongo GCash Payment Verified! Your listing is now LIVE on campus marketplace.');
+            
+            document.getElementById('sellTitle').value = '';
+            document.getElementById('sellPrice').value = '';
+            document.getElementById('sellMeetup').value = '';
+            document.getElementById('sellPhotosPreviewGrid').innerHTML = '';
+            uploadedPhotoUrls = [];
+
             document.getElementById('sellStep2').style.display = 'none';
             document.getElementById('sellStep1').style.display = 'block';
+            
             await filterProducts();
             switchTab('home');
         }
 
         async function redirectToPayMongoCheckout() {
-            const title = document.getElementById('sellTitle').value || 'Casio Calculator';
-            const price = parseFloat(document.getElementById('sellPrice').value) || 500;
-            const category = document.getElementById('sellCategory').value || 'School Supplies';
-            const meetup = document.getElementById('sellMeetup').value || 'Library Lobby';
+            await publishListingToDatabase();
             const feeText = document.getElementById('payAmountDisplay').innerText || '₱5.00';
-
-            try {
-                const res = await fetch(`${API_BASE}/listings`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        sellerId: 1,
-                        categoryId: 1,
-                        meetupLocationId: 1,
-                        title: title,
-                        description: `Campus item for sale: ${title}`,
-                        price: price,
-                        condition: document.getElementById('sellCondition').value || 'Good',
-                        imageUrls: uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls : ['https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80']
-                    })
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.listingId) currentListingId = data.listingId;
-                    if (data.payment && data.payment.checkoutUrl && data.payment.checkoutUrl.includes('/cs_')) {
-                        window.open(data.payment.checkoutUrl, '_blank');
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.error(e);
-            }
-
             openPayMongoGatewayModal(feeText);
         }
 
@@ -1828,24 +1853,48 @@
 
             let products = [];
             try {
-                const res = await fetch(`${API_BASE}/listings`);
+                let res = await fetchApi('/listings');
+                if (!res.ok) {
+                    res = await fetch('/pasabuy_api.php?action=listings');
+                }
                 if (res.ok) {
                     const data = await res.json();
-                    products = data.map(item => ({
-                        id: item.id,
-                        title: item.title,
-                        price: `₱${parseFloat(item.price).toFixed(2)}`,
-                        fee: item.price >= 1000 ? '₱10.00' : (item.price >= 100 ? '₱5.00' : '₱1.00'),
-                        condition: item.condition || 'Good',
-                        seller: item.seller ? (item.seller.studentProfile ? `${item.seller.studentProfile.firstName} ${item.seller.studentProfile.lastName}` : 'Verified Student') : 'John Doe',
-                        sellerId: item.sellerId,
-                        location: item.meetupLocation ? item.meetupLocation.name : 'Library Lobby',
-                        img: (item.images && item.images.length > 0) ? item.images[0].imageUrl : 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80'
-                    }));
+                    if (Array.isArray(data)) {
+                        products = data.map(item => {
+                            const title = item.Title || item.title || 'Campus Item';
+                            const priceVal = parseFloat(item.Price || item.price || 0);
+                            const priceStr = `₱${priceVal.toFixed(2)}`;
+                            const feeStr = priceVal >= 1000 ? '₱10.00' : (priceVal >= 100 ? '₱5.00' : '₱1.00');
+                            const condition = item.Condition || item.condition || 'Good';
+                            const sellerName = item.sellerName || (item.FirstName ? `${item.FirstName} ${item.LastName}` : 'Verified Student');
+                            const location = item.MeetupLocation || item.meetupLocation || 'Campus Library';
+                            
+                            let img = 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80';
+                            if (item.images && item.images.length > 0) {
+                                img = item.images[0].imageUrl || item.images[0];
+                            } else if (item.ImageUrl || item.img) {
+                                img = item.ImageUrl || item.img;
+                            }
+
+                            return {
+                                id: item.Id || item.id || random_int_js(),
+                                title: title,
+                                price: priceStr,
+                                fee: feeStr,
+                                condition: condition,
+                                seller: sellerName,
+                                sellerId: item.SellerId || item.sellerId || 1,
+                                location: location,
+                                img: img
+                            };
+                        });
+                    }
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Fetch listings error:", e);
             }
+
+            function random_int_js() { return Math.floor(Math.random() * 10000); }
 
             let html = '';
             let profileHtml = '';
@@ -1854,40 +1903,37 @@
                 if (cond !== 'All' && p.condition !== cond) return;
                 if (search && !p.title.toLowerCase().includes(search)) return;
 
-                html += `
+                const cardHtml = `
                 <div class="product-card">
-                    <img src="${p.img}" class="product-img" alt="${p.title}">
-                    <div class="product-details">
+                    <img src="${p.img}" class="product-img" alt="${p.title}" style="height:160px; object-fit:cover;">
+                    <div class="product-details p-3">
                         <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="price-tag">${p.price}</span>
-                            <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1 rounded-pill fs-8">${p.fee} Fee Paid</span>
+                            <span class="price-tag fw-bold text-primary fs-6">${p.price}</span>
+                            <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1 rounded-pill fs-9">${p.fee} Fee Paid</span>
                         </div>
-                        <h6 class="fw-bold mb-1">${p.title}</h6>
-                        <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2 fs-8">
+                        <h6 class="fw-bold mb-1 text-dark fs-7">${p.title}</h6>
+                        <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2 fs-9 text-muted">
                             <div>
                                 <span class="fw-bold text-dark">${p.seller}</span>
-                                <span class="badge-verified ms-1"><i class="fa-solid fa-check"></i> Verified</span>
+                                <span class="badge-verified ms-1"><i class="fa-solid fa-check text-success"></i></span>
                             </div>
-                            <span class="text-muted"><i class="fa-solid fa-location-dot text-danger me-1"></i> ${p.location}</span>
+                            <span><i class="fa-solid fa-location-dot text-danger me-1"></i> ${p.location}</span>
                         </div>
                         <div class="d-flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold" onclick="openChat('${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
-                            <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold" onclick="reserveItem(${p.id})"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="openChat('${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
+                            <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="reserveItem(${p.id})"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
                         </div>
                     </div>
                 </div>`;
 
-                profileHtml += `
-                <div class="product-card">
-                    <img src="${p.img}" class="product-img" alt="${p.title}">
-                    <div class="product-details">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="price-tag">${p.price}</span>
-                            <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1 rounded-pill fs-8">${p.fee} Fee Paid</span>
-                        </div>
-                        <h6 class="fw-bold mb-1">${p.title}</h6>
-                        <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2 fs-8">
-                            <div>
+                html += cardHtml;
+                profileHtml += cardHtml;
+            });
+
+            if (exploreList) exploreList.innerHTML = html || '<div class="text-center text-muted py-4">No active marketplace items found.</div>';
+            if (homeContainer) homeContainer.innerHTML = html || '<div class="text-center text-muted py-4">No active listings yet. Be the first student to post on campus!</div>';
+            if (profileContainer) profileContainer.innerHTML = profileHtml || '<div class="text-center text-muted py-4">You have no active item listings. Post an item in the Sell tab to view it here!</div>';
+        }
                                 <span class="fw-bold text-dark">${p.seller}</span>
                                 <span class="badge-verified ms-1"><i class="fa-solid fa-check"></i> Verified</span>
                             </div>
