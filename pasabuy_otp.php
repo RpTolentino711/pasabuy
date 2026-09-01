@@ -46,10 +46,10 @@ function getPasaBuyDbConnection() {
 $inputRaw = file_get_contents('php://input');
 $data = json_decode($inputRaw, true) ?: $_POST;
 
-$action = trim((string)($data['action'] ?? 'send_otp'));
-$email  = strtolower(trim((string)($data['email'] ?? '')));
-$name   = trim((string)($data['name'] ?? 'Student User'));
-$otpIn  = trim((string)($data['otpCode'] ?? $data['otp'] ?? ''));
+$action = trim((string)($data['action'] ?? $_GET['action'] ?? $_POST['action'] ?? 'send_otp'));
+$email  = strtolower(trim((string)($data['email'] ?? $_GET['email'] ?? $_POST['email'] ?? '')));
+$name   = trim((string)($data['name'] ?? $_GET['name'] ?? $_POST['name'] ?? 'Student User'));
+$otpIn  = trim((string)($data['otpCode'] ?? $data['otp'] ?? $_GET['otpCode'] ?? $_POST['otpCode'] ?? ''));
 
 if ($email === '') {
     http_response_code(400);
