@@ -348,6 +348,26 @@
             }
         }
 
+        function checkAdminSessionOnLoad() {
+            try {
+                const sessionStr = localStorage.getItem('pasabuy_admin_session');
+                if (sessionStr) {
+                    const session = JSON.parse(sessionStr);
+                    if (session && session.loggedIn) {
+                        document.getElementById('adminAuthView').style.display = 'none';
+                        document.getElementById('adminMainDashboardView').style.display = 'block';
+                        fetchAdminDashboardStats();
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            document.getElementById('adminAuthView').style.display = 'block';
+            document.getElementById('adminMainDashboardView').style.display = 'none';
+        }
+
+        window.addEventListener('DOMContentLoaded', checkAdminSessionOnLoad);
+
         async function executeAdminLogin() {
             const user = document.getElementById('adminUsernameInput').value.trim();
             const pass = document.getElementById('adminPasswordInput').value.trim();
@@ -363,8 +383,10 @@
             // Accept admin / Pogilameg or admin@pasabuy.site / Pogilameg or API login
             if ((user.toLowerCase() === 'admin' || user.toLowerCase() === 'admin@pasabuy.site') && pass === 'Pogilameg') {
                 errBanner.style.display = 'none';
+                localStorage.setItem('pasabuy_admin_session', JSON.stringify({ loggedIn: true, user: user, loginTime: Date.now() }));
                 document.getElementById('adminAuthView').style.display = 'none';
                 document.getElementById('adminMainDashboardView').style.display = 'block';
+                fetchAdminDashboardStats();
                 return;
             }
 
@@ -379,8 +401,10 @@
                     const data = await res.json();
                     if (data.role === 'ADMIN' || user.toLowerCase().includes('admin')) {
                         errBanner.style.display = 'none';
+                        localStorage.setItem('pasabuy_admin_session', JSON.stringify({ loggedIn: true, user: user, loginTime: Date.now() }));
                         document.getElementById('adminAuthView').style.display = 'none';
                         document.getElementById('adminMainDashboardView').style.display = 'block';
+                        fetchAdminDashboardStats();
                         return;
                     }
                 }
@@ -391,6 +415,7 @@
         }
 
         function logoutAdmin() {
+            localStorage.removeItem('pasabuy_admin_session');
             document.getElementById('adminMainDashboardView').style.display = 'none';
             document.getElementById('adminAuthView').style.display = 'block';
             document.getElementById('adminPasswordInput').value = '';
