@@ -805,11 +805,11 @@
                         </div>
                     </div>
 
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="regPassword" placeholder="Min 6 chars">
+                                <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="regPassword" placeholder="Min 8 chars" oninput="validateRegistrationPasswordLive()">
                                 <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" onclick="togglePasswordVisibility('regPassword', 'regEyeIcon')">
                                     <i class="fa-solid fa-eye text-muted fs-8" id="regEyeIcon"></i>
                                 </button>
@@ -818,12 +818,22 @@
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">Confirm Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="regConfirmPassword" placeholder="Re-type password">
+                                <input type="password" class="form-control border-end-0 rounded-start-3 fs-7" id="regConfirmPassword" placeholder="Re-type password" oninput="validateRegistrationPasswordLive()">
                                 <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" onclick="togglePasswordVisibility('regConfirmPassword', 'regConfirmEyeIcon')">
                                     <i class="fa-solid fa-eye text-muted fs-8" id="regConfirmEyeIcon"></i>
                                 </button>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Live Password Checker & Match Feedback -->
+                    <div class="p-3 bg-light rounded-3 border mb-3 text-start fs-8">
+                        <div class="fw-bold mb-1 text-dark fs-8">Password Security Checklist:</div>
+                        <div id="regReqLen" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 8 characters long</div>
+                        <div id="regReqCapital" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1 Capital Letter (A-Z)</div>
+                        <div id="regReqSymbol" class="text-muted"><i class="fa-solid fa-circle-dot me-1"></i> At least 1 Special Symbol (!@#$%^&*...)</div>
+                        <hr class="my-2">
+                        <div id="regMatchStatus" class="fw-bold text-muted"><i class="fa-solid fa-lock me-1"></i> Enter matching passwords</div>
                     </div>
 
                     <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7" onclick="submitRegistrationSendOtp()"><i class="fa-solid fa-paper-plane me-1"></i> Send OTP Verification Code</button>
@@ -1239,6 +1249,57 @@
             }
         }
 
+        function validateRegistrationPasswordLive() {
+            const pw = document.getElementById('regPassword').value || '';
+            const confirmPw = document.getElementById('regConfirmPassword').value || '';
+
+            const reqLen = document.getElementById('regReqLen');
+            const reqCapital = document.getElementById('regReqCapital');
+            const reqSymbol = document.getElementById('regReqSymbol');
+            const matchStatus = document.getElementById('regMatchStatus');
+
+            const isLengthValid = pw.length >= 8;
+            const isCapitalValid = /[A-Z]/.test(pw);
+            const isSymbolValid = /[\W_]/.test(pw);
+
+            if (isLengthValid) {
+                reqLen.className = 'text-success fw-bold';
+                reqLen.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> At least 8 characters long ✓';
+            } else {
+                reqLen.className = 'text-danger fw-semibold';
+                reqLen.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Required: At least 8 characters long';
+            }
+
+            if (isCapitalValid) {
+                reqCapital.className = 'text-success fw-bold';
+                reqCapital.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> At least 1 Capital Letter (A-Z) ✓';
+            } else {
+                reqCapital.className = 'text-danger fw-semibold';
+                reqCapital.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Required: Missing Capital Letter (A-Z)';
+            }
+
+            if (isSymbolValid) {
+                reqSymbol.className = 'text-success fw-bold';
+                reqSymbol.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> At least 1 Special Symbol (!@#$%^&*) ✓';
+            } else {
+                reqSymbol.className = 'text-danger fw-semibold';
+                reqSymbol.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Required: Missing Special Symbol (!@#$%^&*)';
+            }
+
+            if (!pw && !confirmPw) {
+                matchStatus.className = 'fw-bold text-muted';
+                matchStatus.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Enter matching passwords';
+            } else if (pw === confirmPw && pw !== '') {
+                matchStatus.className = 'fw-extrabold text-success fs-7';
+                matchStatus.innerHTML = '<i class="fa-solid fa-check-double me-1"></i> Passwords Match ✓';
+            } else {
+                matchStatus.className = 'fw-extrabold text-danger fs-7';
+                matchStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Passwords Do Not Match ✕';
+            }
+
+            return isLengthValid && isCapitalValid && isSymbolValid && (pw === confirmPw && pw !== '');
+        }
+
         function openRegisterModal() {
             if (!registerModalInstance) {
                 registerModalInstance = new bootstrap.Modal(document.getElementById('registerModal'));
@@ -1260,8 +1321,14 @@
                 alert('Please fill in all required fields (Name, Email, Password).');
                 return;
             }
-            if (password !== confirmPass) {
-                alert('Passwords do not match! Please re-type password.');
+
+            const isPwValid = validateRegistrationPasswordLive();
+            if (!isPwValid) {
+                if (password !== confirmPass) {
+                    alert('❌ Passwords do not match! Please make sure Password and Confirm Password match.');
+                } else {
+                    alert('❌ Password does not meet security requirements! Required: At least 8 characters, 1 Capital Letter (A-Z), and 1 Special Symbol (!@#$%^&*).');
+                }
                 return;
             }
 
