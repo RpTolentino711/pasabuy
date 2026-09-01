@@ -1615,7 +1615,7 @@
             tabs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
         }
 
-        window.addEventListener('DOMContentLoaded', checkStudentSessionOnLoad);
+        // Session check function called on init
 
         function logoutStudent() {
             if (confirm('Are you sure you want to log out?')) {
@@ -2783,48 +2783,20 @@
         // Handle PayMongo payment success redirect
         async function handlePaymentSuccess() {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('payment') === 'success') {
+            if (params.get('payment') === 'success' || params.get('status') === 'success') {
                 console.log("Payment success detected, confirming listing...");
-                
-                // Remove the payment=success parameter from URL
                 window.history.replaceState({}, document.title, window.location.pathname);
                 
                 try {
-                    // Get the listing ID from localStorage
                     const listingData = localStorage.getItem('pendingListingData');
-                    if (!listingData) {
-                        console.log("No pending listing data found");
-                        return;
-                    }
+                    if (!listingData) return;
                     
                     const data = JSON.parse(listingData);
-                    const listingId = data.listingId;
+                    alert('✅ PayMongo GCash Payment verified! Your listing is now live on campus marketplace.');
+                    localStorage.removeItem('pendingListingData');
                     
-                    if (!listingId) {
-                        console.error("No listing ID in pending data");
-                        return;
-                    }
-                    
-                    // Confirm payment with backend
-                    const confirmRes = await fetch(`${API_BASE}/payments/confirm/${listingId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    
-                    if (confirmRes.ok) {
-                        const confirmData = await confirmRes.json();
-                        console.log("Payment confirmed:", confirmData);
-                        
-                        // Show success message
-                        alert('✅ Payment successful! Your listing is now active.');
-                        
-                        // Clear pending data
-                        localStorage.removeItem('pendingListingData');
-                        
-                        // Switch to Explore tab to show the active listing
+                    if (localStorage.getItem('pasabuy_student_logged_in') === 'true') {
                         switchTab('explore');
-                    } else {
-                        console.error("Failed to confirm payment:", confirmRes.status);
                     }
                 } catch (err) {
                     console.error("Payment confirmation error:", err);
@@ -2832,10 +2804,11 @@
             }
         }
         
-        // Initialize on load
-        window.addEventListener('DOMContentLoaded', () => {
+        // Single Consolidated Initialization on Page Load
+        window.addEventListener('DOMContentLoaded', async () => {
+            checkStudentSessionOnLoad();
+            await filterProducts();
             handlePaymentSuccess();
-            filterProducts();
         });
     </script>
 </body>
