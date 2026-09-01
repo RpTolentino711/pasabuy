@@ -2311,7 +2311,7 @@
             } catch (e) { console.error("Error getting user:", e); }
 
             let products = [];
-
+            try {
                 const listingsUrl = currentUserId > 0 ? `/listings?excludeSellerId=${currentUserId}` : '/listings';
                 let res = await fetchApi(listingsUrl);
                 if (!res.ok) {
