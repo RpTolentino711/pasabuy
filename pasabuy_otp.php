@@ -57,6 +57,8 @@ if ($email === '') {
     exit;
 }
 
+$sessionKey = 'pasabuy_otp_' . md5($email);
+
 // LOGIN ACTION
 if ($action === 'login') {
     $password = (string)($data['password'] ?? '');
@@ -86,7 +88,6 @@ if ($action === 'login') {
         exit;
     }
 
-    // Fetch Student Profile
     $pStmt = $db->prepare("SELECT * FROM StudentProfiles WHERE UserId = ?");
     $pStmt->execute([(int)$user['Id']]);
     $profile = $pStmt->fetch() ?: [];
@@ -111,33 +112,56 @@ if ($action === 'login') {
     exit;
 }
 
-// VERIFY OTP ACTION
+// VERIFY OTP ACTION (STRICT EMAIL + OTP MATCHING)
 if ($action === 'verify_otp' || $action === 'verify') {
-    if (!isset($_SESSION[$sessionKey])) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'No OTP request found for this email. Please click Send OTP again.']);
-        exit;
+    $db = getPasaBuyDbConnection();
+    $validOtpFound = false;
+    $reg = [];
+
+    if ($db) {
+        $db->exec("CREATE TABLE IF NOT EXISTS `OtpVerifications` (
+          `Id` int(11) NOT NULL AUTO_INCREMENT,
+          `Email` varchar(255) NOT NULL,
+          `OtpCode` varchar(10) NOT NULL,
+          `RegData` text DEFAULT NULL,
+          `ExpiresAt` datetime NOT NULL,
+          `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`Id`),
+          KEY `idx_email` (`Email`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $stmt = $db->prepare("SELECT * FROM OtpVerifications WHERE LOWER(Email) = ? AND OtpCode = ? AND ExpiresAt > NOW() ORDER BY Id DESC LIMIT 1");
+        $stmt->execute([$email, $otpIn]);
+        $row = $stmt->fetch();
+
+        if ($row) {
+            $validOtpFound = true;
+            if (!empty($row['RegData'])) {
+                $reg = json_decode($row['RegData'], true) ?: [];
+            }
+            $delStmt = $db->prepare("DELETE FROM OtpVerifications WHERE Id = ?");
+            $delStmt->execute([(int)$row['Id']]);
+        }
     }
 
-    $storedData = $_SESSION[$sessionKey];
-    if (time() > $storedData['expires']) {
-        unset($_SESSION[$sessionKey]);
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'OTP verification code has expired. Please request a new code.']);
-        exit;
+    if (!$validOtpFound && isset($_SESSION[$sessionKey])) {
+        $storedData = $_SESSION[$sessionKey];
+        if (time() <= $storedData['expires'] && $otpIn === (string)$storedData['code']) {
+            $validOtpFound = true;
+            $reg = $storedData['regData'] ?? [];
+            unset($_SESSION[$sessionKey]);
+        }
     }
 
-    if ($otpIn !== (string)$storedData['code']) {
+    if (!$validOtpFound) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => '❌ Incorrect OTP code. Please check your email inbox.']);
+        echo json_encode(['success' => false, 'message' => "❌ Invalid or expired OTP verification code for {$email}. Please check your email inbox."]);
         exit;
     }
 
     // OTP Verified! Record User into Hostinger MySQL Database
-    $reg = $storedData['regData'] ?? [];
     $recordedInDb = false;
 
-    $db = getPasaBuyDbConnection();
     if ($db) {
         try {
             $userEmail  = strtolower(trim($reg['email'] ?? $email));
@@ -149,18 +173,15 @@ if ($action === 'verify_otp' || $action === 'verify') {
             $course     = trim($reg['course'] ?? 'BSIT');
             $yearLevel  = trim($reg['yearLevel'] ?? '1st Yr');
 
-            // Check if user exists in Users table
             $stmt = $db->prepare("SELECT Id FROM Users WHERE LOWER(Email) = ?");
             $stmt->execute([$userEmail]);
             $existingUser = $stmt->fetch();
 
             if ($existingUser) {
                 $userId = (int)$existingUser['Id'];
-                // Update User
                 $upStmt = $db->prepare("UPDATE Users SET PasswordHash = ?, Status = 'VERIFIED', UpdatedAt = NOW() WHERE Id = ?");
                 $upStmt->execute([$passHash, $userId]);
 
-                // Check profile
                 $pStmt = $db->prepare("SELECT Id FROM StudentProfiles WHERE UserId = ?");
                 $pStmt->execute([$userId]);
                 if (!$pStmt->fetch()) {
@@ -168,12 +189,10 @@ if ($action === 'verify_otp' || $action === 'verify') {
                     $insProf->execute([$userId, $firstName, $lastName, $studentNo, $userEmail, $course, $yearLevel]);
                 }
             } else {
-                // Insert User
                 $insUser = $db->prepare("INSERT INTO Users (Email, PasswordHash, Role, Status, CreatedAt, UpdatedAt) VALUES (?, ?, 'STUDENT', 'VERIFIED', NOW(), NOW())");
                 $insUser->execute([$userEmail, $passHash]);
                 $userId = (int)$db->lastInsertId();
 
-                // Insert StudentProfile
                 $insProf = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, 'VERIFIED', 5.0, 0, NOW(), NOW())");
                 $insProf->execute([$userId, $firstName, $lastName, $studentNo, $userEmail, $course, $yearLevel]);
             }
@@ -196,20 +215,46 @@ if ($action === 'verify_otp' || $action === 'verify') {
 
 // Action: SEND OTP
 $otpCode = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+$regDataArr = [
+    'email' => $email,
+    'firstName' => trim((string)($data['firstName'] ?? '')),
+    'lastName' => trim((string)($data['lastName'] ?? '')),
+    'studentNumber' => trim((string)($data['studentNumber'] ?? '')),
+    'course' => trim((string)($data['course'] ?? '')),
+    'yearLevel' => trim((string)($data['yearLevel'] ?? '')),
+    'password' => (string)($data['password'] ?? '')
+];
+$regDataJson = json_encode($regDataArr);
 
 $_SESSION[$sessionKey] = [
     'code' => $otpCode,
     'expires' => time() + (10 * 60), // 10 minutes
-    'regData' => [
-        'email' => $email,
-        'firstName' => trim((string)($data['firstName'] ?? '')),
-        'lastName' => trim((string)($data['lastName'] ?? '')),
-        'studentNumber' => trim((string)($data['studentNumber'] ?? '')),
-        'course' => trim((string)($data['course'] ?? '')),
-        'yearLevel' => trim((string)($data['yearLevel'] ?? '')),
-        'password' => (string)($data['password'] ?? '')
-    ]
+    'regData' => $regDataArr
 ];
+
+$db = getPasaBuyDbConnection();
+if ($db) {
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `OtpVerifications` (
+          `Id` int(11) NOT NULL AUTO_INCREMENT,
+          `Email` varchar(255) NOT NULL,
+          `OtpCode` varchar(10) NOT NULL,
+          `RegData` text DEFAULT NULL,
+          `ExpiresAt` datetime NOT NULL,
+          `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`Id`),
+          KEY `idx_email` (`Email`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $clrStmt = $db->prepare("DELETE FROM OtpVerifications WHERE LOWER(Email) = ?");
+        $clrStmt->execute([$email]);
+
+        $insStmt = $db->prepare("INSERT INTO OtpVerifications (Email, OtpCode, RegData, ExpiresAt, CreatedAt) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW())");
+        $insStmt->execute([$email, $otpCode, $regDataJson]);
+    } catch (Exception $eOtpDb) {
+        error_log("OTP DB Store Error: " . $eOtpDb->getMessage());
+    }
+}
 
 function sendPasaBuyOtpEmail($toEmail, $toName, $otp) {
     $mail = new PHPMailer(true);
