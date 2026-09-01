@@ -339,11 +339,31 @@ if ($action === 'chat_conversations') {
       PRIMARY KEY (`Id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    $stmt = $db->prepare("SELECT c1.* FROM ChatMessages c1 INNER JOIN (
-        SELECT MAX(Id) as max_id FROM ChatMessages WHERE SenderId = ? OR ReceiverId = ? GROUP BY LEAST(SenderId, ReceiverId), GREATEST(SenderId, ReceiverId)
-    ) c2 ON c1.Id = c2.max_id ORDER BY c1.CreatedAt DESC");
+    $stmt = $db->prepare("SELECT c1.*, 
+        spSender.FirstName as SenderFirstName, spSender.LastName as SenderLastName,
+        spReceiver.FirstName as ReceiverFirstName, spReceiver.LastName as ReceiverLastName
+        FROM ChatMessages c1 
+        INNER JOIN (
+            SELECT MAX(Id) as max_id FROM ChatMessages WHERE SenderId = ? OR ReceiverId = ? GROUP BY LEAST(SenderId, ReceiverId), GREATEST(SenderId, ReceiverId)
+        ) c2 ON c1.Id = c2.max_id 
+        LEFT JOIN StudentProfiles spSender ON c1.SenderId = spSender.UserId
+        LEFT JOIN StudentProfiles spReceiver ON c1.ReceiverId = spReceiver.UserId
+        ORDER BY c1.CreatedAt DESC");
     $stmt->execute([$userId, $userId]);
     $convs = $stmt->fetchAll();
+
+    foreach ($convs as &$c) {
+        if ($c['SenderId'] == $userId) {
+            $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
+            $c['PartnerName'] = $rName !== '' ? $rName : 'Campus Seller';
+            $c['PartnerId'] = (int)$c['ReceiverId'];
+        } else {
+            $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
+            $c['PartnerName'] = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
+            $c['PartnerId'] = (int)$c['SenderId'];
+        }
+    }
+
     echo json_encode($convs);
     exit;
 }

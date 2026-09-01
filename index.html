@@ -2109,6 +2109,7 @@
             let storedUser = null;
             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
+            const myName = storedUser ? (storedUser.firstName + ' ' + (storedUser.lastName || '')).trim().toLowerCase() : '';
 
             let convs = [];
             try {
@@ -2122,16 +2123,24 @@
             try { localConvs = JSON.parse(localStorage.getItem('pasabuy_local_chat_heads')) || []; } catch(e){}
 
             localConvs.forEach(lc => {
-                if (!convs.some(c => c.SenderId === lc.partnerId || c.ReceiverId === lc.partnerId)) {
+                if (lc.myId && lc.myId != currentUserId) return;
+                if (!convs.some(c => (c.PartnerId && c.PartnerId == lc.partnerId) || c.SenderId == lc.partnerId || c.ReceiverId == lc.partnerId)) {
                     convs.push({
+                        PartnerId: lc.partnerId,
+                        PartnerName: lc.partnerName,
                         SenderId: lc.partnerId,
                         ReceiverId: currentUserId,
-                        SenderName: lc.partnerName,
                         ItemTitle: lc.itemTitle,
                         MessageText: lc.lastMessage || 'Click to view conversation',
                         CreatedAt: lc.time || 'Just now'
                     });
                 }
+            });
+
+            convs = convs.filter(c => {
+                const pId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
+                const pName = (c.PartnerName || c.SenderName || '').toLowerCase().trim();
+                return pId != currentUserId && (myName === '' || pName !== myName);
             });
 
             if (!Array.isArray(convs) || convs.length === 0) {
@@ -2145,8 +2154,8 @@
 
             let html = '';
             convs.forEach(c => {
-                const partnerId = (c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId;
-                const partnerName = c.SenderName || 'Campus Student';
+                const partnerId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
+                const partnerName = c.PartnerName || (c.SenderId == currentUserId ? 'Campus Seller' : (c.SenderName || 'Campus Buyer'));
                 const itemTitle = c.ItemTitle || 'Campus Item';
                 const lastMsg = c.MessageText || 'Tap to chat';
                 const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(partnerName)}`;
