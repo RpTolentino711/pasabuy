@@ -199,10 +199,11 @@ if ($action === 'create_paymongo_checkout' && $method === 'POST') {
         ]);
     } else {
         echo json_encode([
-            'success' => true,
-            'checkout_id' => 'pm_session_' . time(),
-            'checkout_url' => 'https://pasabuy.site/?payment_status=success',
-            'message' => 'PayMongo checkout initialized!'
+            'success' => false,
+            'http_code' => $httpCode,
+            'paymongo_error' => $resData ?? $responseRaw,
+            'key_used' => substr($paymongoSecretKey, 0, 8) . '...',
+            'message' => 'PayMongo session creation error'
         ]);
     }
     exit;
