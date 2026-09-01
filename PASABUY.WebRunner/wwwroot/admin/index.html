@@ -250,23 +250,8 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td><strong class="text-dark">John Doe</strong></td>
-                                    <td><code>2023-00123</code></td>
-                                    <td>BS Computer Science (3rd Yr)</td>
-                                    <td>john.doe@student.edu.ph</td>
-                                    <td><span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill">VERIFIED</span></td>
-                                    <td><button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="alert('Student suspended.')">Suspend</button></td>
-                                </tr>
-                                <tr>
-                                    <td><strong class="text-dark">Maria Santos</strong></td>
-                                    <td><code>2023-00456</code></td>
-                                    <td>BS Civil Engineering (2nd Yr)</td>
-                                    <td>maria.santos@student.edu.ph</td>
-                                    <td><span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill">VERIFIED</span></td>
-                                    <td><button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="alert('Student suspended.')">Suspend</button></td>
-                                </tr>
+                            <tbody id="adminStudentsTableBody">
+                                <tr><td colspan="6" class="text-center text-muted py-4">Loading registered students...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -291,22 +276,14 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Transaction Ref</th>
-                                    <th>Student Seller</th>
                                     <th>Listing Title</th>
                                     <th>Fee Amount</th>
                                     <th>Status</th>
                                     <th>Date &amp; Time</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td><code>PM-CHK-99214</code></td>
-                                    <td>John Doe</td>
-                                    <td>Casio Scientific Calculator FX-991ES</td>
-                                    <td><strong class="text-success">₱5.00</strong></td>
-                                    <td><span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-check me-1"></i> PAID</span></td>
-                                    <td>Just now</td>
-                                </tr>
+                            <tbody id="adminPaymentsTableBody">
+                                <tr><td colspan="5" class="text-center text-muted py-4">Loading PayMongo fee transactions...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -427,7 +404,113 @@
             document.querySelectorAll('.nav-link-admin').forEach(l => l.classList.remove('active'));
             if (element) element.classList.add('active');
 
-            if (sectionName === 'listings') fetchAdminListings();
+            if (sectionName === 'dashboard') fetchAdminDashboardStats();
+            else if (sectionName === 'students') fetchAdminStudents();
+            else if (sectionName === 'listings') fetchAdminListings();
+            else if (sectionName === 'payments') fetchAdminPayments();
+        }
+
+        async function fetchAdminDashboardStats() {
+            try {
+                const usersRes = await fetch(`${API_BASE}/users`);
+                if (usersRes.ok) {
+                    const users = await usersRes.json();
+                    document.getElementById('dashTotalStudents').innerText = users.length || 0;
+                }
+            } catch (e) { document.getElementById('dashTotalStudents').innerText = '0'; }
+
+            try {
+                const listRes = await fetch(`${API_BASE}/listings`);
+                if (listRes.ok) {
+                    const list = await listRes.json();
+                    document.getElementById('dashActiveListings').innerText = list.length || 0;
+                }
+            } catch (e) { document.getElementById('dashActiveListings').innerText = '0'; }
+
+            try {
+                const payRes = await fetch(`${API_BASE}/payments`);
+                if (payRes.ok) {
+                    const pays = await payRes.json();
+                    let totalRev = 0;
+                    pays.forEach(p => { if (p.status === 'PAID') totalRev += parseFloat(p.amount || 0); });
+                    document.getElementById('dashPayMongoRevenue').innerText = `₱${totalRev.toFixed(2)}`;
+                }
+            } catch (e) { document.getElementById('dashPayMongoRevenue').innerText = '₱0.00'; }
+        }
+
+        async function fetchAdminStudents() {
+            const tbody = document.getElementById('adminStudentsTableBody');
+            if (!tbody) return;
+            try {
+                const res = await fetch(`${API_BASE}/users`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-users-slash me-1"></i> No registered student accounts in database yet. Students who register via the app will appear here!</td></tr>';
+                        return;
+                    }
+                    let html = '';
+                    data.forEach(user => {
+                        html += `
+                        <tr>
+                            <td><strong class="text-dark">${user.name || 'Student User'}</strong></td>
+                            <td><code>${user.studentNumber || 'N/A'}</code></td>
+                            <td>${user.course || 'N/A'} (${user.yearLevel || 'N/A'})</td>
+                            <td>${user.email}</td>
+                            <td><span class="badge ${user.status === 'SUSPENDED' ? 'bg-danger' : 'bg-success-subtle text-success'} fw-bold px-3 py-1 rounded-pill">${user.status || 'VERIFIED'}</span></td>
+                            <td>
+                                ${user.status === 'SUSPENDED' 
+                                    ? '<span class="text-muted fs-8 fw-semibold">Suspended</span>' 
+                                    : `<button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="suspendStudentUser(${user.id})">Suspend</button>`}
+                            </td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No registered student accounts in database yet.</td></tr>';
+            }
+        }
+
+        async function suspendStudentUser(userId) {
+            if (confirm('Admin Action: Suspend this student user account?')) {
+                try {
+                    await fetch(`${API_BASE}/users/${userId}/suspend`, { method: 'POST' });
+                    alert('Student account suspended.');
+                    fetchAdminStudents();
+                } catch (e) {
+                    alert('Error suspending user.');
+                }
+            }
+        }
+
+        async function fetchAdminPayments() {
+            const tbody = document.getElementById('adminPaymentsTableBody');
+            if (!tbody) return;
+            try {
+                const res = await fetch(`${API_BASE}/payments`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-receipt me-1"></i> No PayMongo fee payments recorded in database yet. Paid GCash fees will appear here automatically!</td></tr>';
+                        return;
+                    }
+                    let html = '';
+                    data.forEach(p => {
+                        html += `
+                        <tr>
+                            <td><code>${p.providerReference || ('PM-CHK-' + p.id)}</code></td>
+                            <td>${p.listingTitle || 'Campus Listing'}</td>
+                            <td><strong class="text-success">₱${parseFloat(p.amount).toFixed(2)}</strong></td>
+                            <td><span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-check me-1"></i> ${p.status}</span></td>
+                            <td>${new Date(p.createdAt).toLocaleString()}</td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No PayMongo fee payments recorded yet.</td></tr>';
+            }
         }
 
         async function fetchAdminListings() {

@@ -50,17 +50,30 @@ namespace PASABUY.API.Services
                     </div>
                 </div>";
 
-                using var client = new SmtpClient(smtpServer, smtpPort);
-                client.Credentials = new NetworkCredential(senderEmail, senderPassword);
-                client.EnableSsl = true;
+                var portsToTry = new[] { 587, 465, 25 };
+                foreach (var port in portsToTry)
+                {
+                    try
+                    {
+                        using var client = new SmtpClient(smtpServer, port);
+                        client.Credentials = new NetworkCredential(senderEmail, senderPassword);
+                        client.EnableSsl = true;
+                        client.Timeout = 10000;
 
-                await client.SendMailAsync(message);
-                Console.WriteLine($"[EmailService] OTP {otpCode} sent successfully to {recipientEmail} via {senderEmail}");
-                return true;
+                        await client.SendMailAsync(message);
+                        Console.WriteLine($"[EmailService] OTP {otpCode} sent successfully to {recipientEmail} via {senderEmail} on port {port}");
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[EmailService Port {port} Attempt Failed] {ex.Message}");
+                    }
+                }
+                return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[EmailService Exception] {ex.Message}");
+                Console.WriteLine($"[EmailService Fatal Exception] {ex.Message}");
                 return false;
             }
         }

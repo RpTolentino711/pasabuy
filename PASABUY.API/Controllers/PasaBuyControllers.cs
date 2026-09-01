@@ -400,6 +400,25 @@ namespace PASABUY.API.Controllers
         private readonly PasaBuyDbContext _db;
         public PaymentsController(PasaBuyDbContext db) { _db = db; }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllPayments()
+        {
+            var payments = await _db.Payments
+                .Include(p => p.Listing)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Amount,
+                    p.Status,
+                    p.ProviderReference,
+                    p.CreatedAt,
+                    ListingTitle = p.Listing != null ? p.Listing.Title : "Campus Item Listing"
+                })
+                .ToListAsync();
+
+            return Ok(payments);
+        }
+
         [HttpPost("webhook")]
         public async Task<IActionResult> Webhook([FromBody] PayMongoWebhookPayload payload)
         {
@@ -495,6 +514,37 @@ namespace PASABUY.API.Controllers
     {
         private readonly PasaBuyDbContext _db;
         public UsersController(PasaBuyDbContext db) { _db = db; }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllStudents()
+        {
+            var students = await _db.Users
+                .Include(u => u.StudentProfile)
+                .Where(u => u.Role == "STUDENT")
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Email,
+                    u.Status,
+                    Name = u.StudentProfile != null ? $"{u.StudentProfile.FirstName} {u.StudentProfile.LastName}" : "Student User",
+                    StudentNumber = u.StudentProfile != null ? u.StudentProfile.StudentNumber : "N/A",
+                    Course = u.StudentProfile != null ? u.StudentProfile.Course : "N/A",
+                    YearLevel = u.StudentProfile != null ? u.StudentProfile.YearLevel : "N/A"
+                })
+                .ToListAsync();
+
+            return Ok(students);
+        }
+
+        [HttpPost("{id}/suspend")]
+        public async Task<IActionResult> SuspendUser(int id)
+        {
+            var user = await _db.Users.FindAsync(id);
+            if (user == null) return NotFound(new { message = "User not found." });
+            user.Status = "SUSPENDED";
+            await _db.SaveChangesAsync();
+            return Ok(new { message = "Student user suspended." });
+        }
 
         [HttpGet("{id}/profile")]
         public async Task<IActionResult> GetProfile(int id)
