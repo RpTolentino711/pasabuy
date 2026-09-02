@@ -2835,11 +2835,68 @@
                         }
 
                         let currentActiveChatSellerId = 0;
+                        let liveChatPollingTimer = null;
+
+                        function startLiveChatPolling() {
+                            if (liveChatPollingTimer) clearInterval(liveChatPollingTimer);
+                            liveChatPollingTimer = setInterval(async () => {
+                                try {
+                                    const chatVw = document.getElementById('chatView');
+                                    const tabMsgs = document.getElementById('tabMessages');
+
+                                    if (chatVw && chatVw.style.display !== 'none' && currentActiveChatSellerId > 0) {
+                                        await refreshActiveChatStream();
+                                    } else if (tabMsgs && tabMsgs.style.display !== 'none') {
+                                        await loadChatConversationsList();
+                                    }
+                                } catch (e) { }
+                            }, 3000);
+                        }
+
+                        async function refreshActiveChatStream() {
+                            if (!currentActiveChatSellerId) return;
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                const res = await fetch(`/pasabuy_api.php?action=chat_messages&sender_id=${currentUserId}&receiver_id=${currentActiveChatSellerId}`);
+                                if (res.ok) {
+                                    const msgs = await res.json();
+                                    const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
+                                    if (stream && Array.isArray(msgs)) {
+                                        const partnerName = document.getElementById('chatPartnerName')?.innerText || 'Campus Contact';
+                                        const itemTitle = document.getElementById('chatItemTitle')?.innerText || 'Campus Item';
+                                        const headerAvatarEl = document.getElementById('chatHeaderAvatar');
+                                        const finalAvatar = headerAvatarEl ? headerAvatarEl.src : `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(partnerName)}`;
+
+                                        let chatHtml = `<div class="text-center text-muted fs-9 mb-2">Connected live with <strong>${partnerName}</strong> regarding ${itemTitle}</div>`;
+                                        msgs.forEach(m => {
+                                            const isMine = m.SenderId == currentUserId;
+                                            chatHtml += `
+                                            <div class="d-flex ${isMine ? 'justify-content-end' : 'justify-content-start'} align-items-end gap-2 mb-2">
+                                                ${!isMine ? `<img src="${finalAvatar}" class="rounded-circle border mb-1" width="28" height="28" style="object-fit:cover; background:#f0f3f8;">` : ''}
+                                                <div class="p-2.5 rounded-3 fs-8 ${isMine ? 'bg-primary text-white' : 'bg-light text-dark border'}" style="max-width:75%;">
+                                                    ${m.MessageText}
+                                                </div>
+                                            </div>`;
+                                        });
+                                        const isNearBottom = (stream.scrollHeight - stream.scrollTop - stream.clientHeight) < 100;
+                                        stream.innerHTML = chatHtml;
+                                        if (isNearBottom) stream.scrollTop = stream.scrollHeight;
+                                    }
+                                }
+                            } catch (e) { }
+                        }
+
+                        function openChat(partnerName, itemTitle, itemPrice) {
+                            checkAndOpenChat(104, partnerName || 'Verified Student', itemTitle || 'Campus Request', itemPrice || '₱0.00', '');
+                        }
 
                         async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar) {
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
 
                             if (currentUserId === sellerId) {
                                 alert("ℹ️ You cannot send a chat message to your own item listing.");
@@ -2871,28 +2928,8 @@
                             if (tabMsgs) tabMsgs.style.display = 'none';
                             if (chatVw) chatVw.style.display = 'flex';
 
-                            try {
-                                const res = await fetch(`/pasabuy_api.php?action=chat_messages&sender_id=${currentUserId}&receiver_id=${sellerId}`);
-                                if (res.ok) {
-                                    const msgs = await res.json();
-                                    const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
-                                    if (stream && Array.isArray(msgs)) {
-                                        let chatHtml = `<div class="text-center text-muted fs-9 mb-2">Connected live with <strong>${sellerName}</strong> regarding ${itemTitle}</div>`;
-                                        msgs.forEach(m => {
-                                            const isMine = m.SenderId == currentUserId;
-                                            chatHtml += `
-                            <div class="d-flex ${isMine ? 'justify-content-end' : 'justify-content-start'} align-items-end gap-2 mb-2">
-                                ${!isMine ? `<img src="${finalAvatar}" class="rounded-circle border mb-1" width="28" height="28" style="object-fit:cover; background:#f0f3f8;">` : ''}
-                                <div class="p-2.5 rounded-3 fs-8 ${isMine ? 'bg-primary text-white' : 'bg-light text-dark border'}" style="max-width:75%;">
-                                    ${m.MessageText}
-                                </div>
-                            </div>`;
-                                        });
-                                        stream.innerHTML = chatHtml;
-                                        stream.scrollTop = stream.scrollHeight;
-                                    }
-                                }
-                            } catch (e) { console.error("Chat load error:", e); }
+                            await refreshActiveChatStream();
+                            startLiveChatPolling();
                         }
 
                         async function sendChatMessage() {
@@ -2903,7 +2940,8 @@
 
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            const senderName = storedUser ? (storedUser.firstName + ' ' + (storedUser.lastName || '')).trim() : 'Verified Student';
                             const itemTitle = document.getElementById('chatItemTitle')?.innerText || 'Campus Item';
 
                             input.value = '';
@@ -2911,11 +2949,11 @@
                             const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
                             if (stream) {
                                 stream.innerHTML += `
-                <div class="d-flex justify-content-end mb-2">
-                    <div class="p-2 rounded-3 fs-8 bg-primary text-white" style="max-width:75%;">
-                        ${text}
-                    </div>
-                </div>`;
+                                <div class="d-flex justify-content-end mb-2">
+                                    <div class="p-2.5 rounded-3 fs-8 bg-primary text-white" style="max-width:75%;">
+                                        ${text}
+                                    </div>
+                                </div>`;
                                 stream.scrollTop = stream.scrollHeight;
                             }
 
@@ -2925,12 +2963,15 @@
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
                                         senderId: currentUserId,
-                                        receiverId: currentActiveChatSellerId || 1,
+                                        receiverId: currentActiveChatSellerId || 104,
+                                        senderName: senderName,
                                         messageText: text,
                                         itemTitle: itemTitle
                                     })
                                 });
                             } catch (e) { console.error("Send chat error:", e); }
+
+                            setTimeout(refreshActiveChatStream, 400);
                         }
 
                         function closeChat() {
@@ -2938,6 +2979,7 @@
                             const tabMsgs = document.getElementById('tabMessages');
                             if (chatVw) chatVw.style.display = 'none';
                             if (tabMsgs) tabMsgs.style.display = 'block';
+                            loadChatConversationsList();
                         }
 
                         async function checkAndReserve(listingId, sellerId, itemTitle, sellerName) {
@@ -3049,13 +3091,13 @@
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.02.v191919";
+                            const PASABUY_APP_VERSION = "2026.09.02.v202020";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=191919';
+                                        window.location.href = window.location.pathname + '?v=202020';
                                         return;
                                     }
                                 }
@@ -3065,6 +3107,7 @@
                             await filterProducts();
                             await loadWantedPosts();
                             handlePaymentSuccess();
+                            startLiveChatPolling();
                         });
                     </script>
 </body>
