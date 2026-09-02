@@ -351,6 +351,7 @@
                     <span class="category-chip active" onclick="selectCategoryFilter(this, 'All')">All Items</span>
                     <span class="category-chip text-primary fw-bold" onclick="selectCategoryFilter(this, 'My Items')"><i
                             class="fa-solid fa-user-check me-1"></i> My Items</span>
+                    <span class="category-chip text-danger fw-bold" onclick="selectCategoryFilter(this, 'Food / Pasabuy')">🍔 Food / Pasabuy</span>
                     <span class="category-chip" onclick="selectCategoryFilter(this, 'School Supplies')">School
                         Supplies</span>
                     <span class="category-chip" onclick="selectCategoryFilter(this, 'Electronics')">Electronics</span>
@@ -414,10 +415,12 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Category</label>
                         <select class="form-select rounded-3 fs-7" id="sellCategory">
-                            <option value="School Supplies">School Supplies</option>
+                            <option value="Food / Pasabuy">Food / Pasabuy 🍔</option>
+                            <option value="School Supplies" selected>School Supplies</option>
                             <option value="Electronics">Electronics</option>
                             <option value="Books">Books</option>
                             <option value="Gadgets">Gadgets</option>
+                            <option value="Dorm Items">Dorm Items</option>
                         </select>
                     </div>
 
@@ -2478,6 +2481,7 @@
                             const price = parseFloat(document.getElementById('sellPrice').value) || 10;
                             const meetup = document.getElementById('sellMeetup').value.trim() || 'Campus Library';
                             const condition = document.getElementById('sellCondition').value || 'Good';
+                            const category = document.getElementById('sellCategory') ? document.getElementById('sellCategory').value : 'Food / Pasabuy';
                             const imgUrl = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80';
 
                             let storedUser = null;
@@ -2494,6 +2498,7 @@
                                         price: price,
                                         sellerId: sellerId,
                                         condition: condition,
+                                        category: category,
                                         meetupLocation: meetup,
                                         imageUrl: imgUrl
                                     })
@@ -2511,6 +2516,7 @@
                                     price: `₱${price.toFixed(2)}`,
                                     fee: price >= 1000 ? '₱10.00' : (price >= 100 ? '₱5.00' : '₱1.00'),
                                     condition: condition,
+                                    category: category,
                                     seller: (storedUser ? (storedUser.firstName + ' ' + (storedUser.lastName || '')) : 'Verified Student').trim(),
                                     sellerId: sellerId,
                                     location: meetup,
@@ -2970,13 +2976,13 @@
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.02.v151515";
+                            const PASABUY_APP_VERSION = "2026.09.02.v161616";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=151515';
+                                        window.location.href = window.location.pathname + '?v=161616';
                                         return;
                                     }
                                 }
