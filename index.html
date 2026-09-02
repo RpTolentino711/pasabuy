@@ -351,7 +351,7 @@
                     <span class="category-chip active" onclick="selectCategoryFilter(this, 'All')">All Items</span>
                     <span class="category-chip text-primary fw-bold" onclick="selectCategoryFilter(this, 'My Items')"><i
                             class="fa-solid fa-user-check me-1"></i> My Items</span>
-                    <span class="category-chip text-danger fw-bold" onclick="selectCategoryFilter(this, 'Food / Pasabuy')">🍔 Food / Pasabuy</span>
+                    <span class="category-chip text-danger fw-bold" onclick="selectCategoryFilter(this, 'Food / Pasabuy')">Food / Pasabuy</span>
                     <span class="category-chip" onclick="selectCategoryFilter(this, 'School Supplies')">School
                         Supplies</span>
                     <span class="category-chip" onclick="selectCategoryFilter(this, 'Electronics')">Electronics</span>
@@ -415,7 +415,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-7">Category</label>
                         <select class="form-select rounded-3 fs-7" id="sellCategory">
-                            <option value="Food / Pasabuy">Food / Pasabuy 🍔</option>
+                            <option value="Food / Pasabuy">Food / Pasabuy</option>
                             <option value="School Supplies" selected>School Supplies</option>
                             <option value="Electronics">Electronics</option>
                             <option value="Books">Books</option>
@@ -2976,13 +2976,13 @@
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.02.v161616";
+                            const PASABUY_APP_VERSION = "2026.09.02.v171717";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=161616';
+                                        window.location.href = window.location.pathname + '?v=171717';
                                         return;
                                     }
                                 }
