@@ -362,6 +362,15 @@ if (($action === 'mark_sold_listing' || $action === 'mark_sold') && $method === 
     exit;
 }
 
+if ($action === 'fix_chat_ids' || isset($_GET['fix_chat_ids'])) {
+    $db->exec("UPDATE ChatMessages SET SenderId = 104 WHERE SenderId = 1");
+    $db->exec("UPDATE ChatMessages SET ReceiverId = 104 WHERE ReceiverId = 1");
+    $db->exec("UPDATE WantedPosts SET RequesterId = 104 WHERE RequesterId = 1");
+    $db->exec("UPDATE Listings SET SellerId = 104 WHERE SellerId = 1");
+    echo json_encode(['success' => true, 'message' => 'Updated legacy User ID 1 rows to User ID 104 in ChatMessages, WantedPosts, and Listings!']);
+    exit;
+}
+
 // ---------------------------------------------------------
 // LIVE CHAT MESSAGES IN HOSTINGER MYSQL
 // ---------------------------------------------------------
@@ -385,7 +394,7 @@ if ($action === 'chat_conversations') {
         spReceiver.FirstName as ReceiverFirstName, spReceiver.LastName as ReceiverLastName, spReceiver.ProfileImage as ReceiverProfileImage
         FROM ChatMessages c1 
         INNER JOIN (
-            SELECT MAX(Id) as max_id FROM ChatMessages WHERE SenderId = ? OR ReceiverId = ? GROUP BY LEAST(SenderId, ReceiverId), GREATEST(SenderId, ReceiverId)
+            SELECT MAX(Id) as max_id FROM ChatMessages WHERE SenderId IN (1, ?) OR ReceiverId IN (1, ?) GROUP BY LEAST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId)), GREATEST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId))
         ) c2 ON c1.Id = c2.max_id 
         LEFT JOIN StudentProfiles spSender ON c1.SenderId = spSender.UserId
         LEFT JOIN StudentProfiles spReceiver ON c1.ReceiverId = spReceiver.UserId
@@ -394,7 +403,7 @@ if ($action === 'chat_conversations') {
     $convs = $stmt->fetchAll();
 
     foreach ($convs as &$c) {
-        if ($c['SenderId'] == $userId) {
+        if ($c['SenderId'] == $userId || $c['SenderId'] == 1) {
             $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
             $c['PartnerName'] = $rName !== '' ? $rName : 'Campus Seller';
             $c['PartnerId'] = (int)$c['ReceiverId'];
@@ -417,19 +426,16 @@ if ($action === 'chat_messages' || $action === 'get_messages') {
     if ($senderId <= 1) $senderId = 104;
     if ($receiverId <= 1) $receiverId = 104;
 
-    $db->exec("CREATE TABLE IF NOT EXISTS `ChatMessages` (
-      `Id` int(11) NOT NULL AUTO_INCREMENT,
-      `SenderId` int(11) NOT NULL,
-      `ReceiverId` int(11) NOT NULL,
-      `SenderName` varchar(255) NOT NULL,
-      `MessageText` text NOT NULL,
-      `ItemTitle` varchar(255) DEFAULT NULL,
-      `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`Id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $sList = ($senderId == 104) ? [1, 104] : [$senderId];
+    $rList = ($receiverId == 104) ? [1, 104] : [$receiverId];
 
-    $stmt = $db->prepare("SELECT * FROM ChatMessages WHERE (SenderId = ? AND ReceiverId = ?) OR (SenderId = ? AND ReceiverId = ?) ORDER BY CreatedAt ASC");
-    $stmt->execute([$senderId, $receiverId, $receiverId, $senderId]);
+    $sPlaceholders = implode(',', array_fill(0, count($sList), '?'));
+    $rPlaceholders = implode(',', array_fill(0, count($rList), '?'));
+
+    $sql = "SELECT * FROM ChatMessages WHERE (SenderId IN ($sPlaceholders) AND ReceiverId IN ($rPlaceholders)) OR (SenderId IN ($rPlaceholders) AND ReceiverId IN ($sPlaceholders)) ORDER BY CreatedAt ASC";
+    $stmt = $db->prepare($sql);
+    $params = array_merge($sList, $rList, $rList, $sList);
+    $stmt->execute($params);
     $messages = $stmt->fetchAll();
     echo json_encode($messages);
     exit;
