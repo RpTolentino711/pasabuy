@@ -1373,14 +1373,19 @@
 
                                 const data = await res.json();
                                 if (res.ok && data.success) {
-                                    const studentUser = data.user || {
-                                        id: data.userId || 1,
-                                        email: emailInput,
-                                        firstName: data.firstName || emailInput.split('@')[0],
-                                        lastName: data.lastName || '',
-                                        studentNumber: data.studentNumber || '2023-00123',
-                                        course: data.course || 'BS Computer Science',
-                                        yearLevel: data.yearLevel || '3rd Yr',
+                                    const uObj = data.user || {};
+                                    const pObj = data.profile || {};
+                                    const realUserId = uObj.id || uObj.userId || data.userId || 104;
+
+                                    const studentUser = {
+                                        id: realUserId,
+                                        userId: realUserId,
+                                        email: uObj.email || emailInput,
+                                        firstName: pObj.firstName || uObj.firstName || emailInput.split('@')[0],
+                                        lastName: pObj.lastName || uObj.lastName || '',
+                                        studentNumber: pObj.studentNumber || '2024-00123',
+                                        course: pObj.course || 'BS Computer Science',
+                                        yearLevel: pObj.yearLevel || '3rd Yr',
                                         verificationStatus: 'VERIFIED'
                                     };
 
@@ -1401,23 +1406,7 @@
                                 }
                             } catch (e) {
                                 console.error("Login error:", e);
-                                const fallbackUser = {
-                                    id: 1,
-                                    email: emailInput,
-                                    firstName: emailInput.split('@')[0],
-                                    lastName: '',
-                                    studentNumber: '2023-00123',
-                                    course: 'BS Computer Science',
-                                    yearLevel: '3rd Yr'
-                                };
-                                localStorage.setItem('pasabuy_student_logged_in', 'true');
-                                localStorage.setItem('pasabuy_student_user', JSON.stringify(fallbackUser));
-
-                                document.getElementById('authScreen').style.display = 'none';
-                                document.querySelector('.app-tabbar').style.display = 'flex';
-                                document.getElementById('headerBadge').style.display = 'inline-flex';
-                                checkStudentSessionOnLoad();
-                                switchTab('home');
+                                alert('Connection error during login. Please try again.');
                             }
                         };
 
@@ -2976,13 +2965,13 @@
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.02.v171717";
+                            const PASABUY_APP_VERSION = "2026.09.02.v181818";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=171717';
+                                        window.location.href = window.location.pathname + '?v=181818';
                                         return;
                                     }
                                 }
