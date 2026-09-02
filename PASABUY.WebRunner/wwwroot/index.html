@@ -1639,51 +1639,133 @@
                             wantedModalInstance.show();
                         }
 
-                        function submitWantedPost() {
-                            const title = document.getElementById('wantedTitle').value || 'Requested Item / Food';
-                            const category = document.getElementById('wantedCategory').value;
-                            const budget = document.getElementById('wantedBudget').value || '300';
-                            const urgency = document.getElementById('wantedUrgency').value;
-                            const meetup = document.getElementById('wantedMeetup').value;
-                            const desc = document.getElementById('wantedDescription').value || 'Need this on campus!';
-                            const requester = document.getElementById('profileName').innerText;
+                        async function submitWantedPost() {
+                            const title = document.getElementById('wantedTitle').value.trim() || 'Requested Item / Food';
+                            const category = document.getElementById('wantedCategory').value || 'School Supplies';
+                            const budget = parseFloat(document.getElementById('wantedBudget').value) || 300;
+                            const urgency = document.getElementById('wantedUrgency').value || 'URGENT';
+                            const meetup = document.getElementById('wantedMeetup').value.trim() || 'Campus Library';
+                            const desc = document.getElementById('wantedDescription').value.trim() || 'Need this on campus!';
 
-                            const container = document.getElementById('wantedListContainer');
-                            const placeholder = document.getElementById('noWantedPlaceholder');
-                            if (placeholder) placeholder.remove();
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            const requester = storedUser ? (storedUser.firstName + ' ' + (storedUser.lastName || '')).trim() : 'Verified Student';
 
-                            let urgencyBadge = '';
-                            if (urgency === 'URGENT') {
-                                urgencyBadge = '<span class="badge bg-danger text-white fw-bold px-2 py-1 rounded-pill fs-9"><i class="fa-solid fa-fire me-1"></i> URGENT EXAM NEED</span>';
-                            } else if (urgency === 'CLASS') {
-                                urgencyBadge = '<span class="badge bg-warning text-dark fw-bold px-2 py-1 rounded-pill fs-9"><i class="fa-solid fa-clock me-1"></i> NEEDED THIS WEEK</span>';
-                            } else {
-                                urgencyBadge = '<span class="badge bg-info text-white fw-bold px-2 py-1 rounded-pill fs-9">PASABUY REQUEST</span>';
-                            }
+                            try {
+                                await fetch('/pasabuy_api.php?action=create_wanted', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        requesterId: currentUserId,
+                                        itemTitle: title,
+                                        description: `${category}: ${desc}`,
+                                        offeredPrice: budget,
+                                        urgencyLevel: urgency
+                                    })
+                                });
+                            } catch (e) { console.error("Create wanted error:", e); }
 
-                            const card = document.createElement('div');
-                            card.className = 'card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white';
-                            card.innerHTML = `
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    ${urgencyBadge}
-                    <span class="fw-bold text-success fs-7">Budget: Up to ₱${budget}.00</span>
-                </div>
-                <h6 class="fw-bold mb-1 text-dark">${title}</h6>
-                <p class="text-muted fs-8 mb-2">${desc}</p>
-                <div class="d-flex align-items-center justify-content-between fs-8 pt-2 border-top">
-                    <div>
-                        <span class="fw-bold text-dark">${requester}</span>
-                        <span class="badge-verified ms-1"><i class="fa-solid fa-check"></i></span>
-                        <span class="text-muted ms-2"><i class="fa-solid fa-location-dot text-danger me-1"></i> ${meetup}</span>
-                    </div>
-                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="openChat('${requester}', '${title}', 'Max ₱${budget}.00')"><i class="fa-solid fa-hand-holding-dollar me-1"></i> I Have This! / Offer</button>
-                </div>
-            `;
+                            // Store locally for instant UI render
+                            const localWantedItem = {
+                                Id: Date.now(),
+                                RequesterId: currentUserId,
+                                ItemTitle: title,
+                                Description: `${category}: ${desc}`,
+                                OfferedPrice: budget,
+                                UrgencyLevel: urgency,
+                                FirstName: storedUser ? storedUser.firstName : 'Verified',
+                                LastName: storedUser ? (storedUser.lastName || '') : 'Student',
+                                MeetupLocation: meetup
+                            };
 
-                            container.insertBefore(card, container.firstChild);
+                            let localWantedList = [];
+                            try { localWantedList = JSON.parse(localStorage.getItem('pasabuy_local_wanted_posts')) || []; } catch (e) { }
+                            localWantedList.unshift(localWantedItem);
+                            localStorage.setItem('pasabuy_local_wanted_posts', JSON.stringify(localWantedList));
 
                             if (wantedModalInstance) wantedModalInstance.hide();
-                            alert('Your Wanted Request has been published! Campus students can now see your request and make offers.');
+                            alert('Your Wanted Request has been published live! Campus students can now see your request and make offers.');
+
+                            // Clear inputs
+                            document.getElementById('wantedTitle').value = '';
+                            document.getElementById('wantedBudget').value = '';
+                            document.getElementById('wantedMeetup').value = '';
+                            document.getElementById('wantedDescription').value = '';
+
+                            await loadWantedPosts();
+                        }
+
+                        async function loadWantedPosts() {
+                            const container = document.getElementById('wantedListContainer');
+                            if (!container) return;
+
+                            let posts = [];
+                            try {
+                                const res = await fetch('/pasabuy_api.php?action=wanted_posts');
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    if (Array.isArray(data)) posts = data;
+                                }
+                            } catch (e) { console.error("Fetch wanted posts error:", e); }
+
+                            let localWantedList = [];
+                            try { localWantedList = JSON.parse(localStorage.getItem('pasabuy_local_wanted_posts')) || []; } catch (e) { }
+
+                            localWantedList.forEach(lw => {
+                                if (!posts.some(p => p.Id == lw.Id || p.ItemTitle === lw.ItemTitle)) {
+                                    posts.unshift(lw);
+                                }
+                            });
+
+                            if (posts.length === 0) {
+                                container.innerHTML = `
+                                    <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4" id="noWantedPlaceholder">
+                                        <i class="fa-solid fa-bullhorn fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                                        No active wanted posts right now.<br>Click <strong>+ Post Wanted</strong> to request items or food pasabuy!
+                                    </div>`;
+                                return;
+                            }
+
+                            let html = '';
+                            posts.forEach(p => {
+                                const title = p.ItemTitle || p.itemTitle || 'Requested Item';
+                                const desc = p.Description || p.description || 'Need this on campus!';
+                                const budget = parseFloat(p.OfferedPrice || p.offeredPrice || p.budget || 300).toFixed(2);
+                                const urgency = p.UrgencyLevel || p.urgencyLevel || 'URGENT';
+                                const requester = p.FirstName ? `${p.FirstName} ${p.LastName || ''}`.trim() : 'Verified Student';
+                                const requesterId = p.RequesterId || p.requesterId || 104;
+                                const meetup = p.MeetupLocation || 'Campus';
+
+                                let urgencyBadge = '';
+                                if (urgency === 'URGENT') {
+                                    urgencyBadge = '<span class="badge bg-danger text-white fw-bold px-2 py-1 rounded-pill fs-9"><i class="fa-solid fa-fire me-1"></i> URGENT EXAM NEED</span>';
+                                } else if (urgency === 'CLASS') {
+                                    urgencyBadge = '<span class="badge bg-warning text-dark fw-bold px-2 py-1 rounded-pill fs-9"><i class="fa-solid fa-clock me-1"></i> NEEDED THIS WEEK</span>';
+                                } else {
+                                    urgencyBadge = '<span class="badge bg-info text-white fw-bold px-2 py-1 rounded-pill fs-9">PASABUY REQUEST</span>';
+                                }
+
+                                html += `
+                                    <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            ${urgencyBadge}
+                                            <span class="fw-bold text-success fs-7">Budget: Up to ₱${budget}</span>
+                                        </div>
+                                        <h6 class="fw-bold mb-1 text-dark">${title}</h6>
+                                        <p class="text-muted fs-8 mb-2">${desc}</p>
+                                        <div class="d-flex align-items-center justify-content-between fs-8 pt-2 border-top">
+                                            <div>
+                                                <span class="fw-bold text-dark">${requester}</span>
+                                                <span class="badge-verified ms-1"><i class="fa-solid fa-check text-success"></i></span>
+                                                <span class="text-muted ms-2"><i class="fa-solid fa-location-dot text-danger me-1"></i> ${meetup}</span>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="checkAndOpenChat(${requesterId}, '${requester.replace(/'/g, "\\'")}', '${title.replace(/'/g, "\\'")}', 'Max ₱${budget}')"><i class="fa-solid fa-hand-holding-dollar me-1"></i> I Have This! / Offer</button>
+                                        </div>
+                                    </div>`;
+                            });
+
+                            container.innerHTML = html;
                         }
 
                         async function submitReportToAdmin() {
@@ -2200,6 +2282,8 @@
 
                             if (tabName === 'messages') {
                                 loadChatConversationsList();
+                            } else if (tabName === 'wanted') {
+                                loadWantedPosts();
                             }
                         }
 
@@ -2965,13 +3049,13 @@
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.02.v181818";
+                            const PASABUY_APP_VERSION = "2026.09.02.v191919";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=181818';
+                                        window.location.href = window.location.pathname + '?v=191919';
                                         return;
                                     }
                                 }
@@ -2979,6 +3063,7 @@
 
                             checkStudentSessionOnLoad();
                             await filterProducts();
+                            await loadWantedPosts();
                             handlePaymentSuccess();
                         });
                     </script>
