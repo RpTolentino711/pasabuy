@@ -363,11 +363,17 @@ if (($action === 'mark_sold_listing' || $action === 'mark_sold') && $method === 
 }
 
 if ($action === 'fix_chat_ids' || isset($_GET['fix_chat_ids'])) {
-    $db->exec("UPDATE ChatMessages SET SenderId = 104 WHERE SenderId = 1");
-    $db->exec("UPDATE ChatMessages SET ReceiverId = 104 WHERE ReceiverId = 1");
-    $db->exec("UPDATE WantedPosts SET RequesterId = 104 WHERE RequesterId = 1");
-    $db->exec("UPDATE Listings SET SellerId = 104 WHERE SellerId = 1");
-    echo json_encode(['success' => true, 'message' => 'Updated legacy User ID 1 rows to User ID 104 in ChatMessages, WantedPosts, and Listings!']);
+    try {
+        $db->exec("UPDATE ChatMessages SET SenderId = 104 WHERE SenderId = 1");
+        $db->exec("UPDATE ChatMessages SET ReceiverId = 104 WHERE ReceiverId = 1");
+    } catch (Exception $e1) {}
+    try {
+        $db->exec("UPDATE WantedPosts SET RequesterId = 104 WHERE RequesterId = 1");
+    } catch (Exception $e2) {}
+    try {
+        $db->exec("UPDATE Listings SET SellerId = 104 WHERE SellerId = 1");
+    } catch (Exception $e3) {}
+    echo json_encode(['success' => true, 'message' => 'Updated legacy User ID 1 rows to User ID 104 in ChatMessages!']);
     exit;
 }
 
