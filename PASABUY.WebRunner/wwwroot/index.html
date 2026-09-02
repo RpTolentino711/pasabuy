@@ -1443,6 +1443,13 @@
             localStorage.removeItem('pasabuy_student_logged_in');
             localStorage.removeItem('pasabuy_student_user');
 
+            // Hide all tab views so profile/home are not visible below landing page
+            const tabs = ['tabHome', 'tabExplore', 'tabSell', 'tabWanted', 'tabMessages', 'tabProfile', 'chatView'];
+            tabs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+
             document.getElementById('authScreen').style.display = 'block';
             document.querySelector('.app-tabbar').style.display = 'none';
             document.getElementById('headerBadge').style.display = 'none';
@@ -1722,19 +1729,7 @@
             tabs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
         }
 
-        // Session check function called on init
-
-        function logoutStudent() {
-            if (confirm('Are you sure you want to log out?')) {
-                localStorage.removeItem('pasabuy_student_user');
-                localStorage.removeItem('pasabuy_student_logged_in');
-                const tabs = ['tabHome', 'tabExplore', 'tabSell', 'tabWanted', 'tabMessages', 'tabProfile', 'chatView'];
-                tabs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-                document.getElementById('authScreen').style.display = 'block';
-                document.querySelector('.app-tabbar').style.display = 'none';
-                document.getElementById('headerBadge').style.display = 'none';
-            }
-        }
+        // Legacy cleanup
 
         function togglePasswordVisibility(inputId, iconId) {
             const input = document.getElementById(inputId);
@@ -2927,13 +2922,13 @@
         // Single Consolidated Initialization on Page Load
         window.addEventListener('DOMContentLoaded', async () => {
             // Auto-upgrade version cache breaker
-            const PASABUY_APP_VERSION = "2026.09.02.v121212";
+            const PASABUY_APP_VERSION = "2026.09.02.v131313";
             try {
                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                        window.location.href = window.location.pathname + '?v=121212';
+                        window.location.href = window.location.pathname + '?v=131313';
                         return;
                     }
                 }
