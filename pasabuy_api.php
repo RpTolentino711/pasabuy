@@ -366,7 +366,8 @@ if (($action === 'mark_sold_listing' || $action === 'mark_sold') && $method === 
 // LIVE CHAT MESSAGES IN HOSTINGER MYSQL
 // ---------------------------------------------------------
 if ($action === 'chat_conversations') {
-    $userId = (int)($_GET['user_id'] ?? 1);
+    $userId = (int)($_GET['user_id'] ?? 104);
+    if ($userId <= 1) $userId = 104;
 
     $db->exec("CREATE TABLE IF NOT EXISTS `ChatMessages` (
       `Id` int(11) NOT NULL AUTO_INCREMENT,
@@ -411,8 +412,10 @@ if ($action === 'chat_conversations') {
 }
 
 if ($action === 'chat_messages' || $action === 'get_messages') {
-    $senderId = (int)($_GET['sender_id'] ?? 1);
-    $receiverId = (int)($_GET['receiver_id'] ?? 2);
+    $senderId = (int)($_GET['sender_id'] ?? 104);
+    $receiverId = (int)($_GET['receiver_id'] ?? 104);
+    if ($senderId <= 1) $senderId = 104;
+    if ($receiverId <= 1) $receiverId = 104;
 
     $db->exec("CREATE TABLE IF NOT EXISTS `ChatMessages` (
       `Id` int(11) NOT NULL AUTO_INCREMENT,
@@ -433,8 +436,11 @@ if ($action === 'chat_messages' || $action === 'get_messages') {
 }
 
 if ($action === 'send_message' && $method === 'POST') {
-    $senderId = (int)($body['senderId'] ?? 1);
-    $receiverId = (int)($body['receiverId'] ?? 2);
+    $senderId = (int)($body['senderId'] ?? 104);
+    $receiverId = (int)($body['receiverId'] ?? 104);
+    if ($senderId <= 1) $senderId = 104;
+    if ($receiverId <= 1) $receiverId = 104;
+
     $senderName = trim((string)($body['senderName'] ?? 'Verified Student'));
     $msgText = trim((string)($body['messageText'] ?? ''));
     $itemTitle = trim((string)($body['itemTitle'] ?? ''));
@@ -472,7 +478,8 @@ if ($action === 'wanted_posts' || $action === 'get_wanted') {
 // 5. CREATE WANTED POST
 // ---------------------------------------------------------
 if ($action === 'create_wanted' && $method === 'POST') {
-    $reqId = (int)($body['requesterId'] ?? 1);
+    $reqId = (int)($body['requesterId'] ?? 104);
+    if ($reqId <= 1) $reqId = 104;
     $title = trim((string)($body['itemTitle'] ?? 'Wanted Item'));
     $desc = trim((string)($body['description'] ?? ''));
     $budget = (float)($body['offeredPrice'] ?? 100);
