@@ -1251,9 +1251,24 @@
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-light rounded-pill w-100 fw-bold py-2 fs-8"
                         data-bs-dismiss="modal">Keep Post</button>
-                    <button type="button" class="btn btn-danger rounded-pill w-100 fw-bold py-2 fs-8"
-                        onclick="executeDeleteListing()"><i class="fa-solid fa-trash me-1"></i> Yes, Delete
-                        Post</button>
+    <!-- LOGOUT CONFIRMATION MODAL -->
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg text-center">
+                <div class="mb-3">
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center p-3"
+                        style="width:64px; height:64px;">
+                        <i class="fa-solid fa-right-from-bracket fs-2"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Log Out of PasaBuy?</h5>
+                <p class="fs-8 text-muted mb-4">Are you sure you want to log out of your account?</p>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light rounded-pill w-100 fw-bold py-2 fs-7 text-secondary"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger rounded-pill w-100 fw-bold py-2 fs-7 shadow-sm"
+                        onclick="executeLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i> Yes, Log Out</button>
                 </div>
             </div>
         </div>
@@ -1265,6 +1280,7 @@
         let otpVerifyModalInstance = null;
         let forgotPasswordModalInstance = null;
         let resetPasswordModalInstance = null;
+        let logoutConfirmModalInstance = null;
 
         window.togglePasswordVisibility = function (inputId, iconId) {
             const input = document.getElementById(inputId);
@@ -1393,11 +1409,50 @@
         };
 
         window.logoutStudent = function () {
+            const modalEl = document.getElementById('logoutConfirmModal');
+            if (modalEl) {
+                if (modalEl.parentElement !== document.body) {
+                    document.body.appendChild(modalEl);
+                }
+                if (!logoutConfirmModalInstance) {
+                    logoutConfirmModalInstance = new bootstrap.Modal(modalEl);
+                }
+                logoutConfirmModalInstance.show();
+            } else {
+                executeLogout();
+            }
+        };
+
+        window.executeLogout = function () {
+            if (logoutConfirmModalInstance) {
+                try { logoutConfirmModalInstance.hide(); } catch (e) { }
+            }
+            const modalEl = document.getElementById('logoutConfirmModal');
+            if (modalEl) {
+                try {
+                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                    if (bsModal) bsModal.hide();
+                } catch (e) { }
+                modalEl.style.display = 'none';
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(b => b.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+            }
+
             localStorage.removeItem('pasabuy_student_logged_in');
             localStorage.removeItem('pasabuy_student_user');
+
             document.getElementById('authScreen').style.display = 'block';
             document.querySelector('.app-tabbar').style.display = 'none';
             document.getElementById('headerBadge').style.display = 'none';
+
+            const emailEl = document.getElementById('loginEmailInput') || document.getElementById('loginEmail');
+            const passEl = document.getElementById('loginPasswordInput') || document.getElementById('loginPassword');
+            if (emailEl) emailEl.value = '';
+            if (passEl) passEl.value = '';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         const API_BASE = (window.location.port === '5200' || window.location.hostname === 'localhost')
@@ -2437,13 +2492,13 @@
 
             const modalEl = document.getElementById('payMongoGatewayModal');
             if (payMongoGatewayModalInstance) {
-                try { payMongoGatewayModalInstance.hide(); } catch(e){}
+                try { payMongoGatewayModalInstance.hide(); } catch (e) { }
             }
             if (modalEl) {
                 try {
                     const bsModal = bootstrap.Modal.getInstance(modalEl);
                     if (bsModal) bsModal.hide();
-                } catch(e){}
+                } catch (e) { }
                 modalEl.style.display = 'none';
                 const backdrops = document.querySelectorAll('.modal-backdrop');
                 backdrops.forEach(b => b.remove());
@@ -2872,13 +2927,13 @@
         // Single Consolidated Initialization on Page Load
         window.addEventListener('DOMContentLoaded', async () => {
             // Auto-upgrade version cache breaker
-            const PASABUY_APP_VERSION = "2026.09.02.v7777777";
+            const PASABUY_APP_VERSION = "2026.09.02.v121212";
             try {
                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                        window.location.href = window.location.pathname + '?v=7777777';
+                        window.location.href = window.location.pathname + '?v=121212';
                         return;
                     }
                 }
