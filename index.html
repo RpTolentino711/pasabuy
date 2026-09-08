@@ -2412,16 +2412,16 @@
                             document.querySelector('.app-tabbar').style.display = 'flex';
 
                             // Handle Cart Button Positioning per User Request:
-                            // If Home tab -> Cart floats near Profile avatar on Home screen.
+                            // If Home tab -> Cart floats above Profile tab icon in bottom navigation bar.
                             // If Other tab -> Cart moves to main top header bar next to Verified Student badge!
                             const headerCartBtn = document.getElementById('headerCartBtn');
                             const homeCartBtn = document.getElementById('homeCartBtn');
                             if (tabName === 'home') {
-                                if (headerCartBtn) headerCartBtn.style.display = 'none';
-                                if (homeCartBtn) homeCartBtn.style.display = 'flex';
+                                if (headerCartBtn) headerCartBtn.style.setProperty('display', 'none', 'important');
+                                if (homeCartBtn) homeCartBtn.style.setProperty('display', 'flex', 'important');
                             } else {
-                                if (headerCartBtn) headerCartBtn.style.display = 'inline-flex';
-                                if (homeCartBtn) homeCartBtn.style.display = 'none';
+                                if (headerCartBtn) headerCartBtn.style.setProperty('display', 'inline-flex', 'important');
+                                if (homeCartBtn) homeCartBtn.style.setProperty('display', 'none', 'important');
                             }
 
                             if (tabName === 'messages') {
@@ -3600,13 +3600,13 @@
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.09.v1111111";
+                            const PASABUY_APP_VERSION = "2026.09.09.v1222222";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=1111111';
+                                        window.location.href = window.location.pathname + '?v=1222222';
                                         return;
                                     }
                                 }
