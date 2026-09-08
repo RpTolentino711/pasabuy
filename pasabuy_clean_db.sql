@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS `Listings` (
   `ExpiresAt` datetime DEFAULT NULL,
   `ReservedAt` datetime DEFAULT NULL,
   `SoldAt` datetime DEFAULT NULL,
+  `VideoUrl` longtext DEFAULT NULL,
   PRIMARY KEY (`Id`),
   KEY `FK_Listings_Users` (`SellerId`),
   KEY `FK_Listings_Categories` (`CategoryId`),

@@ -45,6 +45,10 @@ if (!$db) {
     exit;
 }
 
+try {
+    $db->exec("ALTER TABLE Listings ADD COLUMN VideoUrl LONGTEXT DEFAULT NULL;");
+} catch (Exception $eCol) {}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $action = trim((string)($_GET['action'] ?? ''));
 
@@ -133,6 +137,7 @@ if ($action === 'create_listing' && $method === 'POST') {
     $meetup = trim((string)($body['meetupLocation'] ?? 'Campus Library'));
     $condition = trim((string)($body['condition'] ?? 'Good'));
     $imgUrl = trim((string)($body['imageUrl'] ?? ''));
+    $videoUrl = trim((string)($body['videoUrl'] ?? $body['video_url'] ?? ''));
 
     if ($title === '') {
         http_response_code(400);
@@ -142,12 +147,12 @@ if ($action === 'create_listing' && $method === 'POST') {
 
     $listingId = 0;
     try {
-        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, `Condition`, MeetupLocationId, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, 1, 'ACTIVE', NOW(), NOW())");
-        $stmt->execute([$sellerId, $catId, $title, $desc, $price, $condition]);
+        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, `Condition`, MeetupLocationId, VideoUrl, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, 1, ?, 'ACTIVE', NOW(), NOW())");
+        $stmt->execute([$sellerId, $catId, $title, $desc, $price, $condition, $videoUrl]);
         $listingId = (int)$db->lastInsertId();
     } catch (Exception $eIns) {
-        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())");
-        $stmt->execute([$sellerId, $catId, $title, $desc, $price]);
+        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, VideoUrl, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())");
+        $stmt->execute([$sellerId, $catId, $title, $desc, $price, $videoUrl]);
         $listingId = (int)$db->lastInsertId();
     }
 
@@ -168,6 +173,44 @@ if ($action === 'create_listing' && $method === 'POST') {
     } catch (Exception $ePay) {}
 
     echo json_encode(['success' => true, 'message' => 'Listing published successfully to Hostinger MySQL Database!', 'id' => $listingId]);
+    exit;
+}
+
+// ---------------------------------------------------------
+// 2B. UPDATE / EDIT ITEM LISTING & PRODUCT VIDEO
+// ---------------------------------------------------------
+if (($action === 'update_listing' || $action === 'edit_listing') && $method === 'POST') {
+    $id = (int)($body['id'] ?? $body['listingId'] ?? 0);
+    $title = trim((string)($body['title'] ?? ''));
+    $desc = trim((string)($body['description'] ?? ''));
+    $price = (float)($body['price'] ?? 0);
+    $catId = (int)($body['categoryId'] ?? 1);
+    $condition = trim((string)($body['condition'] ?? 'Good'));
+    $videoUrl = trim((string)($body['videoUrl'] ?? $body['video_url'] ?? ''));
+    $imgUrl = trim((string)($body['imageUrl'] ?? ''));
+
+    if ($id <= 0 || $title === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Listing ID and title are required.']);
+        exit;
+    }
+
+    try {
+        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, Price = ?, CategoryId = ?, `Condition` = ?, VideoUrl = ?, UpdatedAt = NOW() WHERE Id = ?");
+        $stmt->execute([$title, $desc, $price, $catId, $condition, $videoUrl, $id]);
+    } catch (Exception $eUp) {
+        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, Price = ?, CategoryId = ?, VideoUrl = ?, UpdatedAt = NOW() WHERE Id = ?");
+        $stmt->execute([$title, $desc, $price, $catId, $videoUrl, $id]);
+    }
+
+    if ($imgUrl !== '') {
+        try {
+            $db->prepare("DELETE FROM ListingImages WHERE ListingId = ?")->execute([$id]);
+            $db->prepare("INSERT INTO ListingImages (ListingId, ImageUrl, IsPrimary) VALUES (?, ?, 1)")->execute([$id, $imgUrl]);
+        } catch (Exception $eImg) {}
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Listing updated successfully!']);
     exit;
 }
 

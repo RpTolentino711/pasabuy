@@ -473,6 +473,19 @@
                         </div>
                     </div>
 
+                    <!-- Video Upload Section (Optional Product Video) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7 d-flex align-items-center justify-content-between">
+                            <span><i class="fa-solid fa-video text-danger me-1"></i> Product Video <span class="text-muted fw-normal fs-8">(Optional)</span></span>
+                            <span class="text-muted fw-normal fs-8">Upload MP4 video or paste link</span>
+                        </label>
+                        <input type="file" class="form-control rounded-3 fs-7 mb-2" id="sellVideoFileInput" accept="video/*" onchange="handleSellVideoUpload(event)">
+                        <input type="text" class="form-control rounded-3 fs-7" id="sellVideoUrlInput" placeholder="or paste Video URL (e.g. https://.../video.mp4)">
+                        <div id="sellVideoPreviewContainer" class="mt-2" style="display:none;">
+                            <video id="sellVideoPreview" controls style="width:100%; max-height:180px; border-radius:8px; background:#000;"></video>
+                        </div>
+                    </div>
+
                     <button class="btn btn-pasabuy" onclick="submitDirectPosting()"><i class="fa-solid fa-paper-plane me-2"></i> Verify & Post Live Now</button>
                 </div>
 
@@ -1282,6 +1295,75 @@
                         class="btn btn-danger rounded-pill w-100 fw-bold py-2 fs-7 shadow-sm"
                         onclick="executeLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>
                         Yes, Log Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT PRODUCT LISTING MODAL -->
+    <div class="modal fade" id="editListingModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-pen-to-square text-primary me-2"></i>Edit Product Listing</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editListingId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Item Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="editTitleInput">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">Price (₱) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control rounded-3 fs-7" id="editPriceInput">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">Category</label>
+                            <select class="form-select rounded-3 fs-7" id="editCategorySelect">
+                                <option value="1">School Supplies</option>
+                                <option value="2">Electronics</option>
+                                <option value="3">Books</option>
+                                <option value="4">Gadgets</option>
+                                <option value="5">Food / Pasabuy</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">Condition</label>
+                            <select class="form-select rounded-3 fs-7" id="editConditionSelect">
+                                <option>Like New</option>
+                                <option>Good</option>
+                                <option>Fair</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">Meetup Location</label>
+                            <input type="text" class="form-control rounded-3 fs-7" id="editMeetupInput">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Description</label>
+                        <textarea class="form-control rounded-3 fs-7" id="editDescriptionInput" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7"><i class="fa-solid fa-image text-primary me-1"></i> Product Image URL</label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="editImageUrlInput" placeholder="https://.../image.jpg">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7"><i class="fa-solid fa-video text-danger me-1"></i> Product Video (File or URL)</label>
+                        <input type="file" class="form-control rounded-3 fs-7 mb-2" id="editVideoFileInput" accept="video/*" onchange="handleEditVideoUpload(event)">
+                        <input type="text" class="form-control rounded-3 fs-7" id="editVideoUrlInput" placeholder="or enter MP4 video URL">
+                        <div id="editVideoPreviewContainer" class="mt-2" style="display:none;">
+                            <video id="editVideoPreview" controls style="width:100%; max-height:180px; border-radius:8px; background:#000;"></video>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 pt-2">
+                        <button type="button" class="btn btn-light rounded-pill w-100 fw-bold py-2 fs-7 text-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary rounded-pill w-100 fw-bold py-2 fs-7 shadow-sm" onclick="executeSaveEditedListing()"><i class="fa-solid fa-check me-1"></i> Save Changes</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2725,15 +2807,19 @@
                                             return {
                                                 id: item.Id || item.id || random_int_js(),
                                                 title: title,
+                                                description: item.Description || item.description || '',
                                                 price: priceStr,
+                                                priceVal: priceVal,
                                                 fee: feeStr,
                                                 condition: condition,
                                                 category: category,
+                                                categoryId: item.CategoryId || item.categoryId || 1,
                                                 seller: sellerName,
                                                 sellerId: item.SellerId || item.sellerId || 1,
                                                 location: location,
                                                 status: item.Status || item.status || 'ACTIVE',
-                                                img: img
+                                                img: img,
+                                                videoUrl: item.VideoUrl || item.videoUrl || ''
                                             };
                                         });
                                     }
@@ -2750,6 +2836,8 @@
                                     products.unshift(lp);
                                 }
                             });
+
+                            window.allProductsCache = products;
 
                             function random_int_js() { return Math.floor(Math.random() * 10000); }
 
@@ -2779,7 +2867,10 @@
                             <div class="badge bg-warning text-dark w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-bookmark me-1"></i> STATUS: RESERVED</div>
                             <button class="btn btn-sm btn-outline-success rounded-pill w-100 fw-bold fs-8" onclick="executeUnreserveListing(${p.id})"><i class="fa-solid fa-rotate-left me-1"></i> Un-Reserve (Put Back Public)</button>
                             <button class="btn btn-sm btn-success rounded-pill w-100 fw-bold fs-8" onclick="executeMarkSoldListing(${p.id})"><i class="fa-solid fa-circle-check me-1"></i> Mark as SOLD</button>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8 mt-1" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="openEditListingModal(${p.id})"><i class="fa-solid fa-pen-to-square me-1"></i> Edit</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete</button>
+                            </div>
                         </div>`;
                                     } else if (p.status === 'SOLD') {
                                         buttonsHtml = `
@@ -2791,7 +2882,10 @@
                                         buttonsHtml = `
                         <div class="d-flex flex-column gap-2 w-100">
                             <div class="badge bg-secondary-subtle text-secondary w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-user-check me-1"></i> Your Active Listing</div>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="openEditListingModal(${p.id})"><i class="fa-solid fa-pen-to-square me-1"></i> Edit Listing</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
+                            </div>
                         </div>`;
                                     }
                                 } else {
@@ -2800,9 +2894,13 @@
                     <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}', '${p.seller.replace(/'/g, "\\'")}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>`;
                                 }
 
+                                const mediaHtml = p.videoUrl
+                                    ? `<div class="position-relative"><video src="${p.videoUrl}" controls style="width:100%; height:160px; object-fit:cover; border-top-left-radius:12px; border-top-right-radius:12px; background:#000;" preload="metadata"></video><span class="badge bg-danger position-absolute top-0 end-0 m-2"><i class="fa-solid fa-video me-1"></i> Video</span></div>`
+                                    : `<img src="${p.img}" class="product-img" alt="${p.title}" style="height:160px; object-fit:cover;">`;
+
                                 const cardHtml = `
                 <div class="product-card">
-                    <img src="${p.img}" class="product-img" alt="${p.title}" style="height:160px; object-fit:cover;">
+                    ${mediaHtml}
                     <div class="product-details p-3">
                         <div class="d-flex align-items-center justify-content-between mb-1">
                             <span class="price-tag fw-bold text-primary fs-6">${p.price}</span>
@@ -3089,10 +3187,124 @@
                             }
                         }
 
+                        // ---------------------------------------------------------
+                        // PRODUCT EDITING & VIDEO UPLOAD HELPERS
+                        // ---------------------------------------------------------
+                        let currentEditListingObj = null;
+
+                        window.handleSellVideoUpload = function (event) {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                const videoDataUrl = e.target.result;
+                                document.getElementById('sellVideoUrlInput').value = videoDataUrl;
+                                const videoPreview = document.getElementById('sellVideoPreview');
+                                const videoPreviewBox = document.getElementById('sellVideoPreviewContainer');
+                                if (videoPreview) videoPreview.src = videoDataUrl;
+                                if (videoPreviewBox) videoPreviewBox.style.display = 'block';
+                            };
+                            reader.readAsDataURL(file);
+                        };
+
+                        window.handleEditVideoUpload = function (event) {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                const videoDataUrl = e.target.result;
+                                document.getElementById('editVideoUrlInput').value = videoDataUrl;
+                                const videoPreview = document.getElementById('editVideoPreview');
+                                const videoPreviewBox = document.getElementById('editVideoPreviewContainer');
+                                if (videoPreview) videoPreview.src = videoDataUrl;
+                                if (videoPreviewBox) videoPreviewBox.style.display = 'block';
+                            };
+                            reader.readAsDataURL(file);
+                        };
+
+                        window.openEditListingModal = function (listingId) {
+                            const listing = (window.allProductsCache || []).find(p => p.id == listingId);
+                            if (!listing) {
+                                alert('Listing not found');
+                                return;
+                            }
+                            currentEditListingObj = listing;
+
+                            document.getElementById('editListingId').value = listing.id;
+                            document.getElementById('editTitleInput').value = listing.title;
+                            document.getElementById('editPriceInput').value = listing.priceVal || parseFloat(listing.price.replace(/[^\d.]/g, '')) || 0;
+                            document.getElementById('editCategorySelect').value = listing.categoryId || 1;
+                            document.getElementById('editConditionSelect').value = listing.condition || 'Good';
+                            document.getElementById('editMeetupInput').value = listing.location || 'Campus Library';
+                            document.getElementById('editDescriptionInput').value = listing.description || '';
+                            document.getElementById('editImageUrlInput').value = listing.img || '';
+                            document.getElementById('editVideoUrlInput').value = listing.videoUrl || '';
+
+                            const videoPreview = document.getElementById('editVideoPreview');
+                            const videoPreviewBox = document.getElementById('editVideoPreviewContainer');
+                            if (listing.videoUrl) {
+                                if (videoPreview) videoPreview.src = listing.videoUrl;
+                                if (videoPreviewBox) videoPreviewBox.style.display = 'block';
+                            } else {
+                                if (videoPreviewBox) videoPreviewBox.style.display = 'none';
+                            }
+
+                            const modalEl = document.getElementById('editListingModal');
+                            if (modalEl) new bootstrap.Modal(modalEl).show();
+                        };
+
+                        window.executeSaveEditedListing = async function () {
+                            const id = document.getElementById('editListingId').value;
+                            const title = document.getElementById('editTitleInput').value.trim();
+                            const price = parseFloat(document.getElementById('editPriceInput').value) || 0;
+                            const categoryId = parseInt(document.getElementById('editCategorySelect').value) || 1;
+                            const condition = document.getElementById('editConditionSelect').value;
+                            const meetupLocation = document.getElementById('editMeetupInput').value.trim();
+                            const description = document.getElementById('editDescriptionInput').value.trim();
+                            const imageUrl = document.getElementById('editImageUrlInput').value.trim();
+                            const videoUrl = document.getElementById('editVideoUrlInput').value.trim();
+
+                            if (!title) {
+                                alert('Product title is required!');
+                                return;
+                            }
+
+                            try {
+                                const res = await fetch('pasabuy_api.php?action=update_listing', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        id: id,
+                                        title: title,
+                                        price: price,
+                                        categoryId: categoryId,
+                                        condition: condition,
+                                        meetupLocation: meetupLocation,
+                                        description: description,
+                                        imageUrl: imageUrl,
+                                        videoUrl: videoUrl
+                                    })
+                                });
+
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('✅ Product Listing & Video Updated Successfully!');
+                                    const modalEl = document.getElementById('editListingModal');
+                                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                                    if (bsModal) bsModal.hide();
+                                    await filterProducts();
+                                } else {
+                                    alert('Failed to update listing: ' + (data.message || 'Error'));
+                                }
+                            } catch (err) {
+                                alert('Network error while updating listing.');
+                            }
+                        };
+
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.02.v222222";
+                            const PASABUY_APP_VERSION = "2026.09.09.v444444";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
