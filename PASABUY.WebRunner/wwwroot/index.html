@@ -689,12 +689,12 @@
                 <span>Messages</span>
             </div>
             <div class="tab-item position-relative" onclick="switchTab('profile')" id="tabNavProfile" style="overflow:visible;">
-                <!-- Floating Home Cart Button (Floats High Above Profile Tab Icon in Bottom Navigation) -->
+                <!-- Floating Home Cart Button (Floats Significantly Higher Above Profile Tab Icon) -->
                 <button class="btn btn-primary rounded-circle position-absolute border border-3 border-white shadow-lg p-0 d-flex align-items-center justify-content-center" 
                     id="homeCartBtn" onclick="event.stopPropagation(); openCartModal();" title="Shopping Cart" 
-                    style="width:44px; height:44px; top:-48px; left:50%; transform:translateX(-50%); cursor:pointer; pointer-events:auto; z-index:1000; display:flex;">
-                    <i class="fa-solid fa-cart-shopping text-white" style="font-size:1.05rem;"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="homeCartCountBadge" style="font-size:0.7rem; display:none; padding:4px 7px;">0</span>
+                    style="width:48px; height:48px; top:-80px; left:50%; transform:translateX(-50%); cursor:pointer; pointer-events:auto; z-index:1000; display:flex;">
+                    <i class="fa-solid fa-cart-shopping text-white" style="font-size:1.15rem;"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="homeCartCountBadge" style="font-size:0.75rem; display:none; padding:4px 8px;">0</span>
                 </button>
                 <i class="fa-solid fa-user"></i>
                 <span>Profile</span>
@@ -3600,13 +3600,13 @@
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.09.v1000000";
+                            const PASABUY_APP_VERSION = "2026.09.09.v1111111";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=1000000';
+                                        window.location.href = window.location.pathname + '?v=1111111';
                                         return;
                                     }
                                 }
