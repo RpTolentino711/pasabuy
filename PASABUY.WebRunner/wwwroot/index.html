@@ -245,12 +245,34 @@
 
         .category-circle-item {
             cursor: pointer;
-            min-width: 68px;
+            flex: 0 0 72px;
+            width: 72px;
+            text-align: center;
+        }
+
+        .category-circle-item span {
+            font-size: 0.72rem;
+            line-height: 1.15;
+            word-wrap: break-word;
+            display: block;
         }
 
         .category-circle-item:hover .category-icon-circle {
             transform: translateY(-3px);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        #homeCategoryCircleGrid {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE 10+ */
+            padding-bottom: 4px;
+        }
+
+        #homeCategoryCircleGrid::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Edge */
         }
 
         .style-chip {
@@ -304,7 +326,7 @@
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="alert('🔔 Notifications: You have 1 new campus marketplace update!')" title="Notifications" style="width:36px; height:36px; background: #F1F5F9;">
+                    onclick="openNotificationsModal()" title="Notifications" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-bell text-secondary fs-7"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem; padding: 2px 4px;">1</span>
                 </button>
@@ -1523,8 +1545,103 @@
         </div>
     </div>
 
+    <!-- NOTIFICATIONS & ALERTS MODAL -->
+    <div class="modal fade" id="notificationsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+                <div class="modal-header border-0 pb-2">
+                    <h6 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-bell text-primary fs-5"></i> Notifications & Alerts
+                        <span class="badge bg-danger rounded-pill fs-9" id="notifBadgeCount">2 New</span>
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-2">
+                    <div id="notificationsListContainer" class="d-flex flex-column gap-2" style="max-height: 380px; overflow-y: auto;">
+                        
+                        <!-- Notification 1: New Message from Buyer/Seller -->
+                        <div class="p-3 bg-primary bg-opacity-10 border border-primary-subtle rounded-3 shadow-2xs text-start position-relative"
+                            onclick="handleNotificationClick('messages')" style="cursor:pointer;">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge bg-primary text-white fw-bold fs-9"><i class="fa-solid fa-comment-dots me-1"></i> New Message</span>
+                                <span class="text-muted fs-9">2m ago</span>
+                            </div>
+                            <h6 class="fw-bold text-dark fs-8 mb-1">Beatriz Solis sent you a message</h6>
+                            <p class="text-secondary fs-8 mb-0 text-truncate">"Is the Calculus Textbook (8th Edition) still available for meetup at Main Library?"</p>
+                            <div class="text-primary fw-bold fs-9 mt-1"><i class="fa-solid fa-arrow-right me-1"></i> Tap to open Chat & Reply</div>
+                        </div>
+
+                        <!-- Notification 2: New Item Posted -->
+                        <div class="p-3 bg-light border rounded-3 shadow-2xs text-start"
+                            onclick="handleNotificationClick('item')" style="cursor:pointer;">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge bg-success text-white fw-bold fs-9"><i class="fa-solid fa-bag-shopping me-1"></i> New Item Arrived</span>
+                                <span class="text-muted fs-9">15m ago</span>
+                            </div>
+                            <h6 class="fw-bold text-dark fs-8 mb-1">Laptop Backpack (15.6") just posted!</h6>
+                            <p class="text-secondary fs-8 mb-0">Campus Gear posted a new item in Electronics for ₱899.</p>
+                            <div class="text-success fw-bold fs-9 mt-1"><i class="fa-solid fa-eye me-1"></i> Tap to view campus listing</div>
+                        </div>
+
+                        <!-- Notification 3: Order Update -->
+                        <div class="p-3 bg-light border rounded-3 shadow-2xs text-start"
+                            onclick="handleNotificationClick('order')" style="cursor:pointer;">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge bg-warning text-dark fw-bold fs-9"><i class="fa-solid fa-box-open me-1"></i> Order Update</span>
+                                <span class="text-muted fs-9">1h ago</span>
+                            </div>
+                            <h6 class="fw-bold text-dark fs-8 mb-1">Order Confirmed by Seller</h6>
+                            <p class="text-secondary fs-8 mb-0">TechHub PH accepted your order for Wireless Earbuds (2nd Gen).</p>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-2 justify-content-between">
+                    <button type="button" class="btn btn-link text-muted fs-8 p-0 text-decoration-none" onclick="clearAllNotifications()"><i class="fa-solid fa-check-double me-1"></i> Mark all as read</button>
+                    <button type="button" class="btn btn-secondary rounded-pill px-4 fs-8" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
                     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                     <script>
+                        let notificationsModalInstance = null;
+
+                        window.openNotificationsModal = function () {
+                            const modalEl = document.getElementById('notificationsModal');
+                            if (modalEl) {
+                                if (modalEl.parentElement !== document.body) {
+                                    document.body.appendChild(modalEl);
+                                }
+                                if (!notificationsModalInstance) {
+                                    notificationsModalInstance = new bootstrap.Modal(modalEl);
+                                }
+                                notificationsModalInstance.show();
+                            }
+                        };
+
+                        window.handleNotificationClick = function (type) {
+                            if (notificationsModalInstance) {
+                                try { notificationsModalInstance.hide(); } catch (e) {}
+                            }
+                            if (type === 'messages') {
+                                switchTab('messages');
+                            } else if (type === 'item') {
+                                switchTab('home');
+                            } else if (type === 'order') {
+                                openCartModal();
+                            }
+                        };
+
+                        window.clearAllNotifications = function () {
+                            const badges = document.querySelectorAll('.app-header .badge');
+                            badges.forEach(b => b.style.display = 'none');
+                            const badgeCount = document.getElementById('notifBadgeCount');
+                            if (badgeCount) badgeCount.innerText = '0 New';
+                            alert('✓ All notifications marked as read.');
+                        };
+
                         let registerModalInstance = null;
                         let otpVerifyModalInstance = null;
                         let forgotPasswordModalInstance = null;
