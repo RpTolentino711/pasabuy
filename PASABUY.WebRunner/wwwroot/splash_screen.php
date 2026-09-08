@@ -38,3 +38,68 @@
         <span class="fs-9 text-white-50 d-block" style="font-size:0.68rem;">Tap anywhere to skip...</span>
     </div>
 </div>
+
+<script>
+(function() {
+    let splashProgress = 0;
+    let splashInterval = null;
+    let splashTimeout = null;
+
+    window.hideSplashScreen = function() {
+        if (splashInterval) clearInterval(splashInterval);
+        if (splashTimeout) clearTimeout(splashTimeout);
+        const splash = document.getElementById('splashScreen');
+        const auth = document.getElementById('authScreen');
+        if (splash) {
+            splash.style.opacity = '0';
+            splash.style.transition = 'opacity 0.35s ease';
+            setTimeout(function() {
+                splash.style.display = 'none';
+                const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
+                if (isLoggedIn !== 'true' && auth) {
+                    auth.style.display = 'block';
+                }
+            }, 350);
+        }
+    };
+
+    window.initSplashScreen = function() {
+        const splash = document.getElementById('splashScreen');
+        const auth = document.getElementById('authScreen');
+        const bar = document.getElementById('splashProgressBar');
+        if (!splash) return;
+
+        const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
+        if (isLoggedIn === 'true') {
+            splash.style.display = 'none';
+            if (auth) auth.style.display = 'none';
+            return;
+        }
+
+        splash.style.display = 'flex';
+        splash.style.opacity = '1';
+        if (auth) auth.style.display = 'none';
+
+        splashProgress = 0;
+        if (bar) bar.style.width = '0%';
+
+        if (splashInterval) clearInterval(splashInterval);
+        splashInterval = setInterval(function() {
+            splashProgress += 2;
+            if (bar) bar.style.width = splashProgress + '%';
+            if (splashProgress >= 100) {
+                clearInterval(splashInterval);
+            }
+        }, 100);
+
+        if (splashTimeout) clearTimeout(splashTimeout);
+        splashTimeout = setTimeout(function() {
+            hideSplashScreen();
+        }, 5000);
+    };
+
+    if (localStorage.getItem('pasabuy_student_logged_in') !== 'true') {
+        setTimeout(initSplashScreen, 10);
+    }
+})();
+</script>
