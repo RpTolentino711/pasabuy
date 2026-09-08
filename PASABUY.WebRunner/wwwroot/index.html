@@ -346,40 +346,78 @@
         <!-- App Body (Dynamic Tab Views) -->
         <div class="app-body" id="appBody">
 
-            <!-- LANDING PAGE / AUTHENTICATION SCREEN (DEFAULT FOR NEW USERS) -->
-            <div id="authScreen" style="display:block;">
-                <div class="text-center p-4 bg-white rounded-4 border shadow-sm my-3">
-                    <div class="mb-3 text-center">
-                        <img src="LOGO.png" alt="PasaBuy Logo"
-                            style="height:75px; width:auto; object-fit:contain; filter: drop-shadow(0 4px 10px rgba(95, 39, 205, 0.2));">
+            <!-- 1. 5-SECOND SPLASH SCREEN (MATCHING REFERENCE DESIGN SCREEN 1) -->
+            <div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #6C5CE7 0%, #5F27CD 50%, #341F97 100%); color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden;" onclick="hideSplashScreen()">
+                <!-- Top Header Bar inside Splash -->
+                <div class="w-100 d-flex justify-content-between align-items-center fs-8 text-white-50">
+                    <span class="fw-semibold">9:41</span>
+                    <div class="d-flex gap-1 fs-9"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
+                </div>
+
+                <!-- Main Branding Logo -->
+                <div class="my-auto d-flex flex-column align-items-center">
+                    <div class="bg-white rounded-4 p-3 shadow-lg d-inline-flex align-items-center justify-content-center mb-3" style="width:84px; height:84px;">
+                        <i class="fa-solid fa-bag-shopping display-4" style="color: #5F27CD;"></i>
                     </div>
-                    <h5 class="fw-bold mb-1">PasaBuy Campus Marketplace</h5>
-                    <p class="text-muted fs-8 mb-3">Your Campus. Your Marketplace.</p>
+                    <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.4rem; letter-spacing: -0.5px;">PasaBuy</h1>
+                    <p class="text-white-50 fs-7 mb-4">Your Campus, Your Marketplace</p>
+
+                    <!-- Illustration -->
+                    <div class="my-3 px-2 w-100">
+                        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=500&q=80" 
+                            class="img-fluid rounded-4 shadow-lg border border-2 border-white border-opacity-25" 
+                            style="max-height: 200px; width:100%; object-fit:cover;">
+                    </div>
+                </div>
+
+                <!-- Bottom Tagline & Progress Bar -->
+                <div class="w-100 mt-auto pt-3 text-center">
+                    <h5 class="fw-extrabold text-white mb-1">Buy. Sell. Connect.</h5>
+                    <p class="text-white-50 fs-7 mb-3">All in One Place.</p>
+                    
+                    <!-- 5-Second Progress Bar -->
+                    <div class="progress bg-white bg-opacity-25 rounded-pill overflow-hidden mx-auto" style="height: 4px; max-width: 140px;">
+                        <div class="progress-bar bg-white" id="splashProgressBar" style="width: 0%; transition: width 0.1s linear;"></div>
+                    </div>
+                    <span class="fs-9 text-white-50 mt-2 d-block" style="font-size:0.68rem;">Tap anywhere to skip...</span>
+                </div>
+            </div>
+
+            <!-- 2. WELCOME BACK / LOGIN SCREEN (MATCHING REFERENCE DESIGN SCREEN 2) -->
+            <div id="authScreen" style="display:none;">
+                <div class="text-center p-4 bg-white rounded-4 border shadow-sm my-2">
+                    <div class="mb-3 text-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-4 p-2.5 d-inline-flex align-items-center justify-content-center shadow-sm mb-2" style="width:64px; height:64px;">
+                            <i class="fa-solid fa-bag-shopping fs-2" style="color: #5F27CD;"></i>
+                        </div>
+                        <h4 class="fw-extrabold text-dark mb-0">PasaBuy</h4>
+                        <p class="text-muted fs-8">Your Campus, Your Marketplace</p>
+                    </div>
+
+                    <h5 class="fw-extrabold text-dark mb-1">Welcome Back!</h5>
+                    <p class="text-muted fs-8 mb-4">Sign in to continue</p>
 
                     <!-- Failed Attempt Banner -->
                     <div id="failedAttemptBanner"
                         class="p-3 bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-3 fs-8 mb-3 text-start"
                         style="display:none;">
-                        <i class="fa-solid fa-shield-exclamation me-1"></i> <strong id="failedAttemptMsg">Invalid
-                            credentials.</strong>
+                        <i class="fa-solid fa-shield-exclamation me-1"></i> <strong id="failedAttemptMsg">Invalid credentials.</strong>
                     </div>
 
                     <div class="text-start mb-3">
-                        <label class="form-label fw-bold fs-7">School Email / Username</label>
-                        <input type="email" class="form-control rounded-3 fs-7" id="loginEmailInput"
-                            placeholder="e.g. yourname@student.edu.ph" value=""
+                        <label class="form-label fw-bold fs-8 text-secondary">Email Address</label>
+                        <input type="email" class="form-control rounded-3 py-2.5 px-3 fs-7" id="loginEmailInput"
+                            placeholder="you@school.edu.ph" value=""
                             onkeydown="if(event.key==='Enter') loginStudentWithPassword()">
                     </div>
 
                     <div class="text-start mb-3">
-                        <label class="form-label fw-bold fs-7 d-flex justify-content-between">
+                        <label class="form-label fw-bold fs-8 text-secondary d-flex justify-content-between">
                             <span>Password</span>
-                            <a href="javascript:void(0)" class="text-decoration-none fs-8 text-primary fw-semibold"
-                                onclick="openForgotPasswordModal(); return false;">Forgot Password?</a>
                         </label>
                         <div class="input-group">
-                            <input type="password" class="form-control border-end-0 rounded-start-3 fs-7"
-                                id="loginPasswordInput" placeholder="Enter your password" value=""
+                            <input type="password" class="form-control border-end-0 rounded-start-3 py-2.5 px-3 fs-7"
+                                id="loginPasswordInput" placeholder="••••••••" value=""
                                 onkeydown="if(event.key==='Enter') loginStudentWithPassword()">
                             <button type="button"
                                 class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white"
@@ -387,16 +425,103 @@
                                 <i class="fa-solid fa-eye text-muted" id="loginEyeIcon"></i>
                             </button>
                         </div>
+                        <div class="text-end mt-1.5">
+                            <a href="javascript:void(0)" class="text-decoration-none fs-8 text-primary fw-bold"
+                                onclick="openForgotPasswordModal(); return false;">Forgot Password?</a>
+                        </div>
                     </div>
 
-                    <button class="btn btn-pasabuy mb-3" id="btnLoginSubmit" onclick="loginStudentWithPassword()"><i
-                            class="fa-solid fa-right-to-bracket me-2"></i> Log In to Account</button>
+                    <button class="btn btn-primary w-100 rounded-3 py-3 fw-bold fs-7 shadow-sm mb-3 text-white" 
+                        style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" 
+                        id="btnLoginSubmit" onclick="loginStudentWithPassword()">
+                        Sign In
+                    </button>
 
-                    <div class="pt-3 border-top text-center">
-                        <span class="fs-8 text-muted">New to PasaBuy Campus?</span><br>
-                        <button class="btn btn-outline-primary rounded-pill fw-bold px-4 fs-8 mt-2"
-                            onclick="openRegisterModal()"><i class="fa-solid fa-user-plus me-1"></i> Create Student
-                            Account</button>
+                    <div class="d-flex align-items-center my-3 text-muted fs-8">
+                        <hr class="flex-grow-1 my-0"><span class="px-2 fw-semibold text-secondary">OR</span><hr class="flex-grow-1 my-0">
+                    </div>
+
+                    <!-- Social Login Buttons -->
+                    <button class="btn btn-outline-secondary w-100 rounded-3 py-2.5 fs-8 fw-semibold mb-2 d-flex align-items-center justify-content-center gap-2" 
+                        onclick="quickFillRomeoCredentials()">
+                        <i class="fa-brands fa-google text-danger fs-6"></i> Continue with Google
+                    </button>
+                    <button class="btn btn-outline-secondary w-100 rounded-3 py-2.5 fs-8 fw-semibold mb-3 d-flex align-items-center justify-content-center gap-2" 
+                        onclick="quickFillRomeoCredentials()">
+                        <i class="fa-brands fa-facebook text-primary fs-6"></i> Continue with Facebook
+                    </button>
+
+                    <div class="pt-2 text-center fs-8 text-muted">
+                        Don't have an account? 
+                        <a href="javascript:void(0)" class="text-primary fw-bold text-decoration-none ms-1" onclick="showRegisterScreen()">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. CREATE AN ACCOUNT / REGISTER SCREEN (MATCHING REFERENCE DESIGN SCREEN 3) -->
+            <div id="registerScreen" style="display:none;">
+                <div class="text-center p-4 bg-white rounded-4 border shadow-sm my-2 position-relative">
+                    <button type="button" class="btn btn-light rounded-circle position-absolute top-0 start-0 m-3 border-0 shadow-2xs d-flex align-items-center justify-content-center" style="width:36px; height:36px;" onclick="showLoginScreen()">
+                        <i class="fa-solid fa-arrow-left text-dark fs-7"></i>
+                    </button>
+
+                    <div class="mb-3 text-center pt-2">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-4 p-2.5 d-inline-flex align-items-center justify-content-center shadow-sm mb-2" style="width:58px; height:58px;">
+                            <i class="fa-solid fa-bag-shopping fs-3" style="color: #5F27CD;"></i>
+                        </div>
+                        <h4 class="fw-extrabold text-dark mb-0">PasaBuy</h4>
+                        <p class="text-muted fs-8">Your Campus, Your Marketplace</p>
+                    </div>
+
+                    <h5 class="fw-extrabold text-dark mb-1">Create an Account</h5>
+                    <p class="text-muted fs-8 mb-4">Join our campus marketplace</p>
+
+                    <div class="text-start mb-3">
+                        <label class="form-label fw-bold fs-8 text-secondary">Full Name</label>
+                        <input type="text" class="form-control rounded-3 py-2.5 px-3 fs-7" id="regFullName" placeholder="Juan Dela Cruz">
+                    </div>
+
+                    <div class="text-start mb-3">
+                        <label class="form-label fw-bold fs-8 text-secondary">School Email</label>
+                        <input type="email" class="form-control rounded-3 py-2.5 px-3 fs-7" id="regEmail" placeholder="you@school.edu.ph">
+                    </div>
+
+                    <div class="text-start mb-3">
+                        <label class="form-label fw-bold fs-8 text-secondary">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control border-end-0 rounded-start-3 py-2.5 px-3 fs-7" id="regPassword" placeholder="••••••••">
+                            <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" onclick="togglePasswordVisibility('regPassword', 'regEyeIcon2')">
+                                <i class="fa-solid fa-eye text-muted" id="regEyeIcon2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="text-start mb-3">
+                        <label class="form-label fw-bold fs-8 text-secondary">Confirm Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control border-end-0 rounded-start-3 py-2.5 px-3 fs-7" id="regConfirmPassword" placeholder="••••••••">
+                            <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" onclick="togglePasswordVisibility('regConfirmPassword', 'regConfirmEyeIcon2')">
+                                <i class="fa-solid fa-eye text-muted" id="regConfirmEyeIcon2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-check text-start mb-3">
+                        <input class="form-check-input" type="checkbox" id="regAgreeTerms" checked>
+                        <label class="form-check-label fs-8 text-muted" for="regAgreeTerms">
+                            I agree to the <a href="javascript:void(0)" class="text-primary fw-bold text-decoration-none" onclick="alert('📋 PasaBuy Terms: Campus marketplace registration requires valid student credentials.')">Terms and Conditions</a>
+                        </label>
+                    </div>
+
+                    <button class="btn btn-primary w-100 rounded-3 py-3 fw-bold fs-7 shadow-sm mb-3 text-white" 
+                        style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" 
+                        onclick="submitRegistrationSendOtpScreen()">
+                        Sign Up
+                    </button>
+
+                    <div class="pt-2 text-center fs-8 text-muted">
+                        Already have an account? 
+                        <a href="javascript:void(0)" class="text-primary fw-bold text-decoration-none ms-1" onclick="showLoginScreen()">Sign In</a>
                     </div>
                 </div>
             </div>
@@ -3888,6 +4013,158 @@
                                     icon.className = 'fa-regular fa-heart text-muted fs-8';
                                 }
                             }
+                        // Splash Screen & Auth Screen Flow
+                        let splashTimer = null;
+                        let splashProgressInterval = null;
+
+                        window.initSplashScreen = function () {
+                            const splash = document.getElementById('splashScreen');
+                            const auth = document.getElementById('authScreen');
+                            const reg = document.getElementById('registerScreen');
+                            const progressBar = document.getElementById('splashProgressBar');
+
+                            if (!splash) return;
+
+                            const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
+                            if (isLoggedIn === 'true') {
+                                splash.style.display = 'none';
+                                if (auth) auth.style.display = 'none';
+                                if (reg) reg.style.display = 'none';
+                                return;
+                            }
+
+                            splash.style.display = 'flex';
+                            if (auth) auth.style.display = 'none';
+                            if (reg) reg.style.display = 'none';
+
+                            let progress = 0;
+                            if (progressBar) progressBar.style.width = '0%';
+
+                            if (splashProgressInterval) clearInterval(splashProgressInterval);
+                            splashProgressInterval = setInterval(() => {
+                                progress += 2;
+                                if (progressBar) progressBar.style.width = `${progress}%`;
+                                if (progress >= 100) {
+                                    clearInterval(splashProgressInterval);
+                                }
+                            }, 100);
+
+                            if (splashTimer) clearTimeout(splashTimer);
+                            splashTimer = setTimeout(() => {
+                                hideSplashScreen();
+                            }, 5000);
+                        };
+
+                        window.hideSplashScreen = function () {
+                            if (splashTimer) clearTimeout(splashTimer);
+                            if (splashProgressInterval) clearInterval(splashProgressInterval);
+                            const splash = document.getElementById('splashScreen');
+                            if (splash) {
+                                splash.style.opacity = '0';
+                                splash.style.transition = 'opacity 0.4s ease';
+                                setTimeout(() => {
+                                    splash.style.display = 'none';
+                                    const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
+                                    if (isLoggedIn !== 'true') {
+                                        const auth = document.getElementById('authScreen');
+                                        if (auth) auth.style.display = 'block';
+                                    }
+                                }, 400);
+                            }
+                        };
+
+                        window.showLoginScreen = function () {
+                            const splash = document.getElementById('splashScreen');
+                            const auth = document.getElementById('authScreen');
+                            const reg = document.getElementById('registerScreen');
+                            if (splash) splash.style.display = 'none';
+                            if (auth) auth.style.display = 'block';
+                            if (reg) reg.style.display = 'none';
+                        };
+
+                        window.showRegisterScreen = function () {
+                            const splash = document.getElementById('splashScreen');
+                            const auth = document.getElementById('authScreen');
+                            const reg = document.getElementById('registerScreen');
+                            if (splash) splash.style.display = 'none';
+                            if (auth) auth.style.display = 'none';
+                            if (reg) reg.style.display = 'block';
+                        };
+
+                        window.submitRegistrationSendOtpScreen = async function () {
+                            const fullName = (document.getElementById('regFullName')?.value || '').trim();
+                            const email = (document.getElementById('regEmail')?.value || '').trim();
+                            const password = (document.getElementById('regPassword')?.value || '').trim();
+                            const confirmPassword = (document.getElementById('regConfirmPassword')?.value || '').trim();
+                            const agreeTerms = document.getElementById('regAgreeTerms')?.checked;
+
+                            if (!fullName) {
+                                alert('Please enter your Full Name.');
+                                return;
+                            }
+                            if (!email) {
+                                alert('Please enter your School Email.');
+                                return;
+                            }
+                            if (!password || password.length < 6) {
+                                alert('Password must be at least 6 characters.');
+                                return;
+                            }
+                            if (password !== confirmPassword) {
+                                alert('Password and Confirm Password do not match.');
+                                return;
+                            }
+                            if (!agreeTerms) {
+                                alert('Please agree to the Terms and Conditions to proceed.');
+                                return;
+                            }
+
+                            const nameParts = fullName.split(' ');
+                            const firstName = nameParts[0] || 'Student';
+                            const lastName = nameParts.slice(1).join(' ') || '';
+
+                            pendingRegistrationEmail = email;
+                            pendingRegistrationData = {
+                                firstName: firstName,
+                                lastName: lastName,
+                                email: email,
+                                studentNumber: '2026-' + Math.floor(1000 + Math.random() * 9000),
+                                course: 'BS Student',
+                                yearLevel: '1st Yr',
+                                password: password
+                            };
+
+                            try {
+                                const res = await fetch('/pasabuy_otp.php', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        action: 'send_otp',
+                                        email: email,
+                                        name: fullName,
+                                        password: password
+                                    })
+                                });
+
+                                const data = await res.json();
+                                if (res.ok && data.success) {
+                                    document.getElementById('otpTargetEmail').innerText = email;
+                                    document.getElementById('otpInputCode').value = '';
+                                    const otpModalEl = document.getElementById('otpVerifyModal');
+                                    if (otpModalEl && otpModalEl.parentElement !== document.body) {
+                                        document.body.appendChild(otpModalEl);
+                                    }
+                                    if (!otpVerifyModalInstance) {
+                                        otpVerifyModalInstance = new bootstrap.Modal(otpModalEl);
+                                    }
+                                    otpVerifyModalInstance.show();
+                                    alert(`📧 Verification OTP code sent to ${email} from PASABUY@pasabuy.site!`);
+                                } else {
+                                    alert(data.message || '❌ Could not send OTP code to this email address.');
+                                }
+                            } catch (e) {
+                                alert('Connection error sending OTP code.');
+                            }
                         };
 
                         // Single Consolidated Initialization on Page Load
@@ -3905,7 +4182,13 @@
                                 }
                             } catch (e) { }
 
-                            checkStudentSessionOnLoad();
+                            const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
+                            if (isLoggedIn !== 'true') {
+                                initSplashScreen();
+                            } else {
+                                checkStudentSessionOnLoad();
+                            }
+
                             await filterProducts();
                             await loadWantedPosts();
                             updateCartBadge();
