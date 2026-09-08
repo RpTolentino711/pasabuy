@@ -230,6 +230,39 @@
             border-bottom-left-radius: 4px;
         }
 
+        /* New Sleek Reference UI Styling */
+        .category-icon-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin: 0 auto;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .category-circle-item {
+            cursor: pointer;
+            min-width: 68px;
+        }
+
+        .category-circle-item:hover .category-icon-circle {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .style-chip {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .style-chip:hover {
+            background: var(--primary) !important;
+            color: #fff !important;
+        }
+
         /* Mobile & Responsive Screen Adjustments */
         @media (max-width: 576px) {
             body {
@@ -257,22 +290,34 @@
 <body>
 
     <div class="app-container">
-        <!-- App Header -->
-        <div class="app-header">
-            <div class="app-logo">
-                <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center p-1 shadow-sm"
-                    style="width:36px; height:36px; flex-shrink:0;">
-                    <img src="LOGO.png" alt="PasaBuy Logo" style="height:24px; width:auto; object-fit:contain;">
+        <!-- App Header (Matching Reference Design) -->
+        <div class="app-header bg-white border-bottom px-3 py-2.5 shadow-sm d-flex align-items-center justify-content-between" style="background:#fff; color:#1E293B;">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-3 d-inline-flex align-items-center justify-content-center p-1.5 shadow-sm"
+                    style="width:38px; height:38px; background: linear-gradient(135deg, #6C5CE7, #5F27CD); color:#fff;">
+                    <i class="fa-solid fa-bag-shopping fs-5"></i>
                 </div>
-                <span>PasaBuy</span>
+                <div>
+                    <div class="fw-extrabold fs-6 text-dark lh-1" style="letter-spacing: -0.3px;">PasaBuy</div>
+                    <div class="text-muted fs-9" style="font-size: 0.68rem;">Your Campus, Your Marketplace</div>
+                </div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-light rounded-circle position-relative border shadow-sm p-2" id="headerCartBtn" onclick="openCartModal()" title="Shopping Cart" style="width:38px; height:38px; cursor:pointer; pointer-events:auto; z-index:1000; display:none;">
-                    <i class="fa-solid fa-cart-shopping text-primary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.65rem; display:none;">0</span>
+                <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
+                    onclick="alert('🔔 Notifications: You have 1 new campus marketplace update!')" title="Notifications" style="width:36px; height:36px; background: #F1F5F9;">
+                    <i class="fa-solid fa-bell text-secondary fs-7"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem; padding: 2px 4px;">1</span>
                 </button>
-                <span class="badge-verified" id="headerBadge" style="display:none;"><i
-                        class="fa-solid fa-circle-check"></i> Verified Student</span>
+                <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
+                    onclick="switchTab('messages')" title="Messages" style="width:36px; height:36px; background: #F1F5F9;">
+                    <i class="fa-solid fa-comment-dots text-secondary fs-7"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem; padding: 2px 4px;">1</span>
+                </button>
+                <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
+                        class="rounded-circle border border-2 border-white shadow-sm" width="36" height="36" style="object-fit:cover;" id="homeAvatar">
+                    <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:10px; height:10px;"></span>
+                </div>
             </div>
         </div>
 
@@ -334,53 +379,118 @@
                 </div>
             </div>
 
-            <!-- HOME TAB -->
+            <!-- HOME TAB (REDESIGNED MATCHING REFERENCE SCREENSHOT) -->
             <div id="tabHome" style="display:none;">
+
+                <!-- Search Input with Filter Button & Voice Mic -->
+                <div class="d-flex gap-2 align-items-center mb-3">
+                    <div class="position-relative flex-grow-1">
+                        <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left:14px; top:12px; font-size: 0.9rem;"></i>
+                        <input type="text" class="form-control rounded-pill ps-5 pe-5 py-2 fs-7 border-0 bg-white shadow-sm"
+                            placeholder="Search products, food, school supplies..." id="searchInput"
+                            onkeyup="filterProducts()">
+                        <i class="fa-solid fa-microphone position-absolute text-muted" style="right:14px; top:12px; font-size: 0.9rem; cursor:pointer;" title="Voice Search" onclick="alert('🎙️ Voice Search active...')"></i>
+                    </div>
+                    <button class="btn btn-primary rounded-3 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" 
+                        style="width:40px; height:40px; background: linear-gradient(135deg, #6C5CE7, #5F27CD); border: none;" onclick="switchTab('explore')">
+                        <i class="fa-solid fa-sliders text-white fs-7"></i>
+                    </button>
+                </div>
+
+                <!-- Recent Searches Bar -->
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fs-8 text-muted fw-semibold"><i class="fa-solid fa-clock-rotate-left me-1"></i> Recent Searches</span>
+                        <a href="javascript:void(0)" class="text-decoration-none fs-9 text-primary fw-semibold" onclick="clearRecentSearches()">Clear <i class="fa-solid fa-chevron-down ms-0.5"></i></a>
+                    </div>
+                    <div class="d-flex gap-2 overflow-x-auto pb-1" id="recentSearchesRow">
+                        <span class="badge bg-white text-dark border rounded-pill px-3 py-1.5 fs-8 fw-normal style-chip shadow-2xs" onclick="applyQuickSearch('laptop')">laptop</span>
+                        <span class="badge bg-white text-dark border rounded-pill px-3 py-1.5 fs-8 fw-normal style-chip shadow-2xs" onclick="applyQuickSearch('notebook')">notebook</span>
+                        <span class="badge bg-white text-dark border rounded-pill px-3 py-1.5 fs-8 fw-normal style-chip shadow-2xs" onclick="applyQuickSearch('airpods')">airpods</span>
+                        <span class="badge bg-white text-dark border rounded-pill px-3 py-1.5 fs-8 fw-normal style-chip shadow-2xs" onclick="applyQuickSearch('uniform')">uniform</span>
+                    </div>
+                </div>
+
+                <!-- Hero Deals Carousel Banner -->
+                <div class="card border-0 rounded-4 p-4 text-white mb-4 shadow-sm position-relative overflow-hidden" 
+                    style="background: linear-gradient(135deg, #6C5CE7, #5F27CD, #341F97);">
+                    <div class="row align-items-center">
+                        <div class="col-8">
+                            <span class="badge bg-warning text-dark fw-bold px-2 py-1 rounded-pill fs-9 mb-1">Back to School</span>
+                            <h3 class="fw-extrabold mb-1 text-white" style="font-size: 1.5rem; letter-spacing: -0.5px;">Deals</h3>
+                            <p class="fs-9 text-white-50 mb-3">Save more on your campus essentials.</p>
+                            <button class="btn btn-light rounded-pill fw-bold fs-9 px-3 py-1.5 text-primary shadow-sm" onclick="switchTab('explore')">
+                                Shop Now <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                        <div class="col-4 text-end">
+                            <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&q=80" class="img-fluid rounded-3 shadow-sm" style="max-height: 90px; object-fit: cover;">
+                        </div>
+                    </div>
+                    <!-- Banner Indicators -->
+                    <div class="d-flex justify-content-center gap-1.5 mt-2">
+                        <span class="rounded-circle bg-white" style="width: 8px; height: 8px; opacity: 1;"></span>
+                        <span class="rounded-circle bg-white" style="width: 8px; height: 8px; opacity: 0.4;"></span>
+                        <span class="rounded-circle bg-white" style="width: 8px; height: 8px; opacity: 0.4;"></span>
+                    </div>
+                </div>
+
+                <!-- Categories Circular Grid -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold mb-0 text-dark">Categories</h6>
+                        <a href="javascript:void(0)" class="text-decoration-none fs-8 fw-bold text-primary" onclick="switchTab('explore')">See All <i class="fa-solid fa-arrow-right ms-1"></i></a>
+                    </div>
+                    <div class="d-flex justify-content-between gap-2 overflow-x-auto pb-2" id="homeCategoryCircleGrid">
+                        <div class="text-center category-circle-item" onclick="selectCategoryFilter(this, 'School Supplies')">
+                            <div class="category-icon-circle bg-primary bg-opacity-10 text-primary mb-1">
+                                <i class="fa-solid fa-book-open"></i>
+                            </div>
+                            <span class="fs-9 fw-semibold text-dark d-block">School Supplies</span>
+                        </div>
+                        <div class="text-center category-circle-item" onclick="selectCategoryFilter(this, 'Food / Pasabuy')">
+                            <div class="category-icon-circle bg-danger bg-opacity-10 text-danger mb-1">
+                                <i class="fa-solid fa-utensils"></i>
+                            </div>
+                            <span class="fs-9 fw-semibold text-dark d-block">Food & Snacks</span>
+                        </div>
+                        <div class="text-center category-circle-item" onclick="selectCategoryFilter(this, 'Electronics')">
+                            <div class="category-icon-circle bg-info bg-opacity-10 text-info mb-1">
+                                <i class="fa-solid fa-laptop"></i>
+                            </div>
+                            <span class="fs-9 fw-semibold text-dark d-block">Electronics</span>
+                        </div>
+                        <div class="text-center category-circle-item" onclick="selectCategoryFilter(this, 'Clothes')">
+                            <div class="category-icon-circle bg-success bg-opacity-10 text-success mb-1">
+                                <i class="fa-solid fa-shirt"></i>
+                            </div>
+                            <span class="fs-9 fw-semibold text-dark d-block">Clothes</span>
+                        </div>
+                        <div class="text-center category-circle-item" onclick="selectCategoryFilter(this, 'Books')">
+                            <div class="category-icon-circle bg-warning bg-opacity-10 text-warning-emphasis mb-1">
+                                <i class="fa-solid fa-book"></i>
+                            </div>
+                            <span class="fs-9 fw-semibold text-dark d-block">Books</span>
+                        </div>
+                        <div class="text-center category-circle-item" onclick="switchTab('explore')">
+                            <div class="category-icon-circle bg-secondary bg-opacity-10 text-secondary mb-1">
+                                <i class="fa-solid fa-ellipsis"></i>
+                            </div>
+                            <span class="fs-9 fw-semibold text-dark d-block">More</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommended For You Feed -->
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <div>
-                        <span class="text-muted fs-8 fw-semibold">WELCOME BACK</span>
-                        <h5 class="fw-bold mb-0" id="homeWelcomeName">Good morning, John!</h5>
-                    </div>
-                    <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
-                            class="rounded-circle border shadow-sm" width="44" height="44" style="object-fit:cover;" id="homeAvatar">
-                    </div>
+                    <h6 class="fw-bold mb-0 text-dark">Recommended For You</h6>
+                    <a href="javascript:void(0)" class="text-decoration-none fs-8 fw-bold text-primary" onclick="switchTab('explore')">See All <i class="fa-solid fa-arrow-right ms-1"></i></a>
                 </div>
 
-                <!-- Search Input -->
-                <div class="position-relative mb-3">
-                    <i class="fa-solid fa-magnifying-glass position-absolute text-muted"
-                        style="left:14px; top:12px;"></i>
-                    <input type="text" class="form-control rounded-pill ps-5 pe-3 py-2 fs-7"
-                        placeholder="Search for calculators, books, tools..." id="searchInput"
-                        onkeyup="filterProducts()">
-                </div>
-
-                <!-- Categories Horizontal Scroll -->
-                <div class="d-flex gap-2 overflow-x-auto pb-2 mb-3" id="homeCategoryChips">
-                    <span class="category-chip active" onclick="selectCategoryFilter(this, 'All')">All Items</span>
-                    <span class="category-chip text-primary fw-bold" onclick="selectCategoryFilter(this, 'My Items')"><i
-                            class="fa-solid fa-user-check me-1"></i> My Items</span>
-                    <span class="category-chip text-danger fw-bold" onclick="selectCategoryFilter(this, 'Food / Pasabuy')">Food / Pasabuy</span>
-                    <span class="category-chip" onclick="selectCategoryFilter(this, 'School Supplies')">School
-                        Supplies</span>
-                    <span class="category-chip" onclick="selectCategoryFilter(this, 'Electronics')">Electronics</span>
-                    <span class="category-chip" onclick="selectCategoryFilter(this, 'Books')">Books</span>
-                    <span class="category-chip" onclick="selectCategoryFilter(this, 'Gadgets')">Gadgets</span>
-                    <span class="category-chip" onclick="selectCategoryFilter(this, 'Dorm Items')">Dorm Items</span>
-                </div>
-
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="fw-bold mb-0">Recommended for You</h6>
-                    <a href="#" class="text-decoration-none fs-8 fw-semibold text-primary"
-                        onclick="switchTab('explore')">See All</a>
-                </div>
-
-                <div id="homeProductContainer">
-                    <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+                <div id="homeProductContainer" class="row row-cols-2 g-2 mb-3">
+                    <div class="col-12 text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
                         <i class="fa-solid fa-store-slash fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                        No campus listings published yet.<br>Go to <strong class="text-primary">+ Sell</strong> to post
-                        your first item!
+                        No campus listings published yet.<br>Go to <strong class="text-primary">+ Sell</strong> to post your first item!
                     </div>
                 </div>
             </div>
@@ -662,12 +772,8 @@
                 <!-- LOGOUT BUTTON -->
                 <button class="btn btn-outline-danger w-100 rounded-pill fw-bold py-2 mb-3" onclick="logoutStudent()"><i
                         class="fa-solid fa-right-from-bracket me-2"></i> Log Out Account</button>
-            </div>
-
-        </div>
-
-        <!-- App Bottom Tab Bar Navigation -->
-        <div class="app-tabbar" style="display:none;">
+          <!-- App Bottom Tab Bar Navigation (Matching Reference Screenshot) -->
+        <div class="app-tabbar" style="display:none; height:68px; border-top:1px solid #E2E8F0; background:#fff;">
             <div class="tab-item active" onclick="switchTab('home')" id="tabNavHome">
                 <i class="fa-solid fa-house"></i>
                 <span>Home</span>
@@ -676,28 +782,27 @@
                 <i class="fa-solid fa-compass"></i>
                 <span>Explore</span>
             </div>
-            <div class="tab-item" onclick="switchTab('sell')" id="tabNavSell">
-                <i class="fa-solid fa-circle-plus" style="font-size:1.6rem; color:var(--primary);"></i>
-                <span>Sell</span>
+            <!-- Raised Floating Plus Button in Center -->
+            <div class="tab-item" onclick="switchTab('sell')" id="tabNavSell" style="position:relative; overflow:visible;">
+                <div class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center shadow-lg" 
+                    style="width:48px; height:48px; background: linear-gradient(135deg, #6C5CE7, #5F27CD); border: 3px solid #FFF; transform: translateY(-12px);">
+                    <i class="fa-solid fa-plus text-white fs-5"></i>
+                </div>
+            </div>
+            <div class="tab-item position-relative" onclick="openCartModal()" id="tabNavCart">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Cart</span>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; display:none; padding:2px 4px;">0</span>
             </div>
             <div class="tab-item" onclick="switchTab('wanted')" id="tabNavWanted">
-                <i class="fa-solid fa-bullhorn"></i>
-                <span>Wanted</span>
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>Orders</span>
             </div>
-            <div class="tab-item" onclick="switchTab('messages')" id="tabNavMessages">
-                <i class="fa-solid fa-comments"></i>
-                <span>Messages</span>
-            </div>
-            <div class="tab-item position-relative" onclick="switchTab('profile')" id="tabNavProfile" style="overflow:visible;">
-                <!-- Floating Home Cart Button (Floats Significantly Higher Above Profile Tab Icon) -->
-                <button class="btn btn-primary rounded-circle position-absolute border border-3 border-white shadow-lg p-0 d-flex align-items-center justify-content-center" 
-                    id="homeCartBtn" onclick="event.stopPropagation(); openCartModal();" title="Shopping Cart" 
-                    style="width:48px; height:48px; top:-80px; left:50%; transform:translateX(-50%); cursor:pointer; pointer-events:auto; z-index:1000; display:flex;">
-                    <i class="fa-solid fa-cart-shopping text-white" style="font-size:1.15rem;"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="homeCartCountBadge" style="font-size:0.75rem; display:none; padding:4px 8px;">0</span>
-                </button>
+            <div class="tab-item" onclick="switchTab('profile')" id="tabNavProfile">
                 <i class="fa-solid fa-user"></i>
                 <span>Profile</span>
+            </div>
+        </div>
             </div>
         </div>
     </div>
@@ -2950,47 +3055,51 @@
                             </div>
                         </div>`;
                                     }
-                                } else {
                                     const isInCart = (pasabuyCart || []).some(item => (item.listingId && item.listingId == p.id) || item.title === p.title);
                                     let cartBtnHtml = '';
                                     if (isInCart) {
-                                        cartBtnHtml = `<button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8 shadow-sm" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-xmark me-1"></i> Remove from Cart</button>`;
+                                        cartBtnHtml = `<button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8 shadow-sm py-1.5" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-xmark me-1"></i> Remove</button>`;
                                     } else {
-                                        cartBtnHtml = `<button class="btn btn-sm btn-warning rounded-pill w-100 fw-bold fs-8 text-dark shadow-sm" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-plus me-1"></i> Add to Cart</button>`;
+                                        cartBtnHtml = `<button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8 shadow-sm py-1.5" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-plus me-1"></i> Add to Cart</button>`;
                                     }
 
                                     buttonsHtml = `
-                    <div class="d-flex flex-column gap-2 w-100">
+                    <div class="d-flex flex-column gap-1.5 w-100">
                         ${cartBtnHtml}
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
-                            <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}', '${p.seller.replace(/'/g, "\\'")}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-9 py-1" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-comments me-1"></i> Chat</button>
+                            <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-9 py-1" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}', '${p.seller.replace(/'/g, "\\'")}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
                         </div>
                     </div>`;
                                 }
 
+                                const origPriceVal = (p.priceVal * 1.15).toFixed(2);
+                                const discountTag = p.priceVal > 500 ? '-15%' : '-10%';
+
                                 const mediaHtml = p.videoUrl
-                                    ? `<div class="position-relative"><video src="${p.videoUrl}" controls style="width:100%; height:160px; object-fit:cover; border-top-left-radius:12px; border-top-right-radius:12px; background:#000;" preload="metadata"></video><span class="badge bg-danger position-absolute top-0 end-0 m-2"><i class="fa-solid fa-video me-1"></i> Video</span></div>`
-                                    : `<img src="${p.img}" class="product-img" alt="${p.title}" style="height:160px; object-fit:cover;">`;
+                                    ? `<div class="position-relative"><video src="${p.videoUrl}" controls style="width:100%; height:130px; object-fit:cover; border-radius:14px; background:#000;" preload="metadata"></video><span class="badge bg-danger position-absolute top-0 end-0 m-2"><i class="fa-solid fa-video me-1"></i> Video</span></div>`
+                                    : `<div class="position-relative"><img src="${p.img}" class="rounded-4" alt="${p.title}" style="width:100%; height:130px; object-fit:cover;"><button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-2 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width:28px; height:28px; background:rgba(255,255,255,0.9);" onclick="toggleWishlist(this, ${p.id})"><i class="fa-regular fa-heart text-muted fs-8"></i></button></div>`;
 
                                 const cardHtml = `
-                <div class="product-card">
-                    ${mediaHtml}
-                    <div class="product-details p-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <span class="price-tag fw-bold text-primary fs-6">${p.price}</span>
-                            <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1 rounded-pill fs-9">${p.fee} Fee Paid</span>
-                        </div>
-                        <h6 class="fw-bold mb-1 text-dark fs-7">${p.title}</h6>
-                        <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2 fs-9 text-muted">
-                            <div>
-                                <span class="fw-bold text-dark">${p.seller}</span>
-                                <span class="badge-verified ms-1"><i class="fa-solid fa-check text-success"></i></span>
+                <div class="col-6 mb-2">
+                    <div class="card border-0 rounded-4 shadow-sm h-100 p-2 bg-white d-flex flex-column justify-content-between position-relative">
+                        ${mediaHtml}
+                        <div class="pt-2">
+                            <h6 class="fw-bold mb-1 text-dark fs-8 text-truncate" title="${p.title}">${p.title}</h6>
+                            <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
+                                <span class="fw-extrabold text-primary fs-7">${p.price}</span>
+                                <span class="text-muted text-decoration-line-through fs-9" style="font-size:0.65rem;">₱${origPriceVal}</span>
+                                <span class="badge bg-danger text-white rounded-pill px-1.5 py-0.5" style="font-size:0.6rem;">${discountTag}</span>
                             </div>
-                            <span><i class="fa-solid fa-location-dot text-danger me-1"></i> ${p.location}</span>
+                            <div class="fs-9 text-muted mb-1 text-truncate" style="font-size:0.68rem;">
+                                <i class="fa-solid fa-location-dot text-primary me-1"></i>${p.location || 'Campus'}
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5 fw-semibold" style="font-size:0.65rem;">In Stock</span>
+                            </div>
                         </div>
-                        <div class="d-flex gap-2 mt-3">
-                            ${buttonsHtml}
+                        <div class="pt-1">
+                            ${isMyListing ? buttonsHtml : cartBtnHtml}
                         </div>
                     </div>
                 </div>`;
@@ -3597,16 +3706,41 @@
                             filterProducts();
                         };
 
+                        // UI Helper Functions
+                        window.applyQuickSearch = function (term) {
+                            const input = document.getElementById('searchInput');
+                            if (input) {
+                                input.value = term;
+                                filterProducts();
+                            }
+                        };
+
+                        window.clearRecentSearches = function () {
+                            const row = document.getElementById('recentSearchesRow');
+                            if (row) row.style.display = 'none';
+                        };
+
+                        window.toggleWishlist = function (btn, id) {
+                            const icon = btn.querySelector('i');
+                            if (icon) {
+                                if (icon.classList.contains('fa-regular')) {
+                                    icon.className = 'fa-solid fa-heart text-danger fs-8';
+                                } else {
+                                    icon.className = 'fa-regular fa-heart text-muted fs-8';
+                                }
+                            }
+                        };
+
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.09.v1222222";
+                            const PASABUY_APP_VERSION = "2026.09.09.v2000000";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=1222222';
+                                        window.location.href = window.location.pathname + '?v=2000000';
                                         return;
                                     }
                                 }
