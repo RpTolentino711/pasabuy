@@ -3,7 +3,7 @@
     <div class="text-center p-4 bg-white rounded-4 border shadow-sm my-2">
         <div class="mb-3 text-center">
             <div class="bg-primary bg-opacity-10 text-primary rounded-4 p-2.5 d-inline-flex align-items-center justify-content-center shadow-sm mb-2" style="width:64px; height:64px;">
-                <i class="fa-solid fa-bag-shopping fs-2" style="color: #5F27CD;"></i>
+                <img src="LOGO.png" alt="PasaBuy Logo" style="width:42px; height:42px; object-fit:contain;" onerror="this.onerror=null; this.parentNode.innerHTML='<i class=\'fa-solid fa-bag-shopping fs-2\' style=\'color:#5F27CD;\'></i>';">
             </div>
             <h4 class="fw-extrabold text-dark mb-0">PasaBuy</h4>
             <p class="text-muted fs-8">Your Campus, Your Marketplace</p>

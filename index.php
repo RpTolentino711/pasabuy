@@ -2834,19 +2834,6 @@
 
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
-                            // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.09.v2000000";
-                            try {
-                                const currentSavedVer = localStorage.getItem('pasabuy_app_version');
-                                if (currentSavedVer !== PASABUY_APP_VERSION) {
-                                    localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
-                                    if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=2000000';
-                                        return;
-                                    }
-                                }
-                            } catch (e) { }
-
                             const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
                             if (isLoggedIn !== 'true') {
                                 initSplashScreen();
@@ -2860,6 +2847,12 @@
                             handlePaymentSuccess();
                             startLiveChatPolling();
                         });
+
+                        // Start splash screen timer right away if not logged in
+                        if (localStorage.getItem('pasabuy_student_logged_in') !== 'true') {
+                            setTimeout(() => { if (typeof initSplashScreen === 'function') initSplashScreen(); }, 50);
+                        }
+
                     </script>
 </body>
 
