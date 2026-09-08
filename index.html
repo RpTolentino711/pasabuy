@@ -103,6 +103,8 @@
             align-items: center;
             justify-content: space-around;
             padding: 0 8px;
+            position: relative;
+            overflow: visible;
         }
 
         .tab-item {
@@ -117,6 +119,8 @@
             text-decoration: none;
             transition: all 0.2s ease;
             width: 60px;
+            position: relative;
+            overflow: visible;
         }
 
         .tab-item i {
@@ -684,13 +688,13 @@
                 <i class="fa-solid fa-comments"></i>
                 <span>Messages</span>
             </div>
-            <div class="tab-item position-relative" onclick="switchTab('profile')" id="tabNavProfile">
-                <!-- Floating Home Cart Button (Floats right on top of Profile Tab Icon in Bottom Navigation) -->
-                <button class="btn btn-sm btn-primary rounded-circle position-absolute border border-2 border-white shadow-lg p-0 d-flex align-items-center justify-content-center" 
+            <div class="tab-item position-relative" onclick="switchTab('profile')" id="tabNavProfile" style="overflow:visible;">
+                <!-- Floating Home Cart Button (Floats High Above Profile Tab Icon in Bottom Navigation) -->
+                <button class="btn btn-primary rounded-circle position-absolute border border-3 border-white shadow-lg p-0 d-flex align-items-center justify-content-center" 
                     id="homeCartBtn" onclick="event.stopPropagation(); openCartModal();" title="Shopping Cart" 
-                    style="width:38px; height:38px; top:-22px; left:50%; transform:translateX(-50%); cursor:pointer; pointer-events:auto; z-index:1000; display:flex;">
-                    <i class="fa-solid fa-cart-shopping text-white" style="font-size:0.9rem;"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="homeCartCountBadge" style="font-size:0.65rem; display:none; padding:3px 6px;">0</span>
+                    style="width:44px; height:44px; top:-48px; left:50%; transform:translateX(-50%); cursor:pointer; pointer-events:auto; z-index:1000; display:flex;">
+                    <i class="fa-solid fa-cart-shopping text-white" style="font-size:1.05rem;"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="homeCartCountBadge" style="font-size:0.7rem; display:none; padding:4px 7px;">0</span>
                 </button>
                 <i class="fa-solid fa-user"></i>
                 <span>Profile</span>
@@ -3596,13 +3600,13 @@
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.09.v999999";
+                            const PASABUY_APP_VERSION = "2026.09.09.v1000000";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=999999';
+                                        window.location.href = window.location.pathname + '?v=1000000';
                                         return;
                                     }
                                 }
