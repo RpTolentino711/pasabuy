@@ -2947,9 +2947,17 @@
                         </div>`;
                                     }
                                 } else {
+                                    const isInCart = (pasabuyCart || []).some(item => (item.listingId && item.listingId == p.id) || item.title === p.title);
+                                    let cartBtnHtml = '';
+                                    if (isInCart) {
+                                        cartBtnHtml = `<button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8 shadow-sm" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-xmark me-1"></i> Remove from Cart</button>`;
+                                    } else {
+                                        cartBtnHtml = `<button class="btn btn-sm btn-warning rounded-pill w-100 fw-bold fs-8 text-dark shadow-sm" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-plus me-1"></i> Add to Cart</button>`;
+                                    }
+
                                     buttonsHtml = `
                     <div class="d-flex flex-column gap-2 w-100">
-                        <button class="btn btn-sm btn-warning rounded-pill w-100 fw-bold fs-8 text-dark shadow-sm" onclick="animateAddToCart(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-plus me-1"></i> Add to Cart</button>
+                        ${cartBtnHtml}
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-comments me-1"></i> Message</button>
                             <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}', '${p.seller.replace(/'/g, "\\'")}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
@@ -3430,9 +3438,22 @@
                             }, 670);
                         };
 
+                        window.toggleCartProduct = function (event, listingId, title, price, sellerId, imgUrl) {
+                            event.stopPropagation();
+                            const existingIndex = pasabuyCart.findIndex(i => (i.listingId && i.listingId == listingId) || i.title === title);
+                            if (existingIndex > -1) {
+                                pasabuyCart.splice(existingIndex, 1);
+                                localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
+                                updateCartBadge();
+                                filterProducts();
+                            } else {
+                                animateAddToCart(event, listingId, title, price, sellerId, imgUrl);
+                            }
+                        };
+
                         function addToCartInternal(listingId, title, price, sellerId, imgUrl) {
                             const numericPrice = parseFloat(String(price).replace(/[^\d.]/g, '')) || 0;
-                            const existing = pasabuyCart.find(i => i.listingId == listingId);
+                            const existing = pasabuyCart.find(i => (i.listingId && i.listingId == listingId) || i.title === title);
                             if (existing) {
                                 existing.quantity += 1;
                             } else {
@@ -3448,6 +3469,7 @@
                             }
                             localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
                             updateCartBadge();
+                            filterProducts();
                         }
 
                         window.updateCartBadge = function () {
@@ -3557,26 +3579,30 @@
                                     pasabuyCart.splice(index, 1);
                                 }
                             }
+                            localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
                             updateCartBadge();
                             renderCartItems();
+                            filterProducts();
                         };
 
                         window.removeFromCart = function (index) {
                             pasabuyCart.splice(index, 1);
+                            localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
                             updateCartBadge();
                             renderCartItems();
+                            filterProducts();
                         };
 
                         // Single Consolidated Initialization on Page Load
                         window.addEventListener('DOMContentLoaded', async () => {
                             // Auto-upgrade version cache breaker
-                            const PASABUY_APP_VERSION = "2026.09.09.v666666";
+                            const PASABUY_APP_VERSION = "2026.09.09.v777777";
                             try {
                                 const currentSavedVer = localStorage.getItem('pasabuy_app_version');
                                 if (currentSavedVer !== PASABUY_APP_VERSION) {
                                     localStorage.setItem('pasabuy_app_version', PASABUY_APP_VERSION);
                                     if (currentSavedVer && !window.location.search.includes('v=')) {
-                                        window.location.href = window.location.pathname + '?v=555555';
+                                        window.location.href = window.location.pathname + '?v=777777';
                                         return;
                                     }
                                 }
