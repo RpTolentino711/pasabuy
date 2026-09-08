@@ -636,8 +636,10 @@
 
                 <!-- MY SELLING ITEMS & INTERESTED BUYERS SECTION -->
                 <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
-                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-store text-primary me-2"></i>My Selling Items &
-                        Interested Buyers</h6>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold mb-0"><i class="fa-solid fa-store text-primary me-2"></i>My Selling Items</h6>
+                        <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold shadow-sm" onclick="switchTab('sell')"><i class="fa-solid fa-plus me-1"></i> Post Another Product</button>
+                    </div>
 
                     <div id="mySellingItemsContainer">
                         <div class="text-center py-4 text-muted fs-8" id="noSellingItemsPlaceholder">
@@ -1316,8 +1318,9 @@
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label class="form-label fw-bold fs-7">Price (₱) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" class="form-control rounded-3 fs-7" id="editPriceInput">
+                            <label class="form-label fw-bold fs-7">Price (₱) <span class="badge bg-secondary-subtle text-secondary ms-1"><i class="fa-solid fa-lock me-1"></i> Locked</span></label>
+                            <input type="number" step="0.01" class="form-control rounded-3 fs-7 bg-light" id="editPriceInput" readonly title="Price is locked to prevent fee evasion. Delete & re-post if price changes.">
+                            <span class="fs-9 text-muted d-block mt-1" style="font-size:0.7rem;"><i class="fa-solid fa-shield-halved text-success me-1"></i> Price locked after posting (PasaBuy fee protection).</span>
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold fs-7">Category</label>

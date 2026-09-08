@@ -196,11 +196,11 @@ if (($action === 'update_listing' || $action === 'edit_listing') && $method === 
     }
 
     try {
-        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, Price = ?, CategoryId = ?, `Condition` = ?, VideoUrl = ?, UpdatedAt = NOW() WHERE Id = ?");
-        $stmt->execute([$title, $desc, $price, $catId, $condition, $videoUrl, $id]);
+        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, CategoryId = ?, `Condition` = ?, VideoUrl = ?, UpdatedAt = NOW() WHERE Id = ?");
+        $stmt->execute([$title, $desc, $catId, $condition, $videoUrl, $id]);
     } catch (Exception $eUp) {
-        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, Price = ?, CategoryId = ?, VideoUrl = ?, UpdatedAt = NOW() WHERE Id = ?");
-        $stmt->execute([$title, $desc, $price, $catId, $videoUrl, $id]);
+        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, CategoryId = ?, VideoUrl = ?, UpdatedAt = NOW() WHERE Id = ?");
+        $stmt->execute([$title, $desc, $catId, $videoUrl, $id]);
     }
 
     if ($imgUrl !== '') {
