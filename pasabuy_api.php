@@ -596,5 +596,66 @@ if ($action === 'admin_reports' || $action === 'reports') {
     exit;
 }
 
+// ---------------------------------------------------------
+// 10. REAL NOTIFICATIONS FROM MYSQL DATABASE
+// ---------------------------------------------------------
+if ($action === 'notifications' || $action === 'get_notifications') {
+    $userId = (int)($_GET['user_id'] ?? 104);
+    if ($userId <= 1) $userId = 104;
+
+    $notifs = [];
+
+    // 1. Get latest unread chat messages for user from ChatMessages table
+    try {
+        $stmtMsg = $db->prepare("SELECT c.*, sp.FirstName, sp.LastName, sp.ProfileImage 
+            FROM ChatMessages c 
+            LEFT JOIN StudentProfiles sp ON c.SenderId = sp.UserId 
+            WHERE (c.ReceiverId = ? OR c.ReceiverId = 1) AND c.SenderId != ?
+            ORDER BY c.CreatedAt DESC LIMIT 5");
+        $stmtMsg->execute([$userId, $userId]);
+        $msgs = $stmtMsg->fetchAll();
+
+        foreach ($msgs as $m) {
+            $senderName = trim(($m['FirstName'] ?? '') . ' ' . ($m['LastName'] ?? ''));
+            if ($senderName === '') $senderName = $m['SenderName'] ?: 'Campus Buyer/Seller';
+            $notifs[] = [
+                'id' => 'msg_' . $m['Id'],
+                'type' => 'messages',
+                'badge' => 'New Message',
+                'title' => $senderName . ' sent you a message',
+                'desc' => '"' . ($m['MessageText'] ?: 'Sent an inquiry') . '"',
+                'time' => date('M j, g:i a', strtotime($m['CreatedAt'])),
+                'actionText' => 'Tap to open Chat & Reply'
+            ];
+        }
+    } catch (Exception $eM) {}
+
+    // 2. Get latest campus listings posted in Listings table
+    try {
+        $stmtList = $db->query("SELECT l.*, sp.FirstName, sp.LastName 
+            FROM Listings l 
+            LEFT JOIN StudentProfiles sp ON l.SellerId = sp.UserId 
+            WHERE l.Status = 'ACTIVE' OR l.Status IS NULL 
+            ORDER BY l.CreatedAt DESC LIMIT 5");
+        $listings = $stmtList->fetchAll();
+
+        foreach ($listings as $l) {
+            $seller = trim(($l['FirstName'] ?? 'Campus') . ' ' . ($l['LastName'] ?? 'Seller'));
+            $notifs[] = [
+                'id' => 'item_' . $l['Id'],
+                'type' => 'item',
+                'badge' => 'New Item Arrived',
+                'title' => $l['Title'] . ' just posted!',
+                'desc' => $seller . ' posted a new item for ₱' . number_format($l['Price'], 2),
+                'time' => date('M j, g:i a', strtotime($l['CreatedAt'])),
+                'actionText' => 'Tap to view campus listing'
+            ];
+        }
+    } catch (Exception $eL) {}
+
+    echo json_encode($notifs);
+    exit;
+}
+
 // Default response
 echo json_encode(['success' => true, 'status' => 'PasaBuy Master API Active']);

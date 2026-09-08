@@ -324,7 +324,7 @@
                     <div class="text-muted fs-9" style="font-size: 0.68rem;">Your Campus, Your Marketplace</div>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
+            <div class="align-items-center gap-2" id="headerUserActions" style="display:none !important;">
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
                     onclick="openNotificationsModal()" title="Notifications" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-bell text-secondary fs-7"></i>
@@ -1608,7 +1608,7 @@
                     <script>
                         let notificationsModalInstance = null;
 
-                        window.openNotificationsModal = function () {
+                        window.openNotificationsModal = async function () {
                             const modalEl = document.getElementById('notificationsModal');
                             if (modalEl) {
                                 if (modalEl.parentElement !== document.body) {
@@ -1619,6 +1619,42 @@
                                 }
                                 notificationsModalInstance.show();
                             }
+
+                            // Fetch live notifications from Hostinger MySQL Database
+                            const container = document.getElementById('notificationsListContainer');
+                            if (!container) return;
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || 104) : 104;
+
+                            try {
+                                const res = await fetch(`/pasabuy_api.php?action=notifications&user_id=${currentUserId}`);
+                                if (res.ok) {
+                                    const notifs = await res.json();
+                                    if (Array.isArray(notifs) && notifs.length > 0) {
+                                        let html = '';
+                                        notifs.forEach(n => {
+                                            const badgeClass = n.type === 'messages' ? 'bg-primary' : 'bg-success';
+                                            const iconClass = n.type === 'messages' ? 'fa-comment-dots' : 'fa-bag-shopping';
+                                            html += `
+                                                <div class="p-3 bg-light border rounded-3 shadow-2xs text-start mb-2"
+                                                    onclick="handleNotificationClick('${n.type}')" style="cursor:pointer;">
+                                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                                        <span class="badge ${badgeClass} text-white fw-bold fs-9"><i class="fa-solid ${iconClass} me-1"></i> ${n.badge}</span>
+                                                        <span class="text-muted fs-9">${n.time}</span>
+                                                    </div>
+                                                    <h6 class="fw-bold text-dark fs-8 mb-1">${n.title}</h6>
+                                                    <p class="text-secondary fs-8 mb-0">${n.desc}</p>
+                                                    <div class="text-primary fw-bold fs-9 mt-1"><i class="fa-solid fa-arrow-right me-1"></i> ${n.actionText}</div>
+                                                </div>`;
+                                        });
+                                        container.innerHTML = html;
+                                        const badgeCount = document.getElementById('notifBadgeCount');
+                                        if (badgeCount) badgeCount.innerText = `${notifs.length} New`;
+                                    }
+                                }
+                            } catch (e) { console.error("Fetch notifications error:", e); }
                         };
 
                         window.handleNotificationClick = function (type) {
@@ -1808,6 +1844,8 @@
                             document.getElementById('authScreen').style.display = 'block';
                             document.querySelector('.app-tabbar').style.display = 'none';
                             document.getElementById('headerBadge').style.display = 'none';
+                            const userActions = document.getElementById('headerUserActions');
+                            if (userActions) userActions.style.setProperty('display', 'none', 'important');
 
                             const emailEl = document.getElementById('loginEmailInput') || document.getElementById('loginEmail');
                             const passEl = document.getElementById('loginPasswordInput') || document.getElementById('loginPassword');
@@ -2167,6 +2205,8 @@
                                         document.getElementById('authScreen').style.display = 'none';
                                         document.querySelector('.app-tabbar').style.display = 'flex';
                                         document.getElementById('headerBadge').style.display = 'inline-flex';
+                                        const userActions = document.getElementById('headerUserActions');
+                                        if (userActions) userActions.style.setProperty('display', 'flex', 'important');
                                         switchTab('home');
                                         return;
                                     }
@@ -2176,6 +2216,8 @@
                             document.getElementById('authScreen').style.display = 'block';
                             document.querySelector('.app-tabbar').style.display = 'none';
                             document.getElementById('headerBadge').style.display = 'none';
+                            const userActions = document.getElementById('headerUserActions');
+                            if (userActions) userActions.style.setProperty('display', 'none', 'important');
                             const tabs = ['tabHome', 'tabExplore', 'tabSell', 'tabWanted', 'tabMessages', 'tabProfile', 'chatView'];
                             tabs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
                         }
