@@ -747,8 +747,6 @@
 
                             const avatarSrc = document.getElementById('profileAvatar').src;
                             document.getElementById('settingsAvatarPreview').src = avatarSrc;
-                            newAvatarDataUrl = avatarSrc;
-
                             settingsModalInstance.show();
                         }
 
@@ -762,6 +760,129 @@
                             };
                             reader.readAsDataURL(file);
                         }
+
+                        let currentDetailProductId = 0;
+                        let productDetailModalInstance = null;
+
+                        window.openProductDetailModal = function (listingId) {
+                            const listing = (window.allProductsCache || []).find(p => p.id == listingId);
+                            if (!listing) return;
+
+                            currentDetailProductId = listing.id;
+
+                            const mainImg = document.getElementById('detailMainImg');
+                            const mainVid = document.getElementById('detailMainVideo');
+                            if (listing.videoUrl) {
+                                if (mainImg) mainImg.style.display = 'none';
+                                if (mainVid) {
+                                    mainVid.src = listing.videoUrl;
+                                    mainVid.style.display = 'block';
+                                }
+                            } else {
+                                if (mainVid) mainVid.style.display = 'none';
+                                if (mainImg) {
+                                    mainImg.src = listing.img || 'LOGO.png';
+                                    mainImg.style.display = 'block';
+                                }
+                            }
+
+                            // Render Thumbnails Gallery
+                            const thumbsContainer = document.getElementById('detailThumbnailsRow');
+                            if (thumbsContainer) {
+                                let thumbsHtml = `<img src="${listing.img}" class="rounded-3 border border-2 border-primary" style="width:54px; height:54px; object-fit:cover; cursor:pointer;" onclick="switchDetailMedia('${listing.img}', false)">`;
+                                if (listing.videoUrl) {
+                                    thumbsHtml += `<div class="position-relative rounded-3 border bg-dark" style="width:54px; height:54px; cursor:pointer;" onclick="switchDetailMedia('${listing.videoUrl}', true)"><video src="${listing.videoUrl}" style="width:54px; height:54px; object-fit:cover; opacity:0.7;"></video><i class="fa-solid fa-play text-white position-absolute top-50 start-50 translate-middle fs-8"></i></div>`;
+                                }
+                                thumbsContainer.innerHTML = thumbsHtml;
+                            }
+
+                            document.getElementById('detailTitle').innerText = listing.title;
+                            document.getElementById('detailPrice').innerText = listing.price;
+                            const origPriceVal = (listing.priceVal * 1.25).toFixed(0);
+                            document.getElementById('detailOrigPrice').innerText = `₱${origPriceVal}`;
+
+                            const ratingSeed = ((listing.id * 7) % 5) / 10 + 4.5;
+                            const ratingVal = ratingSeed > 5 ? 4.9 : ratingSeed.toFixed(1);
+                            const reviewCount = ((listing.id * 13) % 200) + 45;
+
+                            document.getElementById('detailRatingVal').innerText = ratingVal;
+                            document.getElementById('detailReviewCount').innerText = reviewCount;
+
+                            document.getElementById('detailSellerName').innerText = listing.seller || 'TechHub PH';
+                            document.getElementById('detailSellerLocation').innerHTML = `<i class="fa-solid fa-location-dot text-danger me-1"></i> ${listing.location || 'Campus Library'}`;
+                            if (listing.sellerAvatar) {
+                                document.getElementById('detailSellerAvatar').src = listing.sellerAvatar;
+                            } else {
+                                document.getElementById('detailSellerAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(listing.seller || 'Seller')}`;
+                            }
+
+                            document.getElementById('detailBrand').innerText = 'Generic / Campus Original';
+                            document.getElementById('detailCondition').innerText = listing.condition || 'Brand New';
+                            document.getElementById('detailCategory').innerText = listing.category || 'Electronics';
+                            document.getElementById('detailMeetup').innerText = listing.location || 'Campus Library';
+                            document.getElementById('detailDescription').innerText = listing.description || `Authentic ${listing.title} available on campus. Contact seller or add to cart for fast meetup delivery.`;
+
+                            const chatBtn = document.getElementById('detailChatBtn');
+                            if (chatBtn) {
+                                chatBtn.onclick = function () {
+                                    const modalEl = document.getElementById('productDetailModal');
+                                    if (modalEl) {
+                                        const bsModal = bootstrap.Modal.getInstance(modalEl);
+                                        if (bsModal) bsModal.hide();
+                                    }
+                                    checkAndOpenChat(listing.sellerId, listing.seller || 'Seller', listing.title, listing.price, listing.sellerAvatar || '');
+                                };
+                            }
+
+                            const addCartBtn = document.getElementById('detailAddToCartBtn');
+                            if (addCartBtn) {
+                                addCartBtn.onclick = function (e) {
+                                    animateAddToCart(e, listing.id, listing.title, listing.price, listing.sellerId, listing.img);
+                                };
+                            }
+
+                            const buyNowBtn = document.getElementById('detailBuyNowBtn');
+                            if (buyNowBtn) {
+                                buyNowBtn.onclick = function () {
+                                    const modalEl = document.getElementById('productDetailModal');
+                                    if (modalEl) {
+                                        const bsModal = bootstrap.Modal.getInstance(modalEl);
+                                        if (bsModal) bsModal.hide();
+                                    }
+                                    toggleCartProduct(new MouseEvent('click'), listing.id, listing.title, listing.price, listing.sellerId, listing.img);
+                                    openCartModal();
+                                };
+                            }
+
+                            const modalEl = document.getElementById('productDetailModal');
+                            if (modalEl) {
+                                if (modalEl.parentElement !== document.body) {
+                                    document.body.appendChild(modalEl);
+                                }
+                                if (!productDetailModalInstance) {
+                                    productDetailModalInstance = new bootstrap.Modal(modalEl);
+                                }
+                                productDetailModalInstance.show();
+                            }
+                        };
+
+                        window.switchDetailMedia = function (url, isVideo) {
+                            const mainImg = document.getElementById('detailMainImg');
+                            const mainVid = document.getElementById('detailMainVideo');
+                            if (isVideo) {
+                                if (mainImg) mainImg.style.display = 'none';
+                                if (mainVid) {
+                                    mainVid.src = url;
+                                    mainVid.style.display = 'block';
+                                }
+                            } else {
+                                if (mainVid) mainVid.style.display = 'none';
+                                if (mainImg) {
+                                    mainImg.src = url;
+                                    mainImg.style.display = 'block';
+                                }
+                            }
+                        };
 
                         async function saveProfileSettings() {
                             const firstName = document.getElementById('settingsFirstName').value.trim();
@@ -2092,33 +2213,38 @@
                     </div>`;
                                 }
 
-                                const origPriceVal = (p.priceVal * 1.15).toFixed(2);
-                                const discountTag = p.priceVal > 500 ? '-15%' : '-10%';
+                                const ratingSeed = ((p.id * 7) % 5) / 10 + 4.5;
+                                const ratingVal = ratingSeed > 5 ? 4.9 : ratingSeed.toFixed(1);
+                                const reviewsVal = ((p.id * 13) % 200) + 45;
+
+                                const isInCart = (pasabuyCart || []).some(item => (item.listingId && item.listingId == p.id) || item.title === p.title);
+                                const cartBtnIconClass = isInCart ? 'fa-cart-xmark text-danger' : 'fa-cart-shopping text-white';
+                                const cartBtnBgStyle = isInCart ? 'background: #FEE2E2; border: 1px solid #FCA5A5;' : 'background: linear-gradient(135deg, #6C5CE7, #5F27CD); border: none;';
 
                                 const mediaHtml = p.videoUrl
-                                    ? `<div class="position-relative"><video src="${p.videoUrl}" controls style="width:100%; height:130px; object-fit:cover; border-radius:14px; background:#000;" preload="metadata"></video><span class="badge bg-danger position-absolute top-0 end-0 m-2"><i class="fa-solid fa-video me-1"></i> Video</span></div>`
-                                    : `<div class="position-relative"><img src="${p.img}" class="rounded-4" alt="${p.title}" style="width:100%; height:130px; object-fit:cover;"><button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-2 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width:28px; height:28px; background:rgba(255,255,255,0.9);" onclick="toggleWishlist(this, ${p.id})"><i class="fa-regular fa-heart text-muted fs-8"></i></button></div>`;
+                                    ? `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})"><video src="${p.videoUrl}" controls style="width:100%; height:135px; object-fit:cover; border-radius:14px; background:#000;" preload="metadata"></video><span class="badge bg-danger position-absolute top-0 start-0 m-2 fs-9"><i class="fa-solid fa-video me-1"></i> Video</span><button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-2 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width:28px; height:28px; background:rgba(255,255,255,0.9); z-index:5;" onclick="toggleWishlist(this, ${p.id})"><i class="fa-regular fa-heart text-dark fs-8"></i></button></div>`
+                                    : `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})"><img src="${p.img}" class="rounded-4" alt="${p.title}" style="width:100%; height:135px; object-fit:cover;"><button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-2 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width:28px; height:28px; background:rgba(255,255,255,0.9); z-index:5;" onclick="toggleWishlist(this, ${p.id})"><i class="fa-regular fa-heart text-dark fs-8"></i></button></div>`;
 
                                 const cardHtml = `
-                <div class="col-6 mb-2">
-                    <div class="card border-0 rounded-4 shadow-sm h-100 p-2 bg-white d-flex flex-column justify-content-between position-relative">
+                <div class="col-6 mb-3">
+                    <div class="card border-0 rounded-4 shadow-sm h-100 p-2.5 bg-white d-flex flex-column justify-content-between position-relative">
                         ${mediaHtml}
-                        <div class="pt-2">
+                        <div class="pt-2" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
                             <h6 class="fw-bold mb-1 text-dark fs-8 text-truncate" title="${p.title}">${p.title}</h6>
-                            <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
-                                <span class="fw-extrabold text-primary fs-7">${p.price}</span>
-                                <span class="text-muted text-decoration-line-through fs-9" style="font-size:0.65rem;">₱${origPriceVal}</span>
-                                <span class="badge bg-danger text-white rounded-pill px-1.5 py-0.5" style="font-size:0.6rem;">${discountTag}</span>
+                            <div class="fw-extrabold text-dark fs-7 mb-1">${p.price}</div>
+                            <div class="d-flex align-items-center justify-content-between pt-1">
+                                <div class="d-flex align-items-center gap-1">
+                                    <i class="fa-solid fa-star text-warning fs-9"></i>
+                                    <span class="fw-bold text-dark fs-9">${ratingVal}</span>
+                                    <span class="text-muted fs-9" style="font-size:0.65rem;">(${reviewsVal})</span>
+                                </div>
+                                <button class="btn rounded-3 p-0 d-flex align-items-center justify-content-center shadow-sm" 
+                                    style="width:34px; height:34px; border-radius:10px; ${cartBtnBgStyle}" 
+                                    onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')" 
+                                    title="Add to Cart">
+                                    <i class="fa-solid ${cartBtnIconClass} fs-8"></i>
+                                </button>
                             </div>
-                            <div class="fs-9 text-muted mb-1 text-truncate" style="font-size:0.68rem;">
-                                <i class="fa-solid fa-location-dot text-primary me-1"></i>${p.location || 'Campus'}
-                            </div>
-                            <div class="mb-2">
-                                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5 fw-semibold" style="font-size:0.65rem;">In Stock</span>
-                            </div>
-                        </div>
-                        <div class="pt-1">
-                            ${actionBtnsHtml}
                         </div>
                     </div>
                 </div>`;

@@ -727,3 +727,116 @@
         </div>
     </div>
 </div>
+
+<!-- PRODUCT DETAIL VIEW MODAL (MATCHING REFERENCE DESIGN 1:1) -->
+<div class="modal fade" id="productDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 p-0 shadow-lg overflow-hidden">
+            
+            <!-- Top Header Action Bar -->
+            <div class="modal-header border-0 bg-white px-3 py-2.5 d-flex align-items-center justify-content-between position-relative z-3">
+                <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9;" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-arrow-left text-dark fs-7"></i>
+                </button>
+                <div class="fw-bold text-dark fs-7">Item Details</div>
+                <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9;" onclick="toggleWishlist(this, currentDetailProductId)">
+                    <i class="fa-regular fa-heart text-dark fs-7" id="detailWishlistIcon"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body Scrollable Area -->
+            <div class="modal-body p-3 bg-white" id="productDetailModalBody">
+                
+                <!-- Main Product Image / Video -->
+                <div class="position-relative mb-2 rounded-4 overflow-hidden border bg-light text-center" style="min-height:240px;">
+                    <img id="detailMainImg" src="" class="img-fluid rounded-4" style="max-height:280px; width:100%; object-fit:cover;">
+                    <video id="detailMainVideo" controls style="width:100%; max-height:280px; object-fit:cover; display:none; background:#000;"></video>
+                </div>
+
+                <!-- Gallery Thumbnails Row -->
+                <div class="d-flex gap-2 mb-3 overflow-x-auto pb-1" id="detailThumbnailsRow">
+                    <!-- Thumbnails appended dynamically -->
+                </div>
+
+                <!-- Title & Price Section -->
+                <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle">Product Title</h4>
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <span class="fw-extrabold text-dark fs-3" id="detailPrice">₱0.00</span>
+                    <span class="text-muted text-decoration-line-through fs-7" id="detailOrigPrice">₱0.00</span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger fw-bold rounded-pill px-2.5 py-1 fs-8" id="detailDiscountTag">25% OFF</span>
+                </div>
+
+                <!-- Rating & Stock Status -->
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
+                    <div class="d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-star text-warning fs-7"></i>
+                        <span class="fw-bold text-dark fs-7" id="detailRatingVal">4.8</span>
+                        <span class="text-muted fs-8">(<span id="detailReviewCount">120</span> reviews)</span>
+                    </div>
+                    <div>
+                        <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-1 fw-bold fs-8" id="detailStockBadge">
+                            <i class="fa-solid fa-circle-check me-1"></i> In Stock
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Seller Info Card -->
+                <div class="p-3 bg-light rounded-4 border mb-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <img id="detailSellerAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle border" width="44" height="44" style="object-fit:cover;">
+                        <div>
+                            <div class="fs-9 text-muted mb-0.5">Sold by</div>
+                            <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1">
+                                <span id="detailSellerName">Verified Seller</span>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill fs-9 px-2 py-0.5 fw-semibold"><i class="fa-solid fa-check me-0.5"></i> Verified</span>
+                            </div>
+                            <div class="fs-9 text-muted mt-0.5" id="detailSellerLocation"><i class="fa-solid fa-location-dot text-danger me-1"></i> Campus Library</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold fs-8" id="detailChatBtn">
+                        <i class="fa-solid fa-comments me-1"></i> Chat
+                    </button>
+                </div>
+
+                <!-- Product Specifications & Details Table -->
+                <div class="mb-3">
+                    <h6 class="fw-bold text-dark mb-2 fs-7">Product Details</h6>
+                    <div class="p-3 bg-light rounded-4 border fs-8">
+                        <div class="row py-1 border-bottom border-secondary-subtle">
+                            <div class="col-4 text-muted">Brand:</div>
+                            <div class="col-8 fw-semibold text-dark" id="detailBrand">Generic</div>
+                        </div>
+                        <div class="row py-1 border-bottom border-secondary-subtle">
+                            <div class="col-4 text-muted">Condition:</div>
+                            <div class="col-8 fw-semibold text-dark" id="detailCondition">Brand New</div>
+                        </div>
+                        <div class="row py-1 border-bottom border-secondary-subtle">
+                            <div class="col-4 text-muted">Category:</div>
+                            <div class="col-8 fw-semibold text-dark" id="detailCategory">Electronics</div>
+                        </div>
+                        <div class="row py-1 border-bottom border-secondary-subtle">
+                            <div class="col-4 text-muted">Meetup Point:</div>
+                            <div class="col-8 fw-semibold text-dark" id="detailMeetup">Campus Library</div>
+                        </div>
+                        <div class="row pt-2">
+                            <div class="col-12 text-muted mb-1">Description:</div>
+                            <div class="col-12 text-dark fs-8 lh-sm" id="detailDescription">Authentic item available for quick campus pickup or pasabuy delivery.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom Sticky Action Bar (Add to Cart / Buy Now) -->
+            <div class="modal-footer border-top bg-white p-3 d-flex gap-2 align-items-center justify-content-between sticky-bottom">
+                <button type="button" class="btn btn-outline-primary rounded-pill w-50 py-2.5 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs" id="detailAddToCartBtn">
+                    <i class="fa-solid fa-cart-plus fs-6"></i> Add to Cart
+                </button>
+                <button type="button" class="btn btn-primary rounded-pill w-50 py-2.5 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 shadow-sm" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" id="detailBuyNowBtn">
+                    <i class="fa-solid fa-bolt fs-6"></i> Buy Now
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
