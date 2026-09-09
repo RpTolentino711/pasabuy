@@ -76,6 +76,41 @@ if (!defined('PASABUY_INCLUDED')) {
     </div>
 </div>
 
+<script>
+if (typeof window.togglePasswordVisibility !== 'function') {
+    window.togglePasswordVisibility = function (inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (!input) return;
+        if (input.type === 'password' || input.getAttribute('type') === 'password') {
+            input.setAttribute('type', 'text');
+            input.type = 'text';
+            if (icon) {
+                icon.className = 'fa-solid fa-eye-slash text-primary fs-7';
+            }
+        } else {
+            input.setAttribute('type', 'password');
+            input.type = 'password';
+            if (icon) {
+                icon.className = 'fa-solid fa-eye text-muted fs-7';
+            }
+        }
+    };
+}
+
+if (typeof window.showRegisterScreen !== 'function') {
+    window.showRegisterScreen = function () {
+        window.location.href = 'create_account.php';
+    };
+}
+
+if (typeof window.openForgotPasswordModal !== 'function') {
+    window.openForgotPasswordModal = function () {
+        window.location.href = 'forgot_password.php';
+    };
+}
+</script>
+
 <?php
 if ($is_standalone) {
     echo '</div></body></html>';
