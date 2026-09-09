@@ -828,7 +828,7 @@
             </div>
 
             <!-- Bottom Sticky Action Bar (Add to Cart / Buy Now) -->
-            <div class="modal-footer border-top bg-white p-3 d-flex gap-2 align-items-center justify-content-between sticky-bottom">
+            <div class="modal-footer border-top bg-white p-3 d-flex gap-2 align-items-center justify-content-between sticky-bottom" id="detailFooterActions">
                 <button type="button" class="btn btn-outline-primary rounded-pill w-50 py-2.5 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs" id="detailAddToCartBtn">
                     <i class="fa-solid fa-cart-plus fs-6"></i> Add to Cart
                 </button>

@@ -822,36 +822,65 @@
                             document.getElementById('detailMeetup').innerText = listing.location || 'Campus Library';
                             document.getElementById('detailDescription').innerText = listing.description || `Authentic ${listing.title} available on campus. Contact seller or add to cart for fast meetup delivery.`;
 
+                            let storedUserObj = null;
+                            try { storedUserObj = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const myId = storedUserObj ? (storedUserObj.id || storedUserObj.userId || storedUserObj.UserId || 1) : 1;
+                            const myName = storedUserObj ? (storedUserObj.firstName + ' ' + (storedUserObj.lastName || '')).trim() : 'Student';
+                            const isMyListing = (listing.sellerId == myId) || (listing.seller && listing.seller.toLowerCase() === myName.toLowerCase());
+
                             const chatBtn = document.getElementById('detailChatBtn');
                             if (chatBtn) {
-                                chatBtn.onclick = function () {
-                                    const modalEl = document.getElementById('productDetailModal');
-                                    if (modalEl) {
-                                        const bsModal = bootstrap.Modal.getInstance(modalEl);
-                                        if (bsModal) bsModal.hide();
-                                    }
-                                    checkAndOpenChat(listing.sellerId, listing.seller || 'Seller', listing.title, listing.price, listing.sellerAvatar || '');
-                                };
+                                if (isMyListing) {
+                                    chatBtn.style.display = 'none';
+                                } else {
+                                    chatBtn.style.display = 'inline-flex';
+                                    chatBtn.onclick = function () {
+                                        const modalEl = document.getElementById('productDetailModal');
+                                        if (modalEl) {
+                                            const bsModal = bootstrap.Modal.getInstance(modalEl);
+                                            if (bsModal) bsModal.hide();
+                                        }
+                                        checkAndOpenChat(listing.sellerId, listing.seller || 'Seller', listing.title, listing.price, listing.sellerAvatar || '');
+                                    };
+                                }
                             }
 
-                            const addCartBtn = document.getElementById('detailAddToCartBtn');
-                            if (addCartBtn) {
-                                addCartBtn.onclick = function (e) {
-                                    animateAddToCart(e, listing.id, listing.title, listing.price, listing.sellerId, listing.img);
-                                };
-                            }
+                            const modalFooterActions = document.getElementById('detailFooterActions');
+                            if (modalFooterActions) {
+                                if (isMyListing) {
+                                    modalFooterActions.innerHTML = `
+                                        <div class="p-2.5 bg-secondary-subtle text-secondary rounded-pill w-100 text-center fw-bold fs-7">
+                                            <i class="fa-solid fa-user-check me-1"></i> Your Active Listing (Manage in Profile Tab)
+                                        </div>`;
+                                } else {
+                                    modalFooterActions.innerHTML = `
+                                        <button type="button" class="btn btn-outline-primary rounded-pill w-50 py-2.5 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs" id="detailAddToCartBtn">
+                                            <i class="fa-solid fa-cart-plus fs-6"></i> Add to Cart
+                                        </button>
+                                        <button type="button" class="btn btn-primary rounded-pill w-50 py-2.5 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 shadow-sm" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" id="detailBuyNowBtn">
+                                            <i class="fa-solid fa-bolt fs-6"></i> Buy Now
+                                        </button>`;
 
-                            const buyNowBtn = document.getElementById('detailBuyNowBtn');
-                            if (buyNowBtn) {
-                                buyNowBtn.onclick = function () {
-                                    const modalEl = document.getElementById('productDetailModal');
-                                    if (modalEl) {
-                                        const bsModal = bootstrap.Modal.getInstance(modalEl);
-                                        if (bsModal) bsModal.hide();
+                                    const addCartBtn = document.getElementById('detailAddToCartBtn');
+                                    if (addCartBtn) {
+                                        addCartBtn.onclick = function (e) {
+                                            animateAddToCart(e, listing.id, listing.title, listing.price, listing.sellerId, listing.img);
+                                        };
                                     }
-                                    toggleCartProduct(new MouseEvent('click'), listing.id, listing.title, listing.price, listing.sellerId, listing.img);
-                                    openCartModal();
-                                };
+
+                                    const buyNowBtn = document.getElementById('detailBuyNowBtn');
+                                    if (buyNowBtn) {
+                                        buyNowBtn.onclick = function () {
+                                            const modalEl = document.getElementById('productDetailModal');
+                                            if (modalEl) {
+                                                const bsModal = bootstrap.Modal.getInstance(modalEl);
+                                                if (bsModal) bsModal.hide();
+                                            }
+                                            toggleCartProduct(new MouseEvent('click'), listing.id, listing.title, listing.price, listing.sellerId, listing.img);
+                                            openCartModal();
+                                        };
+                                    }
+                                }
                             }
 
                             const modalEl = document.getElementById('productDetailModal');
