@@ -2678,6 +2678,8 @@
                                     icon.className = 'fa-regular fa-heart text-muted fs-8';
                                 }
                             }
+                        };
+
                         // Splash Screen & Auth Screen Flow
                         let splashTimer = null;
                         let splashProgressInterval = null;
