@@ -69,6 +69,10 @@ try {
 } catch (Exception $eProfImg) {}
 
 try {
+    $db->exec("ALTER TABLE StudentProfiles ADD COLUMN PhoneNumber VARCHAR(50) NULL;");
+} catch (Exception $ePhone) {}
+
+try {
     $db->exec("CREATE TABLE IF NOT EXISTS VerificationRequests (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         UserId INT NOT NULL,
