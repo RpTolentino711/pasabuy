@@ -77,6 +77,91 @@ if (!defined('PASABUY_INCLUDED')) {
 </div>
 
 <script>
+if (typeof window.loginStudentWithPassword !== 'function') {
+    window.loginStudentWithPassword = async function () {
+        const emailEl = document.getElementById('loginEmailInput') || document.getElementById('loginEmail');
+        const passEl = document.getElementById('loginPasswordInput') || document.getElementById('loginPassword');
+        const bannerEl = document.getElementById('failedAttemptBanner') || document.getElementById('authErrorAlert');
+        const msgEl = document.getElementById('failedAttemptMsg');
+
+        const emailInput = emailEl ? emailEl.value.trim() : '';
+        const passwordInput = passEl ? passEl.value.trim() : '';
+
+        if (!emailInput) {
+            if (bannerEl) {
+                if (msgEl) msgEl.innerText = 'Please enter your school email or student username.';
+                bannerEl.style.display = 'block';
+            } else { alert('Please enter your school email.'); }
+            return;
+        }
+
+        if (!passwordInput) {
+            if (bannerEl) {
+                if (msgEl) msgEl.innerText = 'Please enter your account password.';
+                bannerEl.style.display = 'block';
+            } else { alert('Please enter your account password.'); }
+            return;
+        }
+
+        if (bannerEl) bannerEl.style.display = 'none';
+
+        try {
+            const btnSubmit = document.getElementById('btnLoginSubmit');
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = 'Signing In...';
+            }
+
+            const res = await fetch('/pasabuy_otp.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'login', email: emailInput, password: passwordInput })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                const uObj = data.user || {};
+                const pObj = data.profile || {};
+                const realUserId = uObj.id || uObj.userId || data.userId || 104;
+
+                const studentUser = {
+                    id: realUserId,
+                    userId: realUserId,
+                    email: uObj.email || emailInput,
+                    firstName: pObj.firstName || uObj.firstName || emailInput.split('@')[0],
+                    lastName: pObj.lastName || uObj.lastName || '',
+                    studentNumber: pObj.studentNumber || '2024-00123',
+                    course: pObj.course || 'BS Computer Science',
+                    yearLevel: pObj.yearLevel || '3rd Yr',
+                    verificationStatus: 'VERIFIED'
+                };
+
+                localStorage.setItem('pasabuy_student_logged_in', 'true');
+                localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
+
+                window.location.href = 'index.php';
+            } else {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerText = 'Sign In';
+                }
+                if (bannerEl) {
+                    if (msgEl) msgEl.innerText = data.message || 'Invalid school email or password.';
+                    bannerEl.style.display = 'block';
+                } else { alert(data.message || 'Invalid credentials.'); }
+            }
+        } catch (e) {
+            console.error("Login error:", e);
+            const btnSubmit = document.getElementById('btnLoginSubmit');
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = 'Sign In';
+            }
+            alert('Connection error during login. Please try again.');
+        }
+    };
+}
+
 if (typeof window.togglePasswordVisibility !== 'function') {
     window.togglePasswordVisibility = function (inputId, iconId) {
         const input = document.getElementById(inputId);
