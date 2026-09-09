@@ -10,16 +10,6 @@ if (!defined('PASABUY_INCLUDED')) {
 
 <!-- 2. WELCOME BACK / LOGIN SCREEN (PHP COMPONENT - MATCHING REFERENCE DESIGN) -->
 <div id="authScreen" style="<?php echo $is_standalone ? 'display:block;' : 'display:none;'; ?>" class="py-2">
-    <!-- Top Status Bar (9:41) -->
-    <div class="w-100 d-flex justify-content-between align-items-center fs-8 text-muted mb-4 px-1">
-        <span class="fw-bold text-dark">9:41</span>
-        <div class="d-flex gap-2 fs-9 align-items-center text-dark">
-            <i class="fa-solid fa-signal"></i>
-            <i class="fa-solid fa-wifi"></i>
-            <i class="fa-solid fa-battery-full"></i>
-        </div>
-    </div>
-
     <!-- Main Branding Header (Official PasaBuy Logo) -->
     <div class="text-center mb-4 pt-2">
         <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-4 mb-2 shadow-sm" style="background: rgba(108, 92, 231, 0.08); width: 84px; height: 84px;">
