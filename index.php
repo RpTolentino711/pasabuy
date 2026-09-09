@@ -326,7 +326,7 @@
                     <div class="text-muted fs-9" style="font-size: 0.68rem;">Your Campus, Your Marketplace</div>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-2" id="headerUserActions">
+            <div class="d-flex align-items-center gap-2" id="headerUserActions" style="display: none !important;">
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
                     onclick="openCartModal()" title="Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-cart-shopping text-secondary fs-7"></i>
@@ -570,7 +570,8 @@
 
                                     document.getElementById('authScreen').style.display = 'none';
                                     document.querySelector('.app-tabbar').style.display = 'flex';
-                                    document.getElementById('headerBadge').style.display = 'inline-flex';
+                                    const userActions = document.getElementById('headerUserActions');
+                                    if (userActions) userActions.style.setProperty('display', 'flex', 'important');
 
                                     checkStudentSessionOnLoad();
                                     switchTab('home');
@@ -2938,11 +2939,15 @@
                             const splash = document.getElementById('splashScreen');
                             const auth = document.getElementById('authScreen');
                             const reg = document.getElementById('registerScreen');
+                            const userActions = document.getElementById('headerUserActions');
                             if (isLoggedIn === 'true') {
                                 if (splash) splash.style.display = 'none';
                                 if (auth) auth.style.display = 'none';
                                 if (reg) reg.style.display = 'none';
+                                if (userActions) userActions.style.setProperty('display', 'flex', 'important');
                                 switchTab('home');
+                            } else {
+                                if (userActions) userActions.style.setProperty('display', 'none', 'important');
                             }
                         };
 
@@ -2951,6 +2956,7 @@
                             const splash = document.getElementById('splashScreen');
                             const auth = document.getElementById('authScreen');
                             const reg = document.getElementById('registerScreen');
+                            const userActions = document.getElementById('headerUserActions');
                             const progressBar = document.getElementById('splashProgressBar');
 
                             if (!splash) return;
@@ -2960,12 +2966,14 @@
                                 splash.style.display = 'none';
                                 if (auth) auth.style.display = 'none';
                                 if (reg) reg.style.display = 'none';
+                                if (userActions) userActions.style.setProperty('display', 'flex', 'important');
                                 return;
                             }
 
                             splash.style.display = 'flex';
                             if (auth) auth.style.display = 'none';
                             if (reg) reg.style.display = 'none';
+                            if (userActions) userActions.style.setProperty('display', 'none', 'important');
 
                             let progress = 0;
                             if (progressBar) progressBar.style.width = '0%';
@@ -2989,6 +2997,7 @@
                             if (splashTimer) clearTimeout(splashTimer);
                             if (splashProgressInterval) clearInterval(splashProgressInterval);
                             const splash = document.getElementById('splashScreen');
+                            const userActions = document.getElementById('headerUserActions');
                             if (splash) {
                                 splash.style.opacity = '0';
                                 splash.style.transition = 'opacity 0.4s ease';
@@ -2998,6 +3007,9 @@
                                     if (isLoggedIn !== 'true') {
                                         const auth = document.getElementById('authScreen');
                                         if (auth) auth.style.display = 'block';
+                                        if (userActions) userActions.style.setProperty('display', 'none', 'important');
+                                    } else {
+                                        if (userActions) userActions.style.setProperty('display', 'flex', 'important');
                                     }
                                 }, 400);
                             }
@@ -3007,18 +3019,22 @@
                             const splash = document.getElementById('splashScreen');
                             const auth = document.getElementById('authScreen');
                             const reg = document.getElementById('registerScreen');
+                            const userActions = document.getElementById('headerUserActions');
                             if (splash) splash.style.display = 'none';
                             if (auth) auth.style.display = 'block';
                             if (reg) reg.style.display = 'none';
+                            if (userActions) userActions.style.setProperty('display', 'none', 'important');
                         };
 
                         window.showRegisterScreen = function () {
                             const splash = document.getElementById('splashScreen');
                             const auth = document.getElementById('authScreen');
                             const reg = document.getElementById('registerScreen');
+                            const userActions = document.getElementById('headerUserActions');
                             if (splash) splash.style.display = 'none';
                             if (auth) auth.style.display = 'none';
                             if (reg) reg.style.display = 'block';
+                            if (userActions) userActions.style.setProperty('display', 'none', 'important');
                         };
 
                         window.submitRegistrationSendOtpScreen = async function () {
