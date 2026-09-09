@@ -268,11 +268,15 @@ async function executeRiderLogin() {
     }
 
     try {
-        const res = await fetch('/pasabuy_otp.php', {
+        const res = await fetch('../pasabuy_otp.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'login', email: user, password: pass })
-        });
+        }).catch(() => fetch('/pasabuy_otp.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'login', email: user, password: pass })
+        }));
         const data = await res.json();
 
         if (res.ok && data.success) {
@@ -333,7 +337,8 @@ async function fetchRiderJobAlerts() {
     const userId = currentRiderUser.id || currentRiderUser.userId || 4;
 
     try {
-        const res = await fetch(`/pasabuy_api.php?action=get_driver_job_broadcasts&user_id=${userId}`);
+        const res = await fetch(`../pasabuy_api.php?action=get_driver_job_broadcasts&user_id=${userId}`)
+            .catch(() => fetch(`/pasabuy_api.php?action=get_driver_job_broadcasts&user_id=${userId}`));
         if (res.ok) {
             const data = await res.json();
             const jobs = data.jobs || [];
