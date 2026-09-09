@@ -49,18 +49,14 @@ if (!defined('PASABUY_INCLUDED')) {
         if (splashInterval) clearInterval(splashInterval);
         if (splashTimeout) clearTimeout(splashTimeout);
         const splash = document.getElementById('splashScreen');
-        const auth = document.getElementById('authScreen');
         if (splash) {
             splash.style.opacity = '0';
             splash.style.transition = 'opacity 0.35s ease';
             setTimeout(function() {
-                splash.style.display = 'none';
-                if (auth) {
-                    auth.style.display = 'block';
-                } else {
-                    window.location.href = 'login.php';
-                }
+                window.location.href = 'index.php';
             }, 350);
+        } else {
+            window.location.href = 'index.php';
         }
     };
 
@@ -87,7 +83,7 @@ if (!defined('PASABUY_INCLUDED')) {
         if (splashTimeout) clearTimeout(splashTimeout);
         splashTimeout = setTimeout(function() {
             hideSplashScreen();
-        }, 5000);
+        }, 3000);
     };
 
     setTimeout(initSplashScreen, 10);

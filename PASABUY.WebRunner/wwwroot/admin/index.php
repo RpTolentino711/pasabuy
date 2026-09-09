@@ -486,7 +486,10 @@ session_start();
                 return;
             }
 
-            if ((user.toLowerCase() === 'admin' || user.toLowerCase() === 'admin@pasabuy.site') && pass === 'Pogilameg') {
+            const validUsers = ['admin', 'admin@pasabuy.site', 'admin@pasabuy.edu.ph'];
+            const validPasses = ['Pogilameg', 'Pogilameg#10', 'Pogilameg@10'];
+
+            if (validUsers.includes(user.toLowerCase()) && validPasses.includes(pass)) {
                 errBanner.style.display = 'none';
                 localStorage.setItem('pasabuy_admin_session', JSON.stringify({ loggedIn: true, user: user, loginTime: Date.now() }));
                 document.getElementById('adminAuthView').style.display = 'none';
