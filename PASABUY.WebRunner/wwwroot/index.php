@@ -775,6 +775,11 @@
                                 return;
                             }
 
+                            const storedUserStr = localStorage.getItem('pasabuy_student_user');
+                            let studentUser = {};
+                            try { studentUser = storedUserStr ? JSON.parse(storedUserStr) : {}; } catch (e) { }
+                            const currentUserId = studentUser.id || studentUser.userId || 104;
+
                             const fullName = `${firstName} ${lastName}`;
                             let subParts = [];
                             if (studentNo) subParts.push(studentNo);
@@ -782,14 +787,34 @@
                             const subInfo = subParts.length > 0 ? subParts.join(' • ') : 'Verified Student';
 
                             const updatedUser = {
+                                ...studentUser,
+                                id: currentUserId,
+                                userId: currentUserId,
                                 firstName: firstName,
                                 lastName: lastName,
                                 studentNumber: studentNo,
                                 course: course,
                                 yearLevel: yearLevel,
-                                profileImage: newAvatarDataUrl
+                                profileImage: newAvatarDataUrl || studentUser.profileImage
                             };
                             localStorage.setItem('pasabuy_student_user', JSON.stringify(updatedUser));
+
+                            // Sync profile & avatar image directly to Hostinger MySQL Database
+                            try {
+                                await fetch('/pasabuy_api.php?action=update_profile', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        userId: currentUserId,
+                                        firstName: firstName,
+                                        lastName: lastName,
+                                        studentNumber: studentNo,
+                                        course: course,
+                                        yearLevel: yearLevel,
+                                        profileImage: newAvatarDataUrl || studentUser.profileImage
+                                    })
+                                });
+                            } catch (e) { console.error("Sync profile error:", e); }
 
                             document.getElementById('profileName').innerText = fullName;
                             document.getElementById('profileSub').innerText = subInfo;
@@ -801,6 +826,7 @@
 
                             if (settingsModalInstance) settingsModalInstance.hide();
                             alert('🎉 Account Profile & Settings saved successfully!');
+                            await filterProducts();
                         }
 
                         function openReportModal() {

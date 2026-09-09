@@ -53,6 +53,10 @@ try {
     $db->exec("ALTER TABLE ChatMessages ADD COLUMN IsRead TINYINT(1) DEFAULT 0;");
 } catch (Exception $eIsRead) {}
 
+try {
+    $db->exec("ALTER TABLE StudentProfiles MODIFY COLUMN ProfileImage LONGTEXT NULL;");
+} catch (Exception $eProfImg) {}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $action = trim((string)($_GET['action'] ?? ''));
 
@@ -215,6 +219,35 @@ if (($action === 'update_listing' || $action === 'edit_listing') && $method === 
     }
 
     echo json_encode(['success' => true, 'message' => 'Listing updated successfully!']);
+    exit;
+}
+
+// ---------------------------------------------------------
+// 2C. UPDATE STUDENT PROFILE & AVATAR IN MYSQL DATABASE
+// ---------------------------------------------------------
+if (($action === 'update_profile' || $action === 'save_profile') && $method === 'POST') {
+    $userId = (int)($body['userId'] ?? $body['user_id'] ?? $body['id'] ?? 0);
+    $firstName = trim((string)($body['firstName'] ?? ''));
+    $lastName = trim((string)($body['lastName'] ?? ''));
+    $studentNumber = trim((string)($body['studentNumber'] ?? ''));
+    $course = trim((string)($body['course'] ?? ''));
+    $yearLevel = trim((string)($body['yearLevel'] ?? ''));
+    $profileImage = trim((string)($body['profileImage'] ?? $body['profile_image'] ?? ''));
+
+    if ($userId <= 1) $userId = 104;
+
+    if ($userId > 0) {
+        $stmt = $db->prepare("SELECT Id FROM StudentProfiles WHERE UserId = ?");
+        $stmt->execute([$userId]);
+        if ($stmt->fetch()) {
+            $up = $db->prepare("UPDATE StudentProfiles SET FirstName = ?, LastName = ?, StudentNumber = ?, Course = ?, YearLevel = ?, ProfileImage = ?, UpdatedAt = NOW() WHERE UserId = ?");
+            $up->execute([$firstName, $lastName, $studentNumber, $course, $yearLevel, $profileImage, $userId]);
+        } else {
+            $ins = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, ProfileImage, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, 'student@pasabuy.site', ?, ?, ?, 'VERIFIED', 5.0, 0, NOW(), NOW())");
+            $ins->execute([$userId, $firstName, $lastName, $studentNumber, $course, $yearLevel, $profileImage]);
+        }
+    }
+    echo json_encode(['success' => true, 'message' => 'Profile updated in Hostinger MySQL database']);
     exit;
 }
 
