@@ -14,8 +14,8 @@
             <option value="highest">Price: High to Low</option>
         </select>
     </div>
-    <div id="exploreList">
-        <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+    <div id="exploreList" class="row g-2 mb-3">
+        <div class="col-12 text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
             <i class="fa-solid fa-compass fs-2 d-block mb-2 text-secondary opacity-50"></i>
             No items found in marketplace.
         </div>

@@ -38,8 +38,8 @@
             <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold shadow-sm" onclick="switchTab('sell')"><i class="fa-solid fa-plus me-1"></i> Post Another Product</button>
         </div>
 
-        <div id="mySellingItemsContainer">
-            <div class="text-center py-4 text-muted fs-8" id="noSellingItemsPlaceholder">
+        <div id="mySellingItemsContainer" class="row g-2 mb-3">
+            <div class="col-12 text-center py-4 text-muted fs-8" id="noSellingItemsPlaceholder">
                 <i class="fa-solid fa-box-open fs-3 d-block mb-2 text-secondary"></i>
                 You have no active selling items yet. Go to <strong>+ Sell</strong> to post your first item!
             </div>
