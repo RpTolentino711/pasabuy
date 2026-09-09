@@ -163,6 +163,7 @@ session_start();
                 <nav class="nav flex-column">
                     <a href="#" class="nav-link-admin active" onclick="showAdminSection('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Overview Dashboard</a>
                     <a href="#" class="nav-link-admin" onclick="showAdminSection('verifications', this)"><i class="fa-solid fa-id-card text-primary"></i> Verification Requests</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('riders', this)"><i class="fa-solid fa-motorcycle text-warning"></i> Motor Drivers</a>
                     <a href="#" class="nav-link-admin" onclick="showAdminSection('students', this)"><i class="fa-solid fa-user-graduate"></i> Registered Students</a>
                     <a href="#" class="nav-link-admin" onclick="showAdminSection('listings', this)"><i class="fa-solid fa-box-open"></i> Marketplace Listings</a>
                     <a href="#" class="nav-link-admin" onclick="showAdminSection('payments', this)"><i class="fa-solid fa-receipt text-success"></i> PayMongo Live Fees</a>
@@ -264,6 +265,35 @@ session_start();
                             </thead>
                             <tbody id="adminVerificationsTableBody">
                                 <tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-1"></i> Loading student verification requests...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section 2B: Motor Driver Verifications -->
+                <div id="sectionRiders" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h4 class="fw-bold mb-1"><i class="fa-solid fa-motorcycle text-warning me-2"></i>Motor Delivery Driver Applications</h4>
+                            <p class="text-muted fs-8 mb-0">Approve or reject student motor driver applications to enable campus express delivery.</p>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="fetchAdminMotorRiders()"><i class="fa-solid fa-rotate me-1"></i> Refresh Drivers</button>
+                    </div>
+
+                    <div class="table-custom p-3">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Driver Name</th>
+                                    <th>Vehicle Details</th>
+                                    <th>Driver License #</th>
+                                    <th>License Image</th>
+                                    <th>Status</th>
+                                    <th>Moderation Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminRidersTableBody">
+                                <tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-1"></i> Loading motor driver applications...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -477,7 +507,7 @@ session_start();
         }
 
         function showAdminSection(sectionName, element) {
-            const sections = ['dashboard', 'verifications', 'students', 'listings', 'payments', 'reports', 'meetups'];
+            const sections = ['dashboard', 'verifications', 'riders', 'students', 'listings', 'payments', 'reports', 'meetups'];
             sections.forEach(s => {
                 const el = document.getElementById('section' + s.charAt(0).toUpperCase() + s.slice(1));
                 if (el) el.style.display = (s === sectionName) ? 'block' : 'none';
@@ -487,10 +517,101 @@ session_start();
 
             if (sectionName === 'dashboard') fetchAdminDashboardStats();
             else if (sectionName === 'verifications') fetchAdminVerificationRequests();
+            else if (sectionName === 'riders') fetchAdminMotorRiders();
             else if (sectionName === 'students') fetchAdminStudents();
             else if (sectionName === 'listings') fetchAdminListings();
             else if (sectionName === 'payments') fetchAdminPayments();
             else if (sectionName === 'reports') fetchAdminReports();
+        }
+
+        async function fetchAdminMotorRiders() {
+            const tbody = document.getElementById('adminRidersTableBody');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch('/pasabuy_api.php?action=admin_get_riders');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!Array.isArray(data) || data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-motorcycle me-1 opacity-50"></i> No motor driver applications submitted yet.</td></tr>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.forEach(r => {
+                        const name = `${r.FirstName || 'Driver'} ${r.LastName || ''}`.trim();
+                        const status = (r.VerificationStatus || 'PENDING').toUpperCase();
+                        let badgeHtml = '';
+                        if (status === 'VERIFIED' || status === 'APPROVED') {
+                            badgeHtml = '<span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-shield-check me-1"></i> VERIFIED DRIVER</span>';
+                        } else if (status === 'REJECTED') {
+                            badgeHtml = '<span class="badge bg-danger text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i> REJECTED</span>';
+                        } else {
+                            badgeHtml = '<span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-clock me-1"></i> PENDING REVIEW</span>';
+                        }
+
+                        const imgUrl = r.LicenseImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80';
+
+                        html += `
+                        <tr>
+                            <td>
+                                <strong class="text-dark d-block">${name}</strong>
+                                <span class="text-muted fs-9">Phone: ${r.PhoneNumber || 'N/A'}</span>
+                            </td>
+                            <td>
+                                <strong class="fs-8 text-dark d-block">${r.VehicleModel || 'Motorcycle'}</strong>
+                                <span class="badge bg-light text-dark border fs-9">Plate: <code>${r.PlateNumber || 'N/A'}</code></span>
+                            </td>
+                            <td><code>${r.DriverLicenseNo || 'N/A'}</code></td>
+                            <td>
+                                <button class="btn btn-sm btn-light rounded-pill border fs-9 py-0 px-2" onclick="openViewIdModal('${imgUrl.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">
+                                    <i class="fa-solid fa-image text-primary me-1"></i> License Image
+                                </button>
+                            </td>
+                            <td>${badgeHtml}</td>
+                            <td>
+                                ${status === 'PENDING' ? `
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-success rounded-pill px-3 fw-bold fs-9" onclick="adminVerifyRider(${r.Id}, 'VERIFIED')">
+                                        <i class="fa-solid fa-check me-1"></i> Approve
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold fs-9" onclick="adminVerifyRider(${r.Id}, 'REJECTED')">
+                                        <i class="fa-solid fa-xmark me-1"></i> Reject
+                                    </button>
+                                </div>` : (status === 'REJECTED' ? `
+                                <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold fs-9" onclick="adminVerifyRider(${r.Id}, 'VERIFIED')">
+                                    <i class="fa-solid fa-check me-1"></i> Re-Approve
+                                </button>` : `
+                                <span class="text-success fs-8 fw-semibold"><i class="fa-solid fa-shield-check me-1"></i> Verified</span>
+                                `)}
+                            </td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Error loading motor driver applications.</td></tr>';
+            }
+        }
+
+        async function adminVerifyRider(riderId, status) {
+            if (!confirm(`Admin Confirmation: ${status} this motor driver application?`)) return;
+            try {
+                const res = await fetch('/pasabuy_api.php?action=admin_verify_rider', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ riderId: riderId, status: status })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`🎉 Motor Rider status updated to ${status}!`);
+                    fetchAdminMotorRiders();
+                } else {
+                    alert(data.message || 'Error updating rider status.');
+                }
+            } catch (e) {
+                alert('Network error updating rider status.');
+            }
         }
 
         async function fetchAdminDashboardStats() {

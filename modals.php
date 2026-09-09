@@ -658,20 +658,217 @@
                 <div id="cartItemsContainer" style="max-height: 320px; overflow-y: auto;">
                     <!-- Cart items rendered dynamically -->
                 </div>
-                <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 border mt-3">
-                    <span class="fw-bold text-dark fs-7">Estimated Total (Items + ₱20 Delivery):</span>
-                    <span class="fw-extrabold text-primary fs-5" id="cartTotalDisplay">₱0.00</span>
+                    <div class="mb-3 pt-2">
+                        <label class="form-label fw-bold fs-7 text-dark mb-2"><i class="fa-solid fa-truck-ramp-box text-primary me-1"></i> Fulfillment Option</label>
+                        <div class="d-flex gap-2">
+                            <div class="form-check card p-2.5 rounded-3 border w-50 flex-row align-items-center gap-2 m-0 bg-white" style="cursor:pointer;" onclick="document.getElementById('fulMotor').click();">
+                                <input class="form-check-input ms-1" type="radio" name="fulfillmentTypeRadio" id="fulMotor" value="MOTOR_DELIVERY" checked>
+                                <label class="form-check-label fs-8 fw-bold text-dark cursor-pointer" for="fulMotor">
+                                    🚚 Express Motor
+                                    <span class="d-block text-muted fw-normal fs-9">Direct to your address</span>
+                                </label>
+                            </div>
+                            <div class="form-check card p-2.5 rounded-3 border w-50 flex-row align-items-center gap-2 m-0 bg-white" style="cursor:pointer;" onclick="document.getElementById('fulMeetup').click();">
+                                <input class="form-check-input ms-1" type="radio" name="fulfillmentTypeRadio" id="fulMeetup" value="MEETUP">
+                                <label class="form-check-label fs-8 fw-bold text-dark cursor-pointer" for="fulMeetup">
+                                    🤝 Campus Meetup
+                                    <span class="d-block text-muted fw-normal fs-9">Library / Spot</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 border">
+                        <span class="fw-bold text-dark fs-7">Total Amount:</span>
+                        <span class="fw-extrabold text-primary fs-5" id="cartTotalDisplay">₱0.00</span>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-light rounded-pill px-4 fs-8" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold" onclick="alert('🛍️ Checkout Order Sent! Arrange cash/meetup delivery with sellers via Messages.')">
-                    <i class="fa-solid fa-bag-shopping me-1"></i> Proceed to Checkout
-                </button>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" onclick="executeCheckoutOrder()">
+                        <i class="fa-solid fa-bag-shopping me-1"></i> Confirm & Place Order
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- BUYER ADDRESS PROMPT MODAL (SHOWN IF PROFILE ADDRESS IS MISSING) -->
+    <div class="modal fade" id="buyerAddressPromptModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
+                <div class="modal-header border-0 pb-1">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-location-dot text-danger fs-5"></i> Delivery Address Required
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <p class="fs-8 text-muted mb-3">To order items for delivery or meetup, please complete your residential address and contact phone number first.</p>
+                    <form id="quickAddressForm" onsubmit="event.preventDefault(); saveQuickBuyerAddress();">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label fw-bold fs-8">Hometown / City <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control rounded-3 fs-8" id="qaHometown" required placeholder="e.g. Quezon City">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold fs-8">Postal Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control rounded-3 fs-8" id="qaPostalCode" required placeholder="e.g. 1108">
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold fs-8">Full Residential / Dorm Address <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3 fs-8" id="qaAddress" required placeholder="e.g. 123 Katipunan Ave, Dorm Bldg 4">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold fs-8">Contact Phone Number <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control rounded-3 fs-8" id="qaPhone" required placeholder="09171234567">
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-light rounded-pill w-50 fw-bold fs-8" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary rounded-pill w-50 fw-bold fs-8 shadow-sm" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;">
+                                Save &amp; Continue Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MY ORDERS & LIVE DELIVERY TRACKING MODAL -->
+    <div class="modal fade" id="ordersModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+                <div class="modal-header border-0 pb-2">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-truck-fast text-primary fs-5"></i> My Orders &amp; Delivery Tracking
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-1">
+                    <ul class="nav nav-pills nav-justified mb-3 bg-light p-1 rounded-pill fs-8 fw-bold" id="ordersTabs">
+                        <li class="nav-item">
+                            <button class="nav-link active rounded-pill py-1.5" onclick="renderBuyerOrdersTab('active', this)">Active Deliveries</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link rounded-pill py-1.5" onclick="renderBuyerOrdersTab('completed', this)">Order History</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link rounded-pill py-1.5" onclick="renderSellerOrdersTab(this)">Seller Orders</button>
+                        </li>
+                    </ul>
+
+                    <div id="ordersListContent" class="d-flex flex-column gap-3" style="max-height: 480px; overflow-y: auto;">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOTOR RIDER REGISTRATION MODAL -->
+    <div class="modal fade" id="riderRegisterModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
+                <div class="modal-header border-0 pb-1">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-motorcycle text-warning fs-4"></i> Apply as PasaBuy Motor Driver
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-1">
+                    <p class="fs-8 text-muted mb-3">Earn money delivering packages to students on campus! Submit your driver details for Admin approval.</p>
+                    <form id="riderRegisterForm" onsubmit="event.preventDefault(); submitRiderRegistration();">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label fw-bold fs-8">Plate Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control rounded-3 fs-8" id="rPlateNumber" required placeholder="e.g. 123-ABC">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold fs-8">Vehicle Brand / Model <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control rounded-3 fs-8" id="rVehicleModel" required placeholder="e.g. Honda Click 125i">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold fs-8">Driver License Serial Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3 fs-8" id="rLicenseNo" required placeholder="e.g. N01-18-123456">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold fs-8"><i class="fa-solid fa-camera text-primary me-1"></i> Upload Photo of Driver's License <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control rounded-3 fs-8" id="rLicenseInput" accept="image/*" onchange="previewRiderLicense(event)">
+                            <div id="rLicensePreviewBox" class="mt-2 text-center" style="display:none;">
+                                <img id="rLicensePreview" class="img-fluid rounded-3 border shadow-sm" style="max-height: 150px; object-fit: contain;">
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-light rounded-pill w-50 fw-bold fs-8" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-warning rounded-pill w-50 fw-bold fs-8 text-dark shadow-sm" id="submitRiderRegBtn">
+                                Submit Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRIVER INCOMING JOB ALERT POPUP MODAL -->
+    <div class="modal fade" id="riderJobAlertModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg border-start border-5 border-warning">
+                <div class="modal-header border-0 pb-1">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-bell text-warning fs-4 animate-bounce"></i> New Express Delivery Job Available!
+                    </h6>
+                </div>
+                <div class="modal-body pt-2" id="riderJobAlertBody">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRIVER ACTIVE DELIVERY DASHBOARD MODAL (2-STAGE PICKUP & DROPOFF) -->
+    <div class="modal fade" id="driverActiveDeliveryModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+                <div class="modal-header border-0 pb-2">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-motorcycle text-warning fs-4"></i> Driver Active Delivery Task
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-1" id="driverActiveDeliveryBody">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SELLER DISPATCH RADAR MODAL -->
+    <div class="modal fade" id="sellerDispatchModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
+                <div class="modal-header border-0 pb-1">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-radar text-primary fs-4"></i> Nearby Motor Drivers Radar
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <p class="fs-8 text-muted mb-3">Broadcast package pickup alert to all active verified motor drivers nearby on campus.</p>
+                    <input type="hidden" id="dispatchOrderId">
+                    <div id="nearbyRidersRadarList" class="d-flex flex-column gap-2 mb-3">
+                        <div class="text-center text-muted py-3 fs-8"><i class="fa-solid fa-spinner fa-spin me-1"></i> Scanning nearby motor drivers...</div>
+                    </div>
+                    <button class="btn btn-warning w-100 rounded-pill fw-bold py-2 fs-7 text-dark shadow-sm" onclick="executeBroadcastToRiders()">
+                        <i class="fa-solid fa-bullhorn me-1"></i> Broadcast Delivery Request to All Nearby Drivers
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <!-- NOTIFICATIONS & ALERTS MODAL -->
 <div class="modal fade" id="notificationsModal" tabindex="-1">

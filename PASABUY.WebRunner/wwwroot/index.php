@@ -18,6 +18,9 @@
     <!-- FontAwesome & Bootstrap -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <!-- Leaflet.js Map CSS & JS for Campus Delivery Map Tracking -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
             --primary: #5F27CD;
@@ -331,6 +334,11 @@
                     onclick="openCartModal()" title="Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-cart-shopping text-secondary fs-7"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; display:none; padding: 2px 4px;">0</span>
+                </button>
+                <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
+                    onclick="openOrdersModal()" title="My Orders & Delivery Tracking" id="headerOrdersBtn" style="width:36px; height:36px; background: #F1F5F9;">
+                    <i class="fa-solid fa-truck-fast text-secondary fs-7"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" id="headerOrdersBadge" style="font-size:0.6rem; display:none; padding: 2px 4px;">0</span>
                 </button>
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
                     onclick="openNotificationsModal()" title="Notifications" style="width:36px; height:36px; background: #F1F5F9;">
@@ -3187,6 +3195,558 @@
                                 }
                             }
                         };
+
+                        // ---------------------------------------------------------
+                        // ORDERS, DELIVERY FULFILLMENT & LIVE MAP TRACKING
+                        // ---------------------------------------------------------
+                        let activeOrderMapInstance = null;
+                        let activeRiderWatchId = null;
+
+                        window.getStoredStudentUser = function () {
+                            try {
+                                const str = localStorage.getItem('pasabuy_student_user');
+                                if (str) return JSON.parse(str);
+                            } catch (e) { }
+                            return { id: 104, userId: 104, firstName: 'Verified', lastName: 'Student' };
+                        };
+
+                        window.executeCheckoutOrder = async function () {
+                            const user = getStoredStudentUser();
+                            const buyerId = user.id || user.userId || user.UserId || 104;
+
+                            if (pasabuyCart.length === 0) {
+                                alert('Your cart is empty! Add items before placing an order.');
+                                return;
+                            }
+
+                            const fulRadio = document.querySelector('input[name="fulfillmentTypeRadio"]:checked');
+                            const fulfillmentType = fulRadio ? fulRadio.value : 'MOTOR_DELIVERY';
+
+                            // Validate buyer address
+                            try {
+                                const chkRes = await fetch(`/pasabuy_api.php?action=check_buyer_address&userId=${buyerId}`);
+                                if (chkRes.ok) {
+                                    const addressData = await chkRes.json();
+                                    if (!addressData.hasAddress && fulfillmentType === 'MOTOR_DELIVERY') {
+                                        const modalEl = document.getElementById('cartModal');
+                                        if (modalEl) {
+                                            const bs = bootstrap.Modal.getInstance(modalEl);
+                                            if (bs) bs.hide();
+                                        }
+                                        const promptEl = document.getElementById('buyerAddressPromptModal');
+                                        if (promptEl) new bootstrap.Modal(promptEl).show();
+                                        return;
+                                    }
+                                }
+                            } catch (e) {
+                                console.error("Check buyer address error:", e);
+                            }
+
+                            // Create order for each cart item
+                            let successCount = 0;
+                            for (const item of pasabuyCart) {
+                                if (item.isSold) continue;
+                                const listingId = item.listingId || item.id;
+                                const price = item.price || 10;
+                                try {
+                                    const res = await fetch('/pasabuy_api.php?action=create_order', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            buyerId: buyerId,
+                                            listingId: listingId,
+                                            fulfillmentType: fulfillmentType,
+                                            meetupLocation: 'Campus Library',
+                                            totalPrice: price * item.quantity
+                                        })
+                                    });
+                                    if (res.ok) {
+                                        const data = await res.json();
+                                        if (data.success) successCount++;
+                                    }
+                                } catch (e) { }
+                            }
+
+                            pasabuyCart = [];
+                            localStorage.setItem('pasabuy_cart_items', JSON.stringify([]));
+                            updateCartBadge();
+                            renderCartItems();
+
+                            const modalEl = document.getElementById('cartModal');
+                            if (modalEl) {
+                                const bs = bootstrap.Modal.getInstance(modalEl);
+                                if (bs) bs.hide();
+                            }
+
+                            await filterProducts();
+                            alert('🎉 Order Placed Successfully! Your delivery order is now tracked live in Orders.');
+                            openOrdersModal();
+                        };
+
+                        window.saveQuickBuyerAddress = async function () {
+                            const user = getStoredStudentUser();
+                            const buyerId = user.id || user.userId || user.UserId || 104;
+
+                            const hometown = document.getElementById('qaHometown').value.trim();
+                            const postalCode = document.getElementById('qaPostalCode').value.trim();
+                            const address = document.getElementById('qaAddress').value.trim();
+                            const phone = document.getElementById('qaPhone').value.trim();
+
+                            if (!hometown || !postalCode || !address || !phone) {
+                                alert('Please complete all delivery address fields.');
+                                return;
+                            }
+
+                            try {
+                                const res = await fetch('/pasabuy_api.php?action=submit_verification_request', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        userId: buyerId,
+                                        hometown: hometown,
+                                        homeAddress: address,
+                                        postalCode: postalCode,
+                                        phoneNumber: phone,
+                                        guardianName: 'Parent / Guardian',
+                                        guardianPhone: phone,
+                                        idType: 'Student ID',
+                                        idNumber: 'STU-' + buyerId,
+                                        idFrontImage: ''
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('✅ Delivery address saved!');
+                                    const modalEl = document.getElementById('buyerAddressPromptModal');
+                                    if (modalEl) {
+                                        const bs = bootstrap.Modal.getInstance(modalEl);
+                                        if (bs) bs.hide();
+                                    }
+                                    executeCheckoutOrder();
+                                }
+                            } catch (e) {
+                                alert('Error saving delivery address.');
+                            }
+                        };
+
+                        window.openOrdersModal = function () {
+                            const modalEl = document.getElementById('ordersModal');
+                            if (modalEl) {
+                                new bootstrap.Modal(modalEl).show();
+                                const activeTabBtn = document.querySelector('#ordersTabs .nav-link.active');
+                                if (activeTabBtn) activeTabBtn.click();
+                                else renderBuyerOrdersTab('active', null);
+                            }
+                        };
+
+                        window.renderBuyerOrdersTab = async function (type, btnEl) {
+                            if (btnEl) {
+                                document.querySelectorAll('#ordersTabs .nav-link').forEach(b => b.classList.remove('active'));
+                                btnEl.classList.add('active');
+                            }
+
+                            const user = getStoredStudentUser();
+                            const buyerId = user.id || user.userId || user.UserId || 104;
+                            const container = document.getElementById('ordersListContent');
+                            if (!container) return;
+
+                            try {
+                                const res = await fetch(`/pasabuy_api.php?action=get_buyer_orders&userId=${buyerId}`);
+                                if (res.ok) {
+                                    const orders = await res.json();
+                                    let filtered = orders;
+                                    if (type === 'active') {
+                                        filtered = orders.filter(o => o.Status !== 'DELIVERED' && o.Status !== 'CANCELLED');
+                                    } else if (type === 'completed') {
+                                        filtered = orders.filter(o => o.Status === 'DELIVERED' || o.Status === 'CANCELLED');
+                                    }
+
+                                    if (filtered.length === 0) {
+                                        container.innerHTML = `<div class="text-center py-4 text-muted fs-8"><i class="fa-solid fa-box-open fs-3 text-secondary opacity-50 mb-2 d-block"></i>No ${type} orders to show right now.</div>`;
+                                        return;
+                                    }
+
+                                    let html = '';
+                                    filtered.forEach(o => {
+                                        const status = (o.Status || 'PENDING').toUpperCase();
+                                        let statusBadge = '<span class="badge bg-warning text-dark">PENDING</span>';
+                                        if (status === 'BROADCASTING') statusBadge = '<span class="badge bg-info text-white"><i class="fa-solid fa-satellite-dish fa-spin me-1"></i> LOOKING FOR MOTOR RIDER</span>';
+                                        else if (status === 'DRIVER_ASSIGNED') statusBadge = '<span class="badge bg-primary text-white"><i class="fa-solid fa-motorcycle me-1"></i> RIDER ASSIGNED (ON WAY TO PICKUP)</span>';
+                                        else if (status === 'OUT_FOR_DELIVERY') statusBadge = '<span class="badge bg-success text-white"><i class="fa-solid fa-truck-fast me-1"></i> OUT FOR MOTOR DELIVERY</span>';
+                                        else if (status === 'DELIVERED') statusBadge = '<span class="badge bg-success text-white"><i class="fa-solid fa-circle-check me-1"></i> DELIVERED</span>';
+
+                                        const isGpsActive = (parseInt(o.IsGpsActive) === 1);
+                                        const gpsBadge = isGpsActive 
+                                            ? `<span class="badge bg-success-subtle text-success border border-success-subtle fs-9"><i class="fa-solid fa-location-dot me-1"></i> Live Rider GPS Active</span>`
+                                            : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-9"><i class="fa-solid fa-triangle-exclamation me-1"></i> ⚠️ Rider GPS Location Signal Lost / Off</span>`;
+
+                                        html += `
+                                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 ${status === 'DELIVERED' ? 'border-success' : 'border-primary'} mb-2">
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <span class="fs-9 fw-bold text-muted">Order #${o.Id} • ${new Date(o.CreatedAt).toLocaleDateString()}</span>
+                                                ${statusBadge}
+                                            </div>
+                                            <div class="d-flex gap-3 align-items-center mb-2">
+                                                <img src="${o.ImageUrl || 'LOGO.png'}" class="rounded-3" width="56" height="56" style="object-fit:cover;">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="fw-bold text-dark fs-8 mb-0">${o.ItemTitle || 'Campus Item'}</h6>
+                                                    <div class="fw-extrabold text-primary fs-7">₱${parseFloat(o.TotalPrice || 0).toFixed(2)}</div>
+                                                    <span class="fs-9 text-muted">Seller: <strong>${o.SellerFirstName || ''} ${o.SellerLastName || 'Verified Seller'}</strong></span>
+                                                </div>
+                                            </div>
+                                            ${o.FulfillmentType === 'MOTOR_DELIVERY' ? `
+                                            <div class="bg-light p-2.5 rounded-3 border mb-2 fs-9">
+                                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                                    <strong><i class="fa-solid fa-motorcycle text-warning me-1"></i> Driver Info:</strong>
+                                                    ${gpsBadge}
+                                                </div>
+                                                <div>Driver: <strong>${o.RiderFirstName ? `${o.RiderFirstName} ${o.RiderLastName}` : 'Searching nearby driver...'}</strong></div>
+                                                <div>Vehicle: ${o.VehicleModel || 'PasaBuy Motor Rider'} (${o.PlateNumber || 'N/A'}) • Phone: <code>${o.RiderPhone || 'N/A'}</code></div>
+                                                <div class="text-truncate mt-1"><i class="fa-solid fa-house-chimney text-danger me-1"></i> Delivery Address: <strong>${o.DeliveryAddress || o.Hometown || 'Campus Address'}</strong></div>
+                                            </div>
+                                            <div id="buyerOrderMap_${o.Id}" class="rounded-3 border shadow-2xs mb-2" style="height: 180px; width:100%; background:#e5e7eb;"></div>
+                                            ` : `
+                                            <div class="bg-light p-2 rounded-3 fs-9"><i class="fa-solid fa-handshake text-primary me-1"></i> Meetup Spot: <strong>${o.MeetupLocation || 'Campus Library'}</strong></div>
+                                            `}
+                                        </div>`;
+                                    });
+
+                                    container.innerHTML = html;
+
+                                    filtered.forEach(o => {
+                                        if (o.FulfillmentType === 'MOTOR_DELIVERY') {
+                                            setTimeout(() => {
+                                                initializeLeafletDeliveryMap(`buyerOrderMap_${o.Id}`, parseFloat(o.RiderLat || 14.6488), parseFloat(o.RiderLng || 121.0687), parseFloat(o.DestLat || 14.6520), parseFloat(o.DestLng || 121.0720), parseInt(o.IsGpsActive) === 1, o.Status);
+                                            }, 200);
+                                        }
+                                    });
+                                }
+                            } catch (e) {
+                                container.innerHTML = `<div class="text-center py-4 text-muted fs-8">Error loading orders.</div>`;
+                            }
+                        };
+
+                        window.renderSellerOrdersTab = async function (btnEl) {
+                            if (btnEl) {
+                                document.querySelectorAll('#ordersTabs .nav-link').forEach(b => b.classList.remove('active'));
+                                btnEl.classList.add('active');
+                            }
+
+                            const user = getStoredStudentUser();
+                            const sellerId = user.id || user.userId || user.UserId || 104;
+                            const container = document.getElementById('ordersListContent');
+                            if (!container) return;
+
+                            try {
+                                const res = await fetch(`/pasabuy_api.php?action=get_seller_orders&userId=${sellerId}`);
+                                if (res.ok) {
+                                    const orders = await res.json();
+                                    if (orders.length === 0) {
+                                        container.innerHTML = `<div class="text-center py-4 text-muted fs-8"><i class="fa-solid fa-store-slash fs-3 text-secondary opacity-50 mb-2 d-block"></i>No incoming buyer orders for your products yet.</div>`;
+                                        return;
+                                    }
+
+                                    let html = '';
+                                    orders.forEach(o => {
+                                        const status = (o.Status || 'PENDING').toUpperCase();
+                                        html += `
+                                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-warning mb-2">
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <span class="fs-9 fw-bold text-muted">Order #${o.Id} • Buyer: ${o.BuyerFirstName || 'Student'} ${o.BuyerLastName || ''}</span>
+                                                <span class="badge bg-primary text-white">${status}</span>
+                                            </div>
+                                            <div class="d-flex gap-3 align-items-center mb-2">
+                                                <img src="${o.ImageUrl || 'LOGO.png'}" class="rounded-3" width="48" height="48" style="object-fit:cover;">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="fw-bold text-dark fs-8 mb-0">${o.ItemTitle || 'Item'}</h6>
+                                                    <div class="fw-extrabold text-primary fs-7">₱${parseFloat(o.TotalPrice || 0).toFixed(2)}</div>
+                                                    <span class="fs-9 text-muted">Buyer Phone: <code>${o.BuyerPhone || 'N/A'}</code></span>
+                                                </div>
+                                            </div>
+                                            ${o.FulfillmentType === 'MOTOR_DELIVERY' ? `
+                                            <div class="d-flex gap-2 mt-2">
+                                                <button class="btn btn-sm btn-warning rounded-pill w-100 fw-bold fs-9 py-1.5 text-dark" onclick="openSellerDispatchModal(${o.Id})">
+                                                    <i class="fa-solid fa-radar me-1"></i> Scan &amp; Broadcast to Nearby Motor Drivers
+                                                </button>
+                                            </div>` : ''}
+                                        </div>`;
+                                    });
+                                    container.innerHTML = html;
+                                }
+                            } catch (e) {
+                                container.innerHTML = `<div class="text-center py-4 text-muted fs-8">Error loading seller orders.</div>`;
+                            }
+                        };
+
+                        window.initializeLeafletDeliveryMap = function (containerId, riderLat, riderLng, destLat, destLng, isGpsActive, status) {
+                            const el = document.getElementById(containerId);
+                            if (!el) return;
+                            el.innerHTML = '';
+
+                            try {
+                                const map = L.map(containerId, { zoomControl: false }).setView([riderLat, riderLng], 15);
+                                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                    maxZoom: 19
+                                }).addTo(map);
+
+                                const riderIcon = L.divIcon({
+                                    html: `<div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center border border-2 border-white shadow" style="width:32px; height:32px; font-size:16px;"><i class="fa-solid fa-motorcycle"></i></div>`,
+                                    className: '',
+                                    iconSize: [32, 32]
+                                });
+
+                                const destIcon = L.divIcon({
+                                    html: `<div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center border border-2 border-white shadow" style="width:32px; height:32px; font-size:16px;"><i class="fa-solid fa-house-chimney"></i></div>`,
+                                    className: '',
+                                    iconSize: [32, 32]
+                                });
+
+                                L.marker([riderLat, riderLng], { icon: riderIcon }).addTo(map).bindPopup('PasaBuy Motor Rider');
+                                L.marker([destLat, destLng], { icon: destIcon }).addTo(map).bindPopup('Buyer Delivery Spot');
+
+                                L.polyline([[riderLat, riderLng], [destLat, destLng]], { color: '#5F27CD', weight: 4, dashArray: '8, 8' }).addTo(map);
+                            } catch (e) { console.error("Leaflet map init error:", e); }
+                        };
+
+                        window.openSellerDispatchModal = async function (orderId) {
+                            document.getElementById('dispatchOrderId').value = orderId;
+                            const listEl = document.getElementById('nearbyRidersRadarList');
+                            if (listEl) listEl.innerHTML = '<div class="text-center text-muted py-3 fs-8"><i class="fa-solid fa-spinner fa-spin me-1"></i> Scanning campus motor drivers...</div>';
+
+                            const modalEl = document.getElementById('sellerDispatchModal');
+                            if (modalEl) new bootstrap.Modal(modalEl).show();
+
+                            try {
+                                const res = await fetch('/pasabuy_api.php?action=get_nearby_riders');
+                                if (res.ok) {
+                                    const drivers = await res.json();
+                                    if (drivers.length === 0) {
+                                        if (listEl) listEl.innerHTML = '<div class="text-center text-muted py-3 fs-8"><i class="fa-solid fa-motorcycle me-1"></i> No online drivers detected nearby. Click broadcast below to alert all registered drivers!</div>';
+                                        return;
+                                    }
+                                    let html = '';
+                                    drivers.forEach(d => {
+                                        html += `
+                                        <div class="p-2.5 bg-light rounded-3 border d-flex align-items-center justify-content-between">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:36px; height:36px;">
+                                                    <i class="fa-solid fa-motorcycle"></i>
+                                                </div>
+                                                <div>
+                                                    <strong class="fs-8 text-dark d-block">${d.FirstName} ${d.LastName}</strong>
+                                                    <span class="fs-9 text-muted">${d.VehicleModel} • Plate: <code>${d.PlateNumber}</code></span>
+                                                </div>
+                                            </div>
+                                            <span class="badge bg-success text-white fs-9"><i class="fa-solid fa-circle text-white me-1"></i> Active</span>
+                                        </div>`;
+                                    });
+                                    if (listEl) listEl.innerHTML = html;
+                                }
+                            } catch (e) { }
+                        };
+
+                        window.executeBroadcastToRiders = async function () {
+                            const orderId = parseInt(document.getElementById('dispatchOrderId').value) || 0;
+                            try {
+                                const res = await fetch('/pasabuy_api.php?action=broadcast_order_to_riders', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ orderId: orderId })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('🚀 Delivery Job Broadcast Sent! Online verified drivers near campus have been notified.');
+                                    const modalEl = document.getElementById('sellerDispatchModal');
+                                    const bs = bootstrap.Modal.getInstance(modalEl);
+                                    if (bs) bs.hide();
+                                    openOrdersModal();
+                                }
+                            } catch (e) {
+                                alert('Error broadcasting job to drivers.');
+                            }
+                        };
+
+                        // Driver registration & job polling
+                        let driverJobPollTimer = null;
+
+                        window.submitRiderRegistration = async function () {
+                            const user = getStoredStudentUser();
+                            const userId = user.id || user.userId || user.UserId || 104;
+
+                            const plate = document.getElementById('rPlateNumber').value.trim();
+                            const model = document.getElementById('rVehicleModel').value.trim();
+                            const licenseNo = document.getElementById('rLicenseNo').value.trim();
+
+                            if (!plate || !model || !licenseNo) {
+                                alert('Please complete all motor driver registration fields.');
+                                return;
+                            }
+
+                            try {
+                                const res = await fetch('/pasabuy_api.php?action=register_motor_rider', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        userId: userId,
+                                        plateNumber: plate,
+                                        vehicleModel: model,
+                                        driverLicenseNo: licenseNo,
+                                        licenseImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80'
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('🎉 Motor Driver Application Submitted! Admin will review your driver documents.');
+                                    const modalEl = document.getElementById('riderRegisterModal');
+                                    const bs = bootstrap.Modal.getInstance(modalEl);
+                                    if (bs) bs.hide();
+                                }
+                            } catch (e) {
+                                alert('Error submitting driver registration.');
+                            }
+                        };
+
+                        window.startDriverJobPolling = function () {
+                            if (driverJobPollTimer) clearInterval(driverJobPollTimer);
+                            driverJobPollTimer = setInterval(async () => {
+                                const user = getStoredStudentUser();
+                                const userId = user.id || user.userId || user.UserId || 0;
+                                if (!userId) return;
+
+                                try {
+                                    const res = await fetch(`/pasabuy_api.php?action=get_driver_job_broadcasts&userId=${userId}`);
+                                    if (res.ok) {
+                                        const data = await res.json();
+                                        if (data.isVerifiedDriver && data.jobs && data.jobs.length > 0) {
+                                            const job = data.jobs[0];
+                                            const bodyEl = document.getElementById('riderJobAlertBody');
+                                            if (bodyEl) {
+                                                bodyEl.innerHTML = `
+                                                <div class="mb-3">
+                                                    <h6 class="fw-bold text-dark mb-1">Item: ${job.ItemTitle}</h6>
+                                                    <div class="fw-extrabold text-primary fs-6 mb-2">Earnings / Fee: ₱30.00 (Item: ₱${parseFloat(job.ItemPrice).toFixed(2)})</div>
+                                                    <div class="p-2.5 bg-light rounded-3 fs-8 mb-2">
+                                                        <div><i class="fa-solid fa-store text-primary me-1"></i> Pickup Seller: <strong>${job.SellerFirstName} ${job.SellerLastName}</strong> (Phone: ${job.SellerPhone || 'N/A'})</div>
+                                                        <div><i class="fa-solid fa-house-chimney text-danger me-1"></i> Dropoff Buyer: <strong>${job.BuyerFirstName} ${job.BuyerLastName}</strong> (${job.DeliveryAddress || job.Hometown})</div>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <button type="button" class="btn btn-light rounded-pill w-50 fw-bold fs-8" data-bs-dismiss="modal">Ignore</button>
+                                                    <button type="button" class="btn btn-success rounded-pill w-50 fw-bold fs-8 shadow-sm" onclick="executeAcceptDriverJob(${job.Id})">
+                                                        <i class="fa-solid fa-check me-1"></i> Accept Delivery Job
+                                                    </button>
+                                                </div>`;
+
+                                                const modalEl = document.getElementById('riderJobAlertModal');
+                                                if (modalEl && !modalEl.classList.contains('show')) {
+                                                    new bootstrap.Modal(modalEl).show();
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (e) { }
+                            }, 10000);
+                        };
+
+                        window.executeAcceptDriverJob = async function (orderId) {
+                            const user = getStoredStudentUser();
+                            const userId = user.id || user.userId || user.UserId || 0;
+
+                            try {
+                                const res = await fetch('/pasabuy_api.php?action=accept_driver_job', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ orderId: orderId, userId: userId })
+                                });
+                                const data = await res.json();
+                                const modalEl = document.getElementById('riderJobAlertModal');
+                                if (modalEl) {
+                                    const bs = bootstrap.Modal.getInstance(modalEl);
+                                    if (bs) bs.hide();
+                                }
+
+                                if (data.success) {
+                                    alert(data.message);
+                                    openDriverActiveDeliveryModal(orderId);
+                                } else {
+                                    alert(data.message);
+                                }
+                            } catch (e) {
+                                alert('Error accepting job.');
+                            }
+                        };
+
+                        window.openDriverActiveDeliveryModal = async function (orderId) {
+                            const user = getStoredStudentUser();
+                            const userId = user.id || user.userId || user.UserId || 0;
+
+                            const bodyEl = document.getElementById('driverActiveDeliveryBody');
+                            if (!bodyEl) return;
+
+                            try {
+                                const res = await fetch(`/pasabuy_api.php?action=get_buyer_orders&userId=${userId}`);
+                                const modalEl = document.getElementById('driverActiveDeliveryModal');
+                                if (modalEl) new bootstrap.Modal(modalEl).show();
+
+                                bodyEl.innerHTML = `
+                                <div class="p-3 bg-light rounded-4 border mb-3">
+                                    <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-store text-primary me-2"></i> Stage 1: Pickup Location (Seller)</h6>
+                                    <p class="fs-8 text-secondary mb-2">Proceed to Seller spot to pick up package.</p>
+                                    <div class="fs-8">
+                                        <div>Seller Contact: <strong>09171234567</strong></div>
+                                        <div>Pickup Spot: <strong>Campus Main Library Ground Floor</strong></div>
+                                    </div>
+                                    <button class="btn btn-warning w-100 rounded-pill fw-bold py-2 mt-3 fs-8 text-dark" onclick="executeConfirmCollected(${orderId})">
+                                        <i class="fa-solid fa-box-check me-1"></i> Package Collected from Seller
+                                    </button>
+                                </div>
+                                <div class="p-3 bg-light rounded-4 border">
+                                    <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-house-chimney text-danger me-2"></i> Stage 2: Buyer Dropoff Address</h6>
+                                    <p class="fs-8 text-secondary mb-2">Deliver package to buyer's residential address.</p>
+                                    <button class="btn btn-success w-100 rounded-pill fw-bold py-2 mt-2 fs-8" onclick="executeConfirmDelivered(${orderId})">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Complete Package Delivery
+                                    </button>
+                                </div>`;
+                            } catch (e) { }
+                        };
+
+                        window.executeConfirmCollected = async function (orderId) {
+                            const user = getStoredStudentUser();
+                            const userId = user.id || user.userId || user.UserId || 0;
+                            try {
+                                const res = await fetch('/pasabuy_api.php?action=confirm_package_collected', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ orderId: orderId, userId: userId })
+                                });
+                                const data = await res.json();
+                                alert(data.message);
+                            } catch (e) { }
+                        };
+
+                        window.executeConfirmDelivered = async function (orderId) {
+                            const user = getStoredStudentUser();
+                            const userId = user.id || user.userId || user.UserId || 0;
+                            try {
+                                const res = await fetch('/pasabuy_api.php?action=confirm_package_delivered', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ orderId: orderId, userId: userId })
+                                });
+                                const data = await res.json();
+                                alert(data.message);
+                                const modalEl = document.getElementById('driverActiveDeliveryModal');
+                                if (modalEl) {
+                                    const bs = bootstrap.Modal.getInstance(modalEl);
+                                    if (bs) bs.hide();
+                                }
+                            } catch (e) { }
+                        };
+
+                        // Start GPS watch & driver polling on page load
+                        window.addEventListener('DOMContentLoaded', () => {
+                            startDriverJobPolling();
+                        });
 
                         // Splash Screen & Auth Screen Flow
                         let splashTimer = null;

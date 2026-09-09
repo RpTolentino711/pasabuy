@@ -81,6 +81,54 @@ try {
     );");
 } catch (Exception $eVreq) {}
 
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS MotorRiders (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        UserId INT NOT NULL,
+        PlateNumber VARCHAR(50) NULL,
+        VehicleModel VARCHAR(100) NULL,
+        DriverLicenseNo VARCHAR(100) NULL,
+        LicenseImage LONGTEXT NULL,
+        IsVerified TINYINT DEFAULT 0,
+        VerificationStatus VARCHAR(50) DEFAULT 'PENDING',
+        RejectionReason TEXT NULL,
+        IsOnline TINYINT DEFAULT 1,
+        CurrentLat DECIMAL(10,8) DEFAULT 14.6488,
+        CurrentLng DECIMAL(11,8) DEFAULT 121.0687,
+        LastGpsPing DATETIME DEFAULT CURRENT_TIMESTAMP,
+        CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY (UserId)
+    );");
+} catch (Exception $eRider) {}
+
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS Orders (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        ListingId INT NOT NULL,
+        BuyerId INT NOT NULL,
+        SellerId INT NOT NULL,
+        AssignedRiderId INT DEFAULT 0,
+        FulfillmentType VARCHAR(50) DEFAULT 'MEETUP',
+        MeetupLocation VARCHAR(255) NULL,
+        DeliveryAddress TEXT NULL,
+        Hometown VARCHAR(100) NULL,
+        PostalCode VARCHAR(50) NULL,
+        PhoneNumber VARCHAR(50) NULL,
+        TotalPrice DECIMAL(10,2) DEFAULT 0.00,
+        Status VARCHAR(50) DEFAULT 'PENDING',
+        SellerLat DECIMAL(10,8) DEFAULT 14.6488,
+        SellerLng DECIMAL(11,8) DEFAULT 121.0687,
+        RiderLat DECIMAL(10,8) DEFAULT 14.6488,
+        RiderLng DECIMAL(11,8) DEFAULT 121.0687,
+        DestLat DECIMAL(10,8) DEFAULT 14.6500,
+        DestLng DECIMAL(11,8) DEFAULT 121.0700,
+        IsGpsActive TINYINT DEFAULT 1,
+        CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );");
+} catch (Exception $eOrd) {}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $action = trim((string)($_GET['action'] ?? ''));
 
@@ -834,6 +882,295 @@ if ($action === 'admin_reject_verification' && $method === 'POST') {
     }
 
     echo json_encode(['success' => true, 'message' => 'Verification request rejected with reason recorded.']);
+    exit;
+}
+
+// ---------------------------------------------------------
+// MOTOR RIDER REGISTRATION & API ENDPOINTS
+// ---------------------------------------------------------
+if ($action === 'register_motor_rider' && $method === 'POST') {
+    $userId = (int)($body['userId'] ?? $body['user_id'] ?? 0);
+    $plateNumber = trim((string)($body['plateNumber'] ?? $body['plate_number'] ?? ''));
+    $vehicleModel = trim((string)($body['vehicleModel'] ?? $body['vehicle_model'] ?? 'Motorcycle'));
+    $licenseNo = trim((string)($body['driverLicenseNo'] ?? $body['license_no'] ?? ''));
+    $licenseImage = trim((string)($body['licenseImage'] ?? $body['license_image'] ?? ''));
+
+    if ($userId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Valid User ID required.']);
+        exit;
+    }
+
+    $stmtCheck = $db->prepare("SELECT Id, VerificationStatus FROM MotorRiders WHERE UserId = ?");
+    $stmtCheck->execute([$userId]);
+    $existing = $stmtCheck->fetch();
+
+    if ($existing) {
+        $ins = $db->prepare("UPDATE MotorRiders SET PlateNumber = ?, VehicleModel = ?, DriverLicenseNo = ?, LicenseImage = ?, VerificationStatus = 'PENDING', IsVerified = 0, UpdatedAt = NOW() WHERE UserId = ?");
+        $ins->execute([$plateNumber, $vehicleModel, $licenseNo, $licenseImage, $userId]);
+    } else {
+        $ins = $db->prepare("INSERT INTO MotorRiders (UserId, PlateNumber, VehicleModel, DriverLicenseNo, LicenseImage, IsVerified, VerificationStatus, IsOnline, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, 0, 'PENDING', 1, NOW(), NOW())");
+        $ins->execute([$userId, $plateNumber, $vehicleModel, $licenseNo, $licenseImage]);
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Motor Rider Application submitted successfully! Admin will review your driver documents.']);
+    exit;
+}
+
+if ($action === 'admin_get_riders') {
+    $sql = "SELECT mr.*, sp.FirstName, sp.LastName, sp.StudentNumber, sp.SchoolEmail, sp.PhoneNumber 
+            FROM MotorRiders mr 
+            JOIN StudentProfiles sp ON mr.UserId = sp.UserId 
+            ORDER BY FIELD(mr.VerificationStatus, 'PENDING', 'REJECTED', 'VERIFIED'), mr.CreatedAt DESC";
+    $stmt = $db->query($sql);
+    echo json_encode($stmt->fetchAll() ?: []);
+    exit;
+}
+
+if ($action === 'admin_verify_rider' && $method === 'POST') {
+    $riderId = (int)($body['riderId'] ?? $body['id'] ?? 0);
+    $status = strtoupper(trim((string)($body['status'] ?? 'VERIFIED')));
+    $reason = trim((string)($body['reason'] ?? ''));
+
+    $isVerified = ($status === 'VERIFIED' || $status === 'APPROVED') ? 1 : 0;
+    $vStatus = $isVerified ? 'VERIFIED' : 'REJECTED';
+
+    $stmt = $db->prepare("UPDATE MotorRiders SET IsVerified = ?, VerificationStatus = ?, RejectionReason = ?, UpdatedAt = NOW() WHERE Id = ?");
+    $stmt->execute([$isVerified, $vStatus, $reason, $riderId]);
+
+    echo json_encode(['success' => true, 'message' => "Motor Rider application status updated to {$vStatus}."]);
+    exit;
+}
+
+if ($action === 'get_nearby_riders') {
+    $stmt = $db->prepare("SELECT mr.*, sp.FirstName, sp.LastName, sp.PhoneNumber, sp.ProfileImage 
+        FROM MotorRiders mr 
+        JOIN StudentProfiles sp ON mr.UserId = sp.UserId 
+        WHERE mr.IsVerified = 1 AND mr.IsOnline = 1 
+        ORDER BY mr.LastGpsPing DESC");
+    $stmt->execute();
+    echo json_encode($stmt->fetchAll() ?: []);
+    exit;
+}
+
+if ($action === 'update_rider_location' && $method === 'POST') {
+    $userId = (int)($body['userId'] ?? $body['user_id'] ?? 0);
+    $lat = (float)($body['lat'] ?? 14.6488);
+    $lng = (float)($body['lng'] ?? 121.0687);
+    $isGpsActive = (int)($body['isGpsActive'] ?? 1);
+
+    if ($userId > 0) {
+        $stmt = $db->prepare("UPDATE MotorRiders SET CurrentLat = ?, CurrentLng = ?, LastGpsPing = NOW() WHERE UserId = ?");
+        $stmt->execute([$lat, $lng, $userId]);
+
+        $upOrd = $db->prepare("UPDATE Orders SET RiderLat = ?, RiderLng = ?, IsGpsActive = ?, UpdatedAt = NOW() WHERE AssignedRiderId = ? AND Status IN ('DRIVER_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY')");
+        $upOrd->execute([$lat, $lng, $isGpsActive, $userId]);
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Rider GPS position updated.']);
+    exit;
+}
+
+// ---------------------------------------------------------
+// ORDERS & FULFILLMENT ENDPOINTS
+// ---------------------------------------------------------
+if ($action === 'check_buyer_address') {
+    $userId = (int)($_GET['user_id'] ?? $_GET['userId'] ?? 0);
+    $stmt = $db->prepare("SELECT vr.Hometown, vr.HomeAddress, vr.PostalCode, vr.PhoneNumber, sp.FirstName, sp.LastName 
+        FROM StudentProfiles sp 
+        LEFT JOIN VerificationRequests vr ON (sp.UserId = vr.UserId) 
+        WHERE sp.UserId = ? 
+        ORDER BY vr.CreatedAt DESC LIMIT 1");
+    $stmt->execute([$userId]);
+    $res = $stmt->fetch();
+
+    $hasAddress = false;
+    if ($res) {
+        $address = trim((string)($res['HomeAddress'] ?? ''));
+        $hometown = trim((string)($res['Hometown'] ?? ''));
+        $phone = trim((string)($res['PhoneNumber'] ?? ''));
+        if (!empty($address) && !empty($hometown) && !empty($phone)) {
+            $hasAddress = true;
+        }
+    }
+
+    echo json_encode([
+        'hasAddress' => $hasAddress,
+        'details' => $res ?: new stdClass()
+    ]);
+    exit;
+}
+
+if ($action === 'create_order' && $method === 'POST') {
+    $buyerId = (int)($body['buyerId'] ?? $body['buyer_id'] ?? 0);
+    $listingId = (int)($body['listingId'] ?? $body['listing_id'] ?? 0);
+    $fulfillmentType = trim((string)($body['fulfillmentType'] ?? 'MEETUP'));
+    $meetupLocation = trim((string)($body['meetupLocation'] ?? 'Campus Library'));
+    $deliveryAddress = trim((string)($body['deliveryAddress'] ?? ''));
+    $hometown = trim((string)($body['hometown'] ?? ''));
+    $postalCode = trim((string)($body['postalCode'] ?? ''));
+    $phoneNumber = trim((string)($body['phoneNumber'] ?? ''));
+    $totalPrice = (float)($body['totalPrice'] ?? $body['price'] ?? 0);
+
+    if ($buyerId <= 0 || $listingId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Valid Buyer ID and Listing ID required.']);
+        exit;
+    }
+
+    $stmtList = $db->prepare("SELECT SellerId, Quantity, Title FROM Listings WHERE Id = ?");
+    $stmtList->execute([$listingId]);
+    $listing = $stmtList->fetch();
+
+    if (!$listing) {
+        echo json_encode(['success' => false, 'message' => 'Listing not found.']);
+        exit;
+    }
+
+    $sellerId = (int)$listing['SellerId'];
+    $currentQty = (int)($listing['Quantity'] ?? 1);
+
+    if ($currentQty <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Sorry, this product is currently OUT OF STOCK!']);
+        exit;
+    }
+
+    $sellerLat = 14.6488;
+    $sellerLng = 121.0687;
+    $destLat = 14.6520;
+    $destLng = 121.0720;
+
+    $stmtIns = $db->prepare("INSERT INTO Orders (ListingId, BuyerId, SellerId, FulfillmentType, MeetupLocation, DeliveryAddress, Hometown, PostalCode, PhoneNumber, TotalPrice, Status, SellerLat, SellerLng, RiderLat, RiderLng, DestLat, DestLng, IsGpsActive, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())");
+    $stmtIns->execute([$listingId, $buyerId, $sellerId, $fulfillmentType, $meetupLocation, $deliveryAddress, $hometown, $postalCode, $phoneNumber, $totalPrice, $sellerLat, $sellerLng, $sellerLat, $sellerLng, $destLat, $destLng]);
+
+    $orderId = $db->lastInsertId();
+
+    $newQty = max(0, $currentQty - 1);
+    $newStatus = ($newQty <= 0) ? 'OUT_OF_STOCK' : 'ACTIVE';
+    $db->prepare("UPDATE Listings SET Quantity = ?, Status = ? WHERE Id = ?")->execute([$newQty, $newStatus, $listingId]);
+
+    echo json_encode([
+        'success' => true,
+        'orderId' => $orderId,
+        'message' => '🎉 Order placed successfully!'
+    ]);
+    exit;
+}
+
+if ($action === 'broadcast_order_to_riders' && $method === 'POST') {
+    $orderId = (int)($body['orderId'] ?? $body['order_id'] ?? 0);
+    if ($orderId > 0) {
+        $db->prepare("UPDATE Orders SET Status = 'BROADCASTING', UpdatedAt = NOW() WHERE Id = ?")->execute([$orderId]);
+    }
+    echo json_encode(['success' => true, 'message' => '🚀 Express Delivery Job broadcasted to all nearby verified motor drivers!']);
+    exit;
+}
+
+if ($action === 'get_driver_job_broadcasts') {
+    $userId = (int)($_GET['user_id'] ?? $_GET['userId'] ?? 0);
+
+    $chk = $db->prepare("SELECT IsVerified FROM MotorRiders WHERE UserId = ? AND IsVerified = 1");
+    $chk->execute([$userId]);
+    if (!$chk->fetch()) {
+        echo json_encode(['isVerifiedDriver' => false, 'jobs' => []]);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT o.*, l.Title as ItemTitle, l.Price as ItemPrice, l.ImageUrl, 
+        spB.FirstName as BuyerFirstName, spB.LastName as BuyerLastName, spB.PhoneNumber as BuyerPhone,
+        spS.FirstName as SellerFirstName, spS.LastName as SellerLastName, spS.PhoneNumber as SellerPhone
+        FROM Orders o 
+        JOIN Listings l ON o.ListingId = l.Id 
+        JOIN StudentProfiles spB ON o.BuyerId = spB.UserId 
+        JOIN StudentProfiles spS ON o.SellerId = spS.UserId 
+        WHERE o.Status = 'BROADCASTING' AND o.FulfillmentType = 'MOTOR_DELIVERY' 
+        ORDER BY o.CreatedAt DESC");
+    $stmt->execute();
+    echo json_encode(['isVerifiedDriver' => true, 'jobs' => $stmt->fetchAll() ?: []]);
+    exit;
+}
+
+if ($action === 'accept_driver_job' && $method === 'POST') {
+    $orderId = (int)($body['orderId'] ?? $body['order_id'] ?? 0);
+    $riderId = (int)($body['userId'] ?? $body['riderId'] ?? 0);
+
+    $chk = $db->prepare("SELECT IsVerified FROM MotorRiders WHERE UserId = ? AND IsVerified = 1");
+    $chk->execute([$riderId]);
+    if (!$chk->fetch()) {
+        echo json_encode(['success' => false, 'message' => '❌ Only Admin-Verified PasaBuy Motor Drivers can accept delivery jobs!']);
+        exit;
+    }
+
+    $chkOrd = $db->prepare("SELECT Status FROM Orders WHERE Id = ?");
+    $chkOrd->execute([$orderId]);
+    $ord = $chkOrd->fetch();
+
+    if (!$ord || $ord['Status'] !== 'BROADCASTING') {
+        echo json_encode(['success' => false, 'message' => '⚠️ Job already accepted by another motor rider!']);
+        exit;
+    }
+
+    $up = $db->prepare("UPDATE Orders SET AssignedRiderId = ?, Status = 'DRIVER_ASSIGNED', UpdatedAt = NOW() WHERE Id = ? AND Status = 'BROADCASTING'");
+    $up->execute([$riderId, $orderId]);
+
+    echo json_encode([
+        'success' => true,
+        'message' => '🎉 You accepted the delivery job! Proceed to Seller Pickup location.'
+    ]);
+    exit;
+}
+
+if ($action === 'confirm_package_collected' && $method === 'POST') {
+    $orderId = (int)($body['orderId'] ?? $body['order_id'] ?? 0);
+    $riderId = (int)($body['userId'] ?? $body['riderId'] ?? 0);
+
+    $up = $db->prepare("UPDATE Orders SET Status = 'OUT_FOR_DELIVERY', UpdatedAt = NOW() WHERE Id = ? AND AssignedRiderId = ?");
+    $up->execute([$orderId, $riderId]);
+
+    echo json_encode(['success' => true, 'message' => '📦 Package collected! Proceeding to Buyer delivery address.']);
+    exit;
+}
+
+if ($action === 'confirm_package_delivered' && $method === 'POST') {
+    $orderId = (int)($body['orderId'] ?? $body['order_id'] ?? 0);
+    $riderId = (int)($body['userId'] ?? $body['riderId'] ?? 0);
+
+    $up = $db->prepare("UPDATE Orders SET Status = 'DELIVERED', UpdatedAt = NOW() WHERE Id = ? AND AssignedRiderId = ?");
+    $up->execute([$orderId, $riderId]);
+
+    echo json_encode(['success' => true, 'message' => '✅ Package delivered successfully to buyer!']);
+    exit;
+}
+
+if ($action === 'get_buyer_orders') {
+    $buyerId = (int)($_GET['user_id'] ?? $_GET['userId'] ?? 0);
+    $stmt = $db->prepare("SELECT o.*, l.Title as ItemTitle, l.Price as ItemPrice, l.ImageUrl, 
+        spS.FirstName as SellerFirstName, spS.LastName as SellerLastName, spS.PhoneNumber as SellerPhone,
+        spR.FirstName as RiderFirstName, spR.LastName as RiderLastName, spR.PhoneNumber as RiderPhone, mr.PlateNumber, mr.VehicleModel
+        FROM Orders o 
+        JOIN Listings l ON o.ListingId = l.Id 
+        JOIN StudentProfiles spS ON o.SellerId = spS.UserId 
+        LEFT JOIN StudentProfiles spR ON o.AssignedRiderId = spR.UserId 
+        LEFT JOIN MotorRiders mr ON o.AssignedRiderId = mr.UserId 
+        WHERE o.BuyerId = ? 
+        ORDER BY o.CreatedAt DESC");
+    $stmt->execute([$buyerId]);
+    echo json_encode($stmt->fetchAll() ?: []);
+    exit;
+}
+
+if ($action === 'get_seller_orders') {
+    $sellerId = (int)($_GET['user_id'] ?? $_GET['userId'] ?? 0);
+    $stmt = $db->prepare("SELECT o.*, l.Title as ItemTitle, l.Price as ItemPrice, l.ImageUrl, 
+        spB.FirstName as BuyerFirstName, spB.LastName as BuyerLastName, spB.PhoneNumber as BuyerPhone,
+        spR.FirstName as RiderFirstName, spR.LastName as RiderLastName, spR.PhoneNumber as RiderPhone, mr.PlateNumber, mr.VehicleModel
+        FROM Orders o 
+        JOIN Listings l ON o.ListingId = l.Id 
+        JOIN StudentProfiles spB ON o.BuyerId = spB.UserId 
+        LEFT JOIN StudentProfiles spR ON o.AssignedRiderId = spR.UserId 
+        LEFT JOIN MotorRiders mr ON o.AssignedRiderId = mr.UserId 
+        WHERE o.SellerId = ? 
+        ORDER BY o.CreatedAt DESC");
+    $stmt->execute([$sellerId]);
+    echo json_encode($stmt->fetchAll() ?: []);
     exit;
 }
 
