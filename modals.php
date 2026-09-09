@@ -616,6 +616,10 @@
                     </div>
                 </div>
                 <div class="mb-3">
+                    <label class="form-label fw-bold fs-7"><i class="fa-solid fa-boxes-stacked text-primary me-1"></i> Available Stock Quantity <span class="text-muted fw-normal fs-9">(Set to 0 to hide from Home/Explore feeds)</span></label>
+                    <input type="number" class="form-control rounded-3 fs-7" id="editQuantityInput" min="0" value="1" placeholder="e.g. 1">
+                </div>
+                <div class="mb-3">
                     <label class="form-label fw-bold fs-7">Description</label>
                     <textarea class="form-control rounded-3 fs-7" id="editDescriptionInput" rows="2"></textarea>
                 </div>
@@ -837,6 +841,88 @@
                 </button>
             </div>
 
+        </div>
+    </div>
+</div>
+
+<!-- SELLER VERIFICATION REQUEST MODAL -->
+<div class="modal fade" id="verificationRequestModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-id-card text-primary fs-4"></i> Student Seller Verification Request
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-1">
+                <div id="verificationStatusBanner" class="p-3 rounded-3 mb-3 fs-8 fw-semibold" style="display:none;"></div>
+
+                <p class="fs-8 text-muted mb-3">
+                    To maintain safety and trust on campus, all student sellers must submit their valid ID and residential details for Admin verification before posting items to sell.
+                </p>
+
+                <form id="verificationForm" onsubmit="event.preventDefault(); submitSellerVerificationRequest();">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold fs-7">Hometown / City <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3 fs-7" id="vHometown" required placeholder="e.g. Quezon City, Metro Manila">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold fs-7">Postal Code / Zip Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3 fs-7" id="vPostalCode" required placeholder="e.g. 1108">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7">Full Residential Address <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-3 fs-7" id="vHomeAddress" required placeholder="e.g. 123 Katipunan Ave, Brgy. Loyola Heights">
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold fs-7">Student Contact Phone Number <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control rounded-3 fs-7" id="vPhoneNumber" required placeholder="09171234567">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold fs-7">Guardian Name & Phone Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3 fs-7" id="vGuardianInfo" required placeholder="e.g. Maria Santos (09189876543)">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold fs-7">Valid Identification Type <span class="text-danger">*</span></label>
+                            <select class="form-select rounded-3 fs-7" id="vIdType">
+                                <option value="Postal ID">Postal ID</option>
+                                <option value="School Student ID" selected>School / University Student ID</option>
+                                <option value="National ID (PhilSys)">National ID (PhilSys)</option>
+                                <option value="Driver's License">Driver's License</option>
+                                <option value="Passport">Passport</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold fs-7">ID Card / Serial Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3 fs-7" id="vIdNumber" required placeholder="e.g. PRN-10293847">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-7"><i class="fa-solid fa-camera text-primary me-1"></i> Upload Photo of Valid ID / Postal ID <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control rounded-3 fs-7" id="vIdPhotoInput" accept="image/*" onchange="previewVerificationIdPhoto(event)">
+                        <div id="vIdPhotoPreviewBox" class="mt-2 text-center" style="display:none;">
+                            <img id="vIdPhotoPreview" class="img-fluid rounded-3 border shadow-sm" style="max-height: 180px; object-fit: contain;">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-2">
+                        <button type="button" class="btn btn-light rounded-pill w-50 fw-bold py-2 fs-7 text-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary rounded-pill w-50 fw-bold py-2 fs-7 shadow-sm" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" id="submitVerificationBtn">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Submit to Admin
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>

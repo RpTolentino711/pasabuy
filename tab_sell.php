@@ -22,10 +22,16 @@
             </select>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label fw-bold fs-7">Selling Price (₱)</label>
-            <input type="number" class="form-control rounded-3 fs-7" id="sellPrice" value="500"
-                oninput="calculateFeeLive()">
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <label class="form-label fw-bold fs-7">Selling Price (₱)</label>
+                <input type="number" class="form-control rounded-3 fs-7" id="sellPrice" value="500"
+                    oninput="calculateFeeLive()">
+            </div>
+            <div class="col-6">
+                <label class="form-label fw-bold fs-7">Available Stock</label>
+                <input type="number" class="form-control rounded-3 fs-7" id="sellQuantity" value="1" min="0" placeholder="Qty">
+            </div>
         </div>
 
         <!-- Server Fee Live Calculation Box -->
@@ -84,7 +90,7 @@
             </div>
         </div>
 
-        <button class="btn btn-pasabuy" onclick="submitDirectPosting()"><i class="fa-solid fa-paper-plane me-2"></i> Verify & Post Live Now</button>
+        <button class="btn btn-pasabuy" onclick="checkSellerVerificationAndPost()"><i class="fa-solid fa-paper-plane me-2"></i> Verify & Post Live Now</button>
     </div>
 
     <!-- PayMongo GCash Payment Step -->

@@ -1839,6 +1839,135 @@
                             document.getElementById('payAmountDisplay').innerText = `₱${fee.toFixed(2)}`;
                         }
 
+                        let verificationIdPhotoBase64 = '';
+
+                        window.previewVerificationIdPhoto = function (event) {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                verificationIdPhotoBase64 = e.target.result;
+                                const previewImg = document.getElementById('vIdPhotoPreview');
+                                const previewBox = document.getElementById('vIdPhotoPreviewBox');
+                                if (previewImg) previewImg.src = e.target.result;
+                                if (previewBox) previewBox.style.display = 'block';
+                            };
+                            reader.readAsDataURL(file);
+                        };
+
+                        window.checkSellerVerificationAndPost = async function () {
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const userId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                const res = await fetch(`/pasabuy_api.php?action=get_verification_status&userId=${userId}`);
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    const status = (data.VerificationStatus || data.Status || 'UNVERIFIED').toUpperCase();
+                                    const reqStatus = (data.RequestStatus || '').toUpperCase();
+
+                                    if (status === 'APPROVED' || status === 'VERIFIED') {
+                                        await submitDirectPosting();
+                                        return;
+                                    }
+
+                                    const modalEl = document.getElementById('verificationRequestModal');
+                                    const banner = document.getElementById('verificationStatusBanner');
+
+                                    if (status === 'PENDING' || reqStatus === 'PENDING') {
+                                        if (banner) {
+                                            banner.className = 'p-3 rounded-3 mb-3 fs-8 fw-semibold bg-warning bg-opacity-10 text-warning-emphasis border border-warning-subtle';
+                                            banner.innerHTML = `<i class="fa-solid fa-clock me-1"></i> <strong>Verification Pending:</strong> Your seller verification request is currently under review by campus Admin. You will be able to post items once approved.`;
+                                            banner.style.display = 'block';
+                                        }
+                                        if (modalEl) new bootstrap.Modal(modalEl).show();
+                                        return;
+                                    }
+
+                                    if (status === 'REJECTED' || reqStatus === 'REJECTED') {
+                                        const reason = data.RejectionReason || 'Uploaded documents were incomplete or invalid.';
+                                        if (banner) {
+                                            banner.className = 'p-3 rounded-3 mb-3 fs-8 fw-semibold bg-danger bg-opacity-10 text-danger border border-danger-subtle';
+                                            banner.innerHTML = `<i class="fa-solid fa-circle-xmark me-1"></i> <strong>Verification Rejected by Admin:</strong> ${reason}<br><span class="text-muted fw-normal fs-9">Please update your details below and resubmit for approval.</span>`;
+                                            banner.style.display = 'block';
+                                        }
+                                        if (modalEl) new bootstrap.Modal(modalEl).show();
+                                        return;
+                                    }
+
+                                    if (banner) {
+                                        banner.className = 'p-3 rounded-3 mb-3 fs-8 fw-semibold bg-info bg-opacity-10 text-info-emphasis border border-info-subtle';
+                                        banner.innerHTML = `<i class="fa-solid fa-shield-halved me-1"></i> <strong>Student Verification Required:</strong> Please complete and submit the seller verification form to post items on campus marketplace.`;
+                                        banner.style.display = 'block';
+                                    }
+                                    if (modalEl) new bootstrap.Modal(modalEl).show();
+                                    return;
+                                }
+                            } catch (e) {
+                                console.error("Verification check error:", e);
+                            }
+
+                            await submitDirectPosting();
+                        };
+
+                        window.submitSellerVerificationRequest = async function () {
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const userId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            const hometown = document.getElementById('vHometown').value.trim();
+                            const homeAddress = document.getElementById('vHomeAddress').value.trim();
+                            const postalCode = document.getElementById('vPostalCode').value.trim();
+                            const phoneNumber = document.getElementById('vPhoneNumber').value.trim();
+                            const guardianInfo = document.getElementById('vGuardianInfo').value.trim();
+                            const idType = document.getElementById('vIdType').value;
+                            const idNumber = document.getElementById('vIdNumber').value.trim();
+
+                            if (!hometown || !homeAddress || !postalCode || !phoneNumber || !guardianInfo || !idNumber) {
+                                alert('Please fill out all required fields in the verification form.');
+                                return;
+                            }
+
+                            const btn = document.getElementById('submitVerificationBtn');
+                            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Submitting...'; }
+
+                            try {
+                                const res = await fetch('/pasabuy_api.php?action=submit_verification_request', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        userId: userId,
+                                        hometown: hometown,
+                                        homeAddress: homeAddress,
+                                        postalCode: postalCode,
+                                        phoneNumber: phoneNumber,
+                                        guardianName: guardianInfo,
+                                        guardianPhone: phoneNumber,
+                                        idType: idType,
+                                        idNumber: idNumber,
+                                        idFrontImage: verificationIdPhotoBase64 || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80'
+                                    })
+                                });
+
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('🎉 Verification Request Submitted! Your application is now pending review by campus Admin.');
+                                    const modalEl = document.getElementById('verificationRequestModal');
+                                    if (modalEl) {
+                                        const bsModal = bootstrap.Modal.getInstance(modalEl);
+                                        if (bsModal) bsModal.hide();
+                                    }
+                                } else {
+                                    alert(data.message || 'Submission failed. Please try again.');
+                                }
+                            } catch (e) {
+                                alert('Network error submitting verification request.');
+                            } finally {
+                                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Submit Verification Request'; }
+                            }
+                        };
+
                         async function submitDirectPosting() {
                             const title = document.getElementById('sellTitle').value.trim();
                             if (!title) {
@@ -1970,6 +2099,7 @@
                         async function publishListingToDatabase() {
                             const title = document.getElementById('sellTitle').value.trim() || 'Campus Item';
                             const price = parseFloat(document.getElementById('sellPrice').value) || 10;
+                            const quantity = parseInt(document.getElementById('sellQuantity').value) || 1;
                             const meetup = document.getElementById('sellMeetup').value.trim() || 'Campus Library';
                             const condition = document.getElementById('sellCondition').value || 'Good';
                             const category = document.getElementById('sellCategory') ? document.getElementById('sellCategory').value : 'Food / Pasabuy';
@@ -1987,6 +2117,7 @@
                                         title: title,
                                         description: `Campus item for sale: ${title}`,
                                         price: price,
+                                        quantity: quantity,
                                         sellerId: sellerId,
                                         condition: condition,
                                         category: category,
@@ -2000,11 +2131,12 @@
                                     if (data.id || data.listingId) currentListingId = data.id || data.listingId;
                                 }
 
-                                // Save locally so item displays instantly on Home Feed and Profile Tab
                                 const newProduct = {
                                     id: currentListingId || Date.now(),
                                     title: title,
                                     price: `₱${price.toFixed(2)}`,
+                                    quantity: quantity,
+                                    status: quantity <= 0 ? 'OUT_OF_STOCK' : 'ACTIVE',
                                     fee: price >= 1000 ? '₱10.00' : (price >= 100 ? '₱5.00' : '₱1.00'),
                                     condition: condition,
                                     category: category,
@@ -2146,6 +2278,7 @@
                                                 description: item.Description || item.description || '',
                                                 price: priceStr,
                                                 priceVal: priceVal,
+                                                quantity: (item.Quantity !== undefined && item.Quantity !== null) ? parseInt(item.Quantity) : ((item.quantity !== undefined && item.quantity !== null) ? parseInt(item.quantity) : 1),
                                                 fee: feeStr,
                                                 condition: condition,
                                                 category: category,
@@ -2188,7 +2321,10 @@
 
                                 const isMyListing = (p.sellerId == myId) || (p.seller && p.seller.toLowerCase() === myName.toLowerCase());
 
-                                if (!isMyListing && (p.status === 'RESERVED' || p.status === 'SOLD')) return;
+                                const qtyVal = (p.quantity !== undefined && p.quantity !== null) ? parseInt(p.quantity) : ((p.Quantity !== undefined && p.Quantity !== null) ? parseInt(p.Quantity) : 1);
+                                const isOutOfStock = (qtyVal <= 0) || (p.status === 'OUT_OF_STOCK');
+
+                                if (!isMyListing && (p.status === 'RESERVED' || p.status === 'SOLD' || isOutOfStock)) return;
 
                                 if (selectedCat === 'My Items' && !isMyListing) return;
                                 if (selectedCat !== 'All' && selectedCat !== 'My Items' && p.condition !== selectedCat && p.category !== selectedCat) return;
@@ -2262,21 +2398,23 @@
                     </div>
                 </div>`;
 
-                                html += cardHtml;
+                                if (!isOutOfStock) {
+                                    html += cardHtml;
+                                }
 
                                 // 2. Profile Tab Card HTML (profileCardHtml)
                                 if (isMyListing) {
                                     const profileMediaHtml = p.videoUrl
                                         ? `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
                                             <video src="${p.videoUrl}" controls style="width:100%; height:135px; object-fit:cover; border-radius:14px; background:#000;" preload="metadata"></video>
-                                            <span class="badge position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill shadow-sm fs-9 text-white fw-bold ${p.status === 'RESERVED' ? 'bg-warning text-dark' : (p.status === 'SOLD' ? 'bg-success text-white' : '')}" style="${!p.status || p.status === 'ACTIVE' ? 'background: linear-gradient(135deg, #6C5CE7, #5F27CD);' : ''} z-index:4;">
-                                                <i class="fa-solid ${p.status === 'RESERVED' ? 'fa-bookmark' : (p.status === 'SOLD' ? 'fa-circle-check' : 'fa-store')} me-1"></i> ${p.status || 'Active'}
+                                            <span class="badge position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill shadow-sm fs-9 text-white fw-bold ${isOutOfStock ? 'bg-danger text-white' : (p.status === 'RESERVED' ? 'bg-warning text-dark' : (p.status === 'SOLD' ? 'bg-success text-white' : ''))}" style="${!isOutOfStock && (!p.status || p.status === 'ACTIVE') ? 'background: linear-gradient(135deg, #6C5CE7, #5F27CD);' : ''} z-index:4;">
+                                                <i class="fa-solid ${isOutOfStock ? 'fa-box-open' : (p.status === 'RESERVED' ? 'fa-bookmark' : (p.status === 'SOLD' ? 'fa-circle-check' : 'fa-store'))} me-1"></i> ${isOutOfStock ? 'Out of Stock (Qty: 0)' : (p.status || 'Active')}
                                             </span>
                                            </div>`
                                         : `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
                                             <img src="${p.img}" class="rounded-4" alt="${p.title}" style="width:100%; height:135px; object-fit:cover;">
-                                            <span class="badge position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill shadow-sm fs-9 text-white fw-bold ${p.status === 'RESERVED' ? 'bg-warning text-dark' : (p.status === 'SOLD' ? 'bg-success text-white' : '')}" style="${!p.status || p.status === 'ACTIVE' ? 'background: linear-gradient(135deg, #6C5CE7, #5F27CD);' : ''} z-index:4;">
-                                                <i class="fa-solid ${p.status === 'RESERVED' ? 'fa-bookmark' : (p.status === 'SOLD' ? 'fa-circle-check' : 'fa-store')} me-1"></i> ${p.status || 'Active'}
+                                            <span class="badge position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill shadow-sm fs-9 text-white fw-bold ${isOutOfStock ? 'bg-danger text-white' : (p.status === 'RESERVED' ? 'bg-warning text-dark' : (p.status === 'SOLD' ? 'bg-success text-white' : ''))}" style="${!isOutOfStock && (!p.status || p.status === 'ACTIVE') ? 'background: linear-gradient(135deg, #6C5CE7, #5F27CD);' : ''} z-index:4;">
+                                                <i class="fa-solid ${isOutOfStock ? 'fa-box-open' : (p.status === 'RESERVED' ? 'fa-bookmark' : (p.status === 'SOLD' ? 'fa-circle-check' : 'fa-store'))} me-1"></i> ${isOutOfStock ? 'Out of Stock (Qty: 0)' : (p.status || 'Active')}
                                             </span>
                                            </div>`;
 
@@ -2310,10 +2448,130 @@
                                 }
                             });
 
-                            if (exploreList) exploreList.innerHTML = html || '<div class="text-center text-muted py-4">No active marketplace items found.</div>';
-                            if (homeContainer) homeContainer.innerHTML = html || '<div class="text-center text-muted py-4">No active listings yet. Be the first student to post on campus!</div>';
-                            if (profileContainer) profileContainer.innerHTML = profileHtml || '<div class="text-center text-muted py-4">You have no active item listings. Post an item in the Sell tab to view it here!</div>';
+                            if (exploreList) {
+                                exploreList.innerHTML = html || '<div class="col-12 text-center text-muted py-5"><i class="fa-solid fa-box-open fs-1 mb-2 d-block opacity-50"></i>No active items found.</div>';
+                            }
+                            if (homeContainer) {
+                                homeContainer.innerHTML = html || '<div class="col-12 text-center text-muted py-5"><i class="fa-solid fa-box-open fs-1 mb-2 d-block opacity-50"></i>No active items found.</div>';
+                            }
+
+                            if (profileContainer) {
+                                profileContainer.innerHTML = profileHtml || '<div class="col-12 text-center text-muted py-4"><i class="fa-solid fa-store-slash me-1"></i> You haven\'t listed any items for sale yet.</div>';
+                            }
                         }
+
+                        let currentEditListingObj = null;
+
+                        window.handleEditVideoUpload = function (event) {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                const videoDataUrl = e.target.result;
+                                document.getElementById('editVideoUrlInput').value = videoDataUrl;
+                                const videoPreview = document.getElementById('editVideoPreview');
+                                const videoPreviewBox = document.getElementById('editVideoPreviewContainer');
+                                if (videoPreview) videoPreview.src = videoDataUrl;
+                                if (videoPreviewBox) videoPreviewBox.style.display = 'block';
+                            };
+                            reader.readAsDataURL(file);
+                        };
+
+                        window.openEditListingModal = function (listingId) {
+                            const listing = (window.allProductsCache || []).find(p => p.id == listingId);
+                            if (!listing) {
+                                alert('Listing not found');
+                                return;
+                            }
+                            currentEditListingObj = listing;
+
+                            document.getElementById('editListingId').value = listing.id;
+                            document.getElementById('editTitleInput').value = listing.title;
+                            document.getElementById('editPriceInput').value = listing.priceVal || parseFloat(listing.price.replace(/[^\d.]/g, '')) || 0;
+                            const editQtyInput = document.getElementById('editQuantityInput');
+                            if (editQtyInput) {
+                                const qVal = (listing.quantity !== undefined && listing.quantity !== null) ? listing.quantity : ((listing.Quantity !== undefined && listing.Quantity !== null) ? listing.Quantity : 1);
+                                editQtyInput.value = qVal;
+                            }
+                            document.getElementById('editCategorySelect').value = listing.categoryId || 1;
+                            document.getElementById('editConditionSelect').value = listing.condition || 'Good';
+                            document.getElementById('editMeetupInput').value = listing.location || 'Campus Library';
+                            document.getElementById('editDescriptionInput').value = listing.description || '';
+                            document.getElementById('editImageUrlInput').value = listing.img || '';
+                            document.getElementById('editVideoUrlInput').value = listing.videoUrl || '';
+
+                            const videoPreview = document.getElementById('editVideoPreview');
+                            const videoPreviewBox = document.getElementById('editVideoPreviewContainer');
+                            if (listing.videoUrl) {
+                                if (videoPreview) videoPreview.src = listing.videoUrl;
+                                if (videoPreviewBox) videoPreviewBox.style.display = 'block';
+                            } else {
+                                if (videoPreviewBox) videoPreviewBox.style.display = 'none';
+                            }
+
+                            const modalEl = document.getElementById('editListingModal');
+                            if (modalEl) new bootstrap.Modal(modalEl).show();
+                        };
+
+                        window.executeSaveEditedListing = async function () {
+                            const id = document.getElementById('editListingId').value;
+                            const title = document.getElementById('editTitleInput').value.trim();
+                            const price = parseFloat(document.getElementById('editPriceInput').value) || 0;
+                            const quantityVal = parseInt(document.getElementById('editQuantityInput') ? document.getElementById('editQuantityInput').value : 1);
+                            const quantity = isNaN(quantityVal) ? 0 : quantityVal;
+                            const categoryId = parseInt(document.getElementById('editCategorySelect').value) || 1;
+                            const condition = document.getElementById('editConditionSelect').value;
+                            const meetupLocation = document.getElementById('editMeetupInput').value.trim();
+                            const description = document.getElementById('editDescriptionInput').value.trim();
+                            const imageUrl = document.getElementById('editImageUrlInput').value.trim();
+                            const videoUrl = document.getElementById('editVideoUrlInput').value.trim();
+
+                            if (!title) {
+                                alert('Product title is required!');
+                                return;
+                            }
+
+                            try {
+                                const res = await fetch('pasabuy_api.php?action=update_listing', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        id: id,
+                                        title: title,
+                                        price: price,
+                                        quantity: quantity,
+                                        categoryId: categoryId,
+                                        condition: condition,
+                                        meetupLocation: meetupLocation,
+                                        description: description,
+                                        imageUrl: imageUrl,
+                                        videoUrl: videoUrl
+                                    })
+                                });
+
+                                const data = await res.json();
+                                if (data.success) {
+                                    if (currentEditListingObj) {
+                                        currentEditListingObj.quantity = quantity;
+                                        currentEditListingObj.Quantity = quantity;
+                                        currentEditListingObj.status = quantity <= 0 ? 'OUT_OF_STOCK' : 'ACTIVE';
+                                    }
+                                    if (quantity <= 0) {
+                                        alert('✅ Product Listing Updated! (Stock set to 0. Product marked as Out of Stock & hidden from Home/Explore feeds)');
+                                    } else {
+                                        alert('✅ Product Listing & Details Updated Successfully!');
+                                    }
+                                    const modalEl = document.getElementById('editListingModal');
+                                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                                    if (bsModal) bsModal.hide();
+                                    await filterProducts();
+                                } else {
+                                    alert(data.message || 'Error saving listing updates.');
+                                }
+                            } catch (e) {
+                                alert('Failed to update listing.');
+                            }
+                        };
 
                         let currentActiveChatSellerId = 0;
                         let liveChatPollingTimer = null;

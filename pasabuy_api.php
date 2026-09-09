@@ -50,12 +50,36 @@ try {
 } catch (Exception $eCol) {}
 
 try {
+    $db->exec("ALTER TABLE Listings ADD COLUMN Quantity INT DEFAULT 1;");
+} catch (Exception $eQty) {}
+
+try {
     $db->exec("ALTER TABLE ChatMessages ADD COLUMN IsRead TINYINT(1) DEFAULT 0;");
 } catch (Exception $eIsRead) {}
 
 try {
     $db->exec("ALTER TABLE StudentProfiles MODIFY COLUMN ProfileImage LONGTEXT NULL;");
 } catch (Exception $eProfImg) {}
+
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS VerificationRequests (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        UserId INT NOT NULL,
+        Hometown VARCHAR(255) NULL,
+        HomeAddress TEXT NULL,
+        PostalCode VARCHAR(50) NULL,
+        PhoneNumber VARCHAR(50) NULL,
+        GuardianName VARCHAR(255) NULL,
+        GuardianPhone VARCHAR(50) NULL,
+        IdType VARCHAR(100) NULL,
+        IdNumber VARCHAR(100) NULL,
+        IdFrontImage LONGTEXT NULL,
+        Status VARCHAR(50) DEFAULT 'PENDING',
+        RejectionReason TEXT NULL,
+        CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );");
+} catch (Exception $eVreq) {}
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = trim((string)($_GET['action'] ?? ''));
@@ -146,6 +170,8 @@ if ($action === 'create_listing' && $method === 'POST') {
     $condition = trim((string)($body['condition'] ?? 'Good'));
     $imgUrl = trim((string)($body['imageUrl'] ?? ''));
     $videoUrl = trim((string)($body['videoUrl'] ?? $body['video_url'] ?? ''));
+    $quantity = (int)($body['quantity'] ?? $body['Quantity'] ?? 1);
+    $status = ($quantity <= 0) ? 'OUT_OF_STOCK' : 'ACTIVE';
 
     if ($title === '') {
         http_response_code(400);
@@ -155,12 +181,12 @@ if ($action === 'create_listing' && $method === 'POST') {
 
     $listingId = 0;
     try {
-        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, `Condition`, MeetupLocationId, VideoUrl, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, 1, ?, 'ACTIVE', NOW(), NOW())");
-        $stmt->execute([$sellerId, $catId, $title, $desc, $price, $condition, $videoUrl]);
+        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, `Condition`, MeetupLocationId, VideoUrl, Quantity, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, NOW(), NOW())");
+        $stmt->execute([$sellerId, $catId, $title, $desc, $price, $condition, $videoUrl, $quantity, $status]);
         $listingId = (int)$db->lastInsertId();
     } catch (Exception $eIns) {
-        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, VideoUrl, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())");
-        $stmt->execute([$sellerId, $catId, $title, $desc, $price, $videoUrl]);
+        $stmt = $db->prepare("INSERT INTO Listings (SellerId, CategoryId, Title, Description, Price, VideoUrl, Quantity, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+        $stmt->execute([$sellerId, $catId, $title, $desc, $price, $videoUrl, $quantity, $status]);
         $listingId = (int)$db->lastInsertId();
     }
 
@@ -185,7 +211,7 @@ if ($action === 'create_listing' && $method === 'POST') {
 }
 
 // ---------------------------------------------------------
-// 2B. UPDATE / EDIT ITEM LISTING & PRODUCT VIDEO
+// 2B. UPDATE / EDIT ITEM LISTING & PRODUCT VIDEO & QUANTITY
 // ---------------------------------------------------------
 if (($action === 'update_listing' || $action === 'edit_listing') && $method === 'POST') {
     $id = (int)($body['id'] ?? $body['listingId'] ?? 0);
@@ -196,6 +222,8 @@ if (($action === 'update_listing' || $action === 'edit_listing') && $method === 
     $condition = trim((string)($body['condition'] ?? 'Good'));
     $videoUrl = trim((string)($body['videoUrl'] ?? $body['video_url'] ?? ''));
     $imgUrl = trim((string)($body['imageUrl'] ?? ''));
+    $quantity = (int)($body['quantity'] ?? $body['Quantity'] ?? 1);
+    $status = ($quantity <= 0) ? 'OUT_OF_STOCK' : 'ACTIVE';
 
     if ($id <= 0 || $title === '') {
         http_response_code(400);
@@ -204,11 +232,11 @@ if (($action === 'update_listing' || $action === 'edit_listing') && $method === 
     }
 
     try {
-        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, CategoryId = ?, `Condition` = ?, VideoUrl = ?, UpdatedAt = NOW() WHERE Id = ?");
-        $stmt->execute([$title, $desc, $catId, $condition, $videoUrl, $id]);
+        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, Price = ?, CategoryId = ?, `Condition` = ?, VideoUrl = ?, Quantity = ?, Status = ?, UpdatedAt = NOW() WHERE Id = ?");
+        $stmt->execute([$title, $desc, $price, $catId, $condition, $videoUrl, $quantity, $status, $id]);
     } catch (Exception $eUp) {
-        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, CategoryId = ?, VideoUrl = ?, UpdatedAt = NOW() WHERE Id = ?");
-        $stmt->execute([$title, $desc, $catId, $videoUrl, $id]);
+        $stmt = $db->prepare("UPDATE Listings SET Title = ?, Description = ?, Price = ?, CategoryId = ?, VideoUrl = ?, Quantity = ?, Status = ?, UpdatedAt = NOW() WHERE Id = ?");
+        $stmt->execute([$title, $desc, $price, $catId, $videoUrl, $quantity, $status, $id]);
     }
 
     if ($imgUrl !== '') {
@@ -715,6 +743,97 @@ if ($action === 'notifications' || $action === 'get_notifications') {
     } catch (Exception $eL) {}
 
     echo json_encode($notifs);
+    exit;
+}
+
+// ---------------------------------------------------------
+// SELLER VERIFICATION REQUEST ENDPOINTS
+// ---------------------------------------------------------
+if ($action === 'submit_verification_request' && $method === 'POST') {
+    $userId = (int)($body['userId'] ?? $body['user_id'] ?? 104);
+    $hometown = trim((string)($body['hometown'] ?? ''));
+    $homeAddress = trim((string)($body['homeAddress'] ?? $body['home_address'] ?? ''));
+    $postalCode = trim((string)($body['postalCode'] ?? $body['postal_code'] ?? ''));
+    $phoneNumber = trim((string)($body['phoneNumber'] ?? $body['phone_number'] ?? ''));
+    $guardianName = trim((string)($body['guardianName'] ?? $body['guardian_name'] ?? ''));
+    $guardianPhone = trim((string)($body['guardianPhone'] ?? $body['guardian_phone'] ?? ''));
+    $idType = trim((string)($body['idType'] ?? $body['id_type'] ?? 'Postal ID'));
+    $idNumber = trim((string)($body['idNumber'] ?? $body['id_number'] ?? ''));
+    $idFrontImage = trim((string)($body['idFrontImage'] ?? $body['id_front_image'] ?? ''));
+
+    if ($userId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Valid User ID required.']);
+        exit;
+    }
+
+    $stmtCheck = $db->prepare("SELECT Id FROM VerificationRequests WHERE UserId = ? AND Status = 'PENDING'");
+    $stmtCheck->execute([$userId]);
+    if ($stmtCheck->fetch()) {
+        echo json_encode(['success' => false, 'message' => 'You already have a pending seller verification request under review by Admin.']);
+        exit;
+    }
+
+    $ins = $db->prepare("INSERT INTO VerificationRequests (UserId, Hometown, HomeAddress, PostalCode, PhoneNumber, GuardianName, GuardianPhone, IdType, IdNumber, IdFrontImage, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', NOW(), NOW())");
+    $ins->execute([$userId, $hometown, $homeAddress, $postalCode, $phoneNumber, $guardianName, $guardianPhone, $idType, $idNumber, $idFrontImage]);
+
+    $upProf = $db->prepare("UPDATE StudentProfiles SET VerificationStatus = 'PENDING', UpdatedAt = NOW() WHERE UserId = ?");
+    $upProf->execute([$userId]);
+
+    echo json_encode(['success' => true, 'message' => 'Verification request submitted successfully to Admin!']);
+    exit;
+}
+
+if ($action === 'get_verification_status') {
+    $userId = (int)($_GET['user_id'] ?? $_GET['userId'] ?? 104);
+    $stmt = $db->prepare("SELECT sp.VerificationStatus, vr.Hometown, vr.HomeAddress, vr.PostalCode, vr.PhoneNumber, vr.GuardianName, vr.GuardianPhone, vr.IdType, vr.IdNumber, vr.Status as RequestStatus, vr.RejectionReason, vr.CreatedAt 
+        FROM StudentProfiles sp 
+        LEFT JOIN VerificationRequests vr ON (sp.UserId = vr.UserId) 
+        WHERE sp.UserId = ? 
+        ORDER BY vr.CreatedAt DESC LIMIT 1");
+    $stmt->execute([$userId]);
+    $res = $stmt->fetch() ?: ['VerificationStatus' => 'UNVERIFIED'];
+    echo json_encode($res);
+    exit;
+}
+
+if ($action === 'admin_verification_requests') {
+    $sql = "SELECT vr.*, sp.FirstName, sp.LastName, sp.StudentNumber, sp.SchoolEmail, sp.Course, sp.YearLevel, sp.ProfileImage 
+            FROM VerificationRequests vr 
+            JOIN StudentProfiles sp ON vr.UserId = sp.UserId 
+            ORDER BY FIELD(vr.Status, 'PENDING', 'REJECTED', 'APPROVED'), vr.CreatedAt DESC";
+    $stmt = $db->query($sql);
+    echo json_encode($stmt->fetchAll() ?: []);
+    exit;
+}
+
+if ($action === 'admin_approve_verification' && $method === 'POST') {
+    $requestId = (int)($body['requestId'] ?? $body['request_id'] ?? 0);
+    $userId = (int)($body['userId'] ?? $body['user_id'] ?? 0);
+
+    if ($requestId > 0) {
+        $db->prepare("UPDATE VerificationRequests SET Status = 'APPROVED', UpdatedAt = NOW() WHERE Id = ?")->execute([$requestId]);
+    }
+    if ($userId > 0) {
+        $db->prepare("UPDATE StudentProfiles SET VerificationStatus = 'VERIFIED', UpdatedAt = NOW() WHERE UserId = ?")->execute([$userId]);
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Student seller verification APPROVED successfully!']);
+    exit;
+}
+
+if ($action === 'admin_reject_verification' && $method === 'POST') {
+    $requestId = (int)($body['requestId'] ?? $body['request_id'] ?? 0);
+    $userId = (int)($body['userId'] ?? $body['user_id'] ?? 0);
+    $reason = trim((string)($body['reason'] ?? 'Incomplete or unreadable ID documents submitted.'));
+
+    if ($requestId > 0) {
+        $db->prepare("UPDATE VerificationRequests SET Status = 'REJECTED', RejectionReason = ?, UpdatedAt = NOW() WHERE Id = ?")->execute([$reason, $requestId]);
+    }
+    if ($userId > 0) {
+        $db->prepare("UPDATE StudentProfiles SET VerificationStatus = 'REJECTED', UpdatedAt = NOW() WHERE UserId = ?")->execute([$userId]);
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Verification request rejected with reason recorded.']);
     exit;
 }
 
