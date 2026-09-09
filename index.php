@@ -1152,7 +1152,11 @@
                             alert(`Report submitted to PasaBuy Admin! Our moderation team will investigate. If confirmed, the user account will be suspended.`);
                         }
 
-                        function checkStudentSessionOnLoad() {
+                        window.checkStudentSessionOnLoad = function checkStudentSessionOnLoad() {
+                            const appHeader = document.querySelector('.app-header');
+                            const appTabbar = document.querySelector('.app-tabbar');
+                            const authScreen = document.getElementById('authScreen');
+
                             try {
                                 const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
                                 const storedUserStr = localStorage.getItem('pasabuy_student_user');
@@ -1174,9 +1178,12 @@
                                             document.getElementById('homeAvatar').src = studentUser.profileImage;
                                         }
 
-                                        document.getElementById('authScreen').style.display = 'none';
-                                        document.querySelector('.app-tabbar').style.display = 'flex';
-                                        document.getElementById('headerBadge').style.display = 'inline-flex';
+                                        if (appHeader) appHeader.style.display = 'flex';
+                                        if (appTabbar) appTabbar.style.display = 'flex';
+                                        if (authScreen) authScreen.style.display = 'none';
+
+                                        const badgeEl = document.getElementById('headerBadge');
+                                        if (badgeEl) badgeEl.style.display = 'inline-flex';
                                         const userActions = document.getElementById('headerUserActions');
                                         if (userActions) userActions.style.setProperty('display', 'flex', 'important');
                                         switchTab('home');
@@ -1185,14 +1192,17 @@
                                 }
                             } catch (e) { }
 
-                            document.getElementById('authScreen').style.display = 'block';
-                            document.querySelector('.app-tabbar').style.display = 'none';
-                            document.getElementById('headerBadge').style.display = 'none';
+                            if (appHeader) appHeader.style.display = 'none';
+                            if (appTabbar) appTabbar.style.display = 'none';
+                            if (authScreen) authScreen.style.display = 'block';
+
+                            const badgeEl = document.getElementById('headerBadge');
+                            if (badgeEl) badgeEl.style.display = 'none';
                             const userActions = document.getElementById('headerUserActions');
                             if (userActions) userActions.style.setProperty('display', 'none', 'important');
                             const tabs = ['tabHome', 'tabExplore', 'tabSell', 'tabWanted', 'tabMessages', 'tabProfile', 'chatView'];
                             tabs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-                        }
+                        };
 
                         // Legacy cleanup
 
@@ -2839,8 +2849,6 @@
                         // ---------------------------------------------------------
                         // PRODUCT EDITING & VIDEO UPLOAD HELPERS
                         // ---------------------------------------------------------
-                        let currentEditListingObj = null;
-
                         window.handleSellVideoUpload = function (event) {
                             const file = event.target.files[0];
                             if (!file) return;
