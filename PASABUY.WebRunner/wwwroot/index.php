@@ -318,8 +318,8 @@
         <div class="app-header bg-white border-bottom px-3 py-2.5 shadow-sm d-flex align-items-center justify-content-between" style="background:#fff; color:#1E293B;">
             <div class="d-flex align-items-center gap-2">
                 <div class="rounded-3 d-inline-flex align-items-center justify-content-center p-1.5 shadow-sm"
-                    style="width:38px; height:38px; background: linear-gradient(135deg, #6C5CE7, #5F27CD); color:#fff;">
-                    <i class="fa-solid fa-bag-shopping fs-5"></i>
+                    style="width:38px; height:38px; background: rgba(108, 92, 231, 0.08);">
+                    <img src="LOGO.png" alt="PasaBuy Logo" style="width:28px; height:28px; object-fit:contain;">
                 </div>
                 <div>
                     <div class="fw-extrabold fs-6 text-dark lh-1" style="letter-spacing: -0.3px;">PasaBuy</div>
@@ -328,14 +328,14 @@
             </div>
             <div class="align-items-center gap-2" id="headerUserActions" style="display:none !important;">
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="openNotificationsModal()" title="Notifications" style="width:36px; height:36px; background: #F1F5F9;">
-                    <i class="fa-solid fa-bell text-secondary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem; padding: 2px 4px;">1</span>
+                    onclick="openCartModal()" title="Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
+                    <i class="fa-solid fa-cart-shopping text-secondary fs-7"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; display:none; padding: 2px 4px;">0</span>
                 </button>
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="switchTab('messages')" title="Messages" style="width:36px; height:36px; background: #F1F5F9;">
-                    <i class="fa-solid fa-comment-dots text-secondary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem; padding: 2px 4px;">1</span>
+                    onclick="openNotificationsModal()" title="Notifications" style="width:36px; height:36px; background: #F1F5F9;">
+                    <i class="fa-solid fa-bell text-secondary fs-7"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="headerNotifBadge" style="font-size:0.6rem; display:none; padding: 2px 4px;">0</span>
                 </button>
                 <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')">
                     <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
@@ -345,7 +345,6 @@
             </div>
         </div>
 
-        <!-- App Body (Dynamic Tab Views) -->
         <!-- App Body (Dynamic PHP Modular Tab Views) -->
         <div class="app-body" id="appBody">
             <?php include 'splash_screen.php'; ?>
@@ -358,7 +357,7 @@
             <?php include 'tab_messages.php'; ?>
             <?php include 'tab_profile.php'; ?>
         </div>
-          <!-- App Bottom Tab Bar Navigation (Matching Reference Screenshot) -->
+        <!-- App Bottom Tab Bar Navigation -->
         <div class="app-tabbar" style="display:none; height:68px; border-top:1px solid #E2E8F0; background:#fff;">
             <div class="tab-item active" onclick="switchTab('home')" id="tabNavHome">
                 <i class="fa-solid fa-house"></i>
@@ -375,14 +374,10 @@
                     <i class="fa-solid fa-plus text-white fs-5"></i>
                 </div>
             </div>
-            <div class="tab-item position-relative" onclick="openCartModal()" id="tabNavCart">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span>Cart</span>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; display:none; padding:2px 4px;">0</span>
-            </div>
-            <div class="tab-item" onclick="switchTab('wanted')" id="tabNavWanted">
-                <i class="fa-solid fa-clipboard-list"></i>
-                <span>Orders</span>
+            <div class="tab-item position-relative" onclick="switchTab('messages')" id="tabNavMessages">
+                <i class="fa-solid fa-comment-dots"></i>
+                <span>Messages</span>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="tabMessagesBadge" style="font-size:0.6rem; display:none; padding:2px 4px;">0</span>
             </div>
             <div class="tab-item" onclick="switchTab('profile')" id="tabNavProfile">
                 <i class="fa-solid fa-user"></i>
@@ -1467,24 +1462,70 @@
                             document.getElementById('authScreen').style.display = 'none';
                             document.querySelector('.app-tabbar').style.display = 'flex';
 
-                            // Handle Cart Button Positioning per User Request:
-                            // If Home tab -> Cart floats above Profile tab icon in bottom navigation bar.
-                            // If Other tab -> Cart moves to main top header bar next to Verified Student badge!
+                            // Header cart button is always visible floating in header
                             const headerCartBtn = document.getElementById('headerCartBtn');
-                            const homeCartBtn = document.getElementById('homeCartBtn');
-                            if (tabName === 'home') {
-                                if (headerCartBtn) headerCartBtn.style.setProperty('display', 'none', 'important');
-                                if (homeCartBtn) homeCartBtn.style.setProperty('display', 'flex', 'important');
-                            } else {
-                                if (headerCartBtn) headerCartBtn.style.setProperty('display', 'inline-flex', 'important');
-                                if (homeCartBtn) homeCartBtn.style.setProperty('display', 'none', 'important');
-                            }
+                            if (headerCartBtn) headerCartBtn.style.setProperty('display', 'inline-flex', 'important');
 
-                            if (tabName === 'messages') {
+                            if (tabName === 'home') {
+                                filterProducts();
+                                updateUnreadBadges();
+                            } else if (tabName === 'messages') {
+                                markMessagesAsRead();
                                 loadChatConversationsList();
+                            } else if (tabName === 'explore') {
+                                filterProducts();
                             } else if (tabName === 'wanted') {
                                 loadWantedPosts();
                             }
+                        }
+
+                        async function updateUnreadBadges() {
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                const res = await fetch(`/pasabuy_api.php?action=get_unread&user_id=${currentUserId}`);
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    const unreadCount = data.unreadCount || 0;
+                                    const tabBadge = document.getElementById('tabMessagesBadge');
+                                    const notifBadge = document.getElementById('headerNotifBadge');
+
+                                    if (tabBadge) {
+                                        if (unreadCount > 0) {
+                                            tabBadge.innerText = unreadCount;
+                                            tabBadge.style.display = 'inline-block';
+                                        } else {
+                                            tabBadge.style.display = 'none';
+                                        }
+                                    }
+
+                                    if (notifBadge) {
+                                        if (unreadCount > 0) {
+                                            notifBadge.innerText = unreadCount;
+                                            notifBadge.style.display = 'inline-block';
+                                        } else {
+                                            notifBadge.style.display = 'none';
+                                        }
+                                    }
+                                }
+                            } catch(e) {}
+                        }
+
+                        async function markMessagesAsRead() {
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                await fetch(`/pasabuy_api.php?action=mark_messages_read&user_id=${currentUserId}`);
+                            } catch(e) {}
+
+                            const tabBadge = document.getElementById('tabMessagesBadge');
+                            const notifBadge = document.getElementById('headerNotifBadge');
+                            if (tabBadge) tabBadge.style.display = 'none';
+                            if (notifBadge) notifBadge.style.display = 'none';
                         }
 
                         async function loadChatConversationsList() {
@@ -1977,13 +2018,21 @@
                                 if (cond !== 'All' && p.condition !== cond) return;
                                 if (search && !p.title.toLowerCase().includes(search)) return;
 
-                                let buttonsHtml = '';
+                                const isInCart = (pasabuyCart || []).some(item => (item.listingId && item.listingId == p.id) || item.title === p.title);
+                                let cartBtnHtml = '';
+                                if (isInCart) {
+                                    cartBtnHtml = `<button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8 shadow-sm py-1.5" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-xmark me-1"></i> Remove</button>`;
+                                } else {
+                                    cartBtnHtml = `<button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8 shadow-sm py-1.5" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-plus me-1"></i> Add to Cart</button>`;
+                                }
+
+                                let actionBtnsHtml = '';
                                 if (isMyListing) {
                                     if (p.status === 'RESERVED') {
-                                        buttonsHtml = `
+                                        actionBtnsHtml = `
                         <div class="d-flex flex-column gap-2 w-100">
                             <div class="badge bg-warning text-dark w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-bookmark me-1"></i> STATUS: RESERVED</div>
-                            <button class="btn btn-sm btn-outline-success rounded-pill w-100 fw-bold fs-8" onclick="executeUnreserveListing(${p.id})"><i class="fa-solid fa-rotate-left me-1"></i> Un-Reserve (Put Back Public)</button>
+                            <button class="btn btn-sm btn-outline-success rounded-pill w-100 fw-bold fs-8" onclick="executeUnreserveListing(${p.id})"><i class="fa-solid fa-rotate-left me-1"></i> Un-Reserve</button>
                             <button class="btn btn-sm btn-success rounded-pill w-100 fw-bold fs-8" onclick="executeMarkSoldListing(${p.id})"><i class="fa-solid fa-circle-check me-1"></i> Mark as SOLD</button>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="openEditListingModal(${p.id})"><i class="fa-solid fa-pen-to-square me-1"></i> Edit</button>
@@ -1991,30 +2040,23 @@
                             </div>
                         </div>`;
                                     } else if (p.status === 'SOLD') {
-                                        buttonsHtml = `
+                                        actionBtnsHtml = `
                         <div class="d-flex flex-column gap-2 w-100">
                             <div class="badge bg-success text-white w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-check-circle me-1"></i> STATUS: SOLD</div>
                             <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
                         </div>`;
                                     } else {
-                                        buttonsHtml = `
+                                        actionBtnsHtml = `
                         <div class="d-flex flex-column gap-2 w-100">
                             <div class="badge bg-secondary-subtle text-secondary w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-user-check me-1"></i> Your Active Listing</div>
                             <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="openEditListingModal(${p.id})"><i class="fa-solid fa-pen-to-square me-1"></i> Edit Listing</button>
-                                <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
+                                <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="openEditListingModal(${p.id})"><i class="fa-solid fa-pen-to-square me-1"></i> Edit</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete</button>
                             </div>
                         </div>`;
                                     }
-                                    const isInCart = (pasabuyCart || []).some(item => (item.listingId && item.listingId == p.id) || item.title === p.title);
-                                    let cartBtnHtml = '';
-                                    if (isInCart) {
-                                        cartBtnHtml = `<button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8 shadow-sm py-1.5" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-xmark me-1"></i> Remove</button>`;
-                                    } else {
-                                        cartBtnHtml = `<button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8 shadow-sm py-1.5" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-plus me-1"></i> Add to Cart</button>`;
-                                    }
-
-                                    buttonsHtml = `
+                                } else {
+                                    actionBtnsHtml = `
                     <div class="d-flex flex-column gap-1.5 w-100">
                         ${cartBtnHtml}
                         <div class="d-flex gap-1">
@@ -2050,7 +2092,7 @@
                             </div>
                         </div>
                         <div class="pt-1">
-                            ${isMyListing ? buttonsHtml : cartBtnHtml}
+                            ${actionBtnsHtml}
                         </div>
                     </div>
                 </div>`;
