@@ -139,7 +139,7 @@ if (typeof window.loginStudentWithPassword !== 'function') {
                 localStorage.setItem('pasabuy_student_logged_in', 'true');
                 localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
 
-                window.location.href = 'splash_screen.php';
+                window.location.href = 'index.php';
             } else {
                 if (btnSubmit) {
                     btnSubmit.disabled = false;

@@ -49,14 +49,22 @@ if (!defined('PASABUY_INCLUDED')) {
         if (splashInterval) clearInterval(splashInterval);
         if (splashTimeout) clearTimeout(splashTimeout);
         const splash = document.getElementById('splashScreen');
+        const auth = document.getElementById('authScreen');
+        const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in') === 'true';
+
         if (splash) {
             splash.style.opacity = '0';
             splash.style.transition = 'opacity 0.35s ease';
             setTimeout(function() {
-                window.location.href = 'index.php';
+                splash.style.display = 'none';
+                if (typeof window.checkAuthState === 'function') {
+                    window.checkAuthState();
+                } else if (auth && !isLoggedIn) {
+                    auth.style.display = 'block';
+                }
             }, 350);
-        } else {
-            window.location.href = 'index.php';
+        } else if (typeof window.checkAuthState === 'function') {
+            window.checkAuthState();
         }
     };
 
