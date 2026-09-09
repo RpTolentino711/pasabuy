@@ -2684,7 +2684,21 @@
                         let splashTimer = null;
                         let splashProgressInterval = null;
 
+                        window.checkStudentSessionOnLoad = function () {
+                            const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
+                            const splash = document.getElementById('splashScreen');
+                            const auth = document.getElementById('authScreen');
+                            const reg = document.getElementById('registerScreen');
+                            if (isLoggedIn === 'true') {
+                                if (splash) splash.style.display = 'none';
+                                if (auth) auth.style.display = 'none';
+                                if (reg) reg.style.display = 'none';
+                                switchTab('home');
+                            }
+                        };
+
                         window.initSplashScreen = function () {
+
                             const splash = document.getElementById('splashScreen');
                             const auth = document.getElementById('authScreen');
                             const reg = document.getElementById('registerScreen');
