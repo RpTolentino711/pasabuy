@@ -862,9 +862,10 @@
                                             <i class="fa-solid fa-user-check me-1"></i> Your Active Listing (Manage in Profile Tab)
                                         </div>`;
                                 } else {
+                                    const isListingInCart = (pasabuyCart || []).some(item => (item.listingId && item.listingId == listing.id) || item.title === listing.title);
                                     modalFooterActions.innerHTML = `
-                                        <button type="button" class="btn btn-outline-primary rounded-pill w-50 py-2.5 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs" id="detailAddToCartBtn">
-                                            <i class="fa-solid fa-cart-plus fs-6"></i> Add to Cart
+                                        <button type="button" class="btn ${isListingInCart ? 'btn-success text-white' : 'btn-outline-primary'} rounded-pill w-50 py-2.5 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs" id="detailAddToCartBtn">
+                                            <i class="fa-solid ${isListingInCart ? 'fa-check' : 'fa-cart-plus'} fs-6"></i> ${isListingInCart ? 'In Cart' : 'Add to Cart'}
                                         </button>
                                         <button type="button" class="btn btn-primary rounded-pill w-50 py-2.5 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 shadow-sm" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" id="detailBuyNowBtn">
                                             <i class="fa-solid fa-bolt fs-6"></i> Buy Now
@@ -874,6 +875,8 @@
                                     if (addCartBtn) {
                                         addCartBtn.onclick = function (e) {
                                             animateAddToCart(e, listing.id, listing.title, listing.price, listing.sellerId, listing.img);
+                                            addCartBtn.className = 'btn btn-success text-white rounded-pill w-50 py-2.5 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs';
+                                            addCartBtn.innerHTML = '<i class="fa-solid fa-check fs-6"></i> In Cart';
                                         };
                                     }
 
@@ -2354,8 +2357,9 @@
                                 const reviewsVal = ((p.id * 13) % 200) + 45;
 
                                 const isInCart = (pasabuyCart || []).some(item => (item.listingId && item.listingId == p.id) || item.title === p.title);
-                                const cartBtnIconClass = isInCart ? 'fa-cart-xmark text-danger' : 'fa-cart-shopping text-white';
-                                const cartBtnBgStyle = isInCart ? 'background: #FEE2E2; border: 1px solid #FCA5A5;' : 'background: linear-gradient(135deg, #6C5CE7, #5F27CD); border: none;';
+                                const cartBtnIconClass = isInCart ? 'fa-check text-white' : 'fa-cart-shopping text-white';
+                                const cartBtnBgStyle = isInCart ? 'background: linear-gradient(135deg, #10B981, #059669); border: none; box-shadow: 0 3px 8px rgba(16, 185, 129, 0.4);' : 'background: linear-gradient(135deg, #6C5CE7, #5F27CD); border: none;';
+                                const cartBtnTitle = isInCart ? 'In Cart (Click to remove)' : 'Add to Cart';
 
                                 // 1. Home / Explore Card HTML (cardHtml)
                                 let homeMediaHtml = '';
@@ -2392,7 +2396,7 @@
                                     homeActionButtonHtml = `<button class="btn rounded-3 p-0 d-flex align-items-center justify-content-center shadow-sm" 
                                         style="width:34px; height:34px; border-radius:10px; ${cartBtnBgStyle}" 
                                         onclick="event.stopPropagation(); toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')" 
-                                        title="Add to Cart">
+                                        title="${cartBtnTitle}">
                                         <i class="fa-solid ${cartBtnIconClass} fs-8"></i>
                                     </button>`;
                                 }
