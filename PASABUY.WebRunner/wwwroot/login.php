@@ -20,10 +20,10 @@ if (!defined('PASABUY_INCLUDED')) {
         </div>
     </div>
 
-    <!-- Main Branding Header (Exact Match to Reference UI) -->
+    <!-- Main Branding Header (Official PasaBuy Logo) -->
     <div class="text-center mb-4 pt-2">
-        <div class="d-inline-block mb-2">
-            <i class="fa-solid fa-bag-shopping" style="font-size: 3.8rem; color: #6C5CE7;"></i>
+        <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-4 mb-2 shadow-sm" style="background: rgba(108, 92, 231, 0.08); width: 84px; height: 84px;">
+            <img src="LOGO.png" alt="PasaBuy Logo" style="width: 60px; height: 60px; object-fit: contain;">
         </div>
         <h2 class="fw-extrabold mb-1" style="color: #2D0C57; font-size: 2.1rem; letter-spacing: -0.6px;">PasaBuy</h2>
         <p class="text-muted fs-8 fw-semibold mb-0" style="color: #7A869A !important;">Your Campus, Your Marketplace</p>
