@@ -16,44 +16,6 @@
         </button>
     </div>
 
-    <!-- Recent Searches Bar -->
-    <div class="mb-3">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-            <span class="fs-8 text-muted fw-semibold"><i class="fa-solid fa-clock-rotate-left me-1"></i> Recent Searches</span>
-            <a href="javascript:void(0)" class="text-decoration-none fs-9 text-primary fw-semibold" onclick="clearRecentSearches()">Clear <i class="fa-solid fa-chevron-down ms-0.5"></i></a>
-        </div>
-        <div class="d-flex gap-2 overflow-x-auto pb-1" id="recentSearchesRow">
-            <span class="badge bg-white text-dark border rounded-pill px-3 py-1.5 fs-8 fw-normal style-chip shadow-2xs" onclick="applyQuickSearch('laptop')">laptop</span>
-            <span class="badge bg-white text-dark border rounded-pill px-3 py-1.5 fs-8 fw-normal style-chip shadow-2xs" onclick="applyQuickSearch('notebook')">notebook</span>
-            <span class="badge bg-white text-dark border rounded-pill px-3 py-1.5 fs-8 fw-normal style-chip shadow-2xs" onclick="applyQuickSearch('airpods')">airpods</span>
-            <span class="badge bg-white text-dark border rounded-pill px-3 py-1.5 fs-8 fw-normal style-chip shadow-2xs" onclick="applyQuickSearch('uniform')">uniform</span>
-        </div>
-    </div>
-
-    <!-- Hero Deals Carousel Banner -->
-    <div class="card border-0 rounded-4 p-4 text-white mb-4 shadow-sm position-relative overflow-hidden" 
-        style="background: linear-gradient(135deg, #6C5CE7, #5F27CD, #341F97);">
-        <div class="row align-items-center">
-            <div class="col-8">
-                <span class="badge bg-warning text-dark fw-bold px-2 py-1 rounded-pill fs-9 mb-1">Back to School</span>
-                <h3 class="fw-extrabold mb-1 text-white" style="font-size: 1.5rem; letter-spacing: -0.5px;">Deals</h3>
-                <p class="fs-9 text-white-50 mb-3">Save more on your campus essentials.</p>
-                <button class="btn btn-light rounded-pill fw-bold fs-9 px-3 py-1.5 text-primary shadow-sm" onclick="switchTab('explore')">
-                    Shop Now <i class="fa-solid fa-arrow-right ms-1"></i>
-                </button>
-            </div>
-            <div class="col-4 text-end">
-                <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&q=80" class="img-fluid rounded-3 shadow-sm" style="max-height: 90px; object-fit: cover;">
-            </div>
-        </div>
-        <!-- Banner Indicators -->
-        <div class="d-flex justify-content-center gap-1.5 mt-2">
-            <span class="rounded-circle bg-white" style="width: 8px; height: 8px; opacity: 1;"></span>
-            <span class="rounded-circle bg-white" style="width: 8px; height: 8px; opacity: 0.4;"></span>
-            <span class="rounded-circle bg-white" style="width: 8px; height: 8px; opacity: 0.4;"></span>
-        </div>
-    </div>
-
     <!-- Categories Circular Grid -->
     <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
