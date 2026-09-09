@@ -1,5 +1,15 @@
+<?php
+if (!defined('PASABUY_INCLUDED')) {
+    define('PASABUY_INCLUDED', true);
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PasaBuy - Sign In</title><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" /><style>body { font-family: "Plus Jakarta Sans", sans-serif; background: #0F172A; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; } .app-container { width: 100%; max-width: 440px; height: 880px; background: #FFF; position: relative; overflow-y: auto; display: flex; flex-direction: column; border-radius: 40px; border: 8px solid #1E293B; padding: 16px; }</style></head><body><div class="app-container">';
+    $is_standalone = true;
+} else {
+    $is_standalone = false;
+}
+?>
+
 <!-- 2. WELCOME BACK / LOGIN SCREEN (PHP COMPONENT) -->
-<div id="authScreen" style="display:none;">
+<div id="authScreen" style="<?php echo $is_standalone ? 'display:block;' : 'display:none;'; ?>">
     <div class="text-center p-4 bg-white rounded-4 border shadow-sm my-2">
         <div class="mb-3 text-center">
             <div class="bg-primary bg-opacity-10 text-primary rounded-4 p-2.5 d-inline-flex align-items-center justify-content-center shadow-sm mb-2" style="width:64px; height:64px;">
@@ -68,7 +78,13 @@
 
         <div class="pt-2 text-center fs-8 text-muted">
             Don't have an account? 
-            <a href="javascript:void(0)" class="text-primary fw-bold text-decoration-none ms-1" onclick="showRegisterScreen()">Sign Up</a>
+            <a href="create_account.php" class="text-primary fw-bold text-decoration-none ms-1">Sign Up</a>
         </div>
     </div>
 </div>
+
+<?php
+if ($is_standalone) {
+    echo '</div></body></html>';
+}
+?>

@@ -1,7 +1,17 @@
+<?php
+if (!defined('PASABUY_INCLUDED')) {
+    define('PASABUY_INCLUDED', true);
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PasaBuy - Create Account</title><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" /><style>body { font-family: "Plus Jakarta Sans", sans-serif; background: #0F172A; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; } .app-container { width: 100%; max-width: 440px; height: 880px; background: #FFF; position: relative; overflow-y: auto; display: flex; flex-direction: column; border-radius: 40px; border: 8px solid #1E293B; padding: 16px; }</style></head><body><div class="app-container">';
+    $is_standalone = true;
+} else {
+    $is_standalone = false;
+}
+?>
+
 <!-- 3. CREATE AN ACCOUNT / REGISTER SCREEN (PHP COMPONENT) -->
-<div id="registerScreen" style="display:none;">
+<div id="registerScreen" style="<?php echo $is_standalone ? 'display:block;' : 'display:none;'; ?>">
     <div class="text-center p-4 bg-white rounded-4 border shadow-sm my-2 position-relative">
-        <button type="button" class="btn btn-light rounded-circle position-absolute top-0 start-0 m-3 border-0 shadow-2xs d-flex align-items-center justify-content-center" style="width:36px; height:36px;" onclick="showLoginScreen()">
+        <button type="button" class="btn btn-light rounded-circle position-absolute top-0 start-0 m-3 border-0 shadow-2xs d-flex align-items-center justify-content-center" style="width:36px; height:36px;" onclick="window.location.href='login.php'">
             <i class="fa-solid fa-arrow-left text-dark fs-7"></i>
         </button>
 
@@ -61,7 +71,13 @@
 
         <div class="pt-2 text-center fs-8 text-muted">
             Already have an account? 
-            <a href="javascript:void(0)" class="text-primary fw-bold text-decoration-none ms-1" onclick="showLoginScreen()">Sign In</a>
+            <a href="login.php" class="text-primary fw-bold text-decoration-none ms-1">Sign In</a>
         </div>
     </div>
 </div>
+
+<?php
+if ($is_standalone) {
+    echo '</div></body></html>';
+}
+?>

@@ -1,3 +1,13 @@
+<?php
+if (!defined('PASABUY_INCLUDED')) {
+    define('PASABUY_INCLUDED', true);
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PasaBuy - Splash Screen</title><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" /><style>body { font-family: "Plus Jakarta Sans", sans-serif; background: #0F172A; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; } .app-container { width: 100%; max-width: 440px; height: 880px; background: #FFF; position: relative; overflow: hidden; display: flex; flex-direction: column; border-radius: 40px; border: 8px solid #1E293B; }</style></head><body><div class="app-container">';
+    $is_standalone = true;
+} else {
+    $is_standalone = false;
+}
+?>
+
 <!-- 1. 5-SECOND SPLASH SCREEN (PHP COMPONENT) -->
 <div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #6C5CE7 0%, #5F27CD 50%, #341F97 100%); color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden; cursor:pointer;" onclick="hideSplashScreen()">
     <!-- Top Header Bar inside Splash -->
@@ -55,9 +65,10 @@
             splash.style.transition = 'opacity 0.35s ease';
             setTimeout(function() {
                 splash.style.display = 'none';
-                const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
-                if (isLoggedIn !== 'true' && auth) {
+                if (auth) {
                     auth.style.display = 'block';
+                } else {
+                    window.location.href = 'login.php';
                 }
             }, 350);
         }
@@ -65,20 +76,11 @@
 
     window.initSplashScreen = function() {
         const splash = document.getElementById('splashScreen');
-        const auth = document.getElementById('authScreen');
         const bar = document.getElementById('splashProgressBar');
         if (!splash) return;
 
-        const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
-        if (isLoggedIn === 'true') {
-            splash.style.display = 'none';
-            if (auth) auth.style.display = 'none';
-            return;
-        }
-
         splash.style.display = 'flex';
         splash.style.opacity = '1';
-        if (auth) auth.style.display = 'none';
 
         splashProgress = 0;
         if (bar) bar.style.width = '0%';
@@ -98,8 +100,12 @@
         }, 5000);
     };
 
-    if (localStorage.getItem('pasabuy_student_logged_in') !== 'true') {
-        setTimeout(initSplashScreen, 10);
-    }
+    setTimeout(initSplashScreen, 10);
 })();
 </script>
+
+<?php
+if ($is_standalone) {
+    echo '</div></body></html>';
+}
+?>
