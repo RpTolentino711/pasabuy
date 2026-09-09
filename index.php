@@ -2202,14 +2202,50 @@
                                 const cartBtnIconClass = isInCart ? 'fa-cart-xmark text-danger' : 'fa-cart-shopping text-white';
                                 const cartBtnBgStyle = isInCart ? 'background: #FEE2E2; border: 1px solid #FCA5A5;' : 'background: linear-gradient(135deg, #6C5CE7, #5F27CD); border: none;';
 
-                                const mediaHtml = p.videoUrl
-                                    ? `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})"><video src="${p.videoUrl}" controls style="width:100%; height:135px; object-fit:cover; border-radius:14px; background:#000;" preload="metadata"></video><span class="badge bg-danger position-absolute top-0 start-0 m-2 fs-9"><i class="fa-solid fa-video me-1"></i> Video</span><button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-2 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width:28px; height:28px; background:rgba(255,255,255,0.9); z-index:5;" onclick="toggleWishlist(this, ${p.id})"><i class="fa-regular fa-heart text-dark fs-8"></i></button></div>`
-                                    : `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})"><img src="${p.img}" class="rounded-4" alt="${p.title}" style="width:100%; height:135px; object-fit:cover;"><button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-2 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width:28px; height:28px; background:rgba(255,255,255,0.9); z-index:5;" onclick="toggleWishlist(this, ${p.id})"><i class="fa-regular fa-heart text-dark fs-8"></i></button></div>`;
+                                // 1. Home / Explore Card HTML (cardHtml)
+                                let homeMediaHtml = '';
+                                let homeActionButtonHtml = '';
+
+                                if (isMyListing) {
+                                    homeMediaHtml = p.videoUrl
+                                        ? `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
+                                            <video src="${p.videoUrl}" controls style="width:100%; height:135px; object-fit:cover; border-radius:14px; background:#000;" preload="metadata"></video>
+                                            <span class="badge bg-primary position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill shadow-sm fs-9 text-white fw-bold" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); z-index:4;">
+                                                <i class="fa-solid fa-user-tag me-1"></i> Your Product
+                                            </span>
+                                           </div>`
+                                        : `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
+                                            <img src="${p.img}" class="rounded-4" alt="${p.title}" style="width:100%; height:135px; object-fit:cover;">
+                                            <span class="badge bg-primary position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill shadow-sm fs-9 text-white fw-bold" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); z-index:4;">
+                                                <i class="fa-solid fa-user-tag me-1"></i> Your Product
+                                            </span>
+                                           </div>`;
+
+                                    homeActionButtonHtml = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-9 fw-semibold px-2 py-1"><i class="fa-solid fa-user-check me-1"></i> Yours</span>`;
+                                } else {
+                                    homeMediaHtml = p.videoUrl
+                                        ? `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
+                                            <video src="${p.videoUrl}" controls style="width:100%; height:135px; object-fit:cover; border-radius:14px; background:#000;" preload="metadata"></video>
+                                            <span class="badge bg-danger position-absolute top-0 start-0 m-2 fs-9"><i class="fa-solid fa-video me-1"></i> Video</span>
+                                            <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-2 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width:28px; height:28px; background:rgba(255,255,255,0.9); z-index:5;" onclick="event.stopPropagation(); toggleWishlist(this, ${p.id})"><i class="fa-regular fa-heart text-dark fs-8"></i></button>
+                                           </div>`
+                                        : `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
+                                            <img src="${p.img}" class="rounded-4" alt="${p.title}" style="width:100%; height:135px; object-fit:cover;">
+                                            <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-2 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width:28px; height:28px; background:rgba(255,255,255,0.9); z-index:5;" onclick="event.stopPropagation(); toggleWishlist(this, ${p.id})"><i class="fa-regular fa-heart text-dark fs-8"></i></button>
+                                           </div>`;
+
+                                    homeActionButtonHtml = `<button class="btn rounded-3 p-0 d-flex align-items-center justify-content-center shadow-sm" 
+                                        style="width:34px; height:34px; border-radius:10px; ${cartBtnBgStyle}" 
+                                        onclick="event.stopPropagation(); toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')" 
+                                        title="Add to Cart">
+                                        <i class="fa-solid ${cartBtnIconClass} fs-8"></i>
+                                    </button>`;
+                                }
 
                                 const cardHtml = `
                 <div class="col-6 mb-3">
                     <div class="card border-0 rounded-4 shadow-sm h-100 p-2.5 bg-white d-flex flex-column justify-content-between position-relative">
-                        ${mediaHtml}
+                        ${homeMediaHtml}
                         <div class="pt-2" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
                             <h6 class="fw-bold mb-1 text-dark fs-8 text-truncate" title="${p.title}">${p.title}</h6>
                             <div class="fw-extrabold text-dark fs-7 mb-1">${p.price}</div>
@@ -2219,12 +2255,7 @@
                                     <span class="fw-bold text-dark fs-9">${ratingVal}</span>
                                     <span class="text-muted fs-9" style="font-size:0.65rem;">(${reviewsVal})</span>
                                 </div>
-                                <button class="btn rounded-3 p-0 d-flex align-items-center justify-content-center shadow-sm" 
-                                    style="width:34px; height:34px; border-radius:10px; ${cartBtnBgStyle}" 
-                                    onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')" 
-                                    title="Add to Cart">
-                                    <i class="fa-solid ${cartBtnIconClass} fs-8"></i>
-                                </button>
+                                ${homeActionButtonHtml}
                             </div>
                         </div>
                     </div>
@@ -2232,8 +2263,49 @@
 
                                 html += cardHtml;
 
+                                // 2. Profile Tab Card HTML (profileCardHtml)
                                 if (isMyListing) {
-                                    profileHtml += cardHtml;
+                                    const profileMediaHtml = p.videoUrl
+                                        ? `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
+                                            <video src="${p.videoUrl}" controls style="width:100%; height:135px; object-fit:cover; border-radius:14px; background:#000;" preload="metadata"></video>
+                                            <span class="badge position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill shadow-sm fs-9 text-white fw-bold ${p.status === 'RESERVED' ? 'bg-warning text-dark' : (p.status === 'SOLD' ? 'bg-success text-white' : '')}" style="${!p.status || p.status === 'ACTIVE' ? 'background: linear-gradient(135deg, #6C5CE7, #5F27CD);' : ''} z-index:4;">
+                                                <i class="fa-solid ${p.status === 'RESERVED' ? 'fa-bookmark' : (p.status === 'SOLD' ? 'fa-circle-check' : 'fa-store')} me-1"></i> ${p.status || 'Active'}
+                                            </span>
+                                           </div>`
+                                        : `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
+                                            <img src="${p.img}" class="rounded-4" alt="${p.title}" style="width:100%; height:135px; object-fit:cover;">
+                                            <span class="badge position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill shadow-sm fs-9 text-white fw-bold ${p.status === 'RESERVED' ? 'bg-warning text-dark' : (p.status === 'SOLD' ? 'bg-success text-white' : '')}" style="${!p.status || p.status === 'ACTIVE' ? 'background: linear-gradient(135deg, #6C5CE7, #5F27CD);' : ''} z-index:4;">
+                                                <i class="fa-solid ${p.status === 'RESERVED' ? 'fa-bookmark' : (p.status === 'SOLD' ? 'fa-circle-check' : 'fa-store')} me-1"></i> ${p.status || 'Active'}
+                                            </span>
+                                           </div>`;
+
+                                    const profileCardHtml = `
+                <div class="col-6 mb-3">
+                    <div class="card border-0 rounded-4 shadow-sm h-100 p-2.5 bg-white d-flex flex-column justify-content-between position-relative">
+                        ${profileMediaHtml}
+                        <div class="pt-2">
+                            <div style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
+                                <h6 class="fw-bold mb-1 text-dark fs-8 text-truncate" title="${p.title}">${p.title}</h6>
+                                <div class="fw-extrabold text-dark fs-7 mb-1">${p.price}</div>
+                                <div class="d-flex align-items-center gap-1 mb-2">
+                                    <i class="fa-solid fa-star text-warning fs-9"></i>
+                                    <span class="fw-bold text-dark fs-9">${ratingVal}</span>
+                                    <span class="text-muted fs-9" style="font-size:0.65rem;">(${reviewsVal})</span>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-1.5 pt-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill w-50 fw-bold fs-9 py-1 d-flex align-items-center justify-content-center gap-1 shadow-2xs" onclick="event.stopPropagation(); openEditListingModal(${p.id})">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill w-50 fw-bold fs-9 py-1 d-flex align-items-center justify-content-center gap-1 shadow-2xs" onclick="event.stopPropagation(); confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee || '0'}')">
+                                    <i class="fa-solid fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+                                    profileHtml += profileCardHtml;
                                 }
                             });
 
