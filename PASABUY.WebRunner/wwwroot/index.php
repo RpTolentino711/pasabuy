@@ -2165,54 +2165,6 @@
                                 if (cond !== 'All' && p.condition !== cond) return;
                                 if (search && !p.title.toLowerCase().includes(search)) return;
 
-                                const isInCart = (pasabuyCart || []).some(item => (item.listingId && item.listingId == p.id) || item.title === p.title);
-                                let cartBtnHtml = '';
-                                if (isInCart) {
-                                    cartBtnHtml = `<button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8 shadow-sm py-1.5" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-xmark me-1"></i> Remove</button>`;
-                                } else {
-                                    cartBtnHtml = `<button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8 shadow-sm py-1.5" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none;" onclick="toggleCartProduct(event, ${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.price}', ${p.sellerId}, '${(p.img || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-cart-plus me-1"></i> Add to Cart</button>`;
-                                }
-
-                                let actionBtnsHtml = '';
-                                if (isMyListing) {
-                                    if (p.status === 'RESERVED') {
-                                        actionBtnsHtml = `
-                        <div class="d-flex flex-column gap-2 w-100">
-                            <div class="badge bg-warning text-dark w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-bookmark me-1"></i> STATUS: RESERVED</div>
-                            <button class="btn btn-sm btn-outline-success rounded-pill w-100 fw-bold fs-8" onclick="executeUnreserveListing(${p.id})"><i class="fa-solid fa-rotate-left me-1"></i> Un-Reserve</button>
-                            <button class="btn btn-sm btn-success rounded-pill w-100 fw-bold fs-8" onclick="executeMarkSoldListing(${p.id})"><i class="fa-solid fa-circle-check me-1"></i> Mark as SOLD</button>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="openEditListingModal(${p.id})"><i class="fa-solid fa-pen-to-square me-1"></i> Edit</button>
-                                <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete</button>
-                            </div>
-                        </div>`;
-                                    } else if (p.status === 'SOLD') {
-                                        actionBtnsHtml = `
-                        <div class="d-flex flex-column gap-2 w-100">
-                            <div class="badge bg-success text-white w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-check-circle me-1"></i> STATUS: SOLD</div>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete Listing</button>
-                        </div>`;
-                                    } else {
-                                        actionBtnsHtml = `
-                        <div class="d-flex flex-column gap-2 w-100">
-                            <div class="badge bg-secondary-subtle text-secondary w-100 py-2 rounded-pill fs-8 text-center fw-bold"><i class="fa-solid fa-user-check me-1"></i> Your Active Listing</div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="openEditListingModal(${p.id})"><i class="fa-solid fa-pen-to-square me-1"></i> Edit</button>
-                                <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="confirmDeleteListing(${p.id}, '${p.title.replace(/'/g, "\\'")}', '${p.fee}')"><i class="fa-solid fa-trash me-1"></i> Delete</button>
-                            </div>
-                        </div>`;
-                                    }
-                                } else {
-                                    actionBtnsHtml = `
-                    <div class="d-flex flex-column gap-1.5 w-100">
-                        ${cartBtnHtml}
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-9 py-1" onclick="checkAndOpenChat(${p.sellerId}, '${p.seller.replace(/'/g, "\\'")}', '${p.title.replace(/'/g, "\\'")}', '${p.price}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-comments me-1"></i> Chat</button>
-                            <button class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-9 py-1" onclick="checkAndReserve(${p.id}, ${p.sellerId}, '${p.title.replace(/'/g, "\\'")}', '${p.seller.replace(/'/g, "\\'")}', '${(p.sellerAvatar || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-bookmark me-1"></i> Reserve</button>
-                        </div>
-                    </div>`;
-                                }
-
                                 const ratingSeed = ((p.id * 7) % 5) / 10 + 4.5;
                                 const ratingVal = ratingSeed > 5 ? 4.9 : ratingSeed.toFixed(1);
                                 const reviewsVal = ((p.id * 13) % 200) + 45;
