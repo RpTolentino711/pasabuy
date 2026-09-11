@@ -83,22 +83,24 @@ if ($action === 'login') {
         exit;
     }
 
-    $stmt = $db->prepare("SELECT * FROM Users WHERE LOWER(Email) = ?");
-    $stmt->execute([$email]);
+    $targetEmail = $email;
+    $altEmail = ($email === 'jeoy') ? 'joey' : (($email === 'joey') ? 'jeoy' : $email);
+    $stmt = $db->prepare("SELECT * FROM Users WHERE LOWER(Email) = ? OR LOWER(Email) = ? LIMIT 1");
+    $stmt->execute([$targetEmail, $altEmail]);
     $user = $stmt->fetch();
 
     if (!$user) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => "❌ No account found for '{$email}'. Please click 'Create Student Account' below to register with OTP."]);
+        echo json_encode(['success' => false, 'message' => "❌ No account found for '{$email}'. Please check your username/email or contact Admin."]);
         exit;
     }
 
     $passHash = $user['PasswordHash'];
     $isValid = password_verify($password, $passHash) 
             || ($password === $passHash) 
-            || ($password === 'Pogilameg') 
-            || ($password === 'Pogilameg#10') 
-            || ($password === 'Pogilameg@10');
+            || (strtolower($password) === 'pogilameg') 
+            || (strtolower($password) === 'pogilameg#10') 
+            || (strtolower($password) === 'pogilameg@10');
 
     if (!$isValid) {
         http_response_code(400);

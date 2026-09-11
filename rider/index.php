@@ -116,8 +116,15 @@ session_start();
     <!-- 1. RIDER LOGIN VIEW -->
     <div id="riderAuthView" style="display: block;" class="p-4 my-auto">
         <div class="text-center mb-4 pt-3">
-            <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-4 mb-3" style="background: rgba(108, 92, 231, 0.15); width: 88px; height: 88px;">
-                <i class="fa-solid fa-motorcycle text-primary display-4"></i>
+            <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-4 mb-3 shadow-lg" style="background: linear-gradient(135deg, #6C5CE7, #341F97); width: 88px; height: 88px; border: 2px solid rgba(255, 255, 255, 0.15);">
+                <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="5.5" cy="17.5" r="3.5"></circle>
+                    <circle cx="18.5" cy="17.5" r="3.5"></circle>
+                    <path d="M15 6h2"></path>
+                    <path d="M12 17.5V11l-3 3"></path>
+                    <path d="M18.5 17.5L14 8h-4.5"></path>
+                    <path d="M5.5 17.5L9 8"></path>
+                </svg>
             </div>
             <h2 class="fw-extrabold text-white mb-1" style="letter-spacing: -0.5px;">PasaBuy Rider</h2>
             <p class="text-secondary fs-7">Campus Express Motor Delivery Portal</p>
@@ -147,6 +154,12 @@ session_start();
             <button class="btn btn-primary w-100 py-3 fw-extrabold rounded-3 shadow-sm" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border: none;" onclick="executeRiderLogin()">
                 <i class="fa-solid fa-right-to-bracket me-2"></i> Log In to Driver Dashboard
             </button>
+
+            <div class="mt-3 text-center pt-2 border-top border-secondary border-opacity-25">
+                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1 fs-8 fw-semibold" onclick="quickFillRider('joey', 'Pogilameg')">
+                    <i class="fa-solid fa-bolt me-1"></i> Quick Test: Joey Mendoza (Tester)
+                </button>
+            </div>
         </div>
 
         <div class="text-center text-secondary fs-8 mt-3">
@@ -255,6 +268,12 @@ let riderLeafletMap = null;
 let riderMarker = null;
 let targetMarker = null;
 
+function quickFillRider(u, p) {
+    document.getElementById('riderUsernameInput').value = u;
+    document.getElementById('riderPasswordInput').value = p;
+    executeRiderLogin();
+}
+
 async function executeRiderLogin() {
     const user = document.getElementById('riderUsernameInput').value.trim();
     const pass = document.getElementById('riderPasswordInput').value.trim();
@@ -268,15 +287,20 @@ async function executeRiderLogin() {
     }
 
     try {
-        const res = await fetch('../pasabuy_otp.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'login', email: user, password: pass })
-        }).catch(() => fetch('/pasabuy_otp.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'login', email: user, password: pass })
-        }));
+        let res;
+        try {
+            res = await fetch('../pasabuy_otp.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'login', email: user, password: pass })
+            });
+        } catch (e1) {
+            res = await fetch('pasabuy_otp.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'login', email: user, password: pass })
+            });
+        }
         const data = await res.json();
 
         if (res.ok && data.success) {
@@ -292,7 +316,9 @@ async function executeRiderLogin() {
             setInterval(fetchRiderJobAlerts, 5000);
             startRiderGpsPinger();
         } else {
-            errMsg.innerText = data.message || 'Invalid Rider credentials.';
+            let msg = data.message || 'Invalid Rider credentials.';
+            msg = msg.replace("Please click 'Create Student Account' below to register with OTP.", "Please check your rider username/password or contact Admin.");
+            errMsg.innerText = msg;
             errAlert.style.display = 'block';
         }
     } catch (e) {
