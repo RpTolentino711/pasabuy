@@ -377,14 +377,14 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <label class="form-label fw-bold fs-8">Username or Admin Email</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="fa-solid fa-user text-muted fs-8"></i></span>
-                            <input type="text" class="form-control fs-8" id="loginUsername" placeholder="admin" value="admin" required>
+                            <input type="text" class="form-control fs-8" id="loginUsername" placeholder="Enter admin username" autocomplete="username" required>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-8">Admin Password</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-lock text-muted fs-8"></i></span>
-                            <input type="password" class="form-control fs-8 border-start-0 border-end-0" id="loginPassword" placeholder="Pogilameg@10" value="Pogilameg@10" required>
+                            <input type="password" class="form-control fs-8 border-start-0 border-end-0" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required>
                             <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" style="border-color: #dee2e6;" onclick="toggleAdminPasswordVisibility()" title="Show/Hide Password">
                                 <i class="fa-solid fa-eye text-muted fs-8" id="loginPasswordEye"></i>
                             </button>
