@@ -652,12 +652,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             <section id="section_products" class="admin-section">
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
-                        <h4 class="fw-extrabold mb-1 text-dark">Products</h4>
-                        <p class="text-muted fs-8 mb-0">Manage your product catalog. Add, edit, or remove products.</p>
+                        <h4 class="fw-extrabold mb-1 text-dark">Equipment Catalog</h4>
+                        <p class="text-muted fs-8 mb-0">Equipment listings posted by verified student lenders.</p>
                     </div>
-                    <button type="button" class="btn-admin-primary" onclick="openAddProductModal()">
-                        <i class="fa-solid fa-plus"></i> Add Product
-                    </button>
                 </div>
 
                 <div class="admin-table-card p-3 mb-4">
@@ -723,11 +720,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
                         <h4 class="fw-extrabold mb-1 text-dark">Inventory</h4>
-                        <p class="text-muted fs-8 mb-0">Track and manage your stock levels.</p>
+                        <p class="text-muted fs-8 mb-0">Track and manage student equipment stock levels.</p>
                     </div>
-                    <button type="button" class="btn-admin-primary" onclick="openAddProductModal()">
-                        <i class="fa-solid fa-plus"></i> Add Inventory
-                    </button>
                 </div>
 
                 <!-- 4 Inventory Stat Cards -->
@@ -929,10 +923,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
                         <h4 class="fw-extrabold mb-1 text-dark">Delivery Management</h4>
-                        <p class="text-muted fs-8 mb-0">Monitor and manage deliveries in real-time.</p>
+                        <p class="text-muted fs-8 mb-0">Monitor live dispatches and manage your delivery driver fleet.</p>
                     </div>
-                    <button type="button" class="btn-admin-primary" onclick="openAssignDeliveryModal()">
-                        <i class="fa-solid fa-truck-ramp-box"></i> Assign Delivery
+                    <button type="button" class="btn-admin-primary" onclick="openAddDriverModal()">
+                        <i class="fa-solid fa-motorcycle"></i> Add Driver
                     </button>
                 </div>
 
@@ -973,6 +967,36 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             </thead>
                             <tbody id="deliveriesTableBody">
                                 <tr><td colspan="7" class="text-center py-4 text-muted">Loading live deliveries...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Registered Delivery Drivers / Fleet Section -->
+                <div class="admin-table-card p-3 mt-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <div>
+                            <h6 class="fw-extrabold mb-0 text-dark"><i class="fa-solid fa-motorcycle me-1.5" style="color: var(--admin-primary);"></i> Registered Delivery Drivers</h6>
+                            <p class="text-muted fs-9 mb-0">Fleet riders available to fulfill equipment deliveries.</p>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-admin-primary py-1 px-2.5 fs-9" onclick="openAddDriverModal()">
+                            <i class="fa-solid fa-plus me-1"></i> Add Driver
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Driver</th>
+                                    <th>Phone</th>
+                                    <th>Vehicle & Plate</th>
+                                    <th>License #</th>
+                                    <th>Status</th>
+                                    <th width="90">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="driversTableBody">
+                                <tr><td colspan="6" class="text-center py-3 text-muted">Loading drivers...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1537,6 +1561,12 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold">Select Registered Driver</label>
+                        <select class="form-select form-select-sm" id="mAssignDriverSelect" onchange="onAssignDriverSelectChanged()">
+                            <!-- Populated from drivers -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label fs-9 fw-bold">Assigned Rider Name</label>
                         <input type="text" class="form-control form-control-sm" id="mAssignRiderName" value="Juan Dela Cruz">
                     </div>
@@ -1664,6 +1694,61 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         </div>
     </div>
 
+    <!-- Add Delivery Driver Modal -->
+    <div class="modal fade" id="addDriverModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="fw-extrabold text-dark mb-0">
+                        <i class="fa-solid fa-motorcycle text-primary me-2" style="color: var(--admin-primary) !important;"></i>
+                        Register Delivery Driver
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="row g-2 mb-2.5">
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Driver Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="mDriverName" placeholder="e.g. Juan Dela Cruz">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Contact Phone <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="mDriverPhone" placeholder="e.g. 0918 765 4321">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2.5">
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Vehicle Type</label>
+                            <select class="form-select form-select-sm" id="mDriverVehicleType">
+                                <option value="Motorcycle" selected>Motorcycle</option>
+                                <option value="Scooter">Scooter</option>
+                                <option value="Van">Van / L300</option>
+                                <option value="Car">Sedan / Car</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Vehicle Model / Color</label>
+                            <input type="text" class="form-control form-control-sm" id="mDriverVehicleModel" placeholder="e.g. Honda Click 125i">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Plate Number</label>
+                            <input type="text" class="form-control form-control-sm" id="mDriverPlate" placeholder="e.g. 456-XYZ">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Driver License No.</label>
+                            <input type="text" class="form-control form-control-sm" id="mDriverLicense" placeholder="e.g. D02-23-001234">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-admin-primary w-100 justify-content-center py-2" id="btnSubmitAddDriver" onclick="submitAddDriver()">
+                        <i class="fa-solid fa-user-plus me-1"></i> Add Delivery Driver
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -1713,7 +1798,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 case 'inventory': loadInventory(); break;
                 case 'orders': loadOrders(); break;
                 case 'customers': loadCustomers(); break;
-                case 'delivery': loadDeliveries(); break;
+                case 'delivery': loadDeliveries(); loadDrivers(); break;
                 case 'serviceCharges': loadServiceCharges(); break;
                 case 'support': loadTickets(); break;
                 case 'transactions': loadTransactions(); break;
@@ -2091,7 +2176,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <td>${c.Email}</td>
                             <td>${c.PhoneOrId || 'N/A'}</td>
                             <td class="fw-bold">${c.total_orders || 0}</td>
-                            <td><span class="badge ${c.Status === 'VERIFIED' ? 'badge-stock-in' : 'badge-stock-out'}">${c.Status === 'VERIFIED' ? 'Active' : 'Inactive'}</span></td>
+                            <td><span class="badge ${c.Status === 'VERIFIED' ? 'badge-stock-in' : 'badge-stock-out'}" title="Verified account - Authorized to post equipment and rent"><i class="fa-solid fa-circle-check me-1"></i>${c.Status === 'VERIFIED' ? 'Verified' : 'Suspended'}</span></td>
                             <td>
                                 <button class="btn btn-sm btn-light border py-1 px-2 fs-9" onclick="toggleCustomerStatus(${c.Id}, '${c.Status}')">
                                     <i class="fa-solid fa-power-off me-1"></i> ${c.Status === 'VERIFIED' ? 'Suspend' : 'Activate'}
@@ -2228,18 +2313,157 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             } catch (e) {}
         }
 
+        async function loadDrivers() {
+            try {
+                const res = await fetch(`${API_URL}?action=get_drivers`);
+                const data = await res.json();
+                const tbody = document.getElementById('driversTableBody');
+                if (!tbody) return;
+
+                if (data.success && data.drivers.length > 0) {
+                    tbody.innerHTML = data.drivers.map(d => `
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" style="width:30px; height:30px; background:#5B3FA8;">
+                                        <i class="fa-solid fa-motorcycle fs-9"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">${d.name}</div>
+                                        <div class="fs-9 text-muted">${d.vehicle_type || 'Motorcycle'}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="fw-bold text-dark">${d.phone}</td>
+                            <td>
+                                <div class="fs-8 fw-semibold">${d.vehicle_model || 'Motorcycle'}</div>
+                                <span class="badge bg-light text-dark border fs-9">${d.plate_number || 'N/A'}</span>
+                            </td>
+                            <td class="fs-9 text-muted">${d.license_no || 'N/A'}</td>
+                            <td>
+                                <span class="badge ${d.status === 'AVAILABLE' ? 'badge-stock-in' : 'badge-stock-out'}">
+                                    ${d.status || 'AVAILABLE'}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-light text-danger border py-0 px-2 fs-9" onclick="deleteDriver(${d.id})">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No drivers registered yet. Click "+ Add Driver" to register.</td></tr>';
+                }
+            } catch (e) {}
+        }
+
+        function openAddDriverModal() {
+            document.getElementById('mDriverName').value = '';
+            document.getElementById('mDriverPhone').value = '';
+            document.getElementById('mDriverVehicleType').value = 'Motorcycle';
+            document.getElementById('mDriverVehicleModel').value = '';
+            document.getElementById('mDriverPlate').value = '';
+            document.getElementById('mDriverLicense').value = '';
+            new bootstrap.Modal(document.getElementById('addDriverModal')).show();
+        }
+
+        async function submitAddDriver() {
+            const name = document.getElementById('mDriverName').value.trim();
+            const phone = document.getElementById('mDriverPhone').value.trim();
+            const vType = document.getElementById('mDriverVehicleType').value;
+            const vModel = document.getElementById('mDriverVehicleModel').value.trim();
+            const plate = document.getElementById('mDriverPlate').value.trim();
+            const license = document.getElementById('mDriverLicense').value.trim();
+
+            if (!name || !phone) {
+                alert('Please enter Driver Name and Contact Phone.');
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmitAddDriver');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Registering...';
+            }
+
+            try {
+                const res = await fetch(`${API_URL}?action=add_driver`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        phone: phone,
+                        vehicle_type: vType,
+                        vehicle_model: vModel,
+                        plate_number: plate,
+                        license_no: license
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Driver registered successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('addDriverModal')).hide();
+                    loadDrivers();
+                } else {
+                    alert(data.message || 'Failed to add driver.');
+                }
+            } catch (err) {
+                alert('Error adding driver: ' + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-user-plus me-1"></i> Add Delivery Driver';
+                }
+            }
+        }
+
+        async function deleteDriver(id) {
+            if (!confirm('Remove this delivery driver?')) return;
+            try {
+                await fetch(`${API_URL}?action=delete_driver&id=${id}`);
+                loadDrivers();
+            } catch (e) {}
+        }
+
         async function openAssignDeliveryModal(orderId = null) {
             try {
                 const res = await fetch(`${API_URL}?action=get_orders&subtab=all`);
                 const data = await res.json();
                 const select = document.getElementById('mAssignOrderSelect');
-                select.innerHTML = (data.orders || []).map(o => `
-                    <option value="${o.id}" ${orderId && parseInt(orderId) === parseInt(o.id) ? 'selected' : ''}>
-                        ${o.order_code} - ${o.customer_name} (₱${Number(o.total_amount).toLocaleString()})
-                    </option>
-                `).join('');
+                if (data.orders && data.orders.length > 0) {
+                    select.innerHTML = data.orders.map(o => `
+                        <option value="${o.id}" ${orderId && parseInt(orderId) === parseInt(o.id) ? 'selected' : ''}>
+                            ${o.order_code} - ${o.customer_name} (₱${Number(o.total_amount).toLocaleString()})
+                        </option>
+                    `).join('');
+                } else {
+                    select.innerHTML = '<option value="">No active orders to dispatch</option>';
+                }
+
+                // Populate registered drivers in modal
+                const driverRes = await fetch(`${API_URL}?action=get_drivers`);
+                const driverData = await driverRes.json();
+                const driverSelect = document.getElementById('mAssignDriverSelect');
+                if (driverSelect && driverData.drivers && driverData.drivers.length > 0) {
+                    driverSelect.innerHTML = driverData.drivers.map(drv => `
+                        <option value="${drv.name}" data-phone="${drv.phone}">${drv.name} (${drv.vehicle_model || 'Motorcycle'} - ${drv.phone})</option>
+                    `).join('');
+                    onAssignDriverSelectChanged();
+                }
+
                 new bootstrap.Modal(document.getElementById('assignDeliveryModal')).show();
             } catch (e) {}
+        }
+
+        function onAssignDriverSelectChanged() {
+            const sel = document.getElementById('mAssignDriverSelect');
+            if (!sel || !sel.selectedOptions[0]) return;
+            const phone = sel.selectedOptions[0].getAttribute('data-phone') || '';
+            const riderInput = document.getElementById('mAssignRiderName');
+            const phoneInput = document.getElementById('mAssignRiderPhone');
+            if (riderInput) riderInput.value = sel.value;
+            if (phoneInput) phoneInput.value = phone;
         }
 
         async function submitAssignDelivery() {
@@ -2247,6 +2471,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             const rider = document.getElementById('mAssignRiderName').value.trim();
             const phone = document.getElementById('mAssignRiderPhone').value.trim();
             const eta = document.getElementById('mAssignEta').value.trim();
+
+            if (!orderId) {
+                alert('No active order selected.');
+                return;
+            }
 
             try {
                 const res = await fetch(`${API_URL}?action=assign_delivery&order_id=${orderId}&rider_name=${encodeURIComponent(rider)}&rider_phone=${encodeURIComponent(phone)}&estimated_arrival=${encodeURIComponent(eta)}`);

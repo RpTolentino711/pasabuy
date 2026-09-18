@@ -99,6 +99,27 @@ if ($db) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $e) {}
 
+    // 2b. Registered Delivery Drivers / Fleet table
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_drivers` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `name` VARCHAR(150) NOT NULL,
+            `phone` VARCHAR(50) NOT NULL,
+            `vehicle_type` VARCHAR(50) DEFAULT 'Motorcycle',
+            `vehicle_model` VARCHAR(100) DEFAULT 'Honda Click 125i',
+            `plate_number` VARCHAR(50) DEFAULT '456-XYZ',
+            `license_no` VARCHAR(100) DEFAULT 'D02-23-001234',
+            `status` ENUM('AVAILABLE', 'BUSY', 'OFFLINE') DEFAULT 'AVAILABLE',
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+        $driverCnt = (int)$db->query("SELECT COUNT(*) FROM `rental_drivers`")->fetchColumn();
+        if ($driverCnt === 0) {
+            $db->exec("INSERT INTO `rental_drivers` (`name`, `phone`, `vehicle_type`, `vehicle_model`, `plate_number`, `license_no`, `status`) 
+                VALUES ('Juan Dela Cruz', '0918 765 4321', 'Motorcycle', 'Honda Click 125i', '456-XYZ', 'D02-23-001234', 'AVAILABLE')");
+        }
+    } catch (Exception $e) {}
+
     // 3. Ensure 3 test users exist in Users and StudentProfiles
     try {
         $hashPogilameg = password_hash('Pogilameg@10', PASSWORD_DEFAULT);
@@ -651,6 +672,43 @@ if ($action === 'assign_delivery') {
     $stmt = $db->prepare("UPDATE `rental_orders` SET `assigned_rider_name` = ?, `assigned_rider_phone` = ?, `estimated_arrival` = ?, `order_status` = 'ON_THE_WAY' WHERE `id` = ?");
     $stmt->execute([$riderName, $riderPhone, $eta, $orderId]);
     echo json_encode(['success' => true, 'message' => "Assigned driver {$riderName} to order."]);
+    exit;
+}
+
+if ($action === 'get_drivers') {
+    if (!$db) { echo json_encode(['success' => true, 'drivers' => []]); exit; }
+    $drivers = $db->query("SELECT * FROM `rental_drivers` ORDER BY `id` DESC")->fetchAll();
+    echo json_encode(['success' => true, 'count' => count($drivers), 'drivers' => $drivers]);
+    exit;
+}
+
+if ($action === 'add_driver') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $name = trim((string)($req['name'] ?? ''));
+    $phone = trim((string)($req['phone'] ?? ''));
+    $vehicleType = trim((string)($req['vehicle_type'] ?? 'Motorcycle'));
+    $vehicleModel = trim((string)($req['vehicle_model'] ?? 'Motorcycle'));
+    $plateNumber = trim((string)($req['plate_number'] ?? 'N/A'));
+    $licenseNo = trim((string)($req['license_no'] ?? 'N/A'));
+
+    if (empty($name) || empty($phone)) {
+        echo json_encode(['success' => false, 'message' => 'Driver name and phone number are required.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("INSERT INTO `rental_drivers` (`name`, `phone`, `vehicle_type`, `vehicle_model`, `plate_number`, `license_no`, `status`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, 'AVAILABLE', NOW())");
+    $stmt->execute([$name, $phone, $vehicleType, $vehicleModel, $plateNumber, $licenseNo]);
+
+    echo json_encode(['success' => true, 'message' => "Delivery driver '{$name}' added successfully."]);
+    exit;
+}
+
+if ($action === 'delete_driver') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $id = (int)($req['id'] ?? 0);
+    $stmt = $db->prepare("DELETE FROM `rental_drivers` WHERE `id` = ?");
+    $stmt->execute([$id]);
+    echo json_encode(['success' => true, 'message' => 'Driver removed.']);
     exit;
 }
 
