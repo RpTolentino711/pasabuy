@@ -1218,6 +1218,16 @@ window.switchTab = function (tabName) {
     const tabbar = document.querySelector('.app-tabbar');
     if (tabbar) tabbar.style.display = 'flex';
 
+    // Header profile button: hide when on profile tab to avoid duplicate avatar
+    const headerProfileBtn = document.getElementById('headerProfileBtn') || document.getElementById('homeAvatar')?.parentElement;
+    if (headerProfileBtn) {
+        if (tabName === 'profile') {
+            headerProfileBtn.style.setProperty('display', 'none', 'important');
+        } else {
+            headerProfileBtn.style.setProperty('display', 'inline-block', 'important');
+        }
+    }
+
     if (tabName === 'cart') {
         renderCartScreen();
     } else if (tabName === 'explore') {

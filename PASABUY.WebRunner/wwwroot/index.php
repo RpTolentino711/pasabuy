@@ -340,7 +340,7 @@
                     <i class="fa-solid fa-truck-fast text-secondary fs-7"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" id="headerOrdersBadge" style="font-size:0.6rem; padding: 2px 4px; display:none;">0</span>
                 </button>
-                <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')">
+                <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')" id="headerProfileBtn">
                     <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80"
                         class="rounded-circle border border-2 border-white shadow-sm" width="36" height="36" style="object-fit:cover;" id="homeAvatar" alt="User Profile">
                     <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:10px; height:10px;"></span>
@@ -1661,6 +1661,16 @@
                             // Header cart button is always visible floating in header
                             const headerCartBtn = document.getElementById('headerCartBtn');
                             if (headerCartBtn) headerCartBtn.style.setProperty('display', 'inline-flex', 'important');
+
+                            // Header profile button: hide when on profile tab to avoid duplicate avatar
+                            const headerProfileBtn = document.getElementById('headerProfileBtn') || document.getElementById('homeAvatar')?.parentElement;
+                            if (headerProfileBtn) {
+                                if (tabName === 'profile') {
+                                    headerProfileBtn.style.setProperty('display', 'none', 'important');
+                                } else {
+                                    headerProfileBtn.style.setProperty('display', 'inline-block', 'important');
+                                }
+                            }
 
                             if (tabName === 'home') {
                                 filterProducts();

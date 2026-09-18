@@ -335,7 +335,7 @@
                     <i class="fa-solid fa-comment-dots text-secondary fs-7"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem; padding: 2px 4px;">1</span>
                 </button>
-                <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')">
+                <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')" id="headerProfileBtn">
                     <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
                         class="rounded-circle border border-2 border-white shadow-sm" width="36" height="36" style="object-fit:cover;" id="homeAvatar">
                     <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:10px; height:10px;"></span>
@@ -2805,6 +2805,16 @@
                             } else {
                                 if (headerCartBtn) headerCartBtn.style.setProperty('display', 'inline-flex', 'important');
                                 if (homeCartBtn) homeCartBtn.style.setProperty('display', 'none', 'important');
+                            }
+
+                            // Header profile button: hide when on profile tab to avoid duplicate avatar
+                            const headerProfileBtn = document.getElementById('headerProfileBtn') || document.getElementById('homeAvatar')?.parentElement;
+                            if (headerProfileBtn) {
+                                if (tabName === 'profile') {
+                                    headerProfileBtn.style.setProperty('display', 'none', 'important');
+                                } else {
+                                    headerProfileBtn.style.setProperty('display', 'inline-block', 'important');
+                                }
                             }
 
                             if (tabName === 'messages') {
