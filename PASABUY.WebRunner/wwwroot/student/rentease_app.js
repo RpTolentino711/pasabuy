@@ -1331,7 +1331,7 @@ window.loadUserRentedOutItems = async function () {
 
     const headerBtn = document.getElementById('headerPostEquipmentBtn');
     if (headerBtn) {
-        headerBtn.style.display = (myItems.length > 0) ? 'inline-flex' : 'none';
+        headerBtn.style.display = 'inline-flex';
     }
 
     if (myItems.length === 0) {
@@ -1341,12 +1341,7 @@ window.loadUserRentedOutItems = async function () {
                     <i class="fa-solid fa-box-open fs-2"></i>
                 </div>
                 <h6 class="fw-extrabold text-dark fs-7 mb-1">No Equipment Posted for Rent Yet</h6>
-                <p class="text-muted fs-8 mb-3">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
-                <button class="btn btn-primary rounded-pill px-3 py-2 fw-bold fs-8 mx-auto" 
-                        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
-                        onclick="switchTab('sell')">
-                    <i class="fa-solid fa-plus me-1.5"></i> Post Equipment for Rent
-                </button>
+                <p class="text-muted fs-8 mb-0">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
             </div>
         `;
         return;

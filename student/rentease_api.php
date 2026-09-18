@@ -69,6 +69,15 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
+
+    // Automatically purge all hardcoded dummy/seed items from database
+    try {
+        $db->exec("DELETE FROM `rental_inventory` WHERE `name` IN ('Monoblock Chair', 'Banquet Chair', 'Folding Chair', 'Cushioned Chair', 'Folding Table', 'Round Banquet Table', 'Event Tent (10x10ft)', 'Large Pavilion Tent (20x20ft)', 'Sound System & Dual Mic', 'LED Stage Par Lights', 'Balloon Arch & Backdrop Frame', 'Modular Stage Platform (4x8ft)')");
+        $db->exec("DELETE FROM `rental_packages` WHERE `name` IN ('Birthday Celebration Package', 'Grand Wedding Package', 'Weekend Social Gathering Package')");
+        $db->exec("DELETE FROM `rental_orders` WHERE `order_code` = '#RE-10245'");
+        $db->exec("DELETE FROM `rental_order_items` WHERE `product_name` IN ('Monoblock Chair', 'Folding Table', 'Event Tent (10x10ft)')");
+        $db->exec("DELETE FROM `rental_issues` WHERE `ticket_number` IN ('#10245', '#10238', '#10231')");
+    } catch (Exception $ePurge) {}
 }
 
 $inputRaw = file_get_contents('php://input');
@@ -80,8 +89,11 @@ function getRentEaseItemsFallback() {
         $file = dirname(__DIR__) . '/rentease_local_items.json';
     }
     if (file_exists($file)) {
-        $data = json_decode(file_get_contents($file), true);
-        if (is_array($data)) return $data;
+        $items = json_decode(file_get_contents($file), true);
+        if (is_array($items)) {
+            $dummyNames = ['Monoblock Chair', 'Banquet Chair', 'Folding Chair', 'Cushioned Chair', 'Folding Table', 'Round Banquet Table', 'Event Tent (10x10ft)', 'Large Pavilion Tent (20x20ft)', 'Sound System & Dual Mic', 'LED Stage Par Lights', 'Balloon Arch & Backdrop Frame', 'Modular Stage Platform (4x8ft)'];
+            return array_values(array_filter($items, fn($i) => !in_array($i['name'] ?? '', $dummyNames)));
+        }
     }
     return [];
 }
@@ -116,7 +128,7 @@ if ($action === 'get_inventory') {
         exit;
     }
 
-    $sql = "SELECT * FROM `rental_inventory` WHERE 1=1";
+    $sql = "SELECT * FROM `rental_inventory` WHERE `name` NOT IN ('Monoblock Chair', 'Banquet Chair', 'Folding Chair', 'Cushioned Chair', 'Folding Table', 'Round Banquet Table', 'Event Tent (10x10ft)', 'Large Pavilion Tent (20x20ft)', 'Sound System & Dual Mic', 'LED Stage Par Lights', 'Balloon Arch & Backdrop Frame', 'Modular Stage Platform (4x8ft)')";
     $params = [];
 
     if ($category !== '' && $category !== 'All') {

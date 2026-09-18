@@ -40,10 +40,10 @@
             </h6>
             <span class="badge rounded-pill bg-primary-subtle text-primary fw-bold fs-9" id="myRentalCountBadge">0</span>
         </div>
-        <!-- Single Header Button (shown only when listings exist, hidden during empty state to prevent double buttons) -->
+        <!-- Single Header Button -->
         <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-bold fs-8 d-flex align-items-center gap-1 shadow-2xs" 
                 id="headerPostEquipmentBtn"
-                style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none; display:none;" 
+                style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
                 onclick="switchTab('sell')">
             <i class="fa-solid fa-plus fs-9"></i> Post Equipment
         </button>
@@ -57,12 +57,7 @@
                 <i class="fa-solid fa-box-open fs-2"></i>
             </div>
             <h6 class="fw-extrabold text-dark fs-7 mb-1">No Equipment Posted for Rent Yet</h6>
-            <p class="text-muted fs-8 mb-3">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
-            <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fw-bold fs-8 mx-auto" 
-                    style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
-                    onclick="switchTab('sell')">
-                <i class="fa-solid fa-plus me-1.5"></i> Post Equipment for Rent
-            </button>
+            <p class="text-muted fs-8 mb-0">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
         </div>
     </div>
 
