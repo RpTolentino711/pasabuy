@@ -780,12 +780,14 @@ function syncRentEaseProfileUI() {
     const user = getRentEaseCurrentUser();
     const nameEl = document.getElementById('profileName');
     const subEl = document.getElementById('profileSub');
+    const stuEl = document.getElementById('profileStudentNumber');
     const emailEl = document.getElementById('profileEmail');
     const avatarEl = document.getElementById('profileAvatar');
     const homeAvatar = document.getElementById('homeAvatar');
 
     if (nameEl) nameEl.innerText = user.name;
     if (subEl) subEl.innerText = user.sub || `${user.course} • ${user.yearLevel}`;
+    if (stuEl) stuEl.innerText = `Student ID: ${user.studentNumber || user.phone || '09668257301'}`;
     if (emailEl && emailEl !== subEl) emailEl.innerText = user.sub || user.studentNumber || user.email;
     if (avatarEl && user.avatar) {
         avatarEl.src = user.avatar;
@@ -794,7 +796,30 @@ function syncRentEaseProfileUI() {
         homeAvatar.src = user.avatar;
         homeAvatar.alt = user.name;
     }
+
+    // Settings Hub Elements
+    const hubName = document.getElementById('settingsHubName');
+    const hubSub = document.getElementById('settingsHubSub');
+    const hubAvatar = document.getElementById('settingsHubAvatar');
+    if (hubName) hubName.innerText = user.name;
+    if (hubSub) hubSub.innerText = user.sub || `${user.course} • ${user.yearLevel}`;
+    if (hubAvatar && user.avatar) hubAvatar.src = user.avatar;
 }
+
+window.openSettingsHubModal = function () {
+    const modalEl = document.getElementById('settingsHubModal');
+    if (modalEl) {
+        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+        syncRentEaseProfileUI();
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+};
+
+window.openIssueModal = function () {
+    if (typeof openIssueReportingModal === 'function') {
+        openIssueReportingModal();
+    }
+};
 
 function openProfileSettingsModal() {
     const modalEl = document.getElementById('profileSettingsModal');
@@ -1139,6 +1164,7 @@ window.switchTab = function (tabName) {
         openTrackScreen('#RE-10245');
     } else if (tabName === 'profile') {
         syncRentEaseProfileUI();
+        loadUserRentedOutItems();
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -1184,6 +1210,7 @@ window.postRentalItemLive = async function () {
     }
 
     try {
+        const currentUser = getRentEaseCurrentUser();
         const res = await fetch(getRentEaseApiUrl('post_item'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1198,12 +1225,21 @@ window.postRentalItemLive = async function () {
                 item_condition: condition,
                 location: location,
                 description: description,
-                owner_name: localStorage.getItem('pasabuy_student_name') || 'Student Renter'
+                owner_name: currentUser.name || 'Romeo Paolo Tolentino'
             })
         });
 
         const data = await res.json();
         if (data.success) {
+            // Track item ID for user portfolio
+            if (data.id) {
+                try {
+                    let postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
+                    postedIds.push(parseInt(data.id));
+                    localStorage.setItem('rentease_user_posted_ids', JSON.stringify(postedIds));
+                } catch(e) {}
+            }
+
             alert(`🎉 Success!\n\n"${title}" has been published live for rent on RentEase!`);
             
             // Clear inputs
@@ -1218,8 +1254,8 @@ window.postRentalItemLive = async function () {
             // Reload live inventory
             await loadRentEaseCatalog();
 
-            // Switch to explore tab showing the category
-            openCategoryTab(category);
+            // Switch to profile tab so user sees their posted equipment
+            switchTab('profile');
         } else {
             alert('❌ ' + (data.message || 'Failed to post item. Please try again.'));
         }
@@ -1231,6 +1267,135 @@ window.postRentalItemLive = async function () {
             btn.disabled = false;
             btn.innerHTML = oldBtnHtml;
         }
+    }
+};
+
+// ----------------------------------------------------------
+// USER PROFILE RENTED OUT EQUIPMENT LISTINGS
+// ----------------------------------------------------------
+window.loadUserRentedOutItems = async function () {
+    const container = document.getElementById('myRentalListingsContainer');
+    const badge = document.getElementById('myRentalCountBadge');
+    if (!container) return;
+
+    if (!rentEaseInventory || rentEaseInventory.length === 0) {
+        await loadRentEaseCatalog();
+    }
+
+    const currentUser = getRentEaseCurrentUser();
+    const currentName = (currentUser.name || 'Romeo Paolo Tolentino').toLowerCase().trim();
+
+    let postedIds = [];
+    try {
+        postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
+    } catch (e) {}
+
+    const myItems = (rentEaseInventory || []).filter(item => {
+        const idNum = parseInt(item.id);
+        if (postedIds.includes(idNum) || postedIds.includes(String(item.id))) return true;
+        const owner = (item.owner_name || '').toLowerCase().trim();
+        if (owner && (owner.includes('romeo') || owner.includes('tolentino') || owner === currentName)) return true;
+        return false;
+    });
+
+    if (badge) badge.innerText = myItems.length;
+
+    if (myItems.length === 0) {
+        container.innerHTML = `
+            <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:60px; height:60px; color:#5B3FA8;">
+                    <i class="fa-solid fa-box-open fs-2"></i>
+                </div>
+                <h6 class="fw-extrabold text-dark fs-7 mb-1">No Equipment Posted for Rent Yet</h6>
+                <p class="text-muted fs-8 mb-3">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
+                <button class="btn btn-primary rounded-pill px-3 py-2 fw-bold fs-8 mx-auto" 
+                        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
+                        onclick="switchTab('sell')">
+                    <i class="fa-solid fa-plus me-1.5"></i> Post Equipment for Rent
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = myItems.map(item => {
+        const img = item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80';
+        const price = parseFloat(item.price_per_day || item.price || 0).toLocaleString();
+        const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
+        return `
+            <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden p-3" id="rentalItemCard_${item.id}">
+                <div class="d-flex gap-3">
+                    <img src="${img}" 
+                         class="rounded-3 border object-fit-cover shadow-2xs" 
+                         style="width: 82px; height: 82px; flex-shrink: 0; object-fit: cover;" 
+                         alt="${item.name}">
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex align-items-start justify-content-between gap-1 mb-1">
+                            <h6 class="fw-extrabold text-dark fs-8 mb-0 text-truncate" title="${item.name}">${item.name}</h6>
+                            <span class="badge bg-success-subtle text-success fs-9 fw-bold">Active</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1.5 mb-1.5 flex-wrap">
+                            <span class="badge bg-light text-secondary border fs-9">${item.category || 'General'}</span>
+                            <span class="badge bg-light text-secondary border fs-9">${item.material_tag || 'Standard'}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mt-2">
+                            <div>
+                                <span class="fw-extrabold fs-7" style="color:#5B3FA8 !important;">₱${price}</span>
+                                <span class="text-muted fs-9"> / day</span>
+                            </div>
+                            <div class="text-muted fs-9">
+                                Stock: <strong class="text-dark">${item.qty_available ?? item.qty_total ?? 1}</strong> / ${item.qty_total ?? 1}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2.5">
+                    <span class="text-muted fs-9 text-truncate me-2">
+                        <i class="fa-solid fa-location-dot me-1 text-secondary"></i>${item.location || 'Campus Hub'}
+                    </span>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold text-dark border" 
+                                onclick="openRentalDetail(${item.id})">
+                            <i class="fa-solid fa-eye me-1"></i>View
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" 
+                                onclick="deleteUserRentalItem(${item.id}, '${safeTitle}')">
+                            <i class="fa-solid fa-trash me-1"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+window.deleteUserRentalItem = async function (id, name) {
+    if (!confirm(`Are you sure you want to remove "${name || 'this item'}" from your rental listings?`)) {
+        return;
+    }
+    try {
+        const res = await fetch(getRentEaseApiUrl('delete_item'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            try {
+                let postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
+                postedIds = postedIds.filter(pid => pid != id);
+                localStorage.setItem('rentease_user_posted_ids', JSON.stringify(postedIds));
+            } catch (e) {}
+
+            await loadRentEaseCatalog();
+            await loadUserRentedOutItems();
+            alert(`Equipment "${name}" has been removed.`);
+        } else {
+            alert('❌ ' + (data.message || 'Failed to remove equipment.'));
+        }
+    } catch (e) {
+        console.error("Delete rental item error:", e);
+        alert('❌ Error connecting to server to delete equipment.');
     }
 };
 

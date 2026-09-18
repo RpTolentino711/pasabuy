@@ -529,7 +529,7 @@ if ($action === 'get_admin_dashboard') {
     exit;
 }
 
-if ($action === 'admin_delete_equipment') {
+if ($action === 'admin_delete_equipment' || $action === 'delete_item' || $action === 'delete_user_equipment') {
     $id = (int)($data['id'] ?? 0);
     if (!$id) {
         http_response_code(400);
