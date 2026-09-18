@@ -24,13 +24,14 @@
          style="cursor:pointer;" onclick="openProfileSettingsModal()" title="Click to edit profile">
         <div class="d-flex align-items-center gap-3">
             <div class="position-relative">
-                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80" 
-                     class="rounded-circle border border-2 border-white shadow-2xs" width="50" height="50" style="object-fit:cover;" id="profileAvatar" alt="User Avatar">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" 
+                     class="rounded-circle border border-2 border-white shadow-2xs" width="50" height="50" style="object-fit:cover;" id="profileAvatar" alt="Romeo Paolo Tolentino">
                 <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:12px; height:12px;"></span>
             </div>
             <div>
-                <h6 class="fw-extrabold text-dark fs-7 mb-0" id="profileName">Event Organizer</h6>
-                <div class="text-muted fs-8" id="profileEmail">organizer@campus.edu.ph</div>
+                <h6 class="fw-extrabold text-dark fs-7 mb-0" id="profileName">Romeo Paolo Tolentino</h6>
+                <div class="text-muted fs-8" id="profileSub">BSIT • 4th Yr</div>
+                <div class="text-muted fs-9 d-none" id="profileEmail">09668257301</div>
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">

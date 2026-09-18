@@ -81,16 +81,9 @@ function getRentEaseItemsFallback() {
     }
     if (file_exists($file)) {
         $data = json_decode(file_get_contents($file), true);
-        if (is_array($data) && count($data) > 0) return $data;
+        if (is_array($data)) return $data;
     }
-    return [
-        ['id' => 1, 'name' => 'Monoblock Chair', 'category' => 'Chairs', 'material_tag' => 'Plastic', 'price_per_day' => 20.00, 'qty_total' => 100, 'qty_available' => 85, 'qty_rented' => 15, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80', 'video_url' => '', 'rating' => 4.8, 'reviews_count' => 120, 'description' => 'Durable white plastic monoblock chairs for gatherings and events.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Good', 'owner_name' => 'RentEase Hub'],
-        ['id' => 2, 'name' => 'Tiffany Wooden Chair', 'category' => 'Chairs', 'material_tag' => 'Wooden', 'price_per_day' => 65.00, 'qty_total' => 50, 'qty_available' => 40, 'qty_rented' => 10, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1503602642458-232111445657?w=500&q=80', 'video_url' => '', 'rating' => 4.9, 'reviews_count' => 84, 'description' => 'Elegant classic wooden Tiffany chairs with white cushion for weddings.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Brand New', 'owner_name' => 'RentEase Hub'],
-        ['id' => 3, 'name' => 'Heavy Duty Folding Table (6ft)', 'category' => 'Tables', 'material_tag' => 'Plastic', 'price_per_day' => 150.00, 'qty_total' => 30, 'qty_available' => 22, 'qty_rented' => 8, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=500&q=80', 'video_url' => '', 'rating' => 4.8, 'reviews_count' => 96, 'description' => '6-foot heavy duty bi-fold table, seats 6-8 people.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Good', 'owner_name' => 'RentEase Hub'],
-        ['id' => 4, 'name' => 'Waterproof Event Tent (10x10ft)', 'category' => 'Tents', 'material_tag' => 'Premium', 'price_per_day' => 800.00, 'qty_total' => 10, 'qty_available' => 6, 'qty_rented' => 4, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80', 'video_url' => '', 'rating' => 4.9, 'reviews_count' => 110, 'description' => 'Heavy-duty steel frame waterproof gazebo canopy tent.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Like New', 'owner_name' => 'RentEase Hub'],
-        ['id' => 5, 'name' => 'JBL PartyBox 310 Sound System', 'category' => 'Sound System', 'material_tag' => 'Premium', 'price_per_day' => 950.00, 'qty_total' => 8, 'qty_available' => 5, 'qty_rented' => 3, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80', 'video_url' => '', 'rating' => 5.0, 'reviews_count' => 45, 'description' => '240W powerful sound with dynamic light show and dual wireless microphones.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Like New', 'owner_name' => 'Juan Dela Cruz'],
-        ['id' => 6, 'name' => 'RGB Stage Par Lights (Set of 4)', 'category' => 'Lights', 'material_tag' => 'Premium', 'price_per_day' => 450.00, 'qty_total' => 12, 'qty_available' => 9, 'qty_rented' => 3, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=500&q=80', 'video_url' => '', 'rating' => 4.7, 'reviews_count' => 38, 'description' => 'Full RGB color mixing stage lighting with strobe and sound activation.', 'min_rental_days' => 1, 'is_featured' => 0, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Good', 'owner_name' => 'Student Org']
-    ];
+    return [];
 }
 
 function saveRentEaseItemsFallback($items) {
@@ -456,26 +449,15 @@ if ($action === 'get_admin_dashboard') {
                 'rented_stock' => $rentedStock,
                 'maint_stock' => $maintStock,
                 'total_listings' => count($items),
-                'sales_overview' => 125450.00,
-                'total_orders' => 184,
-                'total_customers' => 96,
-                'active_deliveries' => 1,
-                'pending_issues' => 2
-            ],
-            'targets' => [
-                'ideal_clients_per_month' => '100–150 customers',
-                'target_transactions_per_month' => '150–200 transactions',
-                'online_orders_ratio' => '75% online orders',
-                'assisted_orders_ratio' => '25% assisted orders'
+                'sales_overview' => 0.00,
+                'total_orders' => 0,
+                'total_customers' => 0,
+                'active_deliveries' => 0,
+                'pending_issues' => 0
             ],
             'inventory' => $items,
-            'recent_orders' => [
-                ['order_number' => 'RE-10245', 'customer_name' => 'Campus Organizer', 'customer_phone' => '0917-123-4567', 'customer_email' => 'organizer@campus.edu.ph', 'fulfillment_type' => 'Delivery', 'delivery_address' => 'San Pablo, Laguna (Student Center)', 'rental_start_date' => '2026-09-25', 'rental_days' => 1, 'total_amount' => 1749.00, 'payment_method' => 'GCASH', 'status' => 'ON_THE_WAY']
-            ],
-            'issues' => [
-                ['id' => 1, 'ticket_code' => '#TKT-8841', 'order_code' => '#RE-10245', 'customer_name' => 'Campus Organizer', 'subject' => 'Damaged Chair Leg', 'description' => 'One monoblock chair arrived with a hairline crack.', 'status' => 'REVIEWING', 'severity' => 'MEDIUM', 'created_at' => '2026-09-18 10:15:00'],
-                ['id' => 2, 'ticket_code' => '#TKT-8842', 'order_code' => '#RE-10238', 'customer_name' => 'Paolo Tolentino', 'subject' => 'Extra Extension Cord', 'description' => 'Need 1 extra 10m outdoor heavy duty cord for tent lights.', 'status' => 'OPEN', 'severity' => 'LOW', 'created_at' => '2026-09-18 09:30:00']
-            ],
+            'recent_orders' => [],
+            'issues' => [],
             'packages' => []
         ]);
         exit;
@@ -507,8 +489,6 @@ if ($action === 'get_admin_dashboard') {
             $activeDeliveries++;
         }
     }
-    if ($sales == 0) $sales = 125450.00;
-    if ($activeDeliveries == 0) $activeDeliveries = 1;
 
     try {
         $issuesStmt = $db->query("SELECT * FROM `rental_issues` ORDER BY `id` DESC");

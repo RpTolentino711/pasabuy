@@ -708,70 +708,122 @@ function logoutRentEaseUser() {
 // ----------------------------------------------------------
 function getRentEaseCurrentUser() {
     try {
-        const saved = localStorage.getItem('rentease_user_profile');
-        if (saved) return JSON.parse(saved);
-
+        const studentUserStr = localStorage.getItem('pasabuy_student_user');
+        if (studentUserStr) {
+            const u = JSON.parse(studentUserStr);
+            const first = (u.firstName || u.FirstName || '').trim();
+            const last = (u.lastName || u.LastName || '').trim();
+            const fullName = `${first} ${last}`.trim() || u.name || '';
+            if (fullName) {
+                const courseInfo = u.course ? `${u.course} • ${u.yearLevel || '4th Yr'}` : 'BSIT • 4th Yr';
+                return {
+                    firstName: first || 'Romeo Paolo',
+                    lastName: last || 'Tolentino',
+                    name: fullName,
+                    sub: courseInfo,
+                    email: u.email || u.SchoolEmail || (u.studentNumber ? `${u.studentNumber}@campus.edu.ph` : 'romeopaolo.tolentino@campus.edu.ph'),
+                    phone: u.phone || u.phoneNumber || u.PhoneNumber || u.studentNumber || '09668257301',
+                    studentNumber: u.studentNumber || '09668257301',
+                    course: u.course || 'BSIT',
+                    yearLevel: u.yearLevel || '4th Yr',
+                    avatar: u.profileImage || u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'
+                };
+            }
+        }
+        
         const pasabuyUser = localStorage.getItem('pasabuy_user');
         if (pasabuyUser) {
             const u = JSON.parse(pasabuyUser);
-            const fullName = (u.FirstName ? `${u.FirstName} ${u.LastName || ''}`.trim() : (u.name || '')).trim();
+            const first = (u.FirstName || u.firstName || '').trim();
+            const last = (u.LastName || u.lastName || '').trim();
+            const fullName = `${first} ${last}`.trim() || u.name || '';
             if (fullName) {
                 return {
+                    firstName: first || 'Romeo Paolo',
+                    lastName: last || 'Tolentino',
                     name: fullName,
-                    email: u.SchoolEmail || u.email || 'user@campus.edu.ph',
-                    phone: u.PhoneNumber || u.phone || '0917-123-4567',
-                    avatar: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'
+                    sub: u.Course ? `${u.Course} • ${u.YearLevel || '4th Yr'}` : 'BSIT • 4th Yr',
+                    email: u.SchoolEmail || u.email || 'romeopaolo.tolentino@campus.edu.ph',
+                    phone: u.PhoneNumber || u.phone || '09668257301',
+                    studentNumber: u.StudentNumber || '09668257301',
+                    course: u.Course || 'BSIT',
+                    yearLevel: u.YearLevel || '4th Yr',
+                    avatar: u.avatar || u.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'
                 };
+            }
+        }
+
+        const saved = localStorage.getItem('rentease_user_profile');
+        if (saved) {
+            const s = JSON.parse(saved);
+            if (s.name && s.name !== 'Event Organizer' && s.name !== 'Bea Solis') {
+                return s;
             }
         }
     } catch (e) {}
 
     return {
-        name: 'Event Organizer',
-        email: 'organizer@campus.edu.ph',
-        phone: '0917-123-4567',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'
+        firstName: 'Romeo Paolo',
+        lastName: 'Tolentino',
+        name: 'Romeo Paolo Tolentino',
+        sub: 'BSIT • 4th Yr',
+        email: 'romeopaolo.tolentino@campus.edu.ph',
+        phone: '09668257301',
+        studentNumber: '09668257301',
+        course: 'BSIT',
+        yearLevel: '4th Yr',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'
     };
 }
 
 function syncRentEaseProfileUI() {
     const user = getRentEaseCurrentUser();
     const nameEl = document.getElementById('profileName');
+    const subEl = document.getElementById('profileSub');
     const emailEl = document.getElementById('profileEmail');
     const avatarEl = document.getElementById('profileAvatar');
     const homeAvatar = document.getElementById('homeAvatar');
 
     if (nameEl) nameEl.innerText = user.name;
-    if (emailEl) emailEl.innerText = user.email;
-    if (avatarEl) {
+    if (subEl) subEl.innerText = user.sub || `${user.course} • ${user.yearLevel}`;
+    if (emailEl && emailEl !== subEl) emailEl.innerText = user.sub || user.studentNumber || user.email;
+    if (avatarEl && user.avatar) {
         avatarEl.src = user.avatar;
-        avatarEl.onerror = () => { avatarEl.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'; };
     }
-    if (homeAvatar) {
+    if (homeAvatar && user.avatar) {
         homeAvatar.src = user.avatar;
         homeAvatar.alt = user.name;
-        homeAvatar.onerror = () => { homeAvatar.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'; };
     }
 }
 
 function openProfileSettingsModal() {
-    const user = getRentEaseCurrentUser();
-    const nameInput = document.getElementById('editProfileNameInput');
-    const emailInput = document.getElementById('editProfileEmailInput');
-    const phoneInput = document.getElementById('editProfilePhoneInput');
-    const avatarInput = document.getElementById('editProfileAvatarInput');
-    const preview = document.getElementById('editProfileAvatarPreview');
-
-    if (nameInput) nameInput.value = user.name;
-    if (emailInput) emailInput.value = user.email;
-    if (phoneInput) phoneInput.value = user.phone;
-    if (avatarInput) avatarInput.value = user.avatar;
-    if (preview) preview.src = user.avatar;
-
-    const modalEl = document.getElementById('editProfileModal');
+    const modalEl = document.getElementById('profileSettingsModal');
     if (modalEl) {
         if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+        
+        const user = getRentEaseCurrentUser();
+        const fn = document.getElementById('settingsFirstName');
+        const ln = document.getElementById('settingsLastName');
+        const sn = document.getElementById('settingsStudentNumber');
+        const cs = document.getElementById('settingsCourse');
+        const yl = document.getElementById('settingsYearLevel');
+        const prev = document.getElementById('settingsAvatarPreview');
+
+        if (fn) fn.value = user.firstName || 'Romeo Paolo';
+        if (ln) ln.value = user.lastName || 'Tolentino';
+        if (sn) sn.value = user.studentNumber || '09668257301';
+        if (cs) cs.value = user.course || 'BSIT';
+        if (yl) yl.value = user.yearLevel || '4th Yr';
+        if (prev && user.avatar) prev.src = user.avatar;
+
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        return;
+    }
+
+    const altModal = document.getElementById('editProfileModal');
+    if (altModal) {
+        if (altModal.parentElement !== document.body) document.body.appendChild(altModal);
+        bootstrap.Modal.getOrCreateInstance(altModal).show();
     }
 }
 
