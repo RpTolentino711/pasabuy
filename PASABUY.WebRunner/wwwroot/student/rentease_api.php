@@ -414,6 +414,109 @@ if ($action === 'get_admin_dashboard') {
     exit;
 }
 
+// ----------------------------------------------------------
+// 9. ADMIN STOCK & EQUIPMENT OPERATIONS
+// ----------------------------------------------------------
+if ($action === 'admin_update_stock') {
+    $id = (int)($data['id'] ?? 0);
+    $qtyTotal = (int)($data['qty_total'] ?? 0);
+    $qtyAvail = (int)($data['qty_available'] ?? 0);
+    $qtyRented = (int)($data['qty_rented'] ?? 0);
+    $qtyMaint = (int)($data['qty_maintenance'] ?? 0);
+    $price = (float)($data['price_per_day'] ?? 0);
+
+    $stmt = $db->prepare("UPDATE `rental_inventory` SET `qty_total` = ?, `qty_available` = ?, `qty_rented` = ?, `qty_maintenance` = ?, `price_per_day` = ? WHERE `id` = ?");
+    $stmt->execute([$qtyTotal, $qtyAvail, $qtyRented, $qtyMaint, $price, $id]);
+
+    echo json_encode(['success' => true, 'message' => "Inventory item #{$id} stock updated successfully."]);
+    exit;
+}
+
+if ($action === 'admin_add_equipment') {
+    $name = trim((string)($data['name'] ?? ''));
+    $category = trim((string)($data['category'] ?? 'Chairs'));
+    $materialTag = trim((string)($data['material_tag'] ?? 'Plastic'));
+    $price = (float)($data['price_per_day'] ?? 50.00);
+    $qtyTotal = (int)($data['qty_total'] ?? 50);
+    $imgUrl = trim((string)($data['image_url'] ?? 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80'));
+    $desc = trim((string)($data['description'] ?? 'Quality event equipment for rent.'));
+
+    if (!$name) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Equipment name is required.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("INSERT INTO `rental_inventory` (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `description`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 5.0, 1, 1, 0)");
+    $stmt->execute([$name, $category, $materialTag, $price, $qtyTotal, $qtyTotal, $imgUrl, $desc]);
+
+    echo json_encode(['success' => true, 'message' => "New equipment item '{$name}' added to inventory.", 'id' => $db->lastInsertId()]);
+    exit;
+}
+
+if ($action === 'admin_assign_rider' || $action === 'admin_update_order_status') {
+    $orderNumber = trim((string)($data['order_number'] ?? ''));
+    $riderName = trim((string)($data['rider_name'] ?? 'Juan Dela Cruz'));
+    $riderPhone = trim((string)($data['rider_phone'] ?? '0917-888-9999'));
+    $status = strtoupper(trim((string)($data['status'] ?? 'ON_THE_WAY')));
+
+    $stmt = $db->prepare("UPDATE `rental_orders` SET `driver_name` = ?, `driver_phone` = ?, `order_status` = ?, `status_display` = ? WHERE `order_number` = ?");
+    $displayMap = [
+        'CONFIRMED' => 'Order Confirmed',
+        'PREPARING' => 'Preparing Equipment',
+        'PICKUP' => 'Equipment Dispatched',
+        'ON_THE_WAY' => 'Out for Delivery',
+        'DELIVERED' => 'Delivered'
+    ];
+    $display = $displayMap[$status] ?? 'Out for Delivery';
+    $stmt->execute([$riderName, $riderPhone, $status, $display, $orderNumber]);
+
+    echo json_encode(['success' => true, 'message' => "Order #{$orderNumber} updated to {$display} with rider {$riderName}."]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// 10. RIDER FLEET DISPATCH & LIVE STAGES
+// ----------------------------------------------------------
+if ($action === 'rider_get_jobs') {
+    $stmt = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 10");
+    $orders = $stmt->fetchAll();
+
+    echo json_encode([
+        'success' => true,
+        'active_order' => $orders[0] ?? null,
+        'broadcast_jobs' => $orders
+    ]);
+    exit;
+}
+
+if ($action === 'rider_update_stage') {
+    $orderNumber = trim((string)($data['order_number'] ?? '#RE-10245'));
+    $stage = strtoupper(trim((string)($data['stage'] ?? 'ON_THE_WAY')));
+    $lat = (float)($data['lat'] ?? 14.1870);
+    $lng = (float)($data['lng'] ?? 121.2650);
+
+    $displayMap = [
+        'CONFIRMED' => 'Order Confirmed',
+        'PREPARING' => 'Preparing Equipment',
+        'PICKUP' => 'Equipment Dispatched',
+        'ON_THE_WAY' => 'Out for Delivery',
+        'DELIVERED' => 'Delivered'
+    ];
+    $display = $displayMap[$stage] ?? 'Out for Delivery';
+
+    $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ?, `rider_current_lat` = ?, `rider_current_lng` = ? WHERE `order_number` = ?");
+    $stmt->execute([$stage, $display, $lat, $lng, $orderNumber]);
+
+    echo json_encode([
+        'success' => true,
+        'message' => "Order {$orderNumber} stage updated to {$display}.",
+        'stage' => $stage,
+        'display' => $display
+    ]);
+    exit;
+}
+
 // Fallback
 echo json_encode(['success' => false, 'message' => "Unknown action '{$action}'."]);
 exit;

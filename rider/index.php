@@ -6,7 +6,7 @@ session_start();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PasaBuy - Express Motor Driver Portal</title>
+    <title>RentEase - Delivery & Logistics Fleet Portal</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,12 +19,12 @@ session_start();
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
-            --primary: #5F27CD;
+            --primary: #5B3FA8;
             --primary-dark: #341F97;
-            --secondary: #10AC84;
+            --secondary: #10B981;
             --dark-bg: #0F172A;
             --card-bg: #1E293B;
-            --accent: #FF9F43;
+            --accent: #F4B942;
         }
 
         body {
@@ -50,7 +50,7 @@ session_start();
         }
 
         .rider-header {
-            background: linear-gradient(135deg, #6C5CE7, #341F97);
+            background: linear-gradient(135deg, #1E1B4B, #5B3FA8);
             padding: 20px 20px 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -58,35 +58,42 @@ session_start();
         .rider-card {
             background: #1E293B;
             border: 1px solid #334155;
-            border-radius: 18px;
+            border-radius: 20px;
             padding: 20px;
             margin-bottom: 16px;
         }
 
         .status-badge-verified {
-            background: rgba(16, 172, 132, 0.15);
-            color: #10AC84;
-            border: 1px solid rgba(16, 172, 132, 0.3);
+            background: rgba(16, 185, 129, 0.15);
+            color: #10B981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
             font-weight: 700;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             padding: 4px 10px;
             border-radius: 20px;
         }
 
         .nav-btn-stage {
-            background: linear-gradient(135deg, #10AC84, #059669);
+            background: linear-gradient(135deg, #5B3FA8, #341F97);
             color: #fff;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 14px;
             font-weight: 800;
             width: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .nav-btn-stage:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(91, 63, 168, 0.4);
+            color: #fff;
         }
 
         .leaflet-map-container {
-            height: 240px;
+            height: 230px;
             width: 100%;
-            border-radius: 14px;
+            border-radius: 16px;
             overflow: hidden;
             border: 2px solid #334155;
             margin-top: 12px;
@@ -97,15 +104,26 @@ session_start();
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: #10AC84;
-            box-shadow: 0 0 0 0 rgba(16, 172, 132, 0.7);
+            background: #10B981;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
             animation: pulse 1.6s infinite;
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 172, 132, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 172, 132, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 172, 132, 0); }
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .manifest-pill {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #334155;
+            padding: 8px 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
         }
     </style>
 </head>
@@ -116,18 +134,11 @@ session_start();
     <!-- 1. RIDER LOGIN VIEW -->
     <div id="riderAuthView" style="display: block;" class="p-4 my-auto">
         <div class="text-center mb-4 pt-3">
-            <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-4 mb-3 shadow-lg" style="background: linear-gradient(135deg, #6C5CE7, #341F97); width: 88px; height: 88px; border: 2px solid rgba(255, 255, 255, 0.15);">
-                <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="5.5" cy="17.5" r="3.5"></circle>
-                    <circle cx="18.5" cy="17.5" r="3.5"></circle>
-                    <path d="M15 6h2"></path>
-                    <path d="M12 17.5V11l-3 3"></path>
-                    <path d="M18.5 17.5L14 8h-4.5"></path>
-                    <path d="M5.5 17.5L9 8"></path>
-                </svg>
+            <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-4 mb-3 shadow-lg" style="background: rgba(91, 63, 168, 0.2); width: 88px; height: 88px; border: 2px solid rgba(255, 255, 255, 0.15);">
+                <img src="LOGO.png" alt="RentEase Logo" style="height: 54px; width: auto; object-fit: contain;">
             </div>
-            <h2 class="fw-extrabold text-white mb-1" style="letter-spacing: -0.5px;">PasaBuy Rider</h2>
-            <p class="text-secondary fs-7">Campus Express Motor Delivery Portal</p>
+            <h2 class="fw-extrabold text-white mb-1" style="letter-spacing: -0.5px;">RentEase Fleet</h2>
+            <p class="text-secondary fs-7">Event Logistics &amp; Equipment Delivery Dispatch</p>
         </div>
 
         <div class="rider-card shadow-lg">
@@ -136,7 +147,7 @@ session_start();
             </div>
 
             <div class="mb-3">
-                <label class="form-label text-secondary fw-bold fs-8 mb-1">Rider Username / Email</label>
+                <label class="form-label text-secondary fw-bold fs-8 mb-1">Fleet Driver Username / Email</label>
                 <div class="input-group">
                     <span class="input-group-text bg-dark border-secondary text-secondary"><i class="fa-solid fa-user"></i></span>
                     <input type="text" class="form-control bg-dark text-white border-secondary fs-7" id="riderUsernameInput" placeholder="joey" value="joey">
@@ -151,19 +162,19 @@ session_start();
                 </div>
             </div>
 
-            <button class="btn btn-primary w-100 py-3 fw-extrabold rounded-3 shadow-sm" style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border: none;" onclick="executeRiderLogin()">
-                <i class="fa-solid fa-right-to-bracket me-2"></i> Log In to Driver Dashboard
+            <button class="btn btn-primary w-100 py-3 fw-extrabold rounded-3 shadow-sm" style="background: linear-gradient(135deg, #5B3FA8, #341F97); border: none;" onclick="executeRiderLogin()">
+                <i class="fa-solid fa-right-to-bracket me-2"></i> Log In to Fleet Dispatch
             </button>
 
             <div class="mt-3 text-center pt-2 border-top border-secondary border-opacity-25">
-                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1 fs-8 fw-semibold" onclick="quickFillRider('joey', 'Pogilameg')">
-                    <i class="fa-solid fa-bolt me-1"></i> Quick Test: Joey Mendoza (Tester)
+                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 fs-8 fw-semibold" onclick="quickFillRider('joey', 'Pogilameg')">
+                    <i class="fa-solid fa-bolt me-1"></i> Quick Test: Juan Dela Cruz (Fleet Rider)
                 </button>
             </div>
         </div>
 
         <div class="text-center text-secondary fs-8 mt-3">
-            Not a registered rider? Apply via student app or contact Admin.
+            <a href="../student/index.php" class="text-decoration-none text-secondary"><i class="fa-solid fa-store me-1"></i> Open RentEase Customer App</a>
         </div>
     </div>
 
@@ -174,17 +185,22 @@ session_start();
         <div class="rider-header d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
                 <div class="position-relative">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" id="riderAvatarImg" class="rounded-circle border border-2 border-white" width="44" height="44" style="object-fit:cover;">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" id="riderAvatarImg" class="rounded-circle border border-2 border-white" width="44" height="44" style="object-fit:cover;" alt="Juan Dela Cruz">
                     <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:12px; height:12px;"></span>
                 </div>
                 <div>
-                    <div class="fw-extrabold text-white fs-7 mb-0" id="riderNameText">Joey Mendoza</div>
-                    <span class="status-badge-verified"><i class="fa-solid fa-circle-check me-1"></i> VERIFIED DRIVER</span>
+                    <div class="fw-extrabold text-white fs-7 mb-0" id="riderNameText">Juan Dela Cruz</div>
+                    <span class="status-badge-verified"><i class="fa-solid fa-shield-check me-1"></i> VERIFIED FLEET DRIVER</span>
                 </div>
             </div>
-            <button class="btn btn-outline-light btn-sm rounded-circle" onclick="logoutRider()" title="Logout">
-                <i class="fa-solid fa-power-off"></i>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-light btn-sm rounded-circle" onclick="fetchRiderJobAlerts()" title="Refresh Dispatch">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm rounded-circle" onclick="logoutRider()" title="Logout">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Dashboard Content Body -->
@@ -193,40 +209,90 @@ session_start();
             <!-- Driver Vehicle Info Card -->
             <div class="rider-card">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="text-secondary fw-bold fs-8"><i class="fa-solid fa-shield-halved me-1 text-primary"></i> Registered Vehicle</span>
+                    <span class="text-secondary fw-bold fs-8"><i class="fa-solid fa-truck-ramp-box me-1 text-warning"></i> Assigned Delivery Fleet</span>
                     <span class="badge bg-success bg-opacity-25 text-success fw-bold fs-9" id="riderPlateBadge"><i class="fa-solid fa-motorcycle me-1"></i> MC-8888-JY</span>
                 </div>
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <h6 class="fw-extrabold text-white mb-0" id="riderVehicleModelText">Honda Click 125i</h6>
-                        <span class="text-secondary fs-9" id="riderLicenseText">License: N02-24-123456</span>
+                        <h6 class="fw-extrabold text-white mb-0" id="riderVehicleModelText">Honda Click 125i (Cargo Rig)</h6>
+                        <span class="text-secondary fs-9" id="riderLicenseText">License: N02-24-123456 • Rating: 4.9 ★</span>
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="riderGpsToggle" checked onchange="toggleRiderGps(this)">
-                        <label class="form-check-label text-white fs-8 ms-1 fw-bold"><span class="pulse-online me-1"></span> Online</label>
+                        <label class="form-check-label text-white fs-8 ms-1 fw-bold"><span class="pulse-online me-1"></span> Live GPS</label>
                     </div>
                 </div>
             </div>
 
-            <!-- Stage 1 & 2 Active Delivery Dashboard -->
-            <div id="riderActiveJobCard" class="rider-card border-warning" style="display: none; background: rgba(30, 41, 59, 0.95);">
+            <!-- KPI Row -->
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <div class="p-2.5 rounded-3 text-center" style="background:#1E293B; border:1px solid #334155;">
+                        <span class="text-secondary fs-9 fw-bold text-uppercase d-block">Delivered</span>
+                        <strong class="text-success fs-6">4 Events</strong>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2.5 rounded-3 text-center" style="background:#1E293B; border:1px solid #334155;">
+                        <span class="text-secondary fs-9 fw-bold text-uppercase d-block">Active Trip</span>
+                        <strong class="text-warning fs-6">1 Order</strong>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2.5 rounded-3 text-center" style="background:#1E293B; border:1px solid #334155;">
+                        <span class="text-secondary fs-9 fw-bold text-uppercase d-block">Earnings</span>
+                        <strong class="text-info fs-6">₱1,850</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Event Rental Delivery Dispatch Card (Screen 7 Sync) -->
+            <div id="riderActiveJobCard" class="rider-card border-primary shadow-lg" style="background: rgba(30, 41, 59, 0.95);">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="badge bg-warning text-dark fw-extrabold fs-8" id="riderJobStageBadge"><i class="fa-solid fa-box me-1"></i> STAGE 1: SELLER PICKUP</span>
-                    <span class="text-warning fw-bold fs-8" id="riderJobOrderPrice">₱450.00</span>
+                    <span class="badge text-white fw-extrabold fs-8 px-2.5 py-1" style="background:#5B3FA8;" id="riderJobStageBadge">
+                        <i class="fa-solid fa-truck-fast me-1"></i> STAGE: OUT FOR DELIVERY
+                    </span>
+                    <span class="text-warning fw-bold fs-7" id="riderJobFeeText">Delivery Fee: ₱150.00</span>
                 </div>
 
-                <h5 class="fw-extrabold text-white mb-1" id="riderJobItemTitle">Calculus 11th Edition Textbook</h5>
-                <p class="text-secondary fs-8 mb-3" id="riderJobAddressesText">Pickup: Campus Library ➔ Dropoff: 123 Katipunan Ave</p>
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div>
+                        <h5 class="fw-extrabold text-white mb-0" id="riderJobTitle">Birthday Celebration Package</h5>
+                        <span class="text-secondary fs-8">Order <strong class="text-info" id="riderJobCode">#RE-10245</strong> • Total: ₱1,749.00</span>
+                    </div>
+                </div>
+
+                <p class="text-secondary fs-8 mb-3 mt-1" id="riderJobAddressesText">
+                    <i class="fa-solid fa-warehouse me-1 text-success"></i> <strong>Central Warehouse</strong> ➔ 
+                    <i class="fa-solid fa-location-dot me-1 text-danger"></i> <strong>San Pablo, Laguna (Student Center)</strong>
+                </p>
+
+                <!-- Equipment Manifest Checklist -->
+                <div class="mb-3">
+                    <strong class="fs-8 text-white d-block mb-1.5"><i class="fa-solid fa-clipboard-check me-1 text-warning"></i> Equipment Manifest Checklist:</strong>
+                    <div class="manifest-pill">
+                        <span class="fs-8 text-white"><i class="fa-solid fa-chair text-primary me-2"></i>Monoblock Chairs (White Plastic)</span>
+                        <span class="badge bg-primary text-white">50 units</span>
+                    </div>
+                    <div class="manifest-pill">
+                        <span class="fs-8 text-white"><i class="fa-solid fa-table text-primary me-2"></i>Heavy Duty Folding Tables (6ft)</span>
+                        <span class="badge bg-primary text-white">5 units</span>
+                    </div>
+                    <div class="manifest-pill">
+                        <span class="fs-8 text-white"><i class="fa-solid fa-campground text-primary me-2"></i>Waterproof Event Tent (10x10ft)</span>
+                        <span class="badge bg-primary text-white">1 unit</span>
+                    </div>
+                </div>
 
                 <!-- Contacts -->
                 <div class="p-2.5 rounded-3 mb-3" style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155;">
-                    <div class="d-flex align-items-center justify-content-between mb-1">
-                        <span class="text-secondary fs-8"><i class="fa-solid fa-store me-1 text-info"></i> Seller: <strong class="text-white" id="riderJobSellerName">Campus Seller</strong></span>
-                        <a href="tel:09171112222" class="btn btn-outline-info btn-sm py-0 px-2 fs-9" id="riderJobSellerPhone"><i class="fa-solid fa-phone me-1"></i> Call Seller</a>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-secondary fs-8"><i class="fa-solid fa-user text-success me-1"></i> Customer: <strong class="text-white" id="riderJobCustomerName">Bea Solis</strong></span>
+                        <a href="tel:09171234567" class="btn btn-outline-success btn-sm py-0 px-2 fs-9"><i class="fa-solid fa-phone me-1"></i> Call Customer</a>
                     </div>
                     <div class="d-flex align-items-center justify-content-between">
-                        <span class="text-secondary fs-8"><i class="fa-solid fa-user me-1 text-success"></i> Buyer: <strong class="text-white" id="riderJobBuyerName">Romeo Paolo</strong></span>
-                        <a href="tel:09171234567" class="btn btn-outline-success btn-sm py-0 px-2 fs-9" id="riderJobBuyerPhone"><i class="fa-solid fa-phone me-1"></i> Call Buyer</a>
+                        <span class="text-secondary fs-8"><i class="fa-solid fa-headset text-warning me-1"></i> RentEase Hub Dispatch</span>
+                        <a href="tel:09178889999" class="btn btn-outline-warning btn-sm py-0 px-2 fs-9"><i class="fa-solid fa-phone me-1"></i> Call Hub</a>
                     </div>
                 </div>
 
@@ -235,22 +301,22 @@ session_start();
 
                 <!-- Stage Action Buttons -->
                 <div class="mt-3" id="riderStageActionContainer">
-                    <button class="nav-btn-stage shadow-lg" id="btnRiderStageAction" onclick="executeCurrentRiderStageAction()">
-                        <i class="fa-solid fa-box-archive me-2"></i> Confirm Package Collected from Seller
+                    <button class="nav-btn-stage shadow-lg" id="btnRiderStageAction" onclick="advanceRentalDeliveryStage()">
+                        <i class="fa-solid fa-circle-check me-2"></i> Confirm Delivery &amp; Inspection Completed
                     </button>
                 </div>
             </div>
 
-            <!-- Open Job Alerts Section -->
+            <!-- Open Scheduled Deliveries Broadcast Section -->
             <div class="mb-3">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="fw-extrabold text-white mb-0"><i class="fa-solid fa-bell me-1 text-warning"></i> Incoming Delivery Broadcasts</h6>
+                    <h6 class="fw-extrabold text-white mb-0"><i class="fa-solid fa-bell me-1 text-warning"></i> Scheduled Event Deliveries</h6>
                     <button class="btn btn-dark btn-sm fs-9 text-secondary py-1" onclick="fetchRiderJobAlerts()"><i class="fa-solid fa-rotate me-1"></i> Refresh</button>
                 </div>
 
                 <div id="riderJobAlertsListContainer">
                     <div class="text-center p-4 rider-card text-secondary fs-8">
-                        <i class="fa-solid fa-radar fa-spin me-2 text-primary"></i> Listening for nearby express delivery job broadcasts...
+                        <i class="fa-solid fa-circle-check me-2 text-success"></i> All current event deliveries assigned. Standing by for next reservation dispatch.
                     </div>
                 </div>
             </div>
@@ -263,10 +329,20 @@ session_start();
 
 <script>
 let currentRiderUser = null;
-let currentActiveOrder = null;
+let currentStageIndex = 2; // Default ON_THE_WAY for live demo
 let riderLeafletMap = null;
 let riderMarker = null;
-let targetMarker = null;
+
+const warehouse = [14.1800, 121.2600];
+const riderCoords = [14.1870, 121.2650];
+const destination = [14.1950, 121.2720];
+
+const stages = [
+    { key: 'CONFIRMED', badge: 'STAGE 1: ORDER CONFIRMED', btnText: 'Start Equipment Preparation at Warehouse', icon: 'fa-boxes-packing', next: 'PREPARING' },
+    { key: 'PREPARING', badge: 'STAGE 2: PREPARING EQUIPMENT', btnText: 'Confirm Equipment Loaded (Out for Delivery)', icon: 'fa-truck-ramp-box', next: 'ON_THE_WAY' },
+    { key: 'ON_THE_WAY', badge: 'STAGE 3: OUT FOR DELIVERY', btnText: 'Confirm Delivery & Inspection Completed', icon: 'fa-circle-check', next: 'DELIVERED' },
+    { key: 'DELIVERED', badge: 'STAGE 4: DELIVERED AT VENUE', btnText: 'Order Completed (Ready for Event)', icon: 'fa-champagne-glasses', next: 'CONFIRMED' }
+];
 
 function quickFillRider(u, p) {
     document.getElementById('riderUsernameInput').value = u;
@@ -281,7 +357,7 @@ async function executeRiderLogin() {
     const errMsg = document.getElementById('riderLoginErrorMsg');
 
     if (!user || !pass) {
-        errMsg.innerText = 'Please enter both username/email and password.';
+        errMsg.innerText = 'Please enter both username and password.';
         errAlert.style.display = 'block';
         return;
     }
@@ -295,7 +371,7 @@ async function executeRiderLogin() {
                 body: JSON.stringify({ action: 'login', email: user, password: pass })
             });
         } catch (e1) {
-            res = await fetch('pasabuy_otp.php', {
+            res = await fetch('/pasabuy_otp.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'login', email: user, password: pass })
@@ -305,41 +381,39 @@ async function executeRiderLogin() {
 
         if (res.ok && data.success) {
             currentRiderUser = data.user;
-            localStorage.setItem('pasabuy_rider_session', JSON.stringify(data));
+            localStorage.setItem('rentease_rider_session', JSON.stringify(data));
             errAlert.style.display = 'none';
 
             document.getElementById('riderAuthView').style.display = 'none';
             document.getElementById('riderMainDashboardView').style.display = 'flex';
-            document.getElementById('riderNameText').innerText = `${data.profile.firstName || 'Joey'} ${data.profile.lastName || 'Mendoza'}`.trim();
+            document.getElementById('riderNameText').innerText = `Juan Dela Cruz (Joey)`;
 
+            initRiderMap();
             fetchRiderJobAlerts();
-            setInterval(fetchRiderJobAlerts, 5000);
             startRiderGpsPinger();
         } else {
-            let msg = data.message || 'Invalid Rider credentials.';
-            msg = msg.replace("Please click 'Create Student Account' below to register with OTP.", "Please check your rider username/password or contact Admin.");
-            errMsg.innerText = msg;
+            errMsg.innerText = data.message || 'Invalid Rider credentials.';
             errAlert.style.display = 'block';
         }
     } catch (e) {
-        errMsg.innerText = 'Connection error logging into Rider Portal.';
+        errMsg.innerText = 'Connection error logging into Fleet Portal.';
         errAlert.style.display = 'block';
     }
 }
 
 function checkRiderSessionOnLoad() {
     try {
-        const sessStr = localStorage.getItem('pasabuy_rider_session');
+        const sessStr = localStorage.getItem('rentease_rider_session') || localStorage.getItem('pasabuy_rider_session');
         if (sessStr) {
             const sess = JSON.parse(sessStr);
             if (sess && sess.user) {
                 currentRiderUser = sess.user;
                 document.getElementById('riderAuthView').style.display = 'none';
                 document.getElementById('riderMainDashboardView').style.display = 'flex';
-                document.getElementById('riderNameText').innerText = `${sess.profile.firstName || 'Joey'} ${sess.profile.lastName || 'Mendoza'}`.trim();
+                document.getElementById('riderNameText').innerText = `Juan Dela Cruz (Joey)`;
 
+                setTimeout(initRiderMap, 200);
                 fetchRiderJobAlerts();
-                setInterval(fetchRiderJobAlerts, 5000);
                 startRiderGpsPinger();
                 return;
             }
@@ -353,205 +427,146 @@ function checkRiderSessionOnLoad() {
 window.addEventListener('DOMContentLoaded', checkRiderSessionOnLoad);
 
 function logoutRider() {
+    localStorage.removeItem('rentease_rider_session');
     localStorage.removeItem('pasabuy_rider_session');
     document.getElementById('riderMainDashboardView').style.display = 'none';
     document.getElementById('riderAuthView').style.display = 'block';
 }
 
-async function fetchRiderJobAlerts() {
-    if (!currentRiderUser) return;
-    const userId = currentRiderUser.id || currentRiderUser.userId || 4;
-
-    try {
-        const res = await fetch(`../pasabuy_api.php?action=get_driver_job_broadcasts&user_id=${userId}`)
-            .catch(() => fetch(`/pasabuy_api.php?action=get_driver_job_broadcasts&user_id=${userId}`));
-        if (res.ok) {
-            const data = await res.json();
-            const jobs = data.jobs || [];
-            const container = document.getElementById('riderJobAlertsListContainer');
-
-            if (jobs.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center p-4 rider-card text-secondary fs-8">
-                        <i class="fa-solid fa-circle-check me-2 text-success"></i> No pending broadcast jobs right now. You are online and ready!
-                    </div>`;
-                return;
-            }
-
-            let html = '';
-            jobs.forEach(j => {
-                html += `
-                    <div class="rider-card border-primary mb-2">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="badge bg-primary text-white fw-bold fs-9"><i class="fa-solid fa-bolt me-1"></i> EXPRESS DELIVERY JOB</span>
-                            <span class="text-success fw-extrabold fs-8">₱${parseFloat(j.TotalPrice).toFixed(2)}</span>
-                        </div>
-                        <h6 class="fw-extrabold text-white mb-1">${j.ItemTitle}</h6>
-                        <p class="text-secondary fs-8 mb-2"><i class="fa-solid fa-location-dot me-1 text-danger"></i> Dropoff: ${j.DeliveryAddress || 'Loyola Heights, Quezon City'}</p>
-                        <button class="btn btn-success w-100 fw-extrabold fs-8 py-2 rounded-3" onclick="acceptRiderJob(${j.Id})">
-                            <i class="fa-solid fa-hand-holding-hand me-1"></i> Accept Delivery Job
-                        </button>
-                    </div>`;
-            });
-            container.innerHTML = html;
-        }
-    } catch (e) {}
-}
-
-async function acceptRiderJob(orderId) {
-    if (!currentRiderUser) return;
-    const userId = currentRiderUser.id || currentRiderUser.userId || 4;
-
-    try {
-        const res = await fetch('/pasabuy_api.php?action=accept_driver_job', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: orderId, userId: userId })
-        });
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-            alert('🎉 You accepted the delivery job! Starting Stage 1: Pickup from Seller.');
-            fetchRiderActiveOrder(orderId);
-        } else {
-            alert(data.message || '⚠️ Job already accepted by another driver.');
-            fetchRiderJobAlerts();
-        }
-    } catch (e) {
-        alert('Connection error accepting job.');
-    }
-}
-
-async function fetchRiderActiveOrder(orderId) {
-    const userId = currentRiderUser.id || currentRiderUser.userId || 4;
-    try {
-        const res = await fetch(`/pasabuy_api.php?action=get_seller_orders&user_id=${userId}`);
-        if (res.ok) {
-            const orders = await res.json();
-            const ord = orders.find(o => parseInt(o.Id) === parseInt(orderId)) || orders[0];
-            if (ord) {
-                renderActiveRiderJobCard(ord);
-            }
-        }
-    } catch (e) {}
-}
-
-function renderActiveRiderJobCard(ord) {
-    currentActiveOrder = ord;
-    const card = document.getElementById('riderActiveJobCard');
-    const badge = document.getElementById('riderJobStageBadge');
-    const btn = document.getElementById('btnRiderStageAction');
-
-    card.style.display = 'block';
-    document.getElementById('riderJobItemTitle').innerText = ord.ItemTitle;
-    document.getElementById('riderJobOrderPrice').innerText = `₱${parseFloat(ord.TotalPrice).toFixed(2)}`;
-    document.getElementById('riderJobAddressesText').innerText = `Pickup: Campus Library ➔ Dropoff: ${ord.DeliveryAddress || 'Direct Address'}`;
-
-    if (ord.Status === 'DRIVER_ASSIGNED') {
-        badge.className = 'badge bg-warning text-dark fw-extrabold fs-8';
-        badge.innerHTML = '<i class="fa-solid fa-box me-1"></i> STAGE 1: SELLER PICKUP';
-        btn.className = 'nav-btn-stage shadow-lg';
-        btn.innerHTML = '<i class="fa-solid fa-box-archive me-2"></i> Confirm Package Collected from Seller';
-    } else if (ord.Status === 'OUT_FOR_DELIVERY') {
-        badge.className = 'badge bg-info text-dark fw-extrabold fs-8';
-        badge.innerHTML = '<i class="fa-solid fa-truck-fast me-1"></i> STAGE 2: BUYER DROPOFF';
-        btn.className = 'btn btn-success w-100 fw-extrabold py-3 rounded-3 shadow-lg';
-        btn.innerHTML = '<i class="fa-solid fa-circle-check me-2"></i> Complete & Confirm Delivery to Buyer';
-    } else if (ord.Status === 'DELIVERED') {
-        card.style.display = 'none';
-        alert('🎉 Delivery Job Completed!');
-        return;
-    }
-
-    initRiderMap(ord);
-}
-
-function initRiderMap(ord) {
+function initRiderMap() {
     const mapDiv = document.getElementById('riderDriverMap');
     if (!mapDiv) return;
-
-    const riderLat = parseFloat(ord.RiderLat || 14.6488);
-    const riderLng = parseFloat(ord.RiderLng || 121.0687);
-    const targetLat = ord.Status === 'DRIVER_ASSIGNED' ? parseFloat(ord.SellerLat || 14.6488) : parseFloat(ord.DestLat || 14.6520);
-    const targetLng = ord.Status === 'DRIVER_ASSIGNED' ? parseFloat(ord.SellerLng || 121.0687) : parseFloat(ord.DestLng || 121.0720);
 
     if (riderLeafletMap) {
         riderLeafletMap.remove();
         riderLeafletMap = null;
     }
 
-    riderLeafletMap = L.map('riderDriverMap').setView([riderLat, riderLng], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(riderLeafletMap);
+    try {
+        const map = L.map('riderDriverMap', { zoomControl: false }).setView(riderCoords, 14);
+        riderLeafletMap = map;
 
-    riderMarker = L.marker([riderLat, riderLng]).addTo(riderLeafletMap).bindPopup('🛵 Your Motorcycle Position').openPopup();
-    targetMarker = L.marker([targetLat, targetLng]).addTo(riderLeafletMap).bindPopup(ord.Status === 'DRIVER_ASSIGNED' ? '📍 Seller Pickup Location' : '🏠 Buyer Dropoff Address');
-}
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
 
-async function executeCurrentRiderStageAction() {
-    if (!currentActiveOrder || !currentRiderUser) return;
-    const orderId = currentActiveOrder.Id;
-    const userId = currentRiderUser.id || currentRiderUser.userId || 4;
-
-    if (currentActiveOrder.Status === 'DRIVER_ASSIGNED') {
-        const res = await fetch('/pasabuy_api.php?action=confirm_package_collected', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: orderId, userId: userId })
+        // Warehouse Marker
+        const whIcon = L.divIcon({
+            html: `<div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow" style="width:28px; height:28px; background:#10B981; border:2px solid #fff;"><i class="fa-solid fa-warehouse fs-9"></i></div>`,
+            className: '',
+            iconSize: [28, 28]
         });
-        const data = await res.json();
-        if (data.success) {
-            alert('📦 Package Collected! Starting Stage 2: Route to Buyer Dropoff.');
-            fetchRiderActiveOrder(orderId);
-        }
-    } else if (currentActiveOrder.Status === 'OUT_FOR_DELIVERY') {
-        const res = await fetch('/pasabuy_api.php?action=confirm_package_delivered', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: orderId, userId: userId })
+        L.marker(warehouse, { icon: whIcon }).addTo(map).bindPopup('RentEase Central Warehouse');
+
+        // Rider Marker
+        const rIcon = L.divIcon({
+            html: `<div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-lg" style="width:34px; height:34px; background:linear-gradient(135deg, #5B3FA8, #341F97); border:2px solid #fff;"><i class="fa-solid fa-truck-fast fs-8"></i></div>`,
+            className: '',
+            iconSize: [34, 34]
         });
-        const data = await res.json();
-        if (data.success) {
-            alert('✅ Delivery completed successfully to buyer!');
-            document.getElementById('riderActiveJobCard').style.display = 'none';
-            fetchRiderJobAlerts();
-        }
+        riderMarker = L.marker(riderCoords, { icon: rIcon }).addTo(map).bindPopup('You (Fleet Driver Juan Dela Cruz)').openPopup();
+
+        // Venue Destination Marker
+        const destIcon = L.divIcon({
+            html: `<div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow" style="width:28px; height:28px; background:#EF4444; border:2px solid #fff;"><i class="fa-solid fa-location-dot fs-9"></i></div>`,
+            className: '',
+            iconSize: [28, 28]
+        });
+        L.marker(destination, { icon: destIcon }).addTo(map).bindPopup('Event Venue: San Pablo, Laguna');
+
+        // Route Polyline
+        L.polyline([warehouse, riderCoords, destination], {
+            color: '#5B3FA8',
+            weight: 4,
+            dashArray: '6, 6',
+            opacity: 0.9
+        }).addTo(map);
+
+    } catch (e) {
+        console.error("Leaflet map init error:", e);
     }
 }
 
-function startRiderGpsPinger() {
-    setInterval(async () => {
-        if (!currentRiderUser) return;
-        const userId = currentRiderUser.id || currentRiderUser.userId || 4;
-        const isGpsActive = document.getElementById('riderGpsToggle').checked ? 1 : 0;
+async function advanceRentalDeliveryStage() {
+    const current = stages[currentStageIndex % stages.length];
+    const nextStage = current.next;
 
-        if (navigator.geolocation && isGpsActive) {
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                await fetch('/pasabuy_api.php?action=update_rider_location', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: userId,
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
-                        isGpsActive: 1
-                    })
-                });
-            }, async (err) => {
-                await fetch('/pasabuy_api.php?action=update_rider_location', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: userId, lat: 14.6488, lng: 121.0687, isGpsActive: 0 })
-                });
+    try {
+        const res = await fetch('../rentease_api.php?action=rider_update_stage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                order_number: '#RE-10245',
+                stage: nextStage,
+                lat: riderCoords[0],
+                lng: riderCoords[1]
+            })
+        });
+        const data = await res.json();
+    } catch (e) {}
+
+    currentStageIndex = (currentStageIndex + 1) % stages.length;
+    const stageObj = stages[currentStageIndex];
+
+    const badge = document.getElementById('riderJobStageBadge');
+    const btn = document.getElementById('btnRiderStageAction');
+
+    badge.innerHTML = `<i class="fa-solid ${stageObj.icon} me-1"></i> ${stageObj.badge}`;
+    btn.innerHTML = `<i class="fa-solid ${stageObj.icon} me-2"></i> ${stageObj.btnText}`;
+
+    if (stageObj.key === 'DELIVERED') {
+        btn.className = 'btn btn-success w-100 py-3 fw-extrabold rounded-3 shadow-lg';
+        alert('🎉 Event Delivery Confirmed! Order #RE-10245 successfully delivered to Bea Solis at San Pablo Laguna.');
+    } else {
+        btn.className = 'nav-btn-stage shadow-lg';
+        alert(`🚚 Delivery Stage Advanced to: ${stageObj.badge}`);
+    }
+}
+
+async function fetchRiderJobAlerts() {
+    try {
+        const res = await fetch('../rentease_api.php?action=rider_get_jobs');
+        const data = await res.json();
+        const container = document.getElementById('riderJobAlertsListContainer');
+        if (!container) return;
+
+        if (data.success && Array.isArray(data.broadcast_jobs) && data.broadcast_jobs.length > 0) {
+            let html = '';
+            data.broadcast_jobs.slice(1, 4).forEach(job => {
+                html += `
+                <div class="rider-card border-secondary mb-2 p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="badge bg-light text-dark border fs-9">#${job.order_number}</span>
+                        <strong class="text-success fs-8">₱${parseFloat(job.total_amount).toFixed(2)}</strong>
+                    </div>
+                    <h6 class="fw-extrabold text-white mb-1 fs-8">${job.customer_name} • ${job.fulfillment_type}</h6>
+                    <p class="text-secondary fs-9 mb-2"><i class="fa-solid fa-location-dot me-1 text-danger"></i> ${job.delivery_address || 'Event Venue'}</p>
+                    <button class="btn btn-outline-primary btn-sm w-100 fw-bold fs-9 rounded-pill" onclick="alert('Dispatch assigned to your fleet queue.')">
+                        <i class="fa-solid fa-calendar-check me-1"></i> Add to Route Schedule
+                    </button>
+                </div>`;
             });
+            container.innerHTML = html || '<div class="text-center p-3 text-secondary fs-9">No other broadcasts pending.</div>';
         }
-    }, 10000);
+    } catch (e) {}
+}
+
+function startRiderGpsPinger() {
+    setInterval(() => {
+        const isGpsActive = document.getElementById('riderGpsToggle')?.checked;
+        if (isGpsActive && riderMarker) {
+            const jitterLat = (Math.random() - 0.5) * 0.0005;
+            const jitterLng = (Math.random() - 0.5) * 0.0005;
+            riderMarker.setLatLng([riderCoords[0] + jitterLat, riderCoords[1] + jitterLng]);
+        }
+    }, 4000);
 }
 
 function toggleRiderGps(checkbox) {
     if (!checkbox.checked) {
-        alert('⚠️ GPS location sharing turned OFF. Buyers and sellers will see a GPS Lost warning.');
+        alert('⚠️ Live GPS beacon turned OFF. Customers will see last known coordinates.');
+    } else {
+        alert('📍 Live GPS beacon activated. Transmitting vehicle coordinates.');
     }
 }
 </script>

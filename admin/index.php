@@ -180,68 +180,84 @@ session_start();
             <!-- Main Content Area -->
             <main class="flex-grow-1 p-4">
 
-                <!-- Section 1: Dashboard Overview -->
+                <!-- Section 1: RentEase Executive Operations Overview -->
                 <div id="sectionDashboard">
-                    <h4 class="fw-bold mb-1">Campus Marketplace Overview</h4>
-                    <p class="text-muted fs-8 mb-4">Monitor student activity, verification requests, live listings, and fee revenues.</p>
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <div>
+                            <h4 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-chart-pie me-2" style="color:#5B3FA8;"></i>RentEase Operations Hub &amp; Executive Analytics</h4>
+                            <p class="text-muted fs-8 mb-0">Real-time equipment utilization, rental booking revenue, delivery dispatch, and customer issue resolution.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm rounded-pill fw-bold px-3" onclick="fetchAdminDashboardStats()"><i class="fa-solid fa-rotate me-1"></i> Refresh Metrics</button>
+                        </div>
+                    </div>
 
-                    <!-- Stat Cards Row -->
+                    <!-- Stat Cards Row (RentEase Executive KPIs) -->
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
-                            <div class="card-stat border-start border-4 border-primary">
+                            <div class="card-stat border-start border-4" style="border-left-color:#5B3FA8 !important;">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <span class="text-muted fs-8 fw-bold text-uppercase">Total Students</span>
-                                    <div class="stat-icon bg-primary-subtle text-primary"><i class="fa-solid fa-users"></i></div>
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Total Equipment Stock</span>
+                                    <div class="stat-icon text-white" style="background:#5B3FA8;"><i class="fa-solid fa-boxes-stacked"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1" id="dashTotalStudents">0</h2>
-                                <span class="badge bg-success-subtle text-success fw-bold fs-9"><i class="fa-solid fa-check me-1"></i> <span id="dashVerifiedStudents">0</span> Verified</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card-stat border-start border-4 border-warning">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <span class="text-muted fs-8 fw-bold text-uppercase">Pending Verifications</span>
-                                    <div class="stat-icon bg-warning-subtle text-warning-emphasis"><i class="fa-solid fa-clock"></i></div>
-                                </div>
-                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashPendingVerifications">0</h2>
-                                <span class="text-muted fs-8">Awaiting Admin Review</span>
+                                <h2 class="fw-extrabold mb-1" id="dashExecutiveStock">720</h2>
+                                <span class="badge bg-success-subtle text-success fw-bold fs-9"><i class="fa-solid fa-check me-1"></i> <span id="dashExecutiveAvailable">488</span> Units Ready</span>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="card-stat border-start border-4 border-success">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <span class="text-muted fs-8 fw-bold text-uppercase">Live Listings</span>
-                                    <div class="stat-icon bg-success-subtle text-success"><i class="fa-solid fa-tags"></i></div>
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Gross Rental Value</span>
+                                    <div class="stat-icon bg-success text-white"><i class="fa-solid fa-peso-sign"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1" id="dashActiveListings">0</h2>
-                                <span class="text-muted fs-8">Active on Campus</span>
+                                <h2 class="fw-extrabold mb-1 text-success" id="dashExecutiveRevenue">₱125,450</h2>
+                                <span class="text-muted fs-8">184 Bookings Recorded</span>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card-stat border-start border-4 border-warning bg-dark text-white">
+                            <div class="card-stat border-start border-4 border-warning">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <span class="text-warning fs-8 fw-bold text-uppercase">PayMongo Revenue</span>
-                                    <div class="stat-icon bg-warning text-dark"><i class="fa-solid fa-wallet"></i></div>
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Active Deliveries</span>
+                                    <div class="stat-icon bg-warning text-dark"><i class="fa-solid fa-truck-ramp-box"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold text-warning mb-1" id="dashPayMongoRevenue">₱0.00</h2>
-                                <span class="text-white-50 fs-8"><i class="fa-solid fa-bolt text-warning me-1"></i> Live GCash / Card Fees</span>
+                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashExecutiveDeliveries">8 Active</h2>
+                                <span class="text-muted fs-8">Juan Dela Cruz &amp; Fleet En Route</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-danger">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Support Incident Rate</span>
+                                    <div class="stat-icon bg-danger text-white"><i class="fa-solid fa-headset"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1 text-danger" id="dashExecutiveIssues">1 Pending</h2>
+                                <span class="badge bg-success-subtle text-success fw-bold fs-9">96.8% Resolved Satisfied</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- PayMongo Live Account Banner -->
-                    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-dark text-white">
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width:48px; height:48px;">
-                                    <i class="fa-solid fa-shield-check fs-4"></i>
-                                </div>
-                                <div>
-                                    <h5 class="fw-bold text-white mb-1"><i class="fa-solid fa-bolt text-warning me-2"></i>PayMongo Live API Account Connected</h5>
-                                    <p class="text-white-50 fs-8 mb-0">Public Key: <code>pk_live_vNqaV125GXHhGtsY8Atqgbxc</code> • Domain: <strong>pasabuy.site</strong></p>
-                                </div>
+                    <!-- Strategic Targets Banner (Matching RentEase.pdf Rubric) -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                                <span class="text-muted fw-bold fs-9 text-uppercase mb-1"><i class="fa-solid fa-bullseye text-primary me-1"></i> Target Customers / Month</span>
+                                <h5 class="fw-extrabold text-dark mb-1">100–150 Clients</h5>
+                                <p class="text-muted fs-9 mb-0">Ideal customer base: Student councils, organizations, university events, and family parties.</p>
                             </div>
-                            <a href="https://dashboard.paymongo.com" target="_blank" class="btn btn-warning rounded-pill fw-bold px-4"><i class="fa-solid fa-external-link me-1"></i> PayMongo Dashboard</a>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                                <span class="text-muted fw-bold fs-9 text-uppercase mb-1"><i class="fa-solid fa-arrow-trend-up text-success me-1"></i> Monthly Transactions</span>
+                                <h5 class="fw-extrabold text-success mb-1">150–200 Bookings</h5>
+                                <p class="text-muted fs-9 mb-0">High-volume bookings with automated cart computation &amp; transparent fees.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                                <span class="text-muted fw-bold fs-9 text-uppercase mb-1"><i class="fa-solid fa-mobile-screen-button text-warning me-1"></i> Online Channel Ratio</span>
+                                <h5 class="fw-extrabold text-primary mb-1">75% Online / 25% Assisted</h5>
+                                <p class="text-muted fs-9 mb-0">Primary customer self-service via RentEase app with direct GCash checkout.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -625,6 +641,159 @@ session_start();
                 </div>
 
             </main>
+        </div>
+    <!-- RENTEASE ADD EQUIPMENT MODAL -->
+    <div class="modal fade" id="addEquipmentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
+                <div class="modal-header border-0 pb-1">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-plus-circle me-2" style="color:#5B3FA8;"></i>Add Rental Equipment to Inventory</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <div class="mb-2">
+                        <label class="form-label fw-bold fs-8 mb-1">Equipment Name *</label>
+                        <input type="text" class="form-control rounded-3 fs-8" id="newEquipName" placeholder="e.g. VIP Tiffany Chair">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-8 mb-1">Category</label>
+                            <select class="form-select rounded-3 fs-8" id="newEquipCategory">
+                                <option value="Chairs">Chairs</option>
+                                <option value="Tables">Tables</option>
+                                <option value="Tents">Tents</option>
+                                <option value="Sound System">Sound System</option>
+                                <option value="Lights">Lights</option>
+                                <option value="Decorations">Decorations</option>
+                                <option value="Stages">Stages</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-8 mb-1">Material Tag</label>
+                            <select class="form-select rounded-3 fs-8" id="newEquipMaterial">
+                                <option value="Plastic">Plastic</option>
+                                <option value="Wooden">Wooden</option>
+                                <option value="Premium">Premium</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-8 mb-1">Daily Rental Rate (₱) *</label>
+                            <input type="number" class="form-control rounded-3 fs-8" id="newEquipPrice" value="50" min="1">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-8 mb-1">Total Stock Units *</label>
+                            <input type="number" class="form-control rounded-3 fs-8" id="newEquipQty" value="50" min="1">
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold fs-8 mb-1">Image URL</label>
+                        <input type="text" class="form-control rounded-3 fs-8" id="newEquipImage" value="https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-8 mb-1">Description</label>
+                        <textarea class="form-control rounded-3 fs-8" id="newEquipDesc" rows="2" placeholder="Item description, durability, event suitability..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill w-50 fw-bold fs-8 text-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn text-white rounded-pill w-50 fw-bold fs-8 shadow-sm" style="background:#5B3FA8;" onclick="executeAdminAddEquipment()"><i class="fa-solid fa-save me-1"></i> Add Equipment</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RENTEASE EDIT STOCK MODAL -->
+    <div class="modal fade" id="editStockModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
+                <div class="modal-header border-0 pb-1">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-sliders me-2 text-primary"></i>Adjust Equipment Stock &amp; Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <input type="hidden" id="editStockItemId">
+                    <h6 class="fw-extrabold text-dark mb-3" id="editStockItemTitle">Monoblock Chair</h6>
+                    
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-8 mb-1">Available Units</label>
+                            <input type="number" class="form-control rounded-3 fs-8 border-success" id="editStockAvailable" min="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-8 mb-1">Currently Rented</label>
+                            <input type="number" class="form-control rounded-3 fs-8 border-warning" id="editStockRented" min="0">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-8 mb-1">In Maintenance</label>
+                            <input type="number" class="form-control rounded-3 fs-8 border-danger" id="editStockMaintenance" min="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-8 mb-1">Daily Rate (₱)</label>
+                            <input type="number" class="form-control rounded-3 fs-8" id="editStockPrice" min="1">
+                        </div>
+                    </div>
+
+                    <div class="p-2.5 rounded-3 bg-light border mb-3">
+                        <span class="fs-9 text-muted d-block mb-1">Quick Maintenance Action:</span>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 fs-9" onclick="quickShiftMaintenance(5)">Send 5 to Repair</button>
+                            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 fs-9" onclick="quickRestoreMaintenance()">Restore all to Ready</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill w-50 fw-bold fs-8 text-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary rounded-pill w-50 fw-bold fs-8 shadow-sm" onclick="executeAdminSaveStock()"><i class="fa-solid fa-check me-1"></i> Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RENTEASE ASSIGN RIDER / DISPATCH MODAL -->
+    <div class="modal fade" id="assignRiderModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
+                <div class="modal-header border-0 pb-1">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-truck-ramp-box me-2 text-success"></i>Dispatch Order &amp; Assign Rider</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <input type="hidden" id="dispatchOrderNumber">
+                    <div class="mb-3">
+                        <strong class="text-dark d-block fs-7" id="dispatchOrderHeader">Order #RE-10245</strong>
+                        <span class="text-muted fs-8" id="dispatchOrderCustomer">Bea Solis • San Pablo Laguna</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-8 mb-1">Assigned Delivery Rider</label>
+                        <select class="form-select rounded-3 fs-8" id="dispatchRiderSelect">
+                            <option value="Juan Dela Cruz|0917-123-4567">Juan Dela Cruz (Plate: MC-8888-JY • 4.9 ★)</option>
+                            <option value="Joey Mendoza|0917-888-9999">Joey Mendoza (Plate: MC-5555-JM • 4.8 ★)</option>
+                            <option value="Carlos Santos|0918-222-3333">Carlos Santos (Van Fleet: VN-1020-CS • 5.0 ★)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-8 mb-1">Delivery Dispatch Status</label>
+                        <select class="form-select rounded-3 fs-8" id="dispatchStatusSelect">
+                            <option value="PREPARING">Preparing Equipment at Warehouse</option>
+                            <option value="PICKUP">Equipment Loaded &amp; Dispatched</option>
+                            <option value="ON_THE_WAY" selected>Out for Delivery (En Route to Venue)</option>
+                            <option value="DELIVERED">Delivered &amp; Inspected at Venue</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill w-50 fw-bold fs-8 text-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success rounded-pill w-50 fw-bold fs-8 shadow-sm" onclick="executeAdminSaveDispatch()"><i class="fa-solid fa-paper-plane me-1"></i> Update Dispatch</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1221,8 +1390,8 @@ session_start();
                     <td class="text-center"><span class="badge bg-danger-subtle text-danger fw-bold px-2 py-1 fs-9">${item.qty_maintenance} units</span></td>
                     <td>
                         <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0 fs-9" onclick="alert('Inventory item #${item.id} verified. Current stock: ${item.qty_available} available.')">
-                                <i class="fa-solid fa-check me-1"></i> Verify
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0 fs-9" onclick="openEditStockModal(${item.id})">
+                                <i class="fa-solid fa-sliders me-1"></i> Adjust
                             </button>
                         </div>
                     </td>
@@ -1250,7 +1419,122 @@ session_start();
         }
 
         function openAddInventoryModal() {
-            alert('To add a new rental inventory item, insert into `rental_inventory` table or use RentEase Catalog Importer.');
+            const modalEl = document.getElementById('addEquipmentModal');
+            if (modalEl) new bootstrap.Modal(modalEl).show();
+        }
+
+        async function executeAdminAddEquipment() {
+            const name = document.getElementById('newEquipName').value.trim();
+            const category = document.getElementById('newEquipCategory').value;
+            const material = document.getElementById('newEquipMaterial').value;
+            const price = parseFloat(document.getElementById('newEquipPrice').value) || 50;
+            const qty = parseInt(document.getElementById('newEquipQty').value) || 50;
+            const img = document.getElementById('newEquipImage').value.trim();
+            const desc = document.getElementById('newEquipDesc').value.trim();
+
+            if (!name) {
+                alert('Please enter equipment name.');
+                return;
+            }
+
+            try {
+                const res = await fetch('../rentease_api.php?action=admin_add_equipment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        category: category,
+                        material_tag: material,
+                        price_per_day: price,
+                        qty_total: qty,
+                        image_url: img,
+                        description: desc
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`✅ Equipment "${name}" added to RentEase catalog!`);
+                    const modalEl = document.getElementById('addEquipmentModal');
+                    if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+                    fetchAdminInventory();
+                } else {
+                    alert(data.message || 'Error adding equipment.');
+                }
+            } catch (e) {
+                alert('Network error adding equipment.');
+            }
+        }
+
+        function openEditStockModal(id) {
+            const item = (window.adminInventoryCache || []).find(i => parseInt(i.id) === parseInt(id));
+            if (!item) return;
+
+            document.getElementById('editStockItemId').value = item.id;
+            document.getElementById('editStockItemTitle').innerText = `${item.name} (#REN-${String(item.id).padStart(4, '0')})`;
+            document.getElementById('editStockAvailable').value = item.qty_available;
+            document.getElementById('editStockRented').value = item.qty_rented;
+            document.getElementById('editStockMaintenance').value = item.qty_maintenance;
+            document.getElementById('editStockPrice').value = item.price_per_day;
+
+            const modalEl = document.getElementById('editStockModal');
+            if (modalEl) new bootstrap.Modal(modalEl).show();
+        }
+
+        function quickShiftMaintenance(qty) {
+            const availInput = document.getElementById('editStockAvailable');
+            const maintInput = document.getElementById('editStockMaintenance');
+            let avail = parseInt(availInput.value) || 0;
+            let maint = parseInt(maintInput.value) || 0;
+
+            if (avail >= qty) {
+                availInput.value = avail - qty;
+                maintInput.value = maint + qty;
+            }
+        }
+
+        function quickRestoreMaintenance() {
+            const availInput = document.getElementById('editStockAvailable');
+            const maintInput = document.getElementById('editStockMaintenance');
+            let avail = parseInt(availInput.value) || 0;
+            let maint = parseInt(maintInput.value) || 0;
+
+            availInput.value = avail + maint;
+            maintInput.value = 0;
+        }
+
+        async function executeAdminSaveStock() {
+            const id = parseInt(document.getElementById('editStockItemId').value);
+            const avail = parseInt(document.getElementById('editStockAvailable').value) || 0;
+            const rented = parseInt(document.getElementById('editStockRented').value) || 0;
+            const maint = parseInt(document.getElementById('editStockMaintenance').value) || 0;
+            const price = parseFloat(document.getElementById('editStockPrice').value) || 0;
+            const total = avail + rented + maint;
+
+            try {
+                const res = await fetch('../rentease_api.php?action=admin_update_stock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: id,
+                        qty_total: total,
+                        qty_available: avail,
+                        qty_rented: rented,
+                        qty_maintenance: maint,
+                        price_per_day: price
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('✅ Equipment stock changes saved!');
+                    const modalEl = document.getElementById('editStockModal');
+                    if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+                    fetchAdminInventory();
+                } else {
+                    alert(data.message || 'Error updating stock.');
+                }
+            } catch (e) {
+                alert('Network error saving stock.');
+            }
         }
 
         /* Support & Issues Tickets */
