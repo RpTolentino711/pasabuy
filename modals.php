@@ -968,16 +968,16 @@
                 </div>
 
                 <!-- Title, Rating & Price (Screen 3) -->
-                <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle">Monoblock Chair</h4>
+                <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle">Equipment Details</h4>
                 
                 <div class="d-flex align-items-center gap-1.5 mb-2">
                     <i class="fa-solid fa-star text-warning fs-8"></i>
-                    <span class="fw-bold text-dark fs-8" id="detailRatingVal">4.8</span>
-                    <span class="text-muted fs-8">(<span id="detailReviewCount">120</span> reviews)</span>
+                    <span class="fw-bold text-dark fs-8" id="detailRatingVal">5.0</span>
+                    <span class="text-muted fs-8">(<span id="detailReviewCount">0</span> reviews)</span>
                 </div>
 
                 <div class="d-flex align-items-baseline gap-1.5 mb-3">
-                    <span class="fw-extrabold text-dark fs-3" id="detailPrice">₱20</span>
+                    <span class="fw-extrabold text-dark fs-3" id="detailPrice">₱0</span>
                     <span class="text-muted fs-7 fw-semibold">/ day</span>
                 </div>
 

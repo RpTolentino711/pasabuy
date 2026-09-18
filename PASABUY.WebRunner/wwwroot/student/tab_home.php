@@ -110,66 +110,22 @@
         </div>
 
         <div class="row g-2.5" id="homeFeaturedContainer">
-            <!-- Dynamic Featured Equipment populated by JS -->
-            <div class="col-6 mb-2">
-                <div class="card border-0 rounded-4 shadow-sm h-100 p-2.5 bg-white position-relative" style="cursor:pointer;" onclick="openEquipmentDetail(1)">
-                    <div class="position-relative">
-                        <img src="https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80" class="rounded-3 w-100" style="height: 125px; object-fit: cover;">
-                        <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" style="width:26px; height:26px; background:rgba(255,255,255,0.9);" onclick="event.stopPropagation(); toggleWishlist(this, 1)"><i class="fa-regular fa-heart text-dark fs-9"></i></button>
-                    </div>
-                    <div class="pt-2">
-                        <h6 class="fw-bold mb-1 text-dark fs-8 text-truncate">Monoblock Chair</h6>
-                        <div class="d-flex align-items-baseline gap-1 mb-1">
-                            <span class="fw-extrabold text-dark fs-7">₱20</span>
-                            <span class="text-muted fs-9">/ day</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-1">
-                            <i class="fa-solid fa-star text-warning fs-9"></i>
-                            <span class="fw-bold text-dark fs-9">4.8</span>
-                            <span class="text-muted fs-9">(120)</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 mb-2">
-                <div class="card border-0 rounded-4 shadow-sm h-100 p-2.5 bg-white position-relative" style="cursor:pointer;" onclick="openEquipmentDetail(7)">
-                    <div class="position-relative">
-                        <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80" class="rounded-3 w-100" style="height: 125px; object-fit: cover;">
-                        <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" style="width:26px; height:26px; background:rgba(255,255,255,0.9);" onclick="event.stopPropagation(); toggleWishlist(this, 7)"><i class="fa-regular fa-heart text-dark fs-9"></i></button>
-                    </div>
-                    <div class="pt-2">
-                        <h6 class="fw-bold mb-1 text-dark fs-8 text-truncate">Event Tent (10x10ft)</h6>
-                        <div class="d-flex align-items-baseline gap-1 mb-1">
-                            <span class="fw-extrabold text-dark fs-7">₱800</span>
-                            <span class="text-muted fs-9">/ day</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-1">
-                            <i class="fa-solid fa-star text-warning fs-9"></i>
-                            <span class="fw-bold text-dark fs-9">4.9</span>
-                            <span class="text-muted fs-9">(110)</span>
-                        </div>
-                    </div>
-                </div>
+            <!-- Dynamic Live Featured Equipment populated from database by loadRentEaseCatalog() -->
+            <div class="col-12 text-center py-4 text-secondary">
+                <i class="fa-solid fa-spinner fa-spin fs-4 text-primary mb-2"></i>
+                <div class="fs-8">Loading live equipment inventory...</div>
             </div>
         </div>
     </div>
 
     <!-- Event Packages Banner (Marketing Strategy - 10%) -->
-    <div class="mb-3">
+    <div class="mb-3" id="homePackagesSection" style="display:none;">
         <div class="d-flex align-items-center justify-content-between mb-2">
             <h6 class="fw-extrabold mb-0 text-dark fs-7"><i class="fa-solid fa-box-open text-warning me-1"></i> Event Packages</h6>
             <span class="badge rounded-pill text-white fw-bold fs-9" style="background: linear-gradient(135deg, #10B981, #059669);">Save up to 25%</span>
         </div>
-        <div class="p-3 bg-white rounded-4 border shadow-xs d-flex align-items-center justify-content-between" style="cursor:pointer;" onclick="openPackageDetails(1)">
-            <div>
-                <span class="badge bg-warning-subtle text-warning-emphasis fw-bold fs-9 mb-1">Birthday Package</span>
-                <h6 class="fw-bold text-dark fs-8 mb-0">50 Chairs + 5 Tables + Event Tent</h6>
-                <div class="fs-9 text-muted">Complete party setup • Starts at <strong>₱1,499</strong></div>
-            </div>
-            <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold flex-shrink-0" style="background: #5B3FA8; border:none;">
-                Book
-            </button>
+        <div id="homePackagesContainer">
+            <!-- Dynamically populated if packages exist in database -->
         </div>
     </div>
 

@@ -119,23 +119,13 @@
     </div>
 
     <!-- Event Packages Banner (Marketing Strategy - 10%) -->
-    <div class="mb-3" id="homePackagesSection">
+    <div class="mb-3" id="homePackagesSection" style="display:none;">
         <div class="d-flex align-items-center justify-content-between mb-2">
             <h6 class="fw-extrabold mb-0 text-dark fs-7"><i class="fa-solid fa-box-open text-warning me-1"></i> Event Packages</h6>
             <span class="badge rounded-pill text-white fw-bold fs-9" style="background: linear-gradient(135deg, #10B981, #059669);">Save up to 25%</span>
         </div>
         <div id="homePackagesContainer">
-            <!-- Dynamically populated from database -->
-            <div class="p-3 bg-white rounded-4 border shadow-xs d-flex align-items-center justify-content-between" style="cursor:pointer;" onclick="openPackageDetails(1)">
-                <div>
-                    <span class="badge bg-warning-subtle text-warning-emphasis fw-bold fs-9 mb-1">Birthday Celebration Package</span>
-                    <h6 class="fw-bold text-dark fs-8 mb-0">50 Chairs + 5 Tables + Event Tent</h6>
-                    <div class="fs-9 text-muted">Complete party setup • Starts at <strong>₱1,499</strong></div>
-                </div>
-                <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold flex-shrink-0" style="background: #5B3FA8; border:none;">
-                    Book
-                </button>
-            </div>
+            <!-- Dynamically populated if packages exist in database -->
         </div>
     </div>
 

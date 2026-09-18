@@ -49,8 +49,27 @@ function renderFeaturedRentals() {
     const container = document.getElementById('homeFeaturedContainer');
     if (!container) return;
 
-    const featured = rentEaseInventory.filter(i => parseInt(i.is_featured) === 1).slice(0, 4);
-    if (featured.length === 0) return;
+    let featured = (rentEaseInventory || []).filter(i => parseInt(i.is_featured) === 1).slice(0, 4);
+    if (featured.length === 0 && (rentEaseInventory || []).length > 0) {
+        featured = rentEaseInventory.slice(0, 4);
+    }
+
+    if (featured.length === 0) {
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                    <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2 text-muted" style="width:48px; height:48px; color:#5B3FA8;">
+                        <i class="fa-solid fa-box-open fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark fs-8 mb-1">No equipment listed yet</h6>
+                    <p class="text-muted fs-9 mb-2.5">Be the first to list equipment for rent on campus!</p>
+                    <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold mx-auto" style="background:#5B3FA8; border:none;" onclick="switchTab('sell')">
+                        <i class="fa-solid fa-plus me-1"></i> Post Equipment
+                    </button>
+                </div>
+            </div>`;
+        return;
+    }
 
     let html = '';
     featured.forEach(item => {
@@ -692,7 +711,6 @@ async function submitRentEaseIssue() {
 }
 
 function openPackageDetails(pkgId) {
-    alert('🎉 Birthday Celebration Package Selected!\nIncludes: 50x Monoblock Chairs, 5x Folding Tables, 1x Event Tent (10x10ft)\nDiscount: 20% OFF • Starting at ₱1,499. Added to reservation flow.');
     openCategoryTab('All');
 }
 
