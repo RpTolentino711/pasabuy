@@ -83,11 +83,25 @@ session_start();
             box-shadow: 0 20px 40px rgba(15,23,42,0.08);
             overflow: hidden;
         }
-        .auth-header {
-            background: linear-gradient(135deg, #1E1B4B, #312E81);
-            color: #FFFFFF;
-            padding: 32px 24px;
-            text-align: center;
+        .pulse-beacon {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #10B981;
+            box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+            animation: pulseBeacon 1.5s infinite;
+        }
+        @keyframes pulseBeacon {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
         }
     </style>
 </head>
@@ -150,7 +164,10 @@ session_start();
                     <span class="fs-5 text-white">RentEase <span class="badge bg-warning text-dark fs-9 rounded-pill ms-1">OPERATIONS PORTAL</span></span>
                 </a>
                 <div class="d-flex align-items-center gap-3">
-                    <span class="text-white-50 fs-8"><i class="fa-solid fa-circle text-success me-1"></i> MySQL Database &amp; PayMongo Live Connected</span>
+                    <span class="badge bg-success bg-opacity-25 text-white border border-success border-opacity-50 rounded-pill px-3 py-1 fs-8 d-inline-flex align-items-center gap-2">
+                        <span class="pulse-beacon"></span> <strong class="text-success">LIVE REAL-TIME SYNC</strong>
+                        <span id="adminLiveTimestamp" class="text-white-50 ms-1">Connecting...</span>
+                    </span>
                     <button class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold text-white" onclick="logoutAdmin()"><i class="fa-solid fa-right-from-bracket me-1"></i> Log Out</button>
                 </div>
             </div>
@@ -200,8 +217,8 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Total Equipment Stock</span>
                                     <div class="stat-icon text-white" style="background:#5B3FA8;"><i class="fa-solid fa-boxes-stacked"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1" id="dashExecutiveStock">720</h2>
-                                <span class="badge bg-success-subtle text-success fw-bold fs-9"><i class="fa-solid fa-check me-1"></i> <span id="dashExecutiveAvailable">488</span> Units Ready</span>
+                                <h2 class="fw-extrabold mb-1" id="dashExecutiveStock">--</h2>
+                                <span class="badge bg-success-subtle text-success fw-bold fs-9"><i class="fa-solid fa-check me-1"></i> <span id="dashExecutiveAvailable">--</span> Units Ready</span>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -210,8 +227,8 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Gross Rental Value</span>
                                     <div class="stat-icon bg-success text-white"><i class="fa-solid fa-peso-sign"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1 text-success" id="dashExecutiveRevenue">₱125,450</h2>
-                                <span class="text-muted fs-8">184 Bookings Recorded</span>
+                                <h2 class="fw-extrabold mb-1 text-success" id="dashExecutiveRevenue">₱0.00</h2>
+                                <span class="text-muted fs-8" id="dashExecutiveOrdersCount">Live Bookings Calculated</span>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -220,8 +237,8 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Active Deliveries</span>
                                     <div class="stat-icon bg-warning text-dark"><i class="fa-solid fa-truck-ramp-box"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashExecutiveDeliveries">8 Active</h2>
-                                <span class="text-muted fs-8">Juan Dela Cruz &amp; Fleet En Route</span>
+                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashExecutiveDeliveries">0 Active</h2>
+                                <span class="text-muted fs-8">Live Fleet Tracking</span>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -230,8 +247,8 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Support Incident Rate</span>
                                     <div class="stat-icon bg-danger text-white"><i class="fa-solid fa-headset"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1 text-danger" id="dashExecutiveIssues">1 Pending</h2>
-                                <span class="badge bg-success-subtle text-success fw-bold fs-9">96.8% Resolved Satisfied</span>
+                                <h2 class="fw-extrabold mb-1 text-danger" id="dashExecutiveIssues">0 Pending</h2>
+                                <span class="badge bg-success-subtle text-success fw-bold fs-9">Real-time resolution</span>
                             </div>
                         </div>
                     </div>
@@ -413,16 +430,18 @@ session_start();
                     </div>
                 </div>
 
-                <!-- Section: RentEase Live Inventory Management Module (Rubric: 10%) -->
+                <!-- Section: RentEase Live User Equipment & Rentals Supervision Hub -->
                 <div id="sectionInventory" style="display:block;">
                     <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                         <div>
-                            <h4 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-boxes-stacked me-2" style="color:#5B3FA8;"></i>Event Rentals Inventory Module</h4>
-                            <p class="text-muted fs-8 mb-0">Real-time stock control, availability tracking, rental status, and maintenance counts.</p>
+                            <h4 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-boxes-stacked me-2" style="color:#5B3FA8;"></i>User Equipment &amp; Rentals Supervision</h4>
+                            <p class="text-muted fs-8 mb-0">Live real-time moderation hub. Students and campus vendors list rental items via the app; admins supervise quality, inspect demo videos, and moderate listings.</p>
                         </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-primary btn-sm rounded-pill fw-bold px-3" onclick="fetchAdminInventory()"><i class="fa-solid fa-rotate me-1"></i> Refresh Stock</button>
-                            <button class="btn text-white btn-sm rounded-pill fw-bold px-3 shadow-sm" style="background:#5B3FA8;" onclick="openAddInventoryModal()"><i class="fa-solid fa-plus me-1"></i> Add Rental Item</button>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-3 py-2 fs-8 fw-semibold">
+                                <i class="fa-solid fa-shield-halved me-1"></i> Admin Supervision Mode Active
+                            </span>
+                            <button class="btn btn-outline-primary btn-sm rounded-pill fw-bold px-3" onclick="fetchAdminInventory()"><i class="fa-solid fa-rotate me-1"></i> Force Sync</button>
                         </div>
                     </div>
 
@@ -434,8 +453,8 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Total Stock</span>
                                     <div class="stat-icon text-white" style="background:#5B3FA8;"><i class="fa-solid fa-boxes-stacked"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1" id="dashInventoryTotal">720</h2>
-                                <span class="text-muted fs-8">All Rental Units</span>
+                                <h2 class="fw-extrabold mb-1" id="dashInventoryTotal">--</h2>
+                                <span class="text-muted fs-8">All Listed Units</span>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -444,7 +463,7 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Available Now</span>
                                     <div class="stat-icon bg-success-subtle text-success"><i class="fa-solid fa-circle-check"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1 text-success" id="dashInventoryAvailable">488</h2>
+                                <h2 class="fw-extrabold mb-1 text-success" id="dashInventoryAvailable">--</h2>
                                 <span class="badge bg-success-subtle text-success fw-bold fs-9">Ready for Customer Booking</span>
                             </div>
                         </div>
@@ -454,7 +473,7 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Currently Rented</span>
                                     <div class="stat-icon bg-warning-subtle text-warning-emphasis"><i class="fa-solid fa-truck-ramp-box"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashInventoryRented">202</h2>
+                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashInventoryRented">--</h2>
                                 <span class="text-muted fs-8">Out in Active Events</span>
                             </div>
                         </div>
@@ -464,7 +483,7 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Maintenance / Repair</span>
                                     <div class="stat-icon bg-danger-subtle text-danger"><i class="fa-solid fa-screwdriver-wrench"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1 text-danger" id="dashInventoryMaintenance">30</h2>
+                                <h2 class="fw-extrabold mb-1 text-danger" id="dashInventoryMaintenance">--</h2>
                                 <span class="badge bg-danger-subtle text-danger fw-bold fs-9">Quality Inspection</span>
                             </div>
                         </div>
@@ -473,9 +492,9 @@ session_start();
                     <!-- Inventory Table -->
                     <div class="table-custom shadow-sm">
                         <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
-                            <div class="fw-bold fs-7 text-dark"><i class="fa-solid fa-table-list me-2 text-primary"></i>Live Inventory Database Records</div>
+                            <div class="fw-bold fs-7 text-dark"><i class="fa-solid fa-table-list me-2 text-primary"></i>Live User Equipment Database Records</div>
                             <div class="d-flex gap-2">
-                                <input type="text" class="form-control form-control-sm rounded-pill fs-8" placeholder="Search inventory..." id="inventorySearchInput" oninput="filterAdminInventoryTable()" style="width:200px;">
+                                <input type="text" class="form-control form-control-sm rounded-pill fs-8" placeholder="Search user equipment..." id="inventorySearchInput" oninput="filterAdminInventoryTable()" style="width:200px;">
                                 <select class="form-select form-select-sm rounded-pill fs-8" id="inventoryCategoryFilter" onchange="filterAdminInventoryTable()" style="width:140px;">
                                     <option value="">All Categories</option>
                                     <option value="Chairs">Chairs</option>
@@ -484,6 +503,7 @@ session_start();
                                     <option value="Sound System">Sound System</option>
                                     <option value="Lights">Lights</option>
                                     <option value="Decorations">Decorations</option>
+                                    <option value="Others">Others</option>
                                 </select>
                             </div>
                         </div>
@@ -491,18 +511,19 @@ session_start();
                             <table class="table table-hover align-middle mb-0 fs-8">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Product</th>
-                                        <th>Category / Material</th>
+                                        <th>Equipment &amp; Media</th>
+                                        <th>Category &amp; Condition</th>
+                                        <th>Owner / Listed By</th>
                                         <th>Daily Rate</th>
                                         <th class="text-center">Total</th>
                                         <th class="text-center text-success">Available</th>
                                         <th class="text-center text-warning">Rented</th>
                                         <th class="text-center text-danger">Maintenance</th>
-                                        <th>Actions</th>
+                                        <th>Supervision Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="adminInventoryTableBody">
-                                    <tr><td colspan="8" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading live inventory...</td></tr>
+                                    <tr><td colspan="9" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading live user equipment records...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -642,63 +663,19 @@ session_start();
 
             </main>
         </div>
-    <!-- RENTEASE ADD EQUIPMENT MODAL -->
-    <div class="modal fade" id="addEquipmentModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
-                <div class="modal-header border-0 pb-1">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-plus-circle me-2" style="color:#5B3FA8;"></i>Add Rental Equipment to Inventory</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- ADMIN VIDEO PLAYER INSPECTION MODAL -->
+    <div class="modal fade" id="adminVideoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-dark text-white">
+                <div class="modal-header border-0 pb-2">
+                    <h6 class="fw-bold mb-0 text-white" id="adminVideoModalTitle"><i class="fa-solid fa-circle-play text-info me-2"></i>Item Video Demonstration</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body pt-2">
-                    <div class="mb-2">
-                        <label class="form-label fw-bold fs-8 mb-1">Equipment Name *</label>
-                        <input type="text" class="form-control rounded-3 fs-8" id="newEquipName" placeholder="e.g. VIP Tiffany Chair">
+                <div class="modal-body text-center p-2">
+                    <div class="ratio ratio-16x9 rounded-3 overflow-hidden bg-black shadow-inner">
+                        <video id="adminVideoPlayer" controls playsinline style="width:100%; height:100%; object-fit:contain;"></video>
                     </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-6">
-                            <label class="form-label fw-bold fs-8 mb-1">Category</label>
-                            <select class="form-select rounded-3 fs-8" id="newEquipCategory">
-                                <option value="Chairs">Chairs</option>
-                                <option value="Tables">Tables</option>
-                                <option value="Tents">Tents</option>
-                                <option value="Sound System">Sound System</option>
-                                <option value="Lights">Lights</option>
-                                <option value="Decorations">Decorations</option>
-                                <option value="Stages">Stages</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-bold fs-8 mb-1">Material Tag</label>
-                            <select class="form-select rounded-3 fs-8" id="newEquipMaterial">
-                                <option value="Plastic">Plastic</option>
-                                <option value="Wooden">Wooden</option>
-                                <option value="Premium">Premium</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-6">
-                            <label class="form-label fw-bold fs-8 mb-1">Daily Rental Rate (₱) *</label>
-                            <input type="number" class="form-control rounded-3 fs-8" id="newEquipPrice" value="50" min="1">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-bold fs-8 mb-1">Total Stock Units *</label>
-                            <input type="number" class="form-control rounded-3 fs-8" id="newEquipQty" value="50" min="1">
-                        </div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label fw-bold fs-8 mb-1">Image URL</label>
-                        <input type="text" class="form-control rounded-3 fs-8" id="newEquipImage" value="https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold fs-8 mb-1">Description</label>
-                        <textarea class="form-control rounded-3 fs-8" id="newEquipDesc" rows="2" placeholder="Item description, durability, event suitability..."></textarea>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-light rounded-pill w-50 fw-bold fs-8 text-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn text-white rounded-pill w-50 fw-bold fs-8 shadow-sm" style="background:#5B3FA8;" onclick="executeAdminAddEquipment()"><i class="fa-solid fa-save me-1"></i> Add Equipment</button>
-                    </div>
+                    <p class="text-white-50 fs-9 mt-2 mb-0">Admin Quality Assurance &amp; Item Condition Verification Video</p>
                 </div>
             </div>
         </div>
@@ -863,8 +840,7 @@ session_start();
                     if (session && session.loggedIn) {
                         document.getElementById('adminAuthView').style.display = 'none';
                         document.getElementById('adminMainDashboardView').style.display = 'block';
-                        fetchAdminInventory();
-                        fetchAdminIssues();
+                        startAdminLivePolling();
                         return;
                     }
                 }
@@ -896,8 +872,7 @@ session_start();
                 localStorage.setItem('pasabuy_admin_session', JSON.stringify({ loggedIn: true, user: user, loginTime: Date.now() }));
                 document.getElementById('adminAuthView').style.display = 'none';
                 document.getElementById('adminMainDashboardView').style.display = 'block';
-                fetchAdminInventory();
-                fetchAdminIssues();
+                startAdminLivePolling();
                 return;
             }
 
@@ -906,6 +881,7 @@ session_start();
         }
 
         function logoutAdmin() {
+            stopAdminLivePolling();
             localStorage.removeItem('pasabuy_admin_session');
             document.getElementById('adminMainDashboardView').style.display = 'none';
             document.getElementById('adminAuthView').style.display = 'block';
@@ -1032,8 +1008,8 @@ session_start();
                     if (Array.isArray(data)) {
                         const pending = data.filter(r => r.Status === 'PENDING').length;
                         const approved = data.filter(r => r.Status === 'APPROVED').length;
-                        document.getElementById('dashPendingVerifications').innerText = pending || 0;
-                        document.getElementById('dashVerifiedStudents').innerText = approved || 0;
+                        if (document.getElementById('dashPendingVerifications')) document.getElementById('dashPendingVerifications').innerText = pending || 0;
+                        if (document.getElementById('dashVerifiedStudents')) document.getElementById('dashVerifiedStudents').innerText = approved || 0;
                     }
                 }
             } catch (e) {}
@@ -1043,8 +1019,29 @@ session_start();
                 if (listRes.ok) {
                     const list = await listRes.json();
                     if (Array.isArray(list)) {
-                        document.getElementById('dashActiveListings').innerText = list.length || 0;
+                        if (document.getElementById('dashActiveListings')) document.getElementById('dashActiveListings').innerText = list.length || 0;
                     }
+                }
+            } catch (e) {}
+
+            try {
+                const dashRes = await fetch('../rentease_api.php?action=get_admin_dashboard');
+                const dashData = await dashRes.json();
+                if (dashData.success && (dashData.kpis || dashData.kpi)) {
+                    const k = dashData.kpis || dashData.kpi || {};
+                    const totalStock = k.total_stock ?? k.total_units ?? 0;
+                    const availStock = k.available_stock ?? k.available_units ?? 0;
+                    const totalRevenue = k.sales_overview ?? k.total_revenue ?? 0;
+                    const activeDeliv = k.active_deliveries ?? 0;
+                    const pendingIssues = k.pending_issues ?? 0;
+                    const totalOrders = k.total_orders ?? 0;
+
+                    if (document.getElementById('dashExecutiveStock')) document.getElementById('dashExecutiveStock').innerText = totalStock;
+                    if (document.getElementById('dashExecutiveAvailable')) document.getElementById('dashExecutiveAvailable').innerText = availStock;
+                    if (document.getElementById('dashExecutiveRevenue')) document.getElementById('dashExecutiveRevenue').innerText = '₱' + parseFloat(totalRevenue || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    if (document.getElementById('dashExecutiveDeliveries')) document.getElementById('dashExecutiveDeliveries').innerText = activeDeliv + ' Active';
+                    if (document.getElementById('dashExecutiveIssues')) document.getElementById('dashExecutiveIssues').innerText = pendingIssues + ' Pending';
+                    if (document.getElementById('dashExecutiveOrdersCount')) document.getElementById('dashExecutiveOrdersCount').innerText = `${totalOrders} Bookings Recorded`;
                 }
             } catch (e) {}
         }
@@ -1318,10 +1315,51 @@ session_start();
            RENTEASE EVENT PLATFORM OPERATIONAL LOGIC & MODULES
            ========================================================================== */
         window.adminInventoryCache = [];
+        let adminLivePollTimer = null;
+        let isPollingActive = false;
 
-        async function fetchAdminInventory() {
+        function startAdminLivePolling() {
+            if (adminLivePollTimer) clearInterval(adminLivePollTimer);
+            syncAdminDataLive(); // Run immediately
+            adminLivePollTimer = setInterval(syncAdminDataLive, 3000); // Live real-time update every 3 seconds!
+        }
+
+        function stopAdminLivePolling() {
+            if (adminLivePollTimer) {
+                clearInterval(adminLivePollTimer);
+                adminLivePollTimer = null;
+            }
+        }
+
+        async function syncAdminDataLive() {
+            if (isPollingActive) return;
+            isPollingActive = true;
+            try {
+                await Promise.allSettled([
+                    fetchAdminInventory(true),
+                    fetchAdminDashboardStats(),
+                    fetchAdminIssues(true),
+                    fetchAdminRentalOrders(true)
+                ]);
+                const timeBadge = document.getElementById('adminLiveTimestamp');
+                if (timeBadge) {
+                    const now = new Date();
+                    timeBadge.innerText = `Updated ${now.toLocaleTimeString()}`;
+                }
+            } catch (err) {
+                console.warn('Admin live sync tick error:', err);
+            } finally {
+                isPollingActive = false;
+            }
+        }
+
+        async function fetchAdminInventory(silent = false) {
             const tbody = document.getElementById('adminInventoryTableBody');
             if (!tbody) return;
+
+            if (!silent && (!window.adminInventoryCache || window.adminInventoryCache.length === 0)) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Connecting live database...</td></tr>';
+            }
 
             try {
                 const res = await fetch('../rentease_api.php?action=get_inventory');
@@ -1347,12 +1385,14 @@ session_start();
                     if (document.getElementById('dashInventoryRented')) document.getElementById('dashInventoryRented').innerText = rentedUnits;
                     if (document.getElementById('dashInventoryMaintenance')) document.getElementById('dashInventoryMaintenance').innerText = maintUnits;
 
-                    renderAdminInventoryTable(data.items);
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No inventory items found.</td></tr>';
+                    filterAdminInventoryTable();
+                } else if (!silent) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No user equipment listings found.</td></tr>';
                 }
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">Connection error fetching inventory.</td></tr>';
+                if (!silent) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Connection error fetching inventory.</td></tr>';
+                }
             }
         }
 
@@ -1360,28 +1400,43 @@ session_start();
             const tbody = document.getElementById('adminInventoryTableBody');
             if (!tbody) return;
 
-            if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No matching rental items found.</td></tr>';
+            if (!items || items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No matching user rental items found.</td></tr>';
                 return;
             }
 
             let html = '';
             items.forEach(item => {
                 const price = parseFloat(item.price_per_day || 0).toFixed(2);
+                const ownerName = item.owner_name || 'Campus Student';
+                const hasVideo = item.video_url && item.video_url.trim() !== '';
+                const isFeatured = parseInt(item.is_featured) === 1;
+
                 html += `
                 <tr>
                     <td>
                         <div class="d-flex align-items-center gap-2">
-                            <img src="${item.image_url}" class="rounded-3 shadow-xs" style="width:44px; height:44px; object-fit:cover;">
+                            <img src="${item.image_url}" class="rounded-3 shadow-xs border" style="width:48px; height:48px; object-fit:cover;">
                             <div>
                                 <strong class="text-dark d-block fs-8">${item.name}</strong>
                                 <span class="text-muted fs-9">ID: #REN-${String(item.id).padStart(4, '0')}</span>
+                                ${hasVideo ? `
+                                <div class="mt-1">
+                                    <button class="btn btn-xs text-white rounded-pill px-2 py-0 fs-9 shadow-xs" style="background:#0284C7;" onclick="openAdminVideoPreview('${encodeURIComponent(item.video_url)}', '${encodeURIComponent(item.name)}')">
+                                        <i class="fa-solid fa-circle-play me-1"></i> Watch Video
+                                    </button>
+                                </div>` : ''}
                             </div>
                         </div>
                     </td>
                     <td>
                         <span class="badge bg-light text-dark border px-2 py-1">${item.category}</span>
-                        <span class="badge text-white px-2 py-1" style="background:#5B3FA8;">${item.material_tag || 'Standard'}</span>
+                        <span class="badge bg-secondary-subtle text-secondary px-2 py-1">${item.item_condition || item.material_tag || 'Good'}</span>
+                    </td>
+                    <td>
+                        <strong class="text-dark d-block fs-8"><i class="fa-solid fa-user-circle me-1 text-primary"></i>${ownerName}</strong>
+                        ${item.owner_contact ? `<span class="text-muted fs-9 d-block"><i class="fa-solid fa-phone me-1"></i>${item.owner_contact}</span>` : ''}
+                        ${item.location ? `<span class="badge bg-light text-secondary border fs-9 mt-1"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${item.location}</span>` : ''}
                     </td>
                     <td><strong class="text-dark">₱${price}</strong><span class="text-muted fs-9">/day</span></td>
                     <td class="text-center fw-bold text-dark">${item.qty_total}</td>
@@ -1389,9 +1444,15 @@ session_start();
                     <td class="text-center"><span class="badge bg-warning-subtle text-warning-emphasis fw-bold px-2 py-1 fs-9">${item.qty_rented} units</span></td>
                     <td class="text-center"><span class="badge bg-danger-subtle text-danger fw-bold px-2 py-1 fs-9">${item.qty_maintenance} units</span></td>
                     <td>
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0 fs-9" onclick="openEditStockModal(${item.id})">
+                        <div class="d-flex flex-column gap-1">
+                            <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0 fs-9 fw-semibold text-nowrap" onclick="adminDeleteEquipment(${item.id}, '${item.name.replace(/'/g, "\\'")}')" title="Moderate and take down listing">
+                                <i class="fa-solid fa-trash me-1"></i> Take Down
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0 fs-9 fw-semibold text-nowrap" onclick="openEditStockModal(${item.id})">
                                 <i class="fa-solid fa-sliders me-1"></i> Adjust
+                            </button>
+                            <button class="btn btn-sm ${isFeatured ? 'btn-warning text-dark' : 'btn-outline-warning'} rounded-pill px-2 py-0 fs-9 fw-semibold text-nowrap" onclick="adminToggleFeatured(${item.id})" title="Toggle featured spotlight">
+                                <i class="fa-solid fa-star me-1"></i> ${isFeatured ? 'Featured' : 'Feature'}
                             </button>
                         </div>
                     </td>
@@ -1412,56 +1473,78 @@ session_start();
                 filtered = filtered.filter(i => 
                     (i.name || '').toLowerCase().includes(query) || 
                     (i.category || '').toLowerCase().includes(query) ||
+                    (i.item_condition || '').toLowerCase().includes(query) ||
+                    (i.owner_name || '').toLowerCase().includes(query) ||
+                    (i.location || '').toLowerCase().includes(query) ||
                     (i.material_tag || '').toLowerCase().includes(query)
                 );
             }
             renderAdminInventoryTable(filtered);
         }
 
-        function openAddInventoryModal() {
-            const modalEl = document.getElementById('addEquipmentModal');
-            if (modalEl) new bootstrap.Modal(modalEl).show();
-        }
-
-        async function executeAdminAddEquipment() {
-            const name = document.getElementById('newEquipName').value.trim();
-            const category = document.getElementById('newEquipCategory').value;
-            const material = document.getElementById('newEquipMaterial').value;
-            const price = parseFloat(document.getElementById('newEquipPrice').value) || 50;
-            const qty = parseInt(document.getElementById('newEquipQty').value) || 50;
-            const img = document.getElementById('newEquipImage').value.trim();
-            const desc = document.getElementById('newEquipDesc').value.trim();
-
-            if (!name) {
-                alert('Please enter equipment name.');
+        async function adminDeleteEquipment(id, itemName) {
+            if (!confirm(`⚠️ Admin Supervision Moderation:\n\nAre you sure you want to TAKE DOWN and REMOVE "${itemName}" (ID #${id}) from RentEase?\n\nThis will remove the user listing from search and customer bookings immediately.`)) {
                 return;
             }
 
             try {
-                const res = await fetch('../rentease_api.php?action=admin_add_equipment', {
+                const res = await fetch('../rentease_api.php?action=admin_delete_equipment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: name,
-                        category: category,
-                        material_tag: material,
-                        price_per_day: price,
-                        qty_total: qty,
-                        image_url: img,
-                        description: desc
-                    })
+                    body: JSON.stringify({ id: id })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Equipment "${name}" added to RentEase catalog!`);
-                    const modalEl = document.getElementById('addEquipmentModal');
-                    if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+                    alert(`🗑️ Listing "${itemName}" taken down successfully.`);
                     fetchAdminInventory();
                 } else {
-                    alert(data.message || 'Error adding equipment.');
+                    alert(data.message || 'Error removing equipment.');
                 }
             } catch (e) {
-                alert('Network error adding equipment.');
+                alert('Network error taking down listing.');
+            }
+        }
+
+        async function adminToggleFeatured(id) {
+            try {
+                const res = await fetch('../rentease_api.php?action=admin_toggle_featured', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    fetchAdminInventory();
+                } else {
+                    alert(data.message || 'Error toggling featured status.');
+                }
+            } catch (e) {
+                alert('Network error toggling featured.');
+            }
+        }
+
+        function openAdminVideoPreview(encodedUrl, encodedTitle) {
+            const url = decodeURIComponent(encodedUrl);
+            const title = decodeURIComponent(encodedTitle);
+            const modalEl = document.getElementById('adminVideoModal');
+            const player = document.getElementById('adminVideoPlayer');
+            const titleEl = document.getElementById('adminVideoModalTitle');
+            
+            if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-circle-play text-info me-2"></i>Inspection Video: ${title}`;
+            if (player) {
+                player.src = url;
+                player.load();
+            }
+            
+            if (modalEl) {
+                const bsModal = new bootstrap.Modal(modalEl);
+                modalEl.addEventListener('hidden.bs.modal', () => {
+                    if (player) {
+                        player.pause();
+                        player.src = '';
+                    }
+                }, { once: true });
+                bsModal.show();
             }
         }
 
