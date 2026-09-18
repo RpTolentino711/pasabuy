@@ -340,10 +340,6 @@
                     <i class="fa-solid fa-truck-fast text-secondary fs-7"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" id="headerOrdersBadge" style="font-size:0.6rem; padding: 2px 4px; display:none;">0</span>
                 </button>
-                <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="openIssueModal()" title="Customer Support & Issue Center" style="width:36px; height:36px; background: #F1F5F9;">
-                    <i class="fa-solid fa-headset text-secondary fs-7"></i>
-                </button>
                 <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')">
                     <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80"
                         class="rounded-circle border border-2 border-white shadow-sm" width="36" height="36" style="object-fit:cover;" id="homeAvatar" alt="User Profile">
@@ -3967,7 +3963,7 @@
                         }
 
                     </script>
-    <script src="rentease_app.js"></script>
+    <script src="rentease_app.js?v=<?= time() ?>"></script>
 </body>
 
 </html>

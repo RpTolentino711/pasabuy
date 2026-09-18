@@ -826,11 +826,22 @@ function syncRentEaseProfileUI() {
 
 window.openSettingsHubModal = function () {
     const modalEl = document.getElementById('settingsHubModal');
-    if (modalEl) {
-        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
-        syncRentEaseProfileUI();
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    if (!modalEl) {
+        console.warn("settingsHubModal not found");
+        return;
     }
+    syncRentEaseProfileUI();
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        try {
+            const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
+            inst.show();
+            return;
+        } catch(e) {
+            console.warn("Bootstrap open modal error:", e);
+        }
+    }
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
 };
 
 window.openIssueModal = function () {
@@ -1317,6 +1328,11 @@ window.loadUserRentedOutItems = async function () {
     });
 
     if (badge) badge.innerText = myItems.length;
+
+    const headerBtn = document.getElementById('headerPostEquipmentBtn');
+    if (headerBtn) {
+        headerBtn.style.display = (myItems.length > 0) ? 'inline-flex' : 'none';
+    }
 
     if (myItems.length === 0) {
         container.innerHTML = `
