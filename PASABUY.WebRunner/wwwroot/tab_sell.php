@@ -74,11 +74,11 @@
             </div>
         </div>
 
-        <!-- 3. Rental Rate (Per Day) & Quantity -->
+        <!-- 3. How Much to Rent the Item & Quantity -->
         <div class="row g-2 mb-3">
             <div class="col-6">
                 <label class="form-label fw-extrabold text-dark fs-8 mb-1">
-                    Rental Rate (₱ / day) <span class="text-danger">*</span>
+                    How much to rent the item (₱ / day) <span class="text-danger">*</span>
                 </label>
                 <div class="input-group">
                     <span class="input-group-text bg-light fw-bold fs-7">₱</span>
