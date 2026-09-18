@@ -10,7 +10,7 @@ let rentEaseCart = JSON.parse(localStorage.getItem('rentease_cart')) || [];
 
 let currentDetailProduct = null;
 let currentDetailQty = 1;
-let currentCategory = 'Chairs';
+let currentCategory = 'All';
 let currentTag = 'All';
 let currentDeliveryOption = 'DELIVERY';
 let currentPaymentMethod = 'GCASH';
@@ -150,27 +150,60 @@ function filterRentEaseByTag(btnEl, tag) {
 
 function handleRentEaseSearch(query) {
     const q = (query || '').toLowerCase().trim();
-    if (!q) {
-        renderExploreCatalog();
-        return;
+
+    // Sync input values between Home and Explore search bars
+    const homeInput = document.getElementById('searchInput');
+    const exploreInput = document.getElementById('exploreSearchInput');
+    const clearBtn = document.getElementById('clearExploreSearchBtn');
+
+    if (homeInput && homeInput.value !== (query || '')) homeInput.value = query || '';
+    if (exploreInput && exploreInput.value !== (query || '')) exploreInput.value = query || '';
+    if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+
+    renderExploreCatalog();
+}
+
+function handleHomeSearch(query) {
+    handleRentEaseSearch(query);
+    if ((query || '').trim().length > 0) {
+        switchTab('explore');
     }
-    const filtered = rentEaseInventory.filter(item => 
-        item.name.toLowerCase().includes(q) || 
-        item.category.toLowerCase().includes(q) || 
-        (item.description && item.description.toLowerCase().includes(q))
-    );
-    renderGridElements(filtered);
-    switchTab('explore');
+}
+
+function clearExploreSearch() {
+    const homeInput = document.getElementById('searchInput');
+    const exploreInput = document.getElementById('exploreSearchInput');
+    const clearBtn = document.getElementById('clearExploreSearchBtn');
+
+    if (homeInput) homeInput.value = '';
+    if (exploreInput) exploreInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    renderExploreCatalog();
 }
 
 function renderExploreCatalog() {
-    let filtered = rentEaseInventory;
+    let filtered = rentEaseInventory || [];
 
     if (currentCategory && currentCategory !== 'All') {
-        filtered = filtered.filter(i => i.category === currentCategory);
+        filtered = filtered.filter(i => (i.category || '').toLowerCase() === currentCategory.toLowerCase());
     }
     if (currentTag && currentTag !== 'All') {
-        filtered = filtered.filter(i => i.material_tag === currentTag);
+        filtered = filtered.filter(i => (i.material_tag || '').toLowerCase() === currentTag.toLowerCase());
+    }
+
+    // Apply active search query if any
+    const searchInput = document.getElementById('exploreSearchInput') || document.getElementById('searchInput');
+    const q = searchInput ? (searchInput.value || '').toLowerCase().trim() : '';
+    if (q) {
+        filtered = filtered.filter(item => 
+            (item.name && item.name.toLowerCase().includes(q)) || 
+            (item.category && item.category.toLowerCase().includes(q)) || 
+            (item.description && item.description.toLowerCase().includes(q)) ||
+            (item.material_tag && item.material_tag.toLowerCase().includes(q)) ||
+            (item.owner_name && item.owner_name.toLowerCase().includes(q)) ||
+            (item.location && item.location.toLowerCase().includes(q))
+        );
     }
 
     renderGridElements(filtered);

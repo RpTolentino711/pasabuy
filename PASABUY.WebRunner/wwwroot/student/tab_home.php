@@ -9,8 +9,8 @@
         <div class="position-relative">
             <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left:16px; top:13px; font-size: 0.95rem;"></i>
             <input type="text" class="form-control rounded-pill ps-5 pe-4 py-2.5 fs-7 border-0 bg-white shadow-xs"
-                placeholder="Search for equipment..." id="searchInput"
-                onkeyup="handleRentEaseSearch(this.value)">
+                placeholder="Search for equipment, sound, camera..." id="searchInput"
+                oninput="handleHomeSearch(this.value)">
         </div>
     </div>
 
