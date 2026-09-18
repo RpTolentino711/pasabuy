@@ -17,34 +17,89 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
 date_default_timezone_set('Asia/Manila');
 
 function getRentEaseDb() {
-    $dbHost = '127.0.0.1';
     $dbName = 'u321173822_pasabuy';
     $dbUser = 'u321173822_Pogilameg';
     $dbPass = 'Pogilameg@10';
 
+    // 1. Try localhost socket (Hostinger standard)
     try {
-        return new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
+        return new PDO("mysql:host=localhost;dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
         ]);
-    } catch (Exception $e) {
+    } catch (Exception $e1) {
+        // 2. Try 127.0.0.1 TCP
         try {
-            return new PDO("mysql:host=localhost;dbname={$dbName};charset=utf8mb4", "root", "", [
+            return new PDO("mysql:host=127.0.0.1;dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
             ]);
         } catch (Exception $e2) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $e2->getMessage()]);
-            exit;
+            // 3. Try local root for local development
+            try {
+                return new PDO("mysql:host=127.0.0.1;dbname=pasabuy;charset=utf8mb4", "root", "", [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+                ]);
+            } catch (Exception $e3) {
+                return null;
+            }
         }
     }
 }
 
 $db = getRentEaseDb();
 
+// Auto-create / migrate tables if DB is connected
+if ($db) {
+    try {
+        $db->query("SELECT 1 FROM `rental_inventory` LIMIT 1");
+    } catch (Exception $eTable) {
+        // Table missing - auto-create schema
+        $schemaPath = __DIR__ . '/rentease_schema.sql';
+        if (!file_exists($schemaPath)) {
+            $schemaPath = dirname(__DIR__) . '/rentease_schema.sql';
+        }
+        if (file_exists($schemaPath)) {
+            $sql = file_get_contents($schemaPath);
+            try { $db->exec($sql); } catch (Exception $eExec) {}
+        }
+    }
+
+    // Auto-migrate new fields for user item postings (Video, Owner, Condition, Location)
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `video_url` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT 'Student Renter'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
+}
+
 $inputRaw = file_get_contents('php://input');
 $data = json_decode($inputRaw, true) ?: $_REQUEST;
+
+function getRentEaseItemsFallback() {
+    $file = __DIR__ . '/rentease_local_items.json';
+    if (!file_exists($file)) {
+        $file = dirname(__DIR__) . '/rentease_local_items.json';
+    }
+    if (file_exists($file)) {
+        $data = json_decode(file_get_contents($file), true);
+        if (is_array($data) && count($data) > 0) return $data;
+    }
+    return [
+        ['id' => 1, 'name' => 'Monoblock Chair', 'category' => 'Chairs', 'material_tag' => 'Plastic', 'price_per_day' => 20.00, 'qty_total' => 100, 'qty_available' => 85, 'qty_rented' => 15, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80', 'video_url' => '', 'rating' => 4.8, 'reviews_count' => 120, 'description' => 'Durable white plastic monoblock chairs for gatherings and events.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Good', 'owner_name' => 'RentEase Hub'],
+        ['id' => 2, 'name' => 'Tiffany Wooden Chair', 'category' => 'Chairs', 'material_tag' => 'Wooden', 'price_per_day' => 65.00, 'qty_total' => 50, 'qty_available' => 40, 'qty_rented' => 10, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1503602642458-232111445657?w=500&q=80', 'video_url' => '', 'rating' => 4.9, 'reviews_count' => 84, 'description' => 'Elegant classic wooden Tiffany chairs with white cushion for weddings.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Brand New', 'owner_name' => 'RentEase Hub'],
+        ['id' => 3, 'name' => 'Heavy Duty Folding Table (6ft)', 'category' => 'Tables', 'material_tag' => 'Plastic', 'price_per_day' => 150.00, 'qty_total' => 30, 'qty_available' => 22, 'qty_rented' => 8, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=500&q=80', 'video_url' => '', 'rating' => 4.8, 'reviews_count' => 96, 'description' => '6-foot heavy duty bi-fold table, seats 6-8 people.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Good', 'owner_name' => 'RentEase Hub'],
+        ['id' => 4, 'name' => 'Waterproof Event Tent (10x10ft)', 'category' => 'Tents', 'material_tag' => 'Premium', 'price_per_day' => 800.00, 'qty_total' => 10, 'qty_available' => 6, 'qty_rented' => 4, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80', 'video_url' => '', 'rating' => 4.9, 'reviews_count' => 110, 'description' => 'Heavy-duty steel frame waterproof gazebo canopy tent.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Like New', 'owner_name' => 'RentEase Hub'],
+        ['id' => 5, 'name' => 'JBL PartyBox 310 Sound System', 'category' => 'Sound System', 'material_tag' => 'Premium', 'price_per_day' => 950.00, 'qty_total' => 8, 'qty_available' => 5, 'qty_rented' => 3, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80', 'video_url' => '', 'rating' => 5.0, 'reviews_count' => 45, 'description' => '240W powerful sound with dynamic light show and dual wireless microphones.', 'min_rental_days' => 1, 'is_featured' => 1, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Like New', 'owner_name' => 'Juan Dela Cruz'],
+        ['id' => 6, 'name' => 'RGB Stage Par Lights (Set of 4)', 'category' => 'Lights', 'material_tag' => 'Premium', 'price_per_day' => 450.00, 'qty_total' => 12, 'qty_available' => 9, 'qty_rented' => 3, 'qty_maintenance' => 0, 'image_url' => 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=500&q=80', 'video_url' => '', 'rating' => 4.7, 'reviews_count' => 38, 'description' => 'Full RGB color mixing stage lighting with strobe and sound activation.', 'min_rental_days' => 1, 'is_featured' => 0, 'location' => 'San Pablo, Laguna', 'item_condition' => 'Good', 'owner_name' => 'Student Org']
+    ];
+}
+
+function saveRentEaseItemsFallback($items) {
+    $file = __DIR__ . '/rentease_local_items.json';
+    file_put_contents($file, json_encode($items, JSON_PRETTY_PRINT));
+}
 
 $action = trim((string)($data['action'] ?? $_GET['action'] ?? 'get_inventory'));
 
@@ -55,6 +110,21 @@ if ($action === 'get_inventory') {
     $category = trim((string)($data['category'] ?? 'All'));
     $materialTag = trim((string)($data['tag'] ?? 'All'));
     $search = trim((string)($data['search'] ?? ''));
+
+    if (!$db) {
+        $items = getRentEaseItemsFallback();
+        if ($category !== '' && $category !== 'All') {
+            $items = array_filter($items, fn($i) => strcasecmp($i['category'], $category) === 0);
+        }
+        if ($materialTag !== '' && $materialTag !== 'All') {
+            $items = array_filter($items, fn($i) => strcasecmp($i['material_tag'], $materialTag) === 0);
+        }
+        if ($search !== '') {
+            $items = array_filter($items, fn($i) => stripos($i['name'], $search) !== false || stripos($i['description'], $search) !== false);
+        }
+        echo json_encode(['success' => true, 'count' => count($items), 'items' => array_values($items)]);
+        exit;
+    }
 
     $sql = "SELECT * FROM `rental_inventory` WHERE 1=1";
     $params = [];
@@ -430,6 +500,105 @@ if ($action === 'admin_update_stock') {
 
     echo json_encode(['success' => true, 'message' => "Inventory item #{$id} stock updated successfully."]);
     exit;
+}
+
+if ($action === 'post_item' || $action === 'user_post_equipment') {
+    $name = trim((string)($data['name'] ?? $data['title'] ?? ''));
+    $category = trim((string)($data['category'] ?? 'Others'));
+    $materialTag = trim((string)($data['material_tag'] ?? $data['tag'] ?? 'All'));
+    $price = (float)($data['price_per_day'] ?? $data['price'] ?? 50.00);
+    $qtyTotal = (int)($data['qty_total'] ?? $data['quantity'] ?? 1);
+    $imgUrl = trim((string)($data['image_url'] ?? $data['photo_url'] ?? ''));
+    $videoUrl = trim((string)($data['video_url'] ?? ''));
+    $desc = trim((string)($data['description'] ?? 'Event equipment available for rent on RentEase.'));
+    $condition = trim((string)($data['item_condition'] ?? $data['condition'] ?? 'Good'));
+    $location = trim((string)($data['location'] ?? $data['meetup_location'] ?? 'San Pablo, Laguna'));
+    $ownerName = trim((string)($data['owner_name'] ?? 'Verified Renter'));
+    $ownerContact = trim((string)($data['owner_contact'] ?? ''));
+
+    if (!$name) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Equipment title / name is required.']);
+        exit;
+    }
+
+    if (!$imgUrl) {
+        $categoryDefaults = [
+            'Chairs' => 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80',
+            'Tables' => 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=500&q=80',
+            'Tents' => 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
+            'Sound System' => 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80',
+            'Lights' => 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=500&q=80',
+            'Decorations' => 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=500&q=80',
+            'Stages' => 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=500&q=80',
+            'Others' => 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=500&q=80'
+        ];
+        $imgUrl = $categoryDefaults[$category] ?? 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+    }
+
+    if (!$db) {
+        $fallback = getRentEaseItemsFallback();
+        $newId = count($fallback) + 1;
+        $newItem = [
+            'id' => $newId,
+            'name' => $name,
+            'category' => $category,
+            'material_tag' => $materialTag,
+            'price_per_day' => $price,
+            'qty_total' => $qtyTotal,
+            'qty_available' => $qtyTotal,
+            'qty_rented' => 0,
+            'qty_maintenance' => 0,
+            'image_url' => $imgUrl,
+            'video_url' => $videoUrl,
+            'description' => $desc,
+            'item_condition' => $condition,
+            'location' => $location,
+            'owner_name' => $ownerName,
+            'owner_contact' => $ownerContact,
+            'rating' => 5.0,
+            'reviews_count' => 1,
+            'min_rental_days' => 1,
+            'is_featured' => 1
+        ];
+        array_unshift($fallback, $newItem);
+        saveRentEaseItemsFallback($fallback);
+
+        echo json_encode([
+            'success' => true,
+            'message' => "🎉 '{$name}' has been successfully posted for rent on RentEase!",
+            'id' => $newId,
+            'item' => $newItem
+        ]);
+        exit;
+    }
+
+    try {
+        $stmt = $db->prepare("INSERT INTO `rental_inventory` 
+            (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `video_url`, `description`, `item_condition`, `location`, `owner_name`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
+            VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
+        $stmt->execute([
+            $name, $category, $materialTag, $price, $qtyTotal, $qtyTotal,
+            $imgUrl, $videoUrl, $desc, $condition, $location, $ownerName, $ownerContact
+        ]);
+
+        $newId = (int)$db->lastInsertId();
+        $fetchStmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE `id` = ?");
+        $fetchStmt->execute([$newId]);
+        $newItem = $fetchStmt->fetch();
+
+        echo json_encode([
+            'success' => true,
+            'message' => "🎉 '{$name}' has been successfully posted for rent on RentEase!",
+            'id' => $newId,
+            'item' => $newItem
+        ]);
+        exit;
+    } catch (Exception $ePost) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Failed to save item: ' . $ePost->getMessage()]);
+        exit;
+    }
 }
 
 if ($action === 'admin_add_equipment') {

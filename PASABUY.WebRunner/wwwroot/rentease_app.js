@@ -6,14 +6,10 @@
  */
 
 let rentEaseInventory = [];
-let rentEaseCart = JSON.parse(localStorage.getItem('rentease_cart')) || [
-    { id: 1, title: 'Monoblock Chair', price_per_day: 20.00, quantity: 10, image_url: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80' },
-    { id: 5, title: 'Folding Table', price_per_day: 40.00, quantity: 2, image_url: 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=500&q=80' },
-    { id: 7, title: 'Event Tent (10x10ft)', price_per_day: 800.00, quantity: 1, image_url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80' }
-];
+let rentEaseCart = JSON.parse(localStorage.getItem('rentease_cart')) || [];
 
 let currentDetailProduct = null;
-let currentDetailQty = 10;
+let currentDetailQty = 1;
 let currentCategory = 'Chairs';
 let currentTag = 'All';
 let currentDeliveryOption = 'DELIVERY';
@@ -22,7 +18,8 @@ let rentEaseMapInstance = null;
 
 // API Base URL resolver
 function getRentEaseApiUrl(action, params = {}) {
-    const url = new URL('/rentease_api.php', window.location.origin);
+    let base = window.location.pathname.includes('/student/') ? '../rentease_api.php' : 'rentease_api.php';
+    const url = new URL(base, window.location.href);
     url.searchParams.set('action', action);
     for (const [k, v] of Object.entries(params)) {
         url.searchParams.set(k, v);
@@ -226,16 +223,30 @@ function openEquipmentDetail(id) {
     if (!item) return;
 
     currentDetailProduct = item;
-    currentDetailQty = 10;
+    currentDetailQty = 1;
 
     document.getElementById('detailHeaderTitle').innerText = item.name;
     document.getElementById('detailTitle').innerText = item.name;
     document.getElementById('detailMainImg').src = item.image_url;
-    document.getElementById('detailRatingVal').innerText = parseFloat(item.rating).toFixed(1);
-    document.getElementById('detailReviewCount').innerText = item.reviews_count;
+    document.getElementById('detailRatingVal').innerText = parseFloat(item.rating || 5.0).toFixed(1);
+    document.getElementById('detailReviewCount').innerText = item.reviews_count || 1;
     document.getElementById('detailPrice').innerText = '₱' + parseFloat(item.price_per_day).toFixed(0);
-    document.getElementById('detailDescription').innerText = item.description || 'Durable and lightweight event equipment, perfect for any occasion.';
+    document.getElementById('detailDescription').innerText = item.description || 'Quality event equipment for rent, maintained and cleaned for every booking.';
     document.getElementById('detailQtyVal').innerText = currentDetailQty;
+
+    // Video Player support for posted equipment
+    const videoContainer = document.getElementById('detailVideoContainer');
+    const videoPlayer = document.getElementById('detailVideoPlayer');
+    if (videoContainer && videoPlayer) {
+        if (item.video_url && item.video_url.trim() !== '') {
+            videoPlayer.src = item.video_url;
+            videoContainer.style.display = 'block';
+        } else {
+            videoPlayer.pause();
+            videoPlayer.src = '';
+            videoContainer.style.display = 'none';
+        }
+    }
 
     const modalEl = document.getElementById('productDetailModal');
     if (modalEl) {
@@ -689,7 +700,7 @@ function logoutRentEaseUser() {
 // GLOBAL TAB SWITCHER OVERRIDE (Matching UIDESIFNAPP.png)
 // ----------------------------------------------------------
 window.switchTab = function (tabName) {
-    const validTabs = ['home', 'explore', 'cart', 'track', 'profile'];
+    const validTabs = ['home', 'explore', 'cart', 'track', 'profile', 'sell', 'wanted', 'messages'];
     validTabs.forEach(t => {
         const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
         const nav = document.getElementById('tabNav' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -713,6 +724,97 @@ window.switchTab = function (tabName) {
         openTrackScreen('#RE-10245');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ----------------------------------------------------------
+// POST RENTAL ITEM HANDLER (Live Video & Photo Rental Posting)
+// ----------------------------------------------------------
+window.postRentalItemLive = async function () {
+    const title = document.getElementById('sellTitle')?.value.trim();
+    const category = document.getElementById('sellCategory')?.value || 'Others';
+    const materialTag = document.getElementById('sellMaterialTag')?.value || 'Plastic';
+    const price = parseFloat(document.getElementById('sellPrice')?.value) || 0;
+    const quantity = parseInt(document.getElementById('sellQuantity')?.value) || 1;
+    const condition = document.getElementById('sellCondition')?.value || 'Good';
+    const location = document.getElementById('sellMeetup')?.value.trim() || 'San Pablo, Laguna';
+    const description = document.getElementById('sellDescription')?.value.trim();
+    
+    // Photo from file input dataUrl or text url input
+    const photoUrl = (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > 0) 
+        ? uploadedPhotoUrls[0] 
+        : (document.getElementById('sellPhotoUrlInput')?.value.trim() || '');
+    
+    // Video from video url input or file input dataUrl
+    const videoUrl = document.getElementById('sellVideoUrlInput')?.value.trim() || '';
+
+    if (!title) {
+        alert('⚠️ Please enter an equipment title / name.');
+        document.getElementById('sellTitle')?.focus();
+        return;
+    }
+
+    if (price <= 0) {
+        alert('⚠️ Please enter a valid daily rental price.');
+        document.getElementById('sellPrice')?.focus();
+        return;
+    }
+
+    const btn = document.getElementById('btnPublishRentalItem');
+    const oldBtnHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Publishing Equipment...';
+    }
+
+    try {
+        const res = await fetch(getRentEaseApiUrl('post_item'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: title,
+                category: category,
+                material_tag: materialTag,
+                price_per_day: price,
+                qty_total: quantity,
+                image_url: photoUrl,
+                video_url: videoUrl,
+                item_condition: condition,
+                location: location,
+                description: description,
+                owner_name: localStorage.getItem('pasabuy_student_name') || 'Student Renter'
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert(`🎉 Success!\n\n"${title}" has been published live for rent on RentEase!`);
+            
+            // Clear inputs
+            if (document.getElementById('sellTitle')) document.getElementById('sellTitle').value = '';
+            if (document.getElementById('sellDescription')) document.getElementById('sellDescription').value = '';
+            if (document.getElementById('sellPhotoUrlInput')) document.getElementById('sellPhotoUrlInput').value = '';
+            if (document.getElementById('sellVideoUrlInput')) document.getElementById('sellVideoUrlInput').value = '';
+            if (document.getElementById('sellPhotosPreviewGrid')) document.getElementById('sellPhotosPreviewGrid').innerHTML = '';
+            if (document.getElementById('sellVideoPreviewContainer')) document.getElementById('sellVideoPreviewContainer').style.display = 'none';
+            if (typeof uploadedPhotoUrls !== 'undefined') uploadedPhotoUrls = [];
+
+            // Reload live inventory
+            await loadRentEaseCatalog();
+
+            // Switch to explore tab showing the category
+            openCategoryTab(category);
+        } else {
+            alert('❌ ' + (data.message || 'Failed to post item. Please try again.'));
+        }
+    } catch (e) {
+        console.error("Error posting rental item:", e);
+        alert('❌ Error connecting to server to post item.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = oldBtnHtml;
+        }
+    }
 };
 
 // Automatic bootstrap on DOM ready

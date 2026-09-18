@@ -25,24 +25,24 @@
             <h6 class="fw-extrabold text-dark fs-8 mb-2.5">Summary</h6>
             <div class="d-flex justify-content-between fs-8 text-secondary mb-1.5">
                 <span>Rental Subtotal</span>
-                <span class="fw-bold text-dark" id="cartRentalSubtotal">₱1,080</span>
+                <span class="fw-bold text-dark" id="cartRentalSubtotal">₱0</span>
             </div>
             <div class="d-flex justify-content-between fs-8 text-secondary mb-1.5">
                 <span>Service Charge</span>
-                <span class="fw-bold text-dark" id="cartServiceCharge">₱100</span>
+                <span class="fw-bold text-dark" id="cartServiceCharge">₱0</span>
             </div>
             <div class="d-flex justify-content-between fs-8 text-secondary mb-1.5">
                 <span>Delivery Fee</span>
-                <span class="fw-bold text-dark" id="cartDeliveryFee">₱150</span>
+                <span class="fw-bold text-dark" id="cartDeliveryFee">₱0</span>
             </div>
             <div class="d-flex justify-content-between fs-8 text-success mb-2">
                 <span>Discount</span>
-                <span class="fw-bold text-success" id="cartDiscount">- ₱50</span>
+                <span class="fw-bold text-success" id="cartDiscount">₱0</span>
             </div>
             <hr class="my-2 border-secondary opacity-25">
             <div class="d-flex justify-content-between align-items-center pt-1">
                 <span class="fw-extrabold text-dark fs-7">Total</span>
-                <span class="fw-extrabold fs-6" style="color: #5B3FA8;" id="cartGrandTotal">₱1,280</span>
+                <span class="fw-extrabold fs-6" style="color: #5B3FA8;" id="cartGrandTotal">₱0</span>
             </div>
         </div>
 

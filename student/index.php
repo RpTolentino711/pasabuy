@@ -333,12 +333,12 @@
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
                     onclick="switchTab('cart')" title="RentEase Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-cart-shopping text-secondary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; padding: 2px 4px;">2</span>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; padding: 2px 4px; display:none;">0</span>
                 </button>
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
                     onclick="switchTab('track')" title="Live Delivery Tracking" id="headerOrdersBtn" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-truck-fast text-secondary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" id="headerOrdersBadge" style="font-size:0.6rem; padding: 2px 4px;">1</span>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" id="headerOrdersBadge" style="font-size:0.6rem; padding: 2px 4px; display:none;">0</span>
                 </button>
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
                     onclick="openIssueModal()" title="Customer Support & Issue Center" style="width:36px; height:36px; background: #F1F5F9;">
@@ -376,18 +376,18 @@
                 <i class="fa-solid fa-compass"></i>
                 <span>Rentals</span>
             </div>
-            <!-- Raised Floating Plus Button in Center -->
-            <div class="tab-item" onclick="openPackageBooking()" id="tabNavSell" style="position:relative; overflow:visible;" title="Book Event Package">
+            <!-- Center Floating Action Button: Plus Sign to Post / Rent Out Item -->
+            <div class="tab-item" onclick="switchTab('sell')" id="tabNavSell" style="position:relative; overflow:visible;" title="Post Equipment for Rent">
                 <div class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center shadow-lg" 
-                    style="width:48px; height:48px; background: linear-gradient(135deg, #5B3FA8, #F4B942); border: 3px solid #FFF; transform: translateY(-12px);">
-                    <i class="fa-solid fa-gift text-white fs-5"></i>
+                    style="width:50px; height:50px; background: linear-gradient(135deg, #5B3FA8, #341F97); border: 3px solid #FFF; transform: translateY(-14px); box-shadow: 0 8px 22px rgba(91, 63, 168, 0.45);">
+                    <i class="fa-solid fa-plus text-white fs-4"></i>
                 </div>
-                <span style="font-size:0.65rem; font-weight:700; color:#5B3FA8; margin-top:-6px;">Packages</span>
+                <span style="font-size:0.65rem; font-weight:700; color:#5B3FA8; margin-top:-8px;">Rent Out</span>
             </div>
             <div class="tab-item position-relative" onclick="switchTab('cart')" id="tabNavCart">
                 <i class="fa-solid fa-cart-shopping"></i>
                 <span>Cart</span>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="tabCartBadge" style="font-size:0.6rem; padding:2px 4px;">2</span>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="tabCartBadge" style="font-size:0.6rem; padding:2px 4px; display:none;">0</span>
             </div>
             <div class="tab-item" onclick="switchTab('profile')" id="tabNavProfile">
                 <i class="fa-solid fa-user"></i>

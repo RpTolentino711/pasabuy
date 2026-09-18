@@ -959,6 +959,14 @@
                     </div>
                 </div>
 
+                <!-- Equipment Video Player (Optional for items posted with video) -->
+                <div id="detailVideoContainer" class="mb-3 rounded-4 overflow-hidden border bg-dark text-center" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between p-2 px-3 bg-dark text-white border-bottom border-secondary">
+                        <span class="fs-9 fw-bold"><i class="fa-solid fa-video text-danger me-1"></i> Live Equipment Video Demonstration</span>
+                    </div>
+                    <video id="detailVideoPlayer" controls style="width:100%; max-height:220px; background:#000; object-fit:contain;"></video>
+                </div>
+
                 <!-- Title, Rating & Price (Screen 3) -->
                 <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle">Monoblock Chair</h4>
                 
