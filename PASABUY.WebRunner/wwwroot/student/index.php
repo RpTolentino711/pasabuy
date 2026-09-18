@@ -321,33 +321,32 @@
         <div class="app-header bg-white border-bottom px-3 py-2.5 shadow-sm d-flex align-items-center justify-content-between" style="background:#fff; color:#1E293B;">
             <div class="d-flex align-items-center gap-2">
                 <div class="rounded-3 d-inline-flex align-items-center justify-content-center p-1.5 shadow-sm"
-                    style="width:38px; height:38px; background: rgba(108, 92, 231, 0.08);">
-                    <img src="LOGO.png" alt="PasaBuy Logo" style="width:28px; height:28px; object-fit:contain;">
+                    style="width:38px; height:38px; background: rgba(91, 63, 168, 0.1);">
+                    <img src="LOGO.png" alt="RentEase Logo" style="width:28px; height:28px; object-fit:contain;">
                 </div>
                 <div>
-                    <div class="fw-extrabold fs-6 text-dark lh-1" style="letter-spacing: -0.3px;">PasaBuy</div>
-                    <div class="text-muted fs-9" style="font-size: 0.68rem;">Your Campus, Your Marketplace</div>
+                    <div class="fw-extrabold fs-6 text-dark lh-1" style="letter-spacing: -0.3px; color: #5B3FA8 !important;">RentEase</div>
+                    <div class="text-muted fs-9" style="font-size: 0.68rem;">Easy Rentals. Seamless Events.</div>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2" id="headerUserActions" style="display: none !important;">
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="openCartModal()" title="Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
+                    onclick="switchTab('cart')" title="RentEase Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-cart-shopping text-secondary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; display:none; padding: 2px 4px;">0</span>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; padding: 2px 4px;">2</span>
                 </button>
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="openOrdersModal()" title="My Orders & Delivery Tracking" id="headerOrdersBtn" style="width:36px; height:36px; background: #F1F5F9;">
+                    onclick="switchTab('track')" title="Live Delivery Tracking" id="headerOrdersBtn" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-truck-fast text-secondary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" id="headerOrdersBadge" style="font-size:0.6rem; display:none; padding: 2px 4px;">0</span>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" id="headerOrdersBadge" style="font-size:0.6rem; padding: 2px 4px;">1</span>
                 </button>
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="openNotificationsModal()" title="Notifications" style="width:36px; height:36px; background: #F1F5F9;">
-                    <i class="fa-solid fa-bell text-secondary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="headerNotifBadge" style="font-size:0.6rem; display:none; padding: 2px 4px;">0</span>
+                    onclick="openIssueModal()" title="Customer Support & Issue Center" style="width:36px; height:36px; background: #F1F5F9;">
+                    <i class="fa-solid fa-headset text-secondary fs-7"></i>
                 </button>
                 <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')">
                     <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
-                        class="rounded-circle border border-2 border-white shadow-sm" width="36" height="36" style="object-fit:cover;" id="homeAvatar">
+                        class="rounded-circle border border-2 border-white shadow-sm" width="36" height="36" style="object-fit:cover;" id="homeAvatar" alt="Bea Solis">
                     <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:10px; height:10px;"></span>
                 </div>
             </div>
@@ -360,6 +359,8 @@
             <?php include 'create_account.php'; ?>
             <?php include 'tab_home.php'; ?>
             <?php include 'tab_explore.php'; ?>
+            <?php include 'tab_cart.php'; ?>
+            <?php include 'tab_track.php'; ?>
             <?php include 'tab_sell.php'; ?>
             <?php include 'tab_wanted.php'; ?>
             <?php include 'tab_messages.php'; ?>
@@ -373,19 +374,20 @@
             </div>
             <div class="tab-item" onclick="switchTab('explore')" id="tabNavExplore">
                 <i class="fa-solid fa-compass"></i>
-                <span>Explore</span>
+                <span>Rentals</span>
             </div>
             <!-- Raised Floating Plus Button in Center -->
-            <div class="tab-item" onclick="switchTab('sell')" id="tabNavSell" style="position:relative; overflow:visible;">
+            <div class="tab-item" onclick="openPackageBooking()" id="tabNavSell" style="position:relative; overflow:visible;" title="Book Event Package">
                 <div class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center shadow-lg" 
-                    style="width:48px; height:48px; background: linear-gradient(135deg, #6C5CE7, #5F27CD); border: 3px solid #FFF; transform: translateY(-12px);">
-                    <i class="fa-solid fa-plus text-white fs-5"></i>
+                    style="width:48px; height:48px; background: linear-gradient(135deg, #5B3FA8, #F4B942); border: 3px solid #FFF; transform: translateY(-12px);">
+                    <i class="fa-solid fa-gift text-white fs-5"></i>
                 </div>
+                <span style="font-size:0.65rem; font-weight:700; color:#5B3FA8; margin-top:-6px;">Packages</span>
             </div>
-            <div class="tab-item position-relative" onclick="switchTab('messages')" id="tabNavMessages">
-                <i class="fa-solid fa-comment-dots"></i>
-                <span>Messages</span>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="tabMessagesBadge" style="font-size:0.6rem; display:none; padding:2px 4px;">0</span>
+            <div class="tab-item position-relative" onclick="switchTab('cart')" id="tabNavCart">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Cart</span>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="tabCartBadge" style="font-size:0.6rem; padding:2px 4px;">2</span>
             </div>
             <div class="tab-item" onclick="switchTab('profile')" id="tabNavProfile">
                 <i class="fa-solid fa-user"></i>
@@ -3965,6 +3967,7 @@
                         }
 
                     </script>
+    <script src="rentease_app.js"></script>
 </body>
 
 </html>

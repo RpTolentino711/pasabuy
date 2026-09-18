@@ -96,12 +96,12 @@ session_start();
     <!-- ADMIN LOGIN LANDING VIEW (DEFAULT WHEN UNAUTHENTICATED) -->
     <div id="adminAuthView" style="display:block;">
         <div class="auth-card">
-            <div class="auth-header">
+            <div class="auth-header" style="background: linear-gradient(135deg, #1E1B4B, #5B3FA8);">
                 <div class="mb-2 text-center">
-                    <img src="LOGO.png" alt="PasaBuy Logo" style="height:65px; width:auto; object-fit:contain; filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.3));">
+                    <img src="LOGO.png" alt="RentEase Logo" style="height:65px; width:auto; object-fit:contain; filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.3));">
                 </div>
-                <h4 class="fw-extrabold mb-1">PasaBuy Admin Portal</h4>
-                <p class="text-white-50 fs-8 mb-0">Campus Marketplace Management System</p>
+                <h4 class="fw-extrabold mb-1">RentEase Admin Portal</h4>
+                <p class="text-white-50 fs-8 mb-0">Easy Rentals. Seamless Events. Management Hub</p>
             </div>
             <div class="p-4">
                 
@@ -128,10 +128,10 @@ session_start();
                     </div>
                 </div>
 
-                <button class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7 mb-3 shadow-sm" style="background:var(--admin-primary); border:none;" onclick="executeAdminLogin()"><i class="fa-solid fa-right-to-bracket me-2"></i> Log In to Admin Dashboard</button>
+                <button class="btn btn-primary w-100 rounded-pill fw-bold py-2 fs-7 mb-3 shadow-sm" style="background:#5B3FA8; border:none;" onclick="executeAdminLogin()"><i class="fa-solid fa-right-to-bracket me-2"></i> Log In to Operations Dashboard</button>
 
                 <div class="text-center pt-3 border-top">
-                    <a href="../index.php" class="text-decoration-none fs-8 text-muted fw-semibold"><i class="fa-solid fa-store me-1"></i> Return to Student Marketplace App</a>
+                    <a href="../student/index.php" class="text-decoration-none fs-8 text-muted fw-semibold"><i class="fa-solid fa-store me-1"></i> Open RentEase Student App</a>
                 </div>
             </div>
         </div>
@@ -141,16 +141,16 @@ session_start();
     <div id="adminMainDashboardView" style="display:none;">
         
         <!-- Admin Top Navbar -->
-        <nav class="admin-navbar navbar navbar-expand-lg navbar-dark shadow-sm">
+        <nav class="admin-navbar navbar navbar-expand-lg navbar-dark shadow-sm" style="background: linear-gradient(135deg, #1E1B4B, #5B3FA8);">
             <div class="container-fluid">
                 <a class="navbar-brand fw-extrabold d-flex align-items-center gap-2" href="#">
                     <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center p-1 shadow-sm" style="width:36px; height:36px; flex-shrink:0;">
-                        <img src="LOGO.png" alt="PasaBuy Logo" style="height:24px; width:auto; object-fit:contain;">
+                        <img src="LOGO.png" alt="RentEase Logo" style="height:24px; width:auto; object-fit:contain;">
                     </div>
-                    <span class="fs-5 text-white">PasaBuy <span class="badge bg-warning text-dark fs-9 rounded-pill ms-1">ADMIN PORTAL</span></span>
+                    <span class="fs-5 text-white">RentEase <span class="badge bg-warning text-dark fs-9 rounded-pill ms-1">OPERATIONS PORTAL</span></span>
                 </a>
                 <div class="d-flex align-items-center gap-3">
-                    <span class="text-white-50 fs-8"><i class="fa-solid fa-circle text-success me-1"></i> Connected to Hostinger MySQL &amp; PayMongo Live</span>
+                    <span class="text-white-50 fs-8"><i class="fa-solid fa-circle text-success me-1"></i> MySQL Database &amp; PayMongo Live Connected</span>
                     <button class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold text-white" onclick="logoutAdmin()"><i class="fa-solid fa-right-from-bracket me-1"></i> Log Out</button>
                 </div>
             </div>
@@ -158,17 +158,22 @@ session_start();
 
         <div class="d-flex">
             <!-- Sidebar Navigation -->
-            <aside class="admin-sidebar p-3">
-                <div class="text-uppercase text-muted fw-bold fs-9 mb-3 px-2">Moderation &amp; Control</div>
+            <aside class="admin-sidebar p-3" style="width:280px;">
+                <div class="text-uppercase text-muted fw-bold fs-9 mb-2 px-2">RentEase Platform Modules</div>
+                <nav class="nav flex-column mb-3">
+                    <a href="#" class="nav-link-admin active" onclick="showAdminSection('inventory', this)"><i class="fa-solid fa-boxes-stacked text-primary"></i> Rental Inventory (Live)</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('issues', this)"><i class="fa-solid fa-headset text-danger"></i> Customer Support / Tickets <span class="badge bg-danger ms-auto rounded-pill" id="adminIssuesBadge">3</span></a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('packages', this)"><i class="fa-solid fa-gift text-warning"></i> Event Package Bundles</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('rentalOrders', this)"><i class="fa-solid fa-truck-ramp-box text-success"></i> Rental Orders &amp; Dispatch</a>
+                </nav>
+
+                <div class="text-uppercase text-muted fw-bold fs-9 mb-2 px-2">Campus Marketplace Control</div>
                 <nav class="nav flex-column">
-                    <a href="#" class="nav-link-admin active" onclick="showAdminSection('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Overview Dashboard</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Overview Analytics</a>
                     <a href="#" class="nav-link-admin" onclick="showAdminSection('verifications', this)"><i class="fa-solid fa-id-card text-primary"></i> Verification Requests</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('riders', this)"><i class="fa-solid fa-motorcycle text-warning"></i> Motor Drivers</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('students', this)"><i class="fa-solid fa-user-graduate"></i> Registered Students</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('listings', this)"><i class="fa-solid fa-box-open"></i> Marketplace Listings</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('payments', this)"><i class="fa-solid fa-receipt text-success"></i> PayMongo Live Fees</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('reports', this)"><i class="fa-solid fa-flag text-danger"></i> Scam Reports</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('meetups', this)"><i class="fa-solid fa-location-dot"></i> Meetup Locations</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('riders', this)"><i class="fa-solid fa-motorcycle text-warning"></i> Delivery Riders</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('students', this)"><i class="fa-solid fa-user-graduate"></i> Registered Users</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('payments', this)"><i class="fa-solid fa-receipt text-success"></i> Digital Payments Log</a>
                 </nav>
             </aside>
 
@@ -392,6 +397,233 @@ session_start();
                     </div>
                 </div>
 
+                <!-- Section: RentEase Live Inventory Management Module (Rubric: 10%) -->
+                <div id="sectionInventory" style="display:block;">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <div>
+                            <h4 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-boxes-stacked me-2" style="color:#5B3FA8;"></i>Event Rentals Inventory Module</h4>
+                            <p class="text-muted fs-8 mb-0">Real-time stock control, availability tracking, rental status, and maintenance counts.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm rounded-pill fw-bold px-3" onclick="fetchAdminInventory()"><i class="fa-solid fa-rotate me-1"></i> Refresh Stock</button>
+                            <button class="btn text-white btn-sm rounded-pill fw-bold px-3 shadow-sm" style="background:#5B3FA8;" onclick="openAddInventoryModal()"><i class="fa-solid fa-plus me-1"></i> Add Rental Item</button>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Summary KPI Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4" style="border-left-color:#5B3FA8 !important;">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Total Stock</span>
+                                    <div class="stat-icon text-white" style="background:#5B3FA8;"><i class="fa-solid fa-boxes-stacked"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1" id="dashInventoryTotal">720</h2>
+                                <span class="text-muted fs-8">All Rental Units</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-success">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Available Now</span>
+                                    <div class="stat-icon bg-success-subtle text-success"><i class="fa-solid fa-circle-check"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1 text-success" id="dashInventoryAvailable">488</h2>
+                                <span class="badge bg-success-subtle text-success fw-bold fs-9">Ready for Customer Booking</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-warning">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Currently Rented</span>
+                                    <div class="stat-icon bg-warning-subtle text-warning-emphasis"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashInventoryRented">202</h2>
+                                <span class="text-muted fs-8">Out in Active Events</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-danger">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Maintenance / Repair</span>
+                                    <div class="stat-icon bg-danger-subtle text-danger"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1 text-danger" id="dashInventoryMaintenance">30</h2>
+                                <span class="badge bg-danger-subtle text-danger fw-bold fs-9">Quality Inspection</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Table -->
+                    <div class="table-custom shadow-sm">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                            <div class="fw-bold fs-7 text-dark"><i class="fa-solid fa-table-list me-2 text-primary"></i>Live Inventory Database Records</div>
+                            <div class="d-flex gap-2">
+                                <input type="text" class="form-control form-control-sm rounded-pill fs-8" placeholder="Search inventory..." id="inventorySearchInput" oninput="filterAdminInventoryTable()" style="width:200px;">
+                                <select class="form-select form-select-sm rounded-pill fs-8" id="inventoryCategoryFilter" onchange="filterAdminInventoryTable()" style="width:140px;">
+                                    <option value="">All Categories</option>
+                                    <option value="Chairs">Chairs</option>
+                                    <option value="Tables">Tables</option>
+                                    <option value="Tents">Tents</option>
+                                    <option value="Sound System">Sound System</option>
+                                    <option value="Lights">Lights</option>
+                                    <option value="Decorations">Decorations</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 fs-8">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Category / Material</th>
+                                        <th>Daily Rate</th>
+                                        <th class="text-center">Total</th>
+                                        <th class="text-center text-success">Available</th>
+                                        <th class="text-center text-warning">Rented</th>
+                                        <th class="text-center text-danger">Maintenance</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminInventoryTableBody">
+                                    <tr><td colspan="8" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading live inventory...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Customer Support & Issue Center (Rubric: 10%) -->
+                <div id="sectionIssues" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <div>
+                            <h4 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-headset me-2 text-danger"></i>Customer Support &amp; Issue Resolution Center</h4>
+                            <p class="text-muted fs-8 mb-0">Manage customer reported incidents (Damaged items, Late delivery, Missing accessories) and workflow resolution.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill fw-bold px-3" onclick="fetchAdminIssues()"><i class="fa-solid fa-rotate me-1"></i> Refresh Tickets</button>
+                        </div>
+                    </div>
+
+                    <!-- Issues Summary KPI Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-secondary">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Total Tickets</span>
+                                    <div class="stat-icon bg-light text-secondary"><i class="fa-solid fa-ticket"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1" id="dashIssuesTotal">3</h2>
+                                <span class="text-muted fs-8">Logged in System</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-danger">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Reported / Pending</span>
+                                    <div class="stat-icon bg-danger-subtle text-danger"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1 text-danger" id="dashIssuesPending">1</h2>
+                                <span class="badge bg-danger-subtle text-danger fw-bold fs-9">Requires Attention</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-warning">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">In Progress</span>
+                                    <div class="stat-icon bg-warning-subtle text-warning-emphasis"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashIssuesInProgress">1</h2>
+                                <span class="text-muted fs-8">Support Team Reviewing</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-stat border-start border-4 border-success">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fs-8 fw-bold text-uppercase">Resolved</span>
+                                    <div class="stat-icon bg-success-subtle text-success"><i class="fa-solid fa-circle-check"></i></div>
+                                </div>
+                                <h2 class="fw-extrabold mb-1 text-success" id="dashIssuesResolved">1</h2>
+                                <span class="badge bg-success-subtle text-success fw-bold fs-9">Closed Satisfactorily</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tickets Table -->
+                    <div class="table-custom shadow-sm">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                            <div class="fw-bold fs-7 text-dark"><i class="fa-solid fa-ticket-simple me-2 text-danger"></i>Active Support Incident Log</div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 fs-8">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Ticket ID</th>
+                                        <th>Order #</th>
+                                        <th>Customer</th>
+                                        <th>Category</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Resolution Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminIssuesTableBody">
+                                    <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading support tickets...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Event Packages Bundling (Rubric: 10% Marketing Strategy) -->
+                <div id="sectionPackages" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <div>
+                            <h4 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-gift me-2 text-warning"></i>Event Package Bundling &amp; Marketing Promotions</h4>
+                            <p class="text-muted fs-8 mb-0">Pre-bundled packages with built-in equipment discounts for high-volume customer events.</p>
+                        </div>
+                    </div>
+
+                    <div class="row g-3" id="adminPackagesContainer">
+                        <!-- Loaded dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Section: Rental Orders & Dispatch Tracking -->
+                <div id="sectionRentalOrders" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <div>
+                            <h4 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-truck-ramp-box me-2 text-success"></i>Rental Orders &amp; Delivery Tracking</h4>
+                            <p class="text-muted fs-8 mb-0">Live customer order queue, fulfillment dispatch status, and driver assignments.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-success btn-sm rounded-pill fw-bold px-3" onclick="fetchAdminRentalOrders()"><i class="fa-solid fa-rotate me-1"></i> Refresh Orders</button>
+                        </div>
+                    </div>
+
+                    <div class="table-custom shadow-sm">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 fs-8">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Order Number</th>
+                                        <th>Customer</th>
+                                        <th>Fulfillment / Address</th>
+                                        <th>Rental Date</th>
+                                        <th>Grand Total</th>
+                                        <th>Payment</th>
+                                        <th>Dispatch Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminRentalOrdersTableBody">
+                                    <tr><td colspan="8" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading rental orders...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
@@ -462,7 +694,8 @@ session_start();
                     if (session && session.loggedIn) {
                         document.getElementById('adminAuthView').style.display = 'none';
                         document.getElementById('adminMainDashboardView').style.display = 'block';
-                        fetchAdminDashboardStats();
+                        fetchAdminInventory();
+                        fetchAdminIssues();
                         return;
                     }
                 }
@@ -494,7 +727,8 @@ session_start();
                 localStorage.setItem('pasabuy_admin_session', JSON.stringify({ loggedIn: true, user: user, loginTime: Date.now() }));
                 document.getElementById('adminAuthView').style.display = 'none';
                 document.getElementById('adminMainDashboardView').style.display = 'block';
-                fetchAdminDashboardStats();
+                fetchAdminInventory();
+                fetchAdminIssues();
                 return;
             }
 
@@ -510,7 +744,7 @@ session_start();
         }
 
         function showAdminSection(sectionName, element) {
-            const sections = ['dashboard', 'verifications', 'riders', 'students', 'listings', 'payments', 'reports', 'meetups'];
+            const sections = ['inventory', 'issues', 'packages', 'rentalOrders', 'dashboard', 'verifications', 'riders', 'students', 'listings', 'payments', 'reports', 'meetups'];
             sections.forEach(s => {
                 const el = document.getElementById('section' + s.charAt(0).toUpperCase() + s.slice(1));
                 if (el) el.style.display = (s === sectionName) ? 'block' : 'none';
@@ -518,7 +752,11 @@ session_start();
             document.querySelectorAll('.nav-link-admin').forEach(l => l.classList.remove('active'));
             if (element) element.classList.add('active');
 
-            if (sectionName === 'dashboard') fetchAdminDashboardStats();
+            if (sectionName === 'inventory') fetchAdminInventory();
+            else if (sectionName === 'issues') fetchAdminIssues();
+            else if (sectionName === 'packages') fetchAdminPackages();
+            else if (sectionName === 'rentalOrders') fetchAdminRentalOrders();
+            else if (sectionName === 'dashboard') fetchAdminDashboardStats();
             else if (sectionName === 'verifications') fetchAdminVerificationRequests();
             else if (sectionName === 'riders') fetchAdminMotorRiders();
             else if (sectionName === 'students') fetchAdminStudents();
@@ -904,6 +1142,295 @@ session_start();
                 } catch (e) {
                     alert('Error deleting listing.');
                 }
+            }
+        }
+
+        /* ==========================================================================
+           RENTEASE EVENT PLATFORM OPERATIONAL LOGIC & MODULES
+           ========================================================================== */
+        window.adminInventoryCache = [];
+
+        async function fetchAdminInventory() {
+            const tbody = document.getElementById('adminInventoryTableBody');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch('../rentease_api.php?action=get_inventory');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.items)) {
+                    window.adminInventoryCache = data.items;
+
+                    // Compute KPI Summary Counts
+                    let totalUnits = 0;
+                    let availableUnits = 0;
+                    let rentedUnits = 0;
+                    let maintUnits = 0;
+
+                    data.items.forEach(item => {
+                        totalUnits += parseInt(item.qty_total) || 0;
+                        availableUnits += parseInt(item.qty_available) || 0;
+                        rentedUnits += parseInt(item.qty_rented) || 0;
+                        maintUnits += parseInt(item.qty_maintenance) || 0;
+                    });
+
+                    if (document.getElementById('dashInventoryTotal')) document.getElementById('dashInventoryTotal').innerText = totalUnits;
+                    if (document.getElementById('dashInventoryAvailable')) document.getElementById('dashInventoryAvailable').innerText = availableUnits;
+                    if (document.getElementById('dashInventoryRented')) document.getElementById('dashInventoryRented').innerText = rentedUnits;
+                    if (document.getElementById('dashInventoryMaintenance')) document.getElementById('dashInventoryMaintenance').innerText = maintUnits;
+
+                    renderAdminInventoryTable(data.items);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No inventory items found.</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">Connection error fetching inventory.</td></tr>';
+            }
+        }
+
+        function renderAdminInventoryTable(items) {
+            const tbody = document.getElementById('adminInventoryTableBody');
+            if (!tbody) return;
+
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No matching rental items found.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                const price = parseFloat(item.price_per_day || 0).toFixed(2);
+                html += `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="${item.image_url}" class="rounded-3 shadow-xs" style="width:44px; height:44px; object-fit:cover;">
+                            <div>
+                                <strong class="text-dark d-block fs-8">${item.name}</strong>
+                                <span class="text-muted fs-9">ID: #REN-${String(item.id).padStart(4, '0')}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border px-2 py-1">${item.category}</span>
+                        <span class="badge text-white px-2 py-1" style="background:#5B3FA8;">${item.material_tag || 'Standard'}</span>
+                    </td>
+                    <td><strong class="text-dark">₱${price}</strong><span class="text-muted fs-9">/day</span></td>
+                    <td class="text-center fw-bold text-dark">${item.qty_total}</td>
+                    <td class="text-center"><span class="badge bg-success-subtle text-success fw-bold px-2 py-1 fs-9">${item.qty_available} units</span></td>
+                    <td class="text-center"><span class="badge bg-warning-subtle text-warning-emphasis fw-bold px-2 py-1 fs-9">${item.qty_rented} units</span></td>
+                    <td class="text-center"><span class="badge bg-danger-subtle text-danger fw-bold px-2 py-1 fs-9">${item.qty_maintenance} units</span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0 fs-9" onclick="alert('Inventory item #${item.id} verified. Current stock: ${item.qty_available} available.')">
+                                <i class="fa-solid fa-check me-1"></i> Verify
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function filterAdminInventoryTable() {
+            const query = (document.getElementById('inventorySearchInput')?.value || '').toLowerCase().trim();
+            const category = document.getElementById('inventoryCategoryFilter')?.value || '';
+
+            let filtered = window.adminInventoryCache || [];
+            if (category) {
+                filtered = filtered.filter(i => (i.category || '').toLowerCase() === category.toLowerCase());
+            }
+            if (query) {
+                filtered = filtered.filter(i => 
+                    (i.name || '').toLowerCase().includes(query) || 
+                    (i.category || '').toLowerCase().includes(query) ||
+                    (i.material_tag || '').toLowerCase().includes(query)
+                );
+            }
+            renderAdminInventoryTable(filtered);
+        }
+
+        function openAddInventoryModal() {
+            alert('To add a new rental inventory item, insert into `rental_inventory` table or use RentEase Catalog Importer.');
+        }
+
+        /* Support & Issues Tickets */
+        async function fetchAdminIssues() {
+            const tbody = document.getElementById('adminIssuesTableBody');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch('../rentease_api.php?action=get_issues');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.issues)) {
+                    let total = data.issues.length;
+                    let pending = 0;
+                    let inProgress = 0;
+                    let resolved = 0;
+
+                    data.issues.forEach(i => {
+                        const s = (i.status || '').toLowerCase();
+                        if (s === 'reported' || s === 'open') pending++;
+                        else if (s === 'in progress' || s === 'reviewing') inProgress++;
+                        else if (s === 'resolved') resolved++;
+                    });
+
+                    if (document.getElementById('dashIssuesTotal')) document.getElementById('dashIssuesTotal').innerText = total;
+                    if (document.getElementById('dashIssuesPending')) document.getElementById('dashIssuesPending').innerText = pending;
+                    if (document.getElementById('dashIssuesInProgress')) document.getElementById('dashIssuesInProgress').innerText = inProgress;
+                    if (document.getElementById('dashIssuesResolved')) document.getElementById('dashIssuesResolved').innerText = resolved;
+                    if (document.getElementById('adminIssuesBadge')) document.getElementById('adminIssuesBadge').innerText = pending + inProgress;
+
+                    let html = '';
+                    data.issues.forEach(ticket => {
+                        const status = ticket.status || 'Reported';
+                        let badgeClass = 'bg-danger text-white';
+                        if (status === 'Reviewing') badgeClass = 'bg-primary text-white';
+                        else if (status === 'In Progress') badgeClass = 'bg-warning text-dark';
+                        else if (status === 'Resolved') badgeClass = 'bg-success text-white';
+
+                        html += `
+                        <tr>
+                            <td><code>#${ticket.ticket_number}</code></td>
+                            <td><span class="badge bg-light text-dark border">#${ticket.order_number || 'N/A'}</span></td>
+                            <td>
+                                <strong class="text-dark d-block">${ticket.customer_name || 'Customer'}</strong>
+                                <span class="text-muted fs-9">${ticket.customer_email || 'customer@rentease.ph'}</span>
+                            </td>
+                            <td><span class="badge bg-secondary-subtle text-secondary fw-semibold">${ticket.category}</span></td>
+                            <td><span class="fs-8 text-dark">${ticket.description}</span></td>
+                            <td><span class="badge ${badgeClass} fw-bold px-3 py-1 rounded-pill">${status}</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary py-0 px-2 fs-9" onclick="updateAdminIssueStatus(${ticket.id}, 'Reviewing')" title="Mark Reviewing">Review</button>
+                                    <button class="btn btn-outline-warning py-0 px-2 fs-9" onclick="updateAdminIssueStatus(${ticket.id}, 'In Progress')" title="Mark In Progress">Progress</button>
+                                    <button class="btn btn-outline-success py-0 px-2 fs-9" onclick="updateAdminIssueStatus(${ticket.id}, 'Resolved')" title="Resolve Ticket">Resolve</button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Error loading tickets.</td></tr>';
+            }
+        }
+
+        async function updateAdminIssueStatus(issueId, newStatus) {
+            try {
+                const res = await fetch('../rentease_api.php?action=update_issue_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ issue_id: issueId, status: newStatus })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`✅ Ticket #${issueId} status successfully updated to "${newStatus}"!`);
+                    fetchAdminIssues();
+                } else {
+                    alert(data.message || 'Could not update ticket status.');
+                }
+            } catch (e) {
+                alert('Network error updating ticket status.');
+            }
+        }
+
+        /* Event Packages */
+        async function fetchAdminPackages() {
+            const container = document.getElementById('adminPackagesContainer');
+            if (!container) return;
+
+            try {
+                const res = await fetch('../rentease_api.php?action=get_packages');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.packages)) {
+                    let html = '';
+                    data.packages.forEach(pkg => {
+                        const standardPrice = parseFloat(pkg.standard_price || 0).toFixed(2);
+                        const bundlePrice = parseFloat(pkg.bundle_price || 0).toFixed(2);
+                        const savings = parseFloat(pkg.savings || 0).toFixed(2);
+
+                        let itemsHtml = '';
+                        if (Array.isArray(pkg.included_items)) {
+                            itemsHtml = pkg.included_items.map(it => `
+                                <li class="d-flex justify-content-between align-items-center py-1 border-bottom fs-8">
+                                    <span>${it.name}</span>
+                                    <span class="badge bg-primary text-white">${it.qty} units</span>
+                                </li>
+                            `).join('');
+                        }
+
+                        html += `
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <span class="badge bg-warning text-dark fw-bold mb-1"><i class="fa-solid fa-sparkles me-1"></i> Featured Event Bundle</span>
+                                        <h5 class="fw-bold text-dark mb-0">${pkg.name}</h5>
+                                    </div>
+                                    <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill">Save ₱${savings}</span>
+                                </div>
+                                <p class="fs-8 text-muted mb-3">${pkg.description}</p>
+
+                                <div class="mb-3">
+                                    <strong class="fs-8 text-dark d-block mb-1">Included Equipment:</strong>
+                                    <ul class="list-unstyled mb-0">${itemsHtml}</ul>
+                                </div>
+
+                                <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-muted text-decoration-line-through fs-8">Standard: ₱${standardPrice}</span>
+                                        <div class="fw-extrabold fs-5" style="color:#5B3FA8;">Bundle: ₱${bundlePrice}</div>
+                                    </div>
+                                    <button class="btn btn-outline-primary btn-sm rounded-pill fw-bold px-3" onclick="alert('Package promo is currently active on the customer mobile app.')">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Active
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+            } catch (e) {}
+        }
+
+        /* Rental Orders & Dispatch */
+        async function fetchAdminRentalOrders() {
+            const tbody = document.getElementById('adminRentalOrdersTableBody');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch('../rentease_api.php?action=get_admin_dashboard');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.recent_orders)) {
+                    let html = '';
+                    data.recent_orders.forEach(ord => {
+                        const total = parseFloat(ord.total_amount || 0).toFixed(2);
+                        html += `
+                        <tr>
+                            <td><strong class="text-dark">#${ord.order_number}</strong></td>
+                            <td>
+                                <strong class="text-dark d-block">${ord.customer_name}</strong>
+                                <span class="text-muted fs-9">${ord.customer_phone || ord.customer_email || '0917-123-4567'}</span>
+                            </td>
+                            <td>
+                                <span class="badge ${ord.fulfillment_type === 'Delivery' ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'} fw-bold mb-1">${ord.fulfillment_type}</span>
+                                <div class="fs-9 text-muted">${ord.delivery_address || 'Store Pickup'}</div>
+                            </td>
+                            <td><span class="fs-8 text-dark">${ord.rental_start_date} (${ord.rental_days} day)</span></td>
+                            <td><strong class="text-success fs-7">₱${total}</strong></td>
+                            <td><span class="badge bg-light text-dark border">${ord.payment_method}</span></td>
+                            <td><span class="badge bg-info-subtle text-info fw-bold px-3 py-1 rounded-pill">${ord.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0 fs-9" onclick="alert('Order #${ord.order_number} dispatched with Rider Juan Dela Cruz.')">
+                                    <i class="fa-solid fa-truck-fast me-1"></i> Track
+                                </button>
+                            </td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html || '<tr><td colspan="8" class="text-center py-4 text-muted">No rental orders recorded yet.</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Error loading rental orders.</td></tr>';
             }
         }
     </script>

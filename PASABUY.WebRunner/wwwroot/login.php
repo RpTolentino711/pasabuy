@@ -10,13 +10,13 @@ if (!defined('PASABUY_INCLUDED')) {
 
 <!-- 2. WELCOME BACK / LOGIN SCREEN (PHP COMPONENT - MATCHING REFERENCE DESIGN) -->
 <div id="authScreen" style="<?php echo $is_standalone ? 'display:block;' : 'display:none;'; ?>" class="py-2">
-    <!-- Main Branding Header (Official PasaBuy Logo) -->
+    <!-- Main Branding Header (Official RentEase Logo) -->
     <div class="text-center mb-4 pt-2">
-        <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-4 mb-2 shadow-sm" style="background: rgba(108, 92, 231, 0.08); width: 84px; height: 84px;">
-            <img src="LOGO.png" alt="PasaBuy Logo" style="width: 60px; height: 60px; object-fit: contain;">
+        <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-4 mb-2 shadow-sm" style="background: rgba(91, 63, 168, 0.08); width: 84px; height: 84px;">
+            <img src="LOGO.png" alt="RentEase Logo" style="width: 60px; height: 60px; object-fit: contain;">
         </div>
-        <h2 class="fw-extrabold mb-1" style="color: #2D0C57; font-size: 2.1rem; letter-spacing: -0.6px;">PasaBuy</h2>
-        <p class="text-muted fs-8 fw-semibold mb-0" style="color: #7A869A !important;">Your Campus, Your Marketplace</p>
+        <h2 class="fw-extrabold mb-1" style="color: #5B3FA8; font-size: 2.1rem; letter-spacing: -0.6px;">RentEase</h2>
+        <p class="text-muted fs-8 fw-semibold mb-0" style="color: #7A869A !important;">Easy Rentals. Seamless Events.</p>
     </div>
 
     <!-- Welcome Back Subheader -->
@@ -64,7 +64,7 @@ if (!defined('PASABUY_INCLUDED')) {
 
     <!-- Sign In Button -->
     <button class="btn btn-primary w-100 rounded-3 py-3 fw-bold fs-7 shadow-sm mb-4 text-white" 
-        style="background: linear-gradient(135deg, #6C5CE7, #5F27CD); border:none; border-radius: 14px !important;" 
+        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none; border-radius: 14px !important;" 
         id="btnLoginSubmit" onclick="loginStudentWithPassword()">
         Sign In
     </button>
@@ -72,7 +72,7 @@ if (!defined('PASABUY_INCLUDED')) {
     <!-- Sign Up Link -->
     <div class="pt-2 text-center fs-8 text-muted">
         Don't have an account? 
-        <a href="javascript:void(0)" class="fw-bold text-decoration-none ms-1" style="color: #6C5CE7;" onclick="showRegisterScreen()">Sign Up</a>
+        <a href="javascript:void(0)" class="fw-bold text-decoration-none ms-1" style="color: #5B3FA8;" onclick="showRegisterScreen()">Sign Up</a>
     </div>
 </div>
 
