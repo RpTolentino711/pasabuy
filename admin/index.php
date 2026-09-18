@@ -383,8 +383,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-8">Admin Password</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted fs-8"></i></span>
-                            <input type="password" class="form-control fs-8" id="loginPassword" placeholder="Pogilameg@10" value="Pogilameg@10" required>
+                            <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-lock text-muted fs-8"></i></span>
+                            <input type="password" class="form-control fs-8 border-start-0 border-end-0" id="loginPassword" placeholder="Pogilameg@10" value="Pogilameg@10" required>
+                            <button type="button" class="btn btn-outline-secondary border-start-0 rounded-end-3 bg-white" style="border-color: #dee2e6;" onclick="toggleAdminPasswordVisibility()" title="Show/Hide Password">
+                                <i class="fa-solid fa-eye text-muted fs-8" id="loginPasswordEye"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="d-flex align-items-center justify-content-between mb-4 fs-9 text-muted">
@@ -1658,6 +1661,21 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         // ----------------------------------------------------------
         // 1. AUTHENTICATION & LOGIN FLOW
         // ----------------------------------------------------------
+        function toggleAdminPasswordVisibility() {
+            const input = document.getElementById('loginPassword');
+            const eye = document.getElementById('loginPasswordEye');
+            if (!input || !eye) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                eye.classList.remove('fa-eye');
+                eye.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                eye.classList.remove('fa-eye-slash');
+                eye.classList.add('fa-eye');
+            }
+        }
+
         async function handleAdminLogin() {
             const u = document.getElementById('loginUsername').value.trim();
             const p = document.getElementById('loginPassword').value.trim();
