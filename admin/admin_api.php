@@ -196,8 +196,9 @@ if ($db) {
 }
 
 $inputRaw = file_get_contents('php://input');
-$req = json_decode($inputRaw, true) ?: $_REQUEST;
-$action = trim((string)($req['action'] ?? 'get_dashboard'));
+$jsonBody = json_decode($inputRaw, true);
+$req = is_array($jsonBody) ? array_merge($_REQUEST, $jsonBody) : $_REQUEST;
+$action = trim((string)($req['action'] ?? $_REQUEST['action'] ?? 'get_dashboard'));
 
 // ----------------------------------------------------------
 // 1. AUTHENTICATION & SESSION
