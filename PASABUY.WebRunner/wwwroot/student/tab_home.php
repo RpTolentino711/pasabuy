@@ -38,66 +38,105 @@
         </div>
     </div>
 
-    <!-- Categories Grid (2 Rows of 4 matching UIDESIFNAPP.png Screen 1) -->
+    <!-- Categories Horizontal Scroll Wheel -->
     <div class="mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-2.5">
             <h6 class="fw-extrabold mb-0 text-dark fs-7">Categories</h6>
             <a href="javascript:void(0)" class="text-decoration-none fs-8 fw-bold" style="color: #5B3FA8;" onclick="openCategoryTab('All')">See All <i class="fa-solid fa-arrow-right ms-1"></i></a>
         </div>
 
-        <!-- Row 1: Chairs, Tables, Tents, Sound System -->
-        <div class="row g-2 mb-2">
-            <div class="col-3 text-center" onclick="openCategoryTab('Chairs')" style="cursor: pointer;">
-                <div class="p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1 transition-hover" style="width: 58px; height: 58px;">
+        <style>
+            .category-scroll-wheel::-webkit-scrollbar { display: none; }
+            .category-wheel-item:hover .cat-icon-box {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(91,63,168,0.18) !important;
+                border-color: #5B3FA8 !important;
+            }
+            .category-wheel-item:active .cat-icon-box {
+                transform: scale(0.95);
+            }
+        </style>
+
+        <!-- Horizontal Scroll Wheel Track -->
+        <div class="d-flex gap-2.5 overflow-auto py-1 px-1 category-scroll-wheel" id="categoryScrollWheel"
+             style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; ms-overflow-style: none; scroll-behavior: smooth;"
+             onwheel="if(event.deltaY!==0){event.preventDefault(); this.scrollLeft += event.deltaY;}">
+            
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Chairs')" style="cursor: pointer; width: 72px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
                     <i class="fa-solid fa-chair fs-5" style="color: #5B3FA8;"></i>
                 </div>
-                <span class="fs-9 fw-bold text-dark d-block text-truncate">Chairs</span>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Chairs</span>
             </div>
-            <div class="col-3 text-center" onclick="openCategoryTab('Tables')" style="cursor: pointer;">
-                <div class="p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1 transition-hover" style="width: 58px; height: 58px;">
+
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Tables')" style="cursor: pointer; width: 72px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
                     <i class="fa-solid fa-table fs-5" style="color: #5B3FA8;"></i>
                 </div>
-                <span class="fs-9 fw-bold text-dark d-block text-truncate">Tables</span>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Tables</span>
             </div>
-            <div class="col-3 text-center" onclick="openCategoryTab('Tents')" style="cursor: pointer;">
-                <div class="p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1 transition-hover" style="width: 58px; height: 58px;">
+
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Tents')" style="cursor: pointer; width: 72px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
                     <i class="fa-solid fa-campground fs-5" style="color: #5B3FA8;"></i>
                 </div>
-                <span class="fs-9 fw-bold text-dark d-block text-truncate">Tents</span>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Tents</span>
             </div>
-            <div class="col-3 text-center" onclick="openCategoryTab('Sound System')" style="cursor: pointer;">
-                <div class="p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1 transition-hover" style="width: 58px; height: 58px;">
+
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Sound System')" style="cursor: pointer; width: 76px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
                     <i class="fa-solid fa-volume-high fs-5" style="color: #5B3FA8;"></i>
                 </div>
-                <span class="fs-9 fw-bold text-dark d-block text-truncate">Sound System</span>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Sound System</span>
             </div>
-        </div>
 
-        <!-- Row 2: Lights, Decorations, Stages, Others -->
-        <div class="row g-2">
-            <div class="col-3 text-center" onclick="openCategoryTab('Lights')" style="cursor: pointer;">
-                <div class="p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1 transition-hover" style="width: 58px; height: 58px;">
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Cameras')" style="cursor: pointer; width: 72px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
+                    <i class="fa-solid fa-camera fs-5" style="color: #5B3FA8;"></i>
+                </div>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Cameras</span>
+            </div>
+
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Lights')" style="cursor: pointer; width: 72px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
                     <i class="fa-solid fa-lightbulb fs-5" style="color: #5B3FA8;"></i>
                 </div>
-                <span class="fs-9 fw-bold text-dark d-block text-truncate">Lights</span>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Lights</span>
             </div>
-            <div class="col-3 text-center" onclick="openCategoryTab('Decorations')" style="cursor: pointer;">
-                <div class="p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1 transition-hover" style="width: 58px; height: 58px;">
+
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Decorations')" style="cursor: pointer; width: 76px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
                     <i class="fa-solid fa-wand-magic-sparkles fs-5" style="color: #5B3FA8;"></i>
                 </div>
-                <span class="fs-9 fw-bold text-dark d-block text-truncate">Decorations</span>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Decorations</span>
             </div>
-            <div class="col-3 text-center" onclick="openCategoryTab('Stages')" style="cursor: pointer;">
-                <div class="p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1 transition-hover" style="width: 58px; height: 58px;">
+
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Stages')" style="cursor: pointer; width: 72px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
                     <i class="fa-solid fa-monument fs-5" style="color: #5B3FA8;"></i>
                 </div>
-                <span class="fs-9 fw-bold text-dark d-block text-truncate">Stages</span>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Stages</span>
             </div>
-            <div class="col-3 text-center" onclick="openCategoryTab('Others')" style="cursor: pointer;">
-                <div class="p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1 transition-hover" style="width: 58px; height: 58px;">
+
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Catering')" style="cursor: pointer; width: 72px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
+                    <i class="fa-solid fa-utensils fs-5" style="color: #5B3FA8;"></i>
+                </div>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Catering</span>
+            </div>
+
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Generators')" style="cursor: pointer; width: 74px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
+                    <i class="fa-solid fa-bolt fs-5" style="color: #5B3FA8;"></i>
+                </div>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Generators</span>
+            </div>
+
+            <div class="category-wheel-item text-center flex-shrink-0" onclick="openCategoryTab('Others')" style="cursor: pointer; width: 72px; scroll-snap-align: start;">
+                <div class="cat-icon-box p-2.5 rounded-4 bg-white shadow-xs border d-flex align-items-center justify-content-center mx-auto mb-1.5" style="width: 58px; height: 58px; transition: all 0.2s ease;">
                     <i class="fa-solid fa-cubes-stacked fs-5" style="color: #5B3FA8;"></i>
                 </div>
-                <span class="fs-9 fw-bold text-dark d-block text-truncate">Others</span>
+                <span class="fs-9 fw-bold text-dark d-block" style="font-size: 11px; line-height: 1.2;">Others</span>
             </div>
         </div>
     </div>
