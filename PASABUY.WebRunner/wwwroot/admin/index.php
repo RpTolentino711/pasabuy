@@ -178,19 +178,11 @@ session_start();
             <aside class="admin-sidebar p-3" style="width:280px;">
                 <div class="text-uppercase text-muted fw-bold fs-9 mb-2 px-2">RentEase Platform Modules</div>
                 <nav class="nav flex-column mb-3">
-                    <a href="#" class="nav-link-admin active" onclick="showAdminSection('inventory', this)"><i class="fa-solid fa-boxes-stacked text-primary"></i> Rental Inventory (Live)</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('issues', this)"><i class="fa-solid fa-headset text-danger"></i> Customer Support / Tickets <span class="badge bg-danger ms-auto rounded-pill" id="adminIssuesBadge">3</span></a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('packages', this)"><i class="fa-solid fa-gift text-warning"></i> Event Package Bundles</a>
+                    <a href="#" class="nav-link-admin active" onclick="showAdminSection('inventory', this)"><i class="fa-solid fa-boxes-stacked text-primary"></i> Equipment Supervision (Live)</a>
                     <a href="#" class="nav-link-admin" onclick="showAdminSection('rentalOrders', this)"><i class="fa-solid fa-truck-ramp-box text-success"></i> Rental Orders &amp; Dispatch</a>
-                </nav>
-
-                <div class="text-uppercase text-muted fw-bold fs-9 mb-2 px-2">Campus Marketplace Control</div>
-                <nav class="nav flex-column">
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Overview Analytics</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('verifications', this)"><i class="fa-solid fa-id-card text-primary"></i> Verification Requests</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('riders', this)"><i class="fa-solid fa-motorcycle text-warning"></i> Delivery Riders</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('students', this)"><i class="fa-solid fa-user-graduate"></i> Registered Users</a>
-                    <a href="#" class="nav-link-admin" onclick="showAdminSection('payments', this)"><i class="fa-solid fa-receipt text-success"></i> Digital Payments Log</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('issues', this)"><i class="fa-solid fa-headset text-danger"></i> Customer Support / Tickets <span class="badge bg-danger ms-auto rounded-pill" id="adminIssuesBadge">0</span></a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('packages', this)"><i class="fa-solid fa-gift text-warning"></i> Event Package Bundles</a>
+                    <a href="#" class="nav-link-admin" onclick="showAdminSection('dashboard', this)"><i class="fa-solid fa-chart-pie text-info"></i> Operations Analytics</a>
                 </nav>
             </aside>
 
@@ -249,182 +241,6 @@ session_start();
                                 </div>
                                 <h2 class="fw-extrabold mb-1 text-danger" id="dashExecutiveIssues">0 Pending</h2>
                                 <span class="badge bg-success-subtle text-success fw-bold fs-9">Real-time resolution</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Strategic Targets Banner (Matching RentEase.pdf Rubric) -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-                                <span class="text-muted fw-bold fs-9 text-uppercase mb-1"><i class="fa-solid fa-bullseye text-primary me-1"></i> Target Customers / Month</span>
-                                <h5 class="fw-extrabold text-dark mb-1">100–150 Clients</h5>
-                                <p class="text-muted fs-9 mb-0">Ideal customer base: Student councils, organizations, university events, and family parties.</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-                                <span class="text-muted fw-bold fs-9 text-uppercase mb-1"><i class="fa-solid fa-arrow-trend-up text-success me-1"></i> Monthly Transactions</span>
-                                <h5 class="fw-extrabold text-success mb-1">150–200 Bookings</h5>
-                                <p class="text-muted fs-9 mb-0">High-volume bookings with automated cart computation &amp; transparent fees.</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-                                <span class="text-muted fw-bold fs-9 text-uppercase mb-1"><i class="fa-solid fa-mobile-screen-button text-warning me-1"></i> Online Channel Ratio</span>
-                                <h5 class="fw-extrabold text-primary mb-1">75% Online / 25% Assisted</h5>
-                                <p class="text-muted fs-9 mb-0">Primary customer self-service via RentEase app with direct GCash checkout.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section 2: Student Verification Requests Moderation (PHP + JS) -->
-                <div id="sectionVerifications" style="display:none;">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div>
-                            <h4 class="fw-bold mb-1"><i class="fa-solid fa-id-card text-primary me-2"></i>Student Seller Verification Requests</h4>
-                            <p class="text-muted fs-8 mb-0">Review student hometown, address, guardian info, and postal/school IDs to approve or reject selling access.</p>
-                        </div>
-                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="fetchAdminVerificationRequests()"><i class="fa-solid fa-rotate me-1"></i> Refresh Requests</button>
-                    </div>
-
-                    <div class="table-custom p-3">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Student &amp; ID Info</th>
-                                    <th>Hometown &amp; Address</th>
-                                    <th>Contact &amp; Guardian Info</th>
-                                    <th>Submitted ID Photo</th>
-                                    <th>Status</th>
-                                    <th>Moderation Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminVerificationsTableBody">
-                                <tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-1"></i> Loading student verification requests...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Section 2B: Motor Driver Verifications -->
-                <div id="sectionRiders" style="display:none;">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div>
-                            <h4 class="fw-bold mb-1"><i class="fa-solid fa-motorcycle text-warning me-2"></i>Motor Delivery Driver Applications</h4>
-                            <p class="text-muted fs-8 mb-0">Approve or reject student motor driver applications to enable campus express delivery.</p>
-                        </div>
-                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="fetchAdminMotorRiders()"><i class="fa-solid fa-rotate me-1"></i> Refresh Drivers</button>
-                    </div>
-
-                    <div class="table-custom p-3">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Driver Name</th>
-                                    <th>Vehicle Details</th>
-                                    <th>Driver License #</th>
-                                    <th>License Image</th>
-                                    <th>Status</th>
-                                    <th>Moderation Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminRidersTableBody">
-                                <tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-1"></i> Loading motor driver applications...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Section 3: Registered Students -->
-                <div id="sectionStudents" style="display:none;">
-                    <h4 class="fw-bold mb-1">Registered Student Accounts</h4>
-                    <p class="text-muted fs-8 mb-4">View or suspend registered student marketplace profiles.</p>
-                    
-                    <div class="table-custom p-3">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Student Name</th>
-                                    <th>Student #</th>
-                                    <th>Course &amp; Year</th>
-                                    <th>School Email</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminStudentsTableBody">
-                                <tr><td colspan="6" class="text-center text-muted py-4">Loading registered students...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Section 4: Listings Moderation -->
-                <div id="sectionListings" style="display:none;">
-                    <h4 class="fw-bold mb-1">Marketplace Listings Moderation</h4>
-                    <p class="text-muted fs-8 mb-4">View and delete prohibited or spam listings.</p>
-                    <div id="adminListingsContainer" class="row g-3">
-                        <!-- Populated dynamically via API -->
-                    </div>
-                </div>
-
-                <!-- Section 5: PayMongo Payments Ledger -->
-                <div id="sectionPayments" style="display:none;">
-                    <h4 class="fw-bold mb-1">PayMongo Live Fee Collection Ledger</h4>
-                    <p class="text-muted fs-8 mb-4">Audit log of all ₱1.00 / ₱5.00 / ₱10.00 posting fees paid via GCash.</p>
-                    
-                    <div class="table-custom p-3">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Transaction Ref</th>
-                                    <th>Listing Title</th>
-                                    <th>Fee Amount</th>
-                                    <th>Status</th>
-                                    <th>Date &amp; Time</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminPaymentsTableBody">
-                                <tr><td colspan="5" class="text-center text-muted py-4">Loading PayMongo fee transactions...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Section 6: Scam & Abuse Reports -->
-                <div id="sectionReports" style="display:none;">
-                    <h4 class="fw-bold mb-1">Scam &amp; Moderation Reports</h4>
-                    <p class="text-muted fs-8 mb-4">Investigate student safety reports.</p>
-                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white text-center py-5 text-muted">
-                        <i class="fa-solid fa-shield-cat fs-1 text-secondary opacity-50 mb-2"></i>
-                        <h6>No Pending Reports</h6>
-                        <p class="fs-8 text-muted">Campus marketplace community guidelines are currently clean.</p>
-                    </div>
-                </div>
-
-                <!-- Section 7: Meetup Locations -->
-                <div id="sectionMeetups" style="display:none;">
-                    <h4 class="fw-bold mb-1">Approved Campus Meetup Locations</h4>
-                    <p class="text-muted fs-8 mb-4">Manage safe campus pickup locations for student transactions.</p>
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                                <h6 class="fw-bold mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Library Lobby</h6>
-                                <p class="fs-8 text-muted mb-0">Main Campus University Library Ground Floor</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                                <h6 class="fw-bold mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Student Cafeteria</h6>
-                                <p class="fs-8 text-muted mb-0">Central Food Court &amp; Dining Area</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                                <h6 class="fw-bold mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Main Gate Entrance</h6>
-                                <p class="fs-8 text-muted mb-0">Main Campus Pedestrian Entrance near Guard Post</p>
                             </div>
                         </div>
                     </div>
@@ -550,7 +366,7 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Total Tickets</span>
                                     <div class="stat-icon bg-light text-secondary"><i class="fa-solid fa-ticket"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1" id="dashIssuesTotal">3</h2>
+                                <h2 class="fw-extrabold mb-1" id="dashIssuesTotal">--</h2>
                                 <span class="text-muted fs-8">Logged in System</span>
                             </div>
                         </div>
@@ -560,7 +376,7 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Reported / Pending</span>
                                     <div class="stat-icon bg-danger-subtle text-danger"><i class="fa-solid fa-triangle-exclamation"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1 text-danger" id="dashIssuesPending">1</h2>
+                                <h2 class="fw-extrabold mb-1 text-danger" id="dashIssuesPending">--</h2>
                                 <span class="badge bg-danger-subtle text-danger fw-bold fs-9">Requires Attention</span>
                             </div>
                         </div>
@@ -570,7 +386,7 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">In Progress</span>
                                     <div class="stat-icon bg-warning-subtle text-warning-emphasis"><i class="fa-solid fa-clock-rotate-left"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashIssuesInProgress">1</h2>
+                                <h2 class="fw-extrabold mb-1 text-warning-emphasis" id="dashIssuesInProgress">--</h2>
                                 <span class="text-muted fs-8">Support Team Reviewing</span>
                             </div>
                         </div>
@@ -580,7 +396,7 @@ session_start();
                                     <span class="text-muted fs-8 fw-bold text-uppercase">Resolved</span>
                                     <div class="stat-icon bg-success-subtle text-success"><i class="fa-solid fa-circle-check"></i></div>
                                 </div>
-                                <h2 class="fw-extrabold mb-1 text-success" id="dashIssuesResolved">1</h2>
+                                <h2 class="fw-extrabold mb-1 text-success" id="dashIssuesResolved">--</h2>
                                 <span class="badge bg-success-subtle text-success fw-bold fs-9">Closed Satisfactorily</span>
                             </div>
                         </div>
@@ -742,8 +558,8 @@ session_start();
                 <div class="modal-body pt-2">
                     <input type="hidden" id="dispatchOrderNumber">
                     <div class="mb-3">
-                        <strong class="text-dark d-block fs-7" id="dispatchOrderHeader">Order #RE-10245</strong>
-                        <span class="text-muted fs-8" id="dispatchOrderCustomer">Bea Solis • San Pablo Laguna</span>
+                        <strong class="text-dark d-block fs-7" id="dispatchOrderHeader">Order Dispatch Tracking</strong>
+                        <span class="text-muted fs-8" id="dispatchOrderCustomer">Customer • Destination</span>
                     </div>
 
                     <div class="mb-3">
@@ -768,46 +584,6 @@ session_start();
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-light rounded-pill w-50 fw-bold fs-8 text-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-success rounded-pill w-50 fw-bold fs-8 shadow-sm" onclick="executeAdminSaveDispatch()"><i class="fa-solid fa-paper-plane me-1"></i> Update Dispatch</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ID PHOTO FULLSCREEN PREVIEW MODAL -->
-    <div class="modal fade" id="viewIdPhotoModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
-                <div class="modal-header border-0 pb-1">
-                    <h6 class="fw-bold mb-0 text-dark" id="viewIdModalTitle">Submitted Verification ID Document</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center pt-2">
-                    <img id="viewIdModalImg" class="img-fluid rounded-3 border shadow-sm" style="max-height: 480px; object-fit: contain;">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- REJECTION REASON MODAL -->
-    <div class="modal fade" id="rejectReasonModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
-                <div class="modal-header border-0 pb-1">
-                    <h6 class="fw-bold text-danger mb-0"><i class="fa-solid fa-circle-xmark me-2"></i>Reject Seller Verification Request</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body pt-2">
-                    <p class="fs-8 text-muted mb-3">Please specify the reason why this student's seller verification request is being rejected. This reason will be displayed to the student.</p>
-                    <input type="hidden" id="rejectRequestId">
-                    <input type="hidden" id="rejectUserId">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold fs-7">Rejection Reason / Notes <span class="text-danger">*</span></label>
-                        <textarea class="form-control rounded-3 fs-7" id="rejectReasonText" rows="3" placeholder="e.g. Unreadable ID photo, Student number does not match record, or missing guardian details."></textarea>
-                    </div>
-                    <div class="d-flex gap-2 pt-2">
-                        <button type="button" class="btn btn-light rounded-pill w-50 fw-bold fs-7 text-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-danger rounded-pill w-50 fw-bold fs-7 shadow-sm" onclick="executeAdminRejectVerification()"><i class="fa-solid fa-ban me-1"></i> Confirm Rejection</button>
                     </div>
                 </div>
             </div>
@@ -889,7 +665,7 @@ session_start();
         }
 
         function showAdminSection(sectionName, element) {
-            const sections = ['inventory', 'issues', 'packages', 'rentalOrders', 'dashboard', 'verifications', 'riders', 'students', 'listings', 'payments', 'reports', 'meetups'];
+            const sections = ['inventory', 'rentalOrders', 'issues', 'packages', 'dashboard'];
             sections.forEach(s => {
                 const el = document.getElementById('section' + s.charAt(0).toUpperCase() + s.slice(1));
                 if (el) el.style.display = (s === sectionName) ? 'block' : 'none';
@@ -898,132 +674,13 @@ session_start();
             if (element) element.classList.add('active');
 
             if (sectionName === 'inventory') fetchAdminInventory();
+            else if (sectionName === 'rentalOrders') fetchAdminRentalOrders();
             else if (sectionName === 'issues') fetchAdminIssues();
             else if (sectionName === 'packages') fetchAdminPackages();
-            else if (sectionName === 'rentalOrders') fetchAdminRentalOrders();
             else if (sectionName === 'dashboard') fetchAdminDashboardStats();
-            else if (sectionName === 'verifications') fetchAdminVerificationRequests();
-            else if (sectionName === 'riders') fetchAdminMotorRiders();
-            else if (sectionName === 'students') fetchAdminStudents();
-            else if (sectionName === 'listings') fetchAdminListings();
-            else if (sectionName === 'payments') fetchAdminPayments();
-            else if (sectionName === 'reports') fetchAdminReports();
-        }
-
-        async function fetchAdminMotorRiders() {
-            const tbody = document.getElementById('adminRidersTableBody');
-            if (!tbody) return;
-
-            try {
-                const res = await fetch('/pasabuy_api.php?action=admin_get_riders');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (!Array.isArray(data) || data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-motorcycle me-1 opacity-50"></i> No motor driver applications submitted yet.</td></tr>';
-                        return;
-                    }
-
-                    let html = '';
-                    data.forEach(r => {
-                        const name = `${r.FirstName || 'Driver'} ${r.LastName || ''}`.trim();
-                        const status = (r.VerificationStatus || 'PENDING').toUpperCase();
-                        let badgeHtml = '';
-                        if (status === 'VERIFIED' || status === 'APPROVED') {
-                            badgeHtml = '<span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-shield-check me-1"></i> VERIFIED DRIVER</span>';
-                        } else if (status === 'REJECTED') {
-                            badgeHtml = '<span class="badge bg-danger text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i> REJECTED</span>';
-                        } else {
-                            badgeHtml = '<span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-clock me-1"></i> PENDING REVIEW</span>';
-                        }
-
-                        const imgUrl = r.LicenseImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80';
-
-                        html += `
-                        <tr>
-                            <td>
-                                <strong class="text-dark d-block">${name}</strong>
-                                <span class="text-muted fs-9">Phone: ${r.PhoneNumber || 'N/A'}</span>
-                            </td>
-                            <td>
-                                <strong class="fs-8 text-dark d-block">${r.VehicleModel || 'Motorcycle'}</strong>
-                                <span class="badge bg-light text-dark border fs-9">Plate: <code>${r.PlateNumber || 'N/A'}</code></span>
-                            </td>
-                            <td><code>${r.DriverLicenseNo || 'N/A'}</code></td>
-                            <td>
-                                <button class="btn btn-sm btn-light rounded-pill border fs-9 py-0 px-2" onclick="openViewIdModal('${imgUrl.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">
-                                    <i class="fa-solid fa-image text-primary me-1"></i> License Image
-                                </button>
-                            </td>
-                            <td>${badgeHtml}</td>
-                            <td>
-                                ${status === 'PENDING' ? `
-                                <div class="d-flex gap-1">
-                                    <button class="btn btn-sm btn-success rounded-pill px-3 fw-bold fs-9" onclick="adminVerifyRider(${r.Id}, 'VERIFIED')">
-                                        <i class="fa-solid fa-check me-1"></i> Approve
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold fs-9" onclick="adminVerifyRider(${r.Id}, 'REJECTED')">
-                                        <i class="fa-solid fa-xmark me-1"></i> Reject
-                                    </button>
-                                </div>` : (status === 'REJECTED' ? `
-                                <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold fs-9" onclick="adminVerifyRider(${r.Id}, 'VERIFIED')">
-                                    <i class="fa-solid fa-check me-1"></i> Re-Approve
-                                </button>` : `
-                                <span class="text-success fs-8 fw-semibold"><i class="fa-solid fa-shield-check me-1"></i> Verified</span>
-                                `)}
-                            </td>
-                        </tr>`;
-                    });
-                    tbody.innerHTML = html;
-                }
-            } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Error loading motor driver applications.</td></tr>';
-            }
-        }
-
-        async function adminVerifyRider(riderId, status) {
-            if (!confirm(`Admin Confirmation: ${status} this motor driver application?`)) return;
-            try {
-                const res = await fetch('/pasabuy_api.php?action=admin_verify_rider', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ riderId: riderId, status: status })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`🎉 Motor Rider status updated to ${status}!`);
-                    fetchAdminMotorRiders();
-                } else {
-                    alert(data.message || 'Error updating rider status.');
-                }
-            } catch (e) {
-                alert('Network error updating rider status.');
-            }
         }
 
         async function fetchAdminDashboardStats() {
-            try {
-                const res = await fetch('/pasabuy_api.php?action=admin_verification_requests');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data)) {
-                        const pending = data.filter(r => r.Status === 'PENDING').length;
-                        const approved = data.filter(r => r.Status === 'APPROVED').length;
-                        if (document.getElementById('dashPendingVerifications')) document.getElementById('dashPendingVerifications').innerText = pending || 0;
-                        if (document.getElementById('dashVerifiedStudents')) document.getElementById('dashVerifiedStudents').innerText = approved || 0;
-                    }
-                }
-            } catch (e) {}
-
-            try {
-                const listRes = await fetch('/pasabuy_api.php?action=listings');
-                if (listRes.ok) {
-                    const list = await listRes.json();
-                    if (Array.isArray(list)) {
-                        if (document.getElementById('dashActiveListings')) document.getElementById('dashActiveListings').innerText = list.length || 0;
-                    }
-                }
-            } catch (e) {}
-
             try {
                 const dashRes = await fetch('../rentease_api.php?action=get_admin_dashboard');
                 const dashData = await dashRes.json();
@@ -1044,271 +701,6 @@ session_start();
                     if (document.getElementById('dashExecutiveOrdersCount')) document.getElementById('dashExecutiveOrdersCount').innerText = `${totalOrders} Bookings Recorded`;
                 }
             } catch (e) {}
-        }
-
-        async function fetchAdminVerificationRequests() {
-            const tbody = document.getElementById('adminVerificationsTableBody');
-            if (!tbody) return;
-
-            try {
-                const res = await fetch('/pasabuy_api.php?action=admin_verification_requests');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (!Array.isArray(data) || data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-id-card me-1 opacity-50"></i> No seller verification requests submitted yet. Student requests will appear here for Admin moderation!</td></tr>';
-                        return;
-                    }
-
-                    let html = '';
-                    data.forEach(req => {
-                        const name = `${req.FirstName || 'Student'} ${req.LastName || ''}`.trim();
-                        const status = (req.Status || 'PENDING').toUpperCase();
-                        let badgeHtml = '';
-                        if (status === 'APPROVED' || status === 'VERIFIED') {
-                            badgeHtml = '<span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i> VERIFIED SELLER</span>';
-                        } else if (status === 'REJECTED') {
-                            badgeHtml = `<span class="badge bg-danger text-white fw-bold px-3 py-1 rounded-pill" title="${req.RejectionReason || ''}"><i class="fa-solid fa-circle-xmark me-1"></i> REJECTED</span>`;
-                        } else {
-                            badgeHtml = '<span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-clock me-1"></i> PENDING REVIEW</span>';
-                        }
-
-                        const imgUrl = req.IdFrontImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80';
-
-                        html += `
-                        <tr>
-                            <td>
-                                <strong class="text-dark d-block">${name}</strong>
-                                <span class="text-muted fs-9 d-block">Student #: <code>${req.StudentNumber || 'N/A'}</code></span>
-                                <span class="text-muted fs-9">${req.SchoolEmail || ''}</span>
-                            </td>
-                            <td>
-                                <strong class="fs-8 text-dark d-block">${req.Hometown || 'N/A'}</strong>
-                                <span class="text-muted fs-9 d-block">${req.HomeAddress || 'N/A'}</span>
-                                <span class="badge bg-light text-dark border fs-9">Zip: ${req.PostalCode || 'N/A'}</span>
-                            </td>
-                            <td>
-                                <span class="fs-8 text-dark d-block"><i class="fa-solid fa-phone me-1 text-primary"></i> ${req.PhoneNumber || 'N/A'}</span>
-                                <span class="text-muted fs-9 d-block">Guardian: <strong>${req.GuardianName || 'N/A'}</strong></span>
-                                <span class="text-muted fs-9">Guardian Contact: ${req.GuardianPhone || 'N/A'}</span>
-                            </td>
-                            <td>
-                                <div class="d-flex flex-column align-items-start gap-1">
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9">${req.IdType || 'ID Card'}</span>
-                                    <span class="fs-9 text-muted">ID #: <code>${req.IdNumber || 'N/A'}</code></span>
-                                    <button class="btn btn-sm btn-light rounded-pill border fs-9 py-0 px-2 mt-1" onclick="openViewIdModal('${imgUrl.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">
-                                        <i class="fa-solid fa-image text-primary me-1"></i> View ID Photo
-                                    </button>
-                                </div>
-                            </td>
-                            <td>${badgeHtml}</td>
-                            <td>
-                                ${status === 'PENDING' ? `
-                                <div class="d-flex gap-1">
-                                    <button class="btn btn-sm btn-success rounded-pill px-3 fw-bold fs-9" onclick="adminApproveVerification(${req.Id}, ${req.UserId})">
-                                        <i class="fa-solid fa-check me-1"></i> Approve
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold fs-9" onclick="openRejectReasonModal(${req.Id}, ${req.UserId})">
-                                        <i class="fa-solid fa-xmark me-1"></i> Reject
-                                    </button>
-                                </div>` : (status === 'REJECTED' ? `
-                                <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold fs-9" onclick="adminApproveVerification(${req.Id}, ${req.UserId})">
-                                    <i class="fa-solid fa-check me-1"></i> Re-Approve
-                                </button>` : `
-                                <span class="text-success fs-8 fw-semibold"><i class="fa-solid fa-shield-check me-1"></i> Approved</span>
-                                `)}
-                            </td>
-                        </tr>`;
-                    });
-                    tbody.innerHTML = html;
-                }
-            } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Error loading verification requests.</td></tr>';
-            }
-        }
-
-        function openViewIdModal(imgUrl, studentName) {
-            document.getElementById('viewIdModalTitle').innerText = `Submitted Verification ID - ${studentName}`;
-            document.getElementById('viewIdModalImg').src = imgUrl;
-            new bootstrap.Modal(document.getElementById('viewIdPhotoModal')).show();
-        }
-
-        async function adminApproveVerification(requestId, userId) {
-            if (!confirm('Admin Confirmation: Approve seller verification for this student user?')) return;
-
-            try {
-                const res = await fetch('/pasabuy_api.php?action=admin_approve_verification', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ requestId: requestId, userId: userId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('🎉 Student Seller Verification APPROVED! Student can now sell items on campus.');
-                    fetchAdminVerificationRequests();
-                    fetchAdminDashboardStats();
-                } else {
-                    alert(data.message || 'Error approving request.');
-                }
-            } catch (e) {
-                alert('Network error approving verification request.');
-            }
-        }
-
-        function openRejectReasonModal(requestId, userId) {
-            document.getElementById('rejectRequestId').value = requestId;
-            document.getElementById('rejectUserId').value = userId;
-            document.getElementById('rejectReasonText').value = '';
-            new bootstrap.Modal(document.getElementById('rejectReasonModal')).show();
-        }
-
-        async function executeAdminRejectVerification() {
-            const requestId = parseInt(document.getElementById('rejectRequestId').value) || 0;
-            const userId = parseInt(document.getElementById('rejectUserId').value) || 0;
-            const reason = document.getElementById('rejectReasonText').value.trim();
-
-            if (!reason) {
-                alert('Please enter a rejection reason for the student.');
-                return;
-            }
-
-            try {
-                const res = await fetch('/pasabuy_api.php?action=admin_reject_verification', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ requestId: requestId, userId: userId, reason: reason })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('❌ Verification request rejected. Student has been notified with your reason.');
-                    const modalEl = document.getElementById('rejectReasonModal');
-                    const bsModal = bootstrap.Modal.getInstance(modalEl);
-                    if (bsModal) bsModal.hide();
-                    fetchAdminVerificationRequests();
-                    fetchAdminDashboardStats();
-                } else {
-                    alert(data.message || 'Error rejecting request.');
-                }
-            } catch (e) {
-                alert('Network error rejecting verification request.');
-            }
-        }
-
-        async function fetchAdminStudents() {
-            const tbody = document.getElementById('adminStudentsTableBody');
-            if (!tbody) return;
-            try {
-                const res = await fetch('/pasabuy_api.php?action=admin_students');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (!Array.isArray(data) || data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-users-slash me-1"></i> No registered student accounts in database yet. Students who register via the app will appear here!</td></tr>';
-                        return;
-                    }
-                    let html = '';
-                    data.forEach(user => {
-                        const name = (user.FirstName || user.FirstName === '') ? `${user.FirstName} ${user.LastName}` : (user.name || 'Student User');
-                        html += `
-                        <tr>
-                            <td><strong class="text-dark">${name}</strong></td>
-                            <td><code>${user.StudentNumber || user.studentNumber || 'N/A'}</code></td>
-                            <td>${user.Course || user.course || 'N/A'} (${user.YearLevel || user.yearLevel || 'N/A'})</td>
-                            <td>${user.SchoolEmail || user.email}</td>
-                            <td><span class="badge ${user.VerificationStatus === 'VERIFIED' ? 'bg-success' : 'bg-warning text-dark'} fw-bold px-3 py-1 rounded-pill">${user.VerificationStatus || 'UNVERIFIED'}</span></td>
-                            <td>
-                                ${user.Status === 'SUSPENDED'
-                                    ? '<span class="text-muted fs-8 fw-semibold">Suspended</span>' 
-                                    : `<button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="suspendStudentUser(${user.Id || user.id})">Suspend</button>`}
-                            </td>
-                        </tr>`;
-                    });
-                    tbody.innerHTML = html;
-                }
-            } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No registered student accounts in database yet.</td></tr>';
-            }
-        }
-
-        async function suspendStudentUser(userId) {
-            if (confirm('Admin Action: Suspend this student user account?')) {
-                try {
-                    await fetch(`/pasabuy_api.php?action=suspend_user&id=${userId}`, { method: 'POST' });
-                    alert('Student account suspended.');
-                    fetchAdminStudents();
-                } catch (e) {
-                    alert('Error suspending user.');
-                }
-            }
-        }
-
-        async function fetchAdminPayments() {
-            const tbody = document.getElementById('adminPaymentsTableBody');
-            if (!tbody) return;
-            try {
-                const res = await fetch('/pasabuy_api.php?action=admin_payments');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (!Array.isArray(data) || data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-receipt me-1"></i> No PayMongo fee payments recorded in database yet. Paid GCash fees will appear here automatically!</td></tr>';
-                        return;
-                    }
-                    let html = '';
-                    data.forEach(p => {
-                        html += `
-                        <tr>
-                            <td><code>${p.providerReference || ('PM-CHK-' + p.id)}</code></td>
-                            <td>${p.listingTitle || 'Campus Listing'}</td>
-                            <td><strong class="text-success">₱${parseFloat(p.amount).toFixed(2)}</strong></td>
-                            <td><span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill"><i class="fa-solid fa-check me-1"></i> ${p.status}</span></td>
-                            <td>${new Date(p.createdAt).toLocaleString()}</td>
-                        </tr>`;
-                    });
-                    tbody.innerHTML = html;
-                }
-            } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No PayMongo fee payments recorded yet.</td></tr>';
-            }
-        }
-
-        async function fetchAdminListings() {
-            const container = document.getElementById('adminListingsContainer');
-            if (!container) return;
-
-            try {
-                const res = await fetch('/pasabuy_api.php?action=listings');
-                if (res.ok) {
-                    const data = await res.json();
-                    let html = '';
-                    data.forEach(item => {
-                        html += `
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                                <img src="${(item.images && item.images.length > 0) ? (item.images[0].imageUrl || item.images[0]) : (item.ImageUrl || 'https://images.unsplash.com/photo-1611125832047-1d7ad1e8e48b?w=500&q=80')}" class="rounded-3 mb-2" style="height:140px; object-fit:cover;">
-                                <div class="d-flex align-items-center justify-content-between mb-1">
-                                    <strong class="text-primary fs-7">₱${parseFloat(item.Price || item.price || 0).toFixed(2)}</strong>
-                                    <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1 rounded-pill fs-9">Fee Paid</span>
-                                </div>
-                                <h6 class="fw-bold text-dark fs-8 mb-2">${item.Title || item.title}</h6>
-                                <button class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-bold fs-8" onclick="adminDeleteListing(${item.Id || item.id})"><i class="fa-solid fa-trash me-1"></i> Admin Delete</button>
-                            </div>
-                        </div>`;
-                    });
-                    container.innerHTML = html || '<div class="col-12 text-muted">No active listings to show.</div>';
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        async function adminDeleteListing(id) {
-            if (confirm('Admin Action: Delete this listing from campus marketplace?')) {
-                try {
-                    await fetch(`/pasabuy_api.php?action=delete_listing&id=${id}`, { method: 'POST' });
-                    alert('Listing deleted by Admin.');
-                    fetchAdminListings();
-                } catch (e) {
-                    alert('Error deleting listing.');
-                }
-            }
         }
 
         /* ==========================================================================

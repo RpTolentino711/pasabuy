@@ -6,14 +6,10 @@
  */
 
 let rentEaseInventory = [];
-let rentEaseCart = JSON.parse(localStorage.getItem('rentease_cart')) || [
-    { id: 1, title: 'Monoblock Chair', price_per_day: 20.00, quantity: 10, image_url: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80' },
-    { id: 5, title: 'Folding Table', price_per_day: 40.00, quantity: 2, image_url: 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=500&q=80' },
-    { id: 7, title: 'Event Tent (10x10ft)', price_per_day: 800.00, quantity: 1, image_url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80' }
-];
+let rentEaseCart = JSON.parse(localStorage.getItem('rentease_cart')) || [];
 
 let currentDetailProduct = null;
-let currentDetailQty = 10;
+let currentDetailQty = 1;
 let currentCategory = 'Chairs';
 let currentTag = 'All';
 let currentDeliveryOption = 'DELIVERY';
@@ -22,7 +18,8 @@ let rentEaseMapInstance = null;
 
 // API Base URL resolver
 function getRentEaseApiUrl(action, params = {}) {
-    const url = new URL('/rentease_api.php', window.location.origin);
+    let base = window.location.pathname.includes('/student/') ? '../rentease_api.php' : 'rentease_api.php';
+    const url = new URL(base, window.location.href);
     url.searchParams.set('action', action);
     for (const [k, v] of Object.entries(params)) {
         url.searchParams.set(k, v);
@@ -61,7 +58,7 @@ function renderFeaturedRentals() {
         <div class="col-6 mb-2">
             <div class="card border-0 rounded-4 shadow-sm h-100 p-2.5 bg-white position-relative" style="cursor:pointer;" onclick="openEquipmentDetail(${item.id})">
                 <div class="position-relative">
-                    <img src="${item.image_url}" class="rounded-3 w-100" style="height: 125px; object-fit: cover;" alt="${item.name}">
+                    <img src="${item.image_url}" class="rounded-3 w-100" style="height: 125px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
                     <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" 
                             style="width:26px; height:26px; background:rgba(255,255,255,0.9);" 
                             onclick="event.stopPropagation(); toggleWishlist(this, ${item.id})">
@@ -190,7 +187,7 @@ function renderGridElements(items) {
             <div class="card border-0 rounded-4 shadow-sm h-100 p-2.5 bg-white position-relative d-flex flex-column justify-content-between" style="cursor:pointer;" onclick="openEquipmentDetail(${p.id})">
                 <div>
                     <div class="position-relative mb-2">
-                        <img src="${p.image_url}" class="rounded-3 w-100" style="height: 130px; object-fit: cover;" alt="${p.name}">
+                        <img src="${p.image_url}" class="rounded-3 w-100" style="height: 130px; object-fit: cover;" alt="${p.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
                         <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" 
                                 style="width:26px; height:26px; background:rgba(255,255,255,0.9);" 
                                 onclick="event.stopPropagation(); toggleWishlist(this, ${p.id})">
@@ -226,16 +223,30 @@ function openEquipmentDetail(id) {
     if (!item) return;
 
     currentDetailProduct = item;
-    currentDetailQty = 10;
+    currentDetailQty = 1;
 
     document.getElementById('detailHeaderTitle').innerText = item.name;
     document.getElementById('detailTitle').innerText = item.name;
     document.getElementById('detailMainImg').src = item.image_url;
-    document.getElementById('detailRatingVal').innerText = parseFloat(item.rating).toFixed(1);
-    document.getElementById('detailReviewCount').innerText = item.reviews_count;
+    document.getElementById('detailRatingVal').innerText = parseFloat(item.rating || 5.0).toFixed(1);
+    document.getElementById('detailReviewCount').innerText = item.reviews_count || 1;
     document.getElementById('detailPrice').innerText = '₱' + parseFloat(item.price_per_day).toFixed(0);
-    document.getElementById('detailDescription').innerText = item.description || 'Durable and lightweight event equipment, perfect for any occasion.';
+    document.getElementById('detailDescription').innerText = item.description || 'Quality event equipment for rent, maintained and cleaned for every booking.';
     document.getElementById('detailQtyVal').innerText = currentDetailQty;
+
+    // Video Player support for posted equipment
+    const videoContainer = document.getElementById('detailVideoContainer');
+    const videoPlayer = document.getElementById('detailVideoPlayer');
+    if (videoContainer && videoPlayer) {
+        if (item.video_url && item.video_url.trim() !== '') {
+            videoPlayer.src = item.video_url;
+            videoContainer.style.display = 'block';
+        } else {
+            videoPlayer.pause();
+            videoPlayer.src = '';
+            videoContainer.style.display = 'none';
+        }
+    }
 
     const modalEl = document.getElementById('productDetailModal');
     if (modalEl) {
@@ -293,7 +304,12 @@ function saveRentEaseCart() {
 
 function updateCartBadgeCount() {
     const count = rentEaseCart.reduce((acc, it) => acc + (it.quantity || 1), 0);
-    const badges = [document.getElementById('tabCartBadge'), document.getElementById('headerCartBadge')];
+    const badges = [
+        document.getElementById('tabCartBadge'), 
+        document.getElementById('cartCountBadge'),
+        document.getElementById('headerCartBadge'),
+        document.getElementById('homeCartCountBadge')
+    ];
     badges.forEach(b => {
         if (b) {
             b.innerText = count;
@@ -492,15 +508,16 @@ function selectPaymentMethod(method) {
 async function executeRentEasePayment() {
     const address = document.getElementById('checkoutAddressText')?.innerText || 'San Pablo, Laguna';
     const rentalDate = document.getElementById('checkoutDateInput')?.value || '2026-09-25';
+    const user = getRentEaseCurrentUser();
 
     try {
         const res = await fetch(getRentEaseApiUrl('create_order'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                customer_name: 'Bea Solis',
-                customer_email: 'bea@gmail.com',
-                customer_phone: '09171234567',
+                customer_name: user.name,
+                customer_email: user.email,
+                customer_phone: user.phone,
                 delivery_option: currentDeliveryOption,
                 delivery_address: address,
                 rental_start_date: rentalDate,
@@ -645,6 +662,7 @@ async function submitRentEaseIssue() {
     const orderCode = document.getElementById('issueOrderCodeInput')?.value.trim() || '#RE-10245';
     const cat = document.getElementById('issueCategorySelect')?.value || 'Damaged Equipment';
     const desc = document.getElementById('issueDescriptionText')?.value.trim() || '';
+    const user = getRentEaseCurrentUser();
 
     if (!desc) {
         alert('Please describe the issue details.');
@@ -657,7 +675,7 @@ async function submitRentEaseIssue() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 order_code: orderCode,
-                customer_name: 'Bea Solis',
+                customer_name: user.name,
                 issue_title: cat,
                 description: desc
             })
@@ -686,10 +704,366 @@ function logoutRentEaseUser() {
 }
 
 // ----------------------------------------------------------
+// 8. USER PROFILE, ORDERS & ACCOUNT HUB (Screen 8)
+// ----------------------------------------------------------
+function getRentEaseCurrentUser() {
+    try {
+        const saved = localStorage.getItem('rentease_user_profile');
+        if (saved) return JSON.parse(saved);
+
+        const pasabuyUser = localStorage.getItem('pasabuy_user');
+        if (pasabuyUser) {
+            const u = JSON.parse(pasabuyUser);
+            const fullName = (u.FirstName ? `${u.FirstName} ${u.LastName || ''}`.trim() : (u.name || '')).trim();
+            if (fullName) {
+                return {
+                    name: fullName,
+                    email: u.SchoolEmail || u.email || 'user@campus.edu.ph',
+                    phone: u.PhoneNumber || u.phone || '0917-123-4567',
+                    avatar: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'
+                };
+            }
+        }
+    } catch (e) {}
+
+    return {
+        name: 'Event Organizer',
+        email: 'organizer@campus.edu.ph',
+        phone: '0917-123-4567',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'
+    };
+}
+
+function syncRentEaseProfileUI() {
+    const user = getRentEaseCurrentUser();
+    const nameEl = document.getElementById('profileName');
+    const emailEl = document.getElementById('profileEmail');
+    const avatarEl = document.getElementById('profileAvatar');
+    const homeAvatar = document.getElementById('homeAvatar');
+
+    if (nameEl) nameEl.innerText = user.name;
+    if (emailEl) emailEl.innerText = user.email;
+    if (avatarEl) {
+        avatarEl.src = user.avatar;
+        avatarEl.onerror = () => { avatarEl.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'; };
+    }
+    if (homeAvatar) {
+        homeAvatar.src = user.avatar;
+        homeAvatar.alt = user.name;
+        homeAvatar.onerror = () => { homeAvatar.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'; };
+    }
+}
+
+function openProfileSettingsModal() {
+    const user = getRentEaseCurrentUser();
+    const nameInput = document.getElementById('editProfileNameInput');
+    const emailInput = document.getElementById('editProfileEmailInput');
+    const phoneInput = document.getElementById('editProfilePhoneInput');
+    const avatarInput = document.getElementById('editProfileAvatarInput');
+    const preview = document.getElementById('editProfileAvatarPreview');
+
+    if (nameInput) nameInput.value = user.name;
+    if (emailInput) emailInput.value = user.email;
+    if (phoneInput) phoneInput.value = user.phone;
+    if (avatarInput) avatarInput.value = user.avatar;
+    if (preview) preview.src = user.avatar;
+
+    const modalEl = document.getElementById('editProfileModal');
+    if (modalEl) {
+        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+
+function saveRentEaseProfile() {
+    const name = document.getElementById('editProfileNameInput')?.value.trim() || 'Event Organizer';
+    const email = document.getElementById('editProfileEmailInput')?.value.trim() || 'organizer@campus.edu.ph';
+    const phone = document.getElementById('editProfilePhoneInput')?.value.trim() || '0917-123-4567';
+    const avatar = document.getElementById('editProfileAvatarInput')?.value.trim() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80';
+
+    const profile = { name, email, phone, avatar };
+    localStorage.setItem('rentease_user_profile', JSON.stringify(profile));
+
+    syncRentEaseProfileUI();
+
+    const modalEl = document.getElementById('editProfileModal');
+    if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+
+    alert('✅ Profile updated successfully!');
+}
+
+// Active Orders Modal
+async function openMyOrdersModal() {
+    const modalEl = document.getElementById('myOrdersModal');
+    if (!modalEl) return;
+    if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+
+    const body = document.getElementById('myOrdersModalBody');
+    if (!body) return;
+
+    body.innerHTML = '<div class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Fetching your rental bookings...</div>';
+
+    try {
+        const res = await fetch(getRentEaseApiUrl('get_admin_dashboard'));
+        const data = await res.json();
+        const orders = data.recent_orders || [];
+        const activeOrders = orders.filter(o => o.status !== 'RETURNED' && o.status !== 'CANCELLED');
+
+        if (activeOrders.length === 0) {
+            body.innerHTML = `
+            <div class="text-center py-4 bg-light rounded-4 p-3">
+                <i class="fa-solid fa-box-open fs-2 text-secondary opacity-50 mb-2"></i>
+                <h6 class="fw-bold text-dark fs-8 mb-1">No Active Orders</h6>
+                <p class="text-muted fs-9 mb-3">You don't have any event rentals currently in transit or booked.</p>
+                <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold fs-9" style="background:#5B3FA8; border:none;" onclick="bootstrap.Modal.getInstance(document.getElementById('myOrdersModal')).hide(); switchTab('explore');">
+                    Browse Equipment
+                </button>
+            </div>`;
+            return;
+        }
+
+        let html = '<div class="d-flex flex-column gap-2.5">';
+        activeOrders.forEach(ord => {
+            const statusBadge = ord.status === 'ON_THE_WAY' 
+                ? '<span class="badge bg-primary text-white rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-truck-fast me-1"></i> ON THE WAY</span>'
+                : (ord.status === 'DELIVERED' 
+                    ? '<span class="badge bg-success text-white rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-check me-1"></i> DELIVERED</span>'
+                    : '<span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-clock me-1"></i> PREPARING</span>');
+
+            html += `
+            <div class="card border rounded-4 p-3 shadow-xs bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-extrabold text-dark fs-8">${ord.order_number}</span>
+                    ${statusBadge}
+                </div>
+                <div class="text-muted fs-9 mb-1">
+                    <i class="fa-regular fa-calendar me-1"></i> Event Date: <strong>${ord.rental_start_date || 'Upcoming'}</strong> (${ord.rental_days || 1} day)
+                </div>
+                <div class="text-muted fs-9 mb-2">
+                    <i class="fa-solid fa-location-dot me-1"></i> Destination: ${ord.delivery_address || 'Campus Center'}
+                </div>
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                    <div>
+                        <span class="text-muted fs-9 d-block">Total Amount</span>
+                        <strong class="text-dark fs-7">₱${parseFloat(ord.total_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                    </div>
+                    <div class="d-flex gap-1.5">
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="bootstrap.Modal.getInstance(document.getElementById('myOrdersModal')).hide(); document.getElementById('issueOrderCodeInput').value='${ord.order_number}'; openIssueReportingModal();">
+                            <i class="fa-solid fa-headset me-1"></i> Report
+                        </button>
+                        <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold" style="background:#5B3FA8; border:none;" onclick="bootstrap.Modal.getInstance(document.getElementById('myOrdersModal')).hide(); openTrackScreen('${ord.order_number}');">
+                            <i class="fa-solid fa-location-arrow me-1"></i> Track
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        body.innerHTML = html;
+    } catch (e) {
+        body.innerHTML = '<div class="text-center py-4 text-danger fs-8">Unable to load orders right now.</div>';
+    }
+}
+
+// Purchase History Modal
+async function openPurchaseHistoryModal() {
+    const modalEl = document.getElementById('purchaseHistoryModal');
+    if (!modalEl) return;
+    if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+
+    const body = document.getElementById('purchaseHistoryModalBody');
+    if (!body) return;
+
+    body.innerHTML = '<div class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading past rental history...</div>';
+
+    try {
+        const res = await fetch(getRentEaseApiUrl('get_admin_dashboard'));
+        const data = await res.json();
+        const orders = data.recent_orders || [];
+        
+        let html = '<div class="d-flex flex-column gap-2.5">';
+        html += `
+        <div class="p-3 bg-light rounded-4 mb-1 text-center">
+            <h6 class="fw-extrabold text-dark fs-8 mb-0">Total Bookings Completed: <span class="text-primary">${orders.length}</span></h6>
+            <span class="text-muted fs-9">All event rentals verified & returned without disputes</span>
+        </div>`;
+
+        orders.forEach((ord, index) => {
+            html += `
+            <div class="card border rounded-4 p-3 shadow-xs bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-1.5">
+                    <div>
+                        <strong class="text-dark fs-8 d-block">${ord.order_number}</strong>
+                        <span class="text-muted fs-9">${ord.rental_start_date || 'Sept 2026'} • ${ord.fulfillment_type || 'Delivery'}</span>
+                    </div>
+                    <span class="badge bg-success-subtle text-success fw-bold rounded-pill px-2.5 py-1 fs-9">
+                        <i class="fa-solid fa-circle-check me-1"></i> Completed
+                    </span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top mt-1">
+                    <span class="text-muted fs-9">Paid via <strong>${ord.payment_method || 'GCash'}</strong></span>
+                    <strong class="text-dark fs-8">₱${parseFloat(ord.total_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        body.innerHTML = html;
+    } catch (e) {
+        body.innerHTML = '<div class="text-center py-4 text-muted fs-8">12 past event rentals recorded.</div>';
+    }
+}
+
+// Saved Addresses Modal
+function getSavedAddresses() {
+    try {
+        const saved = localStorage.getItem('rentease_saved_addresses');
+        if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+        { label: 'Campus Activity Center', address: 'San Pablo Colleges - Student Gymnasium & Stage Area', isPrimary: true },
+        { label: 'Main Quadrangle', address: 'San Pablo Colleges Quadrangle Grounds (Booth 4)', isPrimary: false }
+    ];
+}
+
+function openSavedAddressesModal() {
+    renderSavedAddressesList();
+    const modalEl = document.getElementById('savedAddressesModal');
+    if (modalEl) {
+        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+
+function renderSavedAddressesList() {
+    const list = document.getElementById('savedAddressesList');
+    if (!list) return;
+    const addresses = getSavedAddresses();
+
+    let html = '';
+    addresses.forEach((item, idx) => {
+        html += `
+        <div class="card border rounded-3 p-2.5 mb-2 bg-white d-flex flex-row align-items-center justify-content-between">
+            <div>
+                <div class="d-flex align-items-center gap-1.5 mb-1">
+                    <strong class="text-dark fs-8">${item.label}</strong>
+                    ${item.isPrimary ? '<span class="badge bg-primary rounded-pill fs-9 py-0.5 px-2">Primary</span>' : ''}
+                </div>
+                <div class="text-muted fs-9">${item.address}</div>
+            </div>
+            <div class="d-flex gap-1">
+                ${!item.isPrimary ? `
+                <button class="btn btn-sm btn-light border rounded-pill py-0 px-2 fs-9" onclick="setPrimaryAddress(${idx})" title="Set as Primary">
+                    Set Primary
+                </button>` : ''}
+                <button class="btn btn-sm btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center" style="width:26px; height:26px;" onclick="deleteSavedAddress(${idx})">
+                    <i class="fa-solid fa-trash fs-9"></i>
+                </button>
+            </div>
+        </div>`;
+    });
+    list.innerHTML = html;
+}
+
+function saveNewSavedAddress() {
+    const label = document.getElementById('newAddressLabel')?.value.trim();
+    const address = document.getElementById('newAddressDetails')?.value.trim();
+
+    if (!label || !address) {
+        alert('Please fill out both the label and address fields.');
+        return;
+    }
+
+    const addresses = getSavedAddresses();
+    addresses.push({ label, address, isPrimary: addresses.length === 0 });
+    localStorage.setItem('rentease_saved_addresses', JSON.stringify(addresses));
+
+    document.getElementById('newAddressLabel').value = '';
+    document.getElementById('newAddressDetails').value = '';
+    renderSavedAddressesList();
+
+    const checkoutAddr = document.getElementById('checkoutAddressText');
+    if (checkoutAddr) checkoutAddr.innerText = `${label} (${address})`;
+
+    alert('✅ New delivery address saved!');
+}
+
+function setPrimaryAddress(idx) {
+    const addresses = getSavedAddresses();
+    addresses.forEach((a, i) => a.isPrimary = (i === idx));
+    localStorage.setItem('rentease_saved_addresses', JSON.stringify(addresses));
+    renderSavedAddressesList();
+
+    const checkoutAddr = document.getElementById('checkoutAddressText');
+    if (checkoutAddr) checkoutAddr.innerText = `${addresses[idx].label} (${addresses[idx].address})`;
+}
+
+function deleteSavedAddress(idx) {
+    let addresses = getSavedAddresses();
+    if (addresses.length <= 1) {
+        alert('You must have at least one saved delivery address.');
+        return;
+    }
+    addresses.splice(idx, 1);
+    if (!addresses.some(a => a.isPrimary)) addresses[0].isPrimary = true;
+    localStorage.setItem('rentease_saved_addresses', JSON.stringify(addresses));
+    renderSavedAddressesList();
+}
+
+// Payment Methods Modal
+function openPaymentMethodsModal() {
+    const user = getRentEaseCurrentUser();
+    const phoneInput = document.getElementById('paymentPhoneInput');
+    if (phoneInput) phoneInput.value = user.phone;
+
+    const gcashDisplay = document.getElementById('gcashAccountDisplay');
+    if (gcashDisplay) gcashDisplay.innerText = `Connected (${user.phone})`;
+
+    const modalEl = document.getElementById('paymentMethodsModal');
+    if (modalEl) {
+        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+
+function savePreferredPaymentMethod(method) {
+    currentPaymentMethod = method;
+    const badge = document.getElementById('checkoutSelectedPaymentBadge');
+    if (badge) badge.innerText = method;
+    alert(`💳 Preferred Payment Method set to ${method}!`);
+}
+
+function updatePaymentPhoneNumber() {
+    const phone = document.getElementById('paymentPhoneInput')?.value.trim();
+    if (!phone) {
+        alert('Please enter a valid phone number.');
+        return;
+    }
+    const user = getRentEaseCurrentUser();
+    user.phone = phone;
+    localStorage.setItem('rentease_user_profile', JSON.stringify(user));
+
+    const gcashDisplay = document.getElementById('gcashAccountDisplay');
+    if (gcashDisplay) gcashDisplay.innerText = `Connected (${phone})`;
+
+    alert(`✅ Payment account mobile number updated to ${phone}!`);
+}
+
+// About RentEase Modal
+function openAboutRentEaseModal() {
+    const modalEl = document.getElementById('aboutRentEaseModal');
+    if (modalEl) {
+        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+
+// ----------------------------------------------------------
 // GLOBAL TAB SWITCHER OVERRIDE (Matching UIDESIFNAPP.png)
 // ----------------------------------------------------------
 window.switchTab = function (tabName) {
-    const validTabs = ['home', 'explore', 'cart', 'track', 'profile'];
+    const validTabs = ['home', 'explore', 'cart', 'track', 'profile', 'sell', 'wanted', 'messages'];
     validTabs.forEach(t => {
         const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
         const nav = document.getElementById('tabNav' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -711,13 +1085,108 @@ window.switchTab = function (tabName) {
         renderExploreCatalog();
     } else if (tabName === 'track') {
         openTrackScreen('#RE-10245');
+    } else if (tabName === 'profile') {
+        syncRentEaseProfileUI();
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ----------------------------------------------------------
+// POST RENTAL ITEM HANDLER (Live Video & Photo Rental Posting)
+// ----------------------------------------------------------
+window.postRentalItemLive = async function () {
+    const title = document.getElementById('sellTitle')?.value.trim();
+    const category = document.getElementById('sellCategory')?.value || 'Others';
+    const materialTag = document.getElementById('sellMaterialTag')?.value || 'Plastic';
+    const price = parseFloat(document.getElementById('sellPrice')?.value) || 0;
+    const quantity = parseInt(document.getElementById('sellQuantity')?.value) || 1;
+    const condition = document.getElementById('sellCondition')?.value || 'Good';
+    const location = document.getElementById('sellMeetup')?.value.trim() || 'San Pablo, Laguna';
+    const description = document.getElementById('sellDescription')?.value.trim();
+    
+    // Photo from file input dataUrl or text url input
+    const photoUrl = (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > 0) 
+        ? uploadedPhotoUrls[0] 
+        : (document.getElementById('sellPhotoUrlInput')?.value.trim() || '');
+    
+    // Video from video url input or file input dataUrl
+    const videoUrl = document.getElementById('sellVideoUrlInput')?.value.trim() || '';
+
+    if (!title) {
+        alert('⚠️ Please enter an equipment title / name.');
+        document.getElementById('sellTitle')?.focus();
+        return;
+    }
+
+    if (price <= 0) {
+        alert('⚠️ Please enter a valid daily rental price.');
+        document.getElementById('sellPrice')?.focus();
+        return;
+    }
+
+    const btn = document.getElementById('btnPublishRentalItem');
+    const oldBtnHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Publishing Equipment...';
+    }
+
+    try {
+        const res = await fetch(getRentEaseApiUrl('post_item'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: title,
+                category: category,
+                material_tag: materialTag,
+                price_per_day: price,
+                qty_total: quantity,
+                image_url: photoUrl,
+                video_url: videoUrl,
+                item_condition: condition,
+                location: location,
+                description: description,
+                owner_name: localStorage.getItem('pasabuy_student_name') || 'Student Renter'
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert(`🎉 Success!\n\n"${title}" has been published live for rent on RentEase!`);
+            
+            // Clear inputs
+            if (document.getElementById('sellTitle')) document.getElementById('sellTitle').value = '';
+            if (document.getElementById('sellDescription')) document.getElementById('sellDescription').value = '';
+            if (document.getElementById('sellPhotoUrlInput')) document.getElementById('sellPhotoUrlInput').value = '';
+            if (document.getElementById('sellVideoUrlInput')) document.getElementById('sellVideoUrlInput').value = '';
+            if (document.getElementById('sellPhotosPreviewGrid')) document.getElementById('sellPhotosPreviewGrid').innerHTML = '';
+            if (document.getElementById('sellVideoPreviewContainer')) document.getElementById('sellVideoPreviewContainer').style.display = 'none';
+            if (typeof uploadedPhotoUrls !== 'undefined') uploadedPhotoUrls = [];
+
+            // Reload live inventory
+            await loadRentEaseCatalog();
+
+            // Switch to explore tab showing the category
+            openCategoryTab(category);
+        } else {
+            alert('❌ ' + (data.message || 'Failed to post item. Please try again.'));
+        }
+    } catch (e) {
+        console.error("Error posting rental item:", e);
+        alert('❌ Error connecting to server to post item.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = oldBtnHtml;
+        }
+    }
 };
 
 // Automatic bootstrap on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     loadRentEaseCatalog();
+    syncRentEaseProfileUI();
+    updateCartBadgeCount();
     const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in') === 'true';
     if (isLoggedIn) {
         switchTab('home');

@@ -241,9 +241,9 @@ if ($action === 'calculate_charges') {
 // 5. CREATE ORDER & CHECKOUT (Screen 5 & Screen 6)
 // ----------------------------------------------------------
 if ($action === 'create_order') {
-    $customerName = trim((string)($data['customer_name'] ?? 'Bea Solis'));
-    $customerEmail = trim((string)($data['customer_email'] ?? 'bea@gmail.com'));
-    $customerPhone = trim((string)($data['customer_phone'] ?? '09171234567'));
+    $customerName = trim((string)($data['customer_name'] ?? 'Student Customer'));
+    $customerEmail = trim((string)($data['customer_email'] ?? 'customer@campus.edu.ph'));
+    $customerPhone = trim((string)($data['customer_phone'] ?? '0917-123-4567'));
     $deliveryOption = strtoupper(trim((string)($data['delivery_option'] ?? 'DELIVERY')));
     $deliveryAddress = trim((string)($data['delivery_address'] ?? 'San Pablo, Laguna'));
     $rentalStartDate = trim((string)($data['rental_start_date'] ?? date('Y-m-d', strtotime('+7 days'))));
@@ -470,10 +470,10 @@ if ($action === 'get_admin_dashboard') {
             ],
             'inventory' => $items,
             'recent_orders' => [
-                ['order_number' => 'RE-10245', 'customer_name' => 'Bea Solis', 'customer_phone' => '0917-123-4567', 'customer_email' => 'bea@gmail.com', 'fulfillment_type' => 'Delivery', 'delivery_address' => 'San Pablo, Laguna (Student Center)', 'rental_start_date' => '2026-09-25', 'rental_days' => 1, 'total_amount' => 1749.00, 'payment_method' => 'GCASH', 'status' => 'ON_THE_WAY']
+                ['order_number' => 'RE-10245', 'customer_name' => 'Campus Organizer', 'customer_phone' => '0917-123-4567', 'customer_email' => 'organizer@campus.edu.ph', 'fulfillment_type' => 'Delivery', 'delivery_address' => 'San Pablo, Laguna (Student Center)', 'rental_start_date' => '2026-09-25', 'rental_days' => 1, 'total_amount' => 1749.00, 'payment_method' => 'GCASH', 'status' => 'ON_THE_WAY']
             ],
             'issues' => [
-                ['id' => 1, 'ticket_code' => '#TKT-8841', 'order_code' => '#RE-10245', 'customer_name' => 'Bea Solis', 'subject' => 'Damaged Chair Leg', 'description' => 'One monoblock chair arrived with a hairline crack.', 'status' => 'REVIEWING', 'severity' => 'MEDIUM', 'created_at' => '2026-09-18 10:15:00'],
+                ['id' => 1, 'ticket_code' => '#TKT-8841', 'order_code' => '#RE-10245', 'customer_name' => 'Campus Organizer', 'subject' => 'Damaged Chair Leg', 'description' => 'One monoblock chair arrived with a hairline crack.', 'status' => 'REVIEWING', 'severity' => 'MEDIUM', 'created_at' => '2026-09-18 10:15:00'],
                 ['id' => 2, 'ticket_code' => '#TKT-8842', 'order_code' => '#RE-10238', 'customer_name' => 'Paolo Tolentino', 'subject' => 'Extra Extension Cord', 'description' => 'Need 1 extra 10m outdoor heavy duty cord for tent lights.', 'status' => 'OPEN', 'severity' => 'LOW', 'created_at' => '2026-09-18 09:30:00']
             ],
             'packages' => []

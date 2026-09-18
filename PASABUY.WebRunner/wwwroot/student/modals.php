@@ -959,6 +959,14 @@
                     </div>
                 </div>
 
+                <!-- Equipment Video Player (Optional for items posted with video) -->
+                <div id="detailVideoContainer" class="mb-3 rounded-4 overflow-hidden border bg-dark text-center" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between p-2 px-3 bg-dark text-white border-bottom border-secondary">
+                        <span class="fs-9 fw-bold"><i class="fa-solid fa-video text-danger me-1"></i> Live Equipment Video Demonstration</span>
+                    </div>
+                    <video id="detailVideoPlayer" controls style="width:100%; max-height:220px; background:#000; object-fit:contain;"></video>
+                </div>
+
                 <!-- Title, Rating & Price (Screen 3) -->
                 <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle">Monoblock Chair</h4>
                 
@@ -1073,6 +1081,242 @@
                         style="background: #5B3FA8; border:none;" onclick="submitRentEaseIssue()">
                     Submit Ticket
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================
+     RENTEASE PROFILE MODALS (SCREEN 8 & USER HUB)
+     ========================================================== -->
+
+<!-- 1. EDIT PROFILE & SETTINGS MODAL -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <h6 class="modal-title fw-extrabold text-dark fs-7 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-user-pen" style="color:#5B3FA8;"></i> Edit Profile & Account
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-1">
+                <div class="text-center mb-3">
+                    <div class="position-relative d-inline-block">
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80" 
+                             id="editProfileAvatarPreview" class="rounded-circle border border-3 border-white shadow-sm" 
+                             width="72" height="72" style="object-fit:cover;">
+                    </div>
+                    <div class="mt-2">
+                        <label class="form-label fs-9 text-muted mb-1">Avatar Image URL</label>
+                        <input type="text" class="form-control form-control-sm rounded-pill text-center fs-9" 
+                               id="editProfileAvatarInput" placeholder="https://..." oninput="document.getElementById('editProfileAvatarPreview').src = this.value || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'">
+                    </div>
+                </div>
+
+                <div class="mb-2.5">
+                    <label class="form-label fw-bold fs-8 mb-1">Full Name</label>
+                    <input type="text" class="form-control rounded-3 fs-8" id="editProfileNameInput" placeholder="Enter your name">
+                </div>
+
+                <div class="mb-2.5">
+                    <label class="form-label fw-bold fs-8 mb-1">Email Address</label>
+                    <input type="email" class="form-control rounded-3 fs-8" id="editProfileEmailInput" placeholder="user@campus.edu.ph">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold fs-8 mb-1">Phone Number</label>
+                    <input type="tel" class="form-control rounded-3 fs-8" id="editProfilePhoneInput" placeholder="0917-123-4567">
+                </div>
+
+                <button type="button" class="btn btn-primary w-100 py-2.5 rounded-pill fw-bold fs-8 shadow-sm" 
+                        style="background: #5B3FA8; border:none;" onclick="saveRentEaseProfile()">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. MY ORDERS MODAL -->
+<div class="modal fade" id="myOrdersModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <h6 class="modal-title fw-extrabold text-dark fs-7 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-receipt" style="color:#5B3FA8;"></i> Active Rental Orders
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-1" id="myOrdersModalBody">
+                <div class="text-center py-4 text-muted">
+                    <i class="fa-solid fa-spinner fa-spin me-2"></i>Loading orders...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. PURCHASE HISTORY MODAL -->
+<div class="modal fade" id="purchaseHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <h6 class="modal-title fw-extrabold text-dark fs-7 d-flex align-items-center gap-2">
+                    <i class="fa-regular fa-calendar-check" style="color:#5B3FA8;"></i> Rental & Purchase History
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-1" id="purchaseHistoryModalBody">
+                <div class="text-center py-4 text-muted">
+                    <i class="fa-solid fa-spinner fa-spin me-2"></i>Loading history...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. SAVED ADDRESSES MODAL -->
+<div class="modal fade" id="savedAddressesModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <h6 class="modal-title fw-extrabold text-dark fs-7 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-location-dot" style="color:#5B3FA8;"></i> Saved Delivery Addresses
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-1">
+                <div id="savedAddressesList" class="mb-3">
+                    <!-- Dynamic addresses rendered here -->
+                </div>
+
+                <div class="border-top pt-3">
+                    <h6 class="fw-bold text-dark fs-8 mb-2"><i class="fa-solid fa-plus-circle text-primary me-1"></i> Add New Address</h6>
+                    <div class="mb-2">
+                        <input type="text" class="form-control rounded-3 fs-8 mb-2" id="newAddressLabel" placeholder="Label (e.g. Campus Org Hall, Student Center, Home)">
+                        <textarea class="form-control rounded-3 fs-8" id="newAddressDetails" rows="2" placeholder="Full street, building, or drop-off directions..."></textarea>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="saveNewSavedAddress()">
+                        <i class="fa-solid fa-plus me-1"></i> Save Address
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. PAYMENT METHODS MODAL -->
+<div class="modal fade" id="paymentMethodsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <h6 class="modal-title fw-extrabold text-dark fs-7 d-flex align-items-center gap-2">
+                    <i class="fa-regular fa-credit-card" style="color:#5B3FA8;"></i> Payment Methods
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-1">
+                <p class="fs-9 text-muted mb-3">Select your preferred payment method for event rental checkouts.</p>
+
+                <div class="list-group gap-2 mb-3" id="paymentMethodsList">
+                    <label class="list-group-item rounded-3 border d-flex align-items-center justify-content-between p-2.5 cursor-pointer">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <input class="form-check-input mt-0" type="radio" name="preferredPaymentRadio" value="GCASH" checked onchange="savePreferredPaymentMethod('GCASH')">
+                            <div>
+                                <strong class="fs-8 text-dark d-block"><i class="fa-solid fa-mobile-screen text-primary me-1"></i> GCash</strong>
+                                <span class="text-muted fs-9" id="gcashAccountDisplay">Connected (0917-***-4567)</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary fw-bold fs-9">Instant</span>
+                    </label>
+
+                    <label class="list-group-item rounded-3 border d-flex align-items-center justify-content-between p-2.5 cursor-pointer">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <input class="form-check-input mt-0" type="radio" name="preferredPaymentRadio" value="MAYA" onchange="savePreferredPaymentMethod('MAYA')">
+                            <div>
+                                <strong class="fs-8 text-dark d-block"><i class="fa-solid fa-wallet text-success me-1"></i> Maya Wallet</strong>
+                                <span class="text-muted fs-9" id="mayaAccountDisplay">Connected (0918-***-1234)</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success fw-bold fs-9">Instant</span>
+                    </label>
+
+                    <label class="list-group-item rounded-3 border d-flex align-items-center justify-content-between p-2.5 cursor-pointer">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <input class="form-check-input mt-0" type="radio" name="preferredPaymentRadio" value="CARD" onchange="savePreferredPaymentMethod('CARD')">
+                            <div>
+                                <strong class="fs-8 text-dark d-block"><i class="fa-brands fa-cc-visa text-primary me-1"></i> Debit / Credit Card</strong>
+                                <span class="text-muted fs-9">Visa / Mastercard ending in •••• 8842</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-light text-dark border fs-9">Card</span>
+                    </label>
+
+                    <label class="list-group-item rounded-3 border d-flex align-items-center justify-content-between p-2.5 cursor-pointer">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <input class="form-check-input mt-0" type="radio" name="preferredPaymentRadio" value="COD" onchange="savePreferredPaymentMethod('COD')">
+                            <div>
+                                <strong class="fs-8 text-dark d-block"><i class="fa-solid fa-hand-holding-dollar text-warning me-1"></i> Cash on Delivery (COD)</strong>
+                                <span class="text-muted fs-9">Pay rider upon delivery</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-warning-subtle text-warning fw-bold fs-9">Cash</span>
+                    </label>
+                </div>
+
+                <div class="border-top pt-2.5">
+                    <label class="form-label fw-bold fs-8 mb-1">Update GCash / Maya Mobile Number</label>
+                    <div class="input-group input-group-sm">
+                        <input type="tel" class="form-control rounded-start-3 fs-8" id="paymentPhoneInput" placeholder="0917-xxx-xxxx">
+                        <button class="btn btn-primary rounded-end-3 px-3 fw-bold fs-8" style="background:#5B3FA8; border:none;" onclick="updatePaymentPhoneNumber()">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 6. ABOUT RENTEASE MODAL -->
+<div class="modal fade" id="aboutRentEaseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="LOGO.png" alt="RentEase" style="height:32px; width:auto;">
+                    <h6 class="modal-title fw-extrabold text-dark fs-7 mb-0">About RentEase</h6>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-1">
+                <div class="text-center mb-3 py-2 bg-light rounded-4">
+                    <h6 class="fw-extrabold text-dark fs-7 mb-1" style="color:#5B3FA8 !important;">RentEase v2.0</h6>
+                    <div class="badge bg-primary-subtle text-primary fw-bold fs-9 mb-1">Easy Rentals. Seamless Events.</div>
+                    <p class="fs-9 text-muted mb-0">"Rent. Book. Celebrate."</p>
+                </div>
+
+                <div class="d-flex flex-column gap-2 mb-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-circle-check text-success fs-8 mt-1"></i>
+                        <span class="fs-8 text-dark"><strong>Hassle-Free Event Rentals:</strong> Book tables, chairs, event tents, lights, and PA audio systems with live delivery tracking.</span>
+                    </div>
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-circle-check text-success fs-8 mt-1"></i>
+                        <span class="fs-8 text-dark"><strong>Student & Campus Friendly:</strong> Transparent daily rates, package discounts, and refundable security deposits upon pickup.</span>
+                    </div>
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-circle-check text-success fs-8 mt-1"></i>
+                        <span class="fs-8 text-dark"><strong>Peer-to-Peer Rent Out:</strong> Students and event organizers can post their own equipment to earn extra income on campus.</span>
+                    </div>
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-headset text-primary fs-8 mt-1"></i>
+                        <span class="fs-8 text-dark"><strong>Support Center:</strong> 24/7 ticket dispute resolution and dedicated equipment inspection team.</span>
+                    </div>
+                </div>
+
+                <div class="bg-light p-2.5 rounded-3 text-center fs-9 text-muted">
+                    © 2026 RentEase Event Solutions. All rights reserved.
+                </div>
             </div>
         </div>
     </div>

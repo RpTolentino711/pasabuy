@@ -345,8 +345,8 @@
                     <i class="fa-solid fa-headset text-secondary fs-7"></i>
                 </button>
                 <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
-                        class="rounded-circle border border-2 border-white shadow-sm" width="36" height="36" style="object-fit:cover;" id="homeAvatar" alt="Bea Solis">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80"
+                        class="rounded-circle border border-2 border-white shadow-sm" width="36" height="36" style="object-fit:cover;" id="homeAvatar" alt="User Profile">
                     <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:10px; height:10px;"></span>
                 </div>
             </div>

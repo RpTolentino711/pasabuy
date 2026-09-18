@@ -19,21 +19,24 @@
         </button>
     </div>
 
-    <!-- User Profile Card (Bea Solis - Screen 8) -->
+    <!-- User Profile Card (Screen 8) -->
     <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3 d-flex flex-row align-items-center justify-content-between" 
-         style="cursor:pointer;" onclick="openProfileSettingsModal()">
+         style="cursor:pointer;" onclick="openProfileSettingsModal()" title="Click to edit profile">
         <div class="d-flex align-items-center gap-3">
             <div class="position-relative">
-                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80" 
-                     class="rounded-circle border border-2 border-white shadow-2xs" width="50" height="50" style="object-fit:cover;" id="profileAvatar">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80" 
+                     class="rounded-circle border border-2 border-white shadow-2xs" width="50" height="50" style="object-fit:cover;" id="profileAvatar" alt="User Avatar">
                 <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:12px; height:12px;"></span>
             </div>
             <div>
-                <h6 class="fw-extrabold text-dark fs-7 mb-0" id="profileName">Bea Solis</h6>
-                <div class="text-muted fs-8" id="profileEmail">bea@gmail.com</div>
+                <h6 class="fw-extrabold text-dark fs-7 mb-0" id="profileName">Event Organizer</h6>
+                <div class="text-muted fs-8" id="profileEmail">organizer@campus.edu.ph</div>
             </div>
         </div>
-        <i class="fa-solid fa-chevron-right text-muted fs-8"></i>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-light text-primary border rounded-pill fs-9 py-1 px-2">Edit</span>
+            <i class="fa-solid fa-chevron-right text-muted fs-8"></i>
+        </div>
     </div>
 
     <!-- Account Navigation Menu (Screen 8) -->
@@ -41,7 +44,7 @@
         
         <!-- My Orders -->
         <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between p-3 text-decoration-none border-bottom" 
-           onclick="openTrackScreen('#RE-10245')">
+           onclick="openMyOrdersModal()">
             <div class="d-flex align-items-center gap-3">
                 <div class="rounded-3 p-2 bg-light d-flex align-items-center justify-content-center" style="width:34px; height:34px; color:#5B3FA8;">
                     <i class="fa-solid fa-receipt fs-8"></i>
@@ -53,7 +56,7 @@
 
         <!-- Purchase History -->
         <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between p-3 text-decoration-none border-bottom" 
-           onclick="alert('📜 Purchase History: 12 rental orders successfully completed.')">
+           onclick="openPurchaseHistoryModal()">
             <div class="d-flex align-items-center gap-3">
                 <div class="rounded-3 p-2 bg-light d-flex align-items-center justify-content-center" style="width:34px; height:34px; color:#5B3FA8;">
                     <i class="fa-regular fa-calendar-check fs-8"></i>
@@ -65,7 +68,7 @@
 
         <!-- Saved Addresses -->
         <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between p-3 text-decoration-none border-bottom" 
-           onclick="alert('📍 Saved Address: San Pablo, Laguna (Primary Dropoff Warehouse Area)')">
+           onclick="openSavedAddressesModal()">
             <div class="d-flex align-items-center gap-3">
                 <div class="rounded-3 p-2 bg-light d-flex align-items-center justify-content-center" style="width:34px; height:34px; color:#5B3FA8;">
                     <i class="fa-solid fa-location-dot fs-8"></i>
@@ -77,7 +80,7 @@
 
         <!-- Payment Methods -->
         <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between p-3 text-decoration-none border-bottom" 
-           onclick="alert('💳 Connected Payment: GCash (0917-***-4567) & Visa Debit Card (**** 8842)')">
+           onclick="openPaymentMethodsModal()">
             <div class="d-flex align-items-center gap-3">
                 <div class="rounded-3 p-2 bg-light d-flex align-items-center justify-content-center" style="width:34px; height:34px; color:#5B3FA8;">
                     <i class="fa-regular fa-credit-card fs-8"></i>
@@ -101,7 +104,7 @@
 
         <!-- About RentEase -->
         <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between p-3 text-decoration-none border-bottom" 
-           onclick="alert('ℹ️ RentEase v2.0\nBrand: Easy Rentals. Seamless Events.\nEmpowering hassle-free party and event rentals.')">
+           onclick="openAboutRentEaseModal()">
             <div class="d-flex align-items-center gap-3">
                 <div class="rounded-3 p-2 bg-light d-flex align-items-center justify-content-center" style="width:34px; height:34px; color:#5B3FA8;">
                     <i class="fa-solid fa-circle-info fs-8"></i>
