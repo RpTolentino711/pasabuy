@@ -67,27 +67,25 @@ try {
         (3, 105, 'Pogilameg', 'Tester', 'pogilameg@10', 'pogilameg@gmail.com', 'BSIT', '3rd Yr', NULL, 'VERIFIED', 5.0, 1, NOW(), NOW())
         ON DUPLICATE KEY UPDATE `FirstName` = VALUES(`FirstName`), `LastName` = VALUES(`LastName`), `StudentNumber` = VALUES(`StudentNumber`)");
 
-    // Seed Real Live Equipment for Romeo (Lender)
+    // Seed Real Live Equipment for Romeo (Lender) with 0 rented (clean slate)
     $stmtInv = $pdo->prepare("INSERT INTO `rental_inventory` 
         (`id`, `name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `rating`, `reviews_count`, `description`, `min_rental_days`, `is_featured`, `owner_name`, `owner_contact`, `item_condition`, `location`) 
-        VALUES (1, 'Sony Alpha A7 IV 4K Camera Rig', 'Cameras', 'Premium', 1200.00, 2, 1, 1, 0, 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80', 5.0, 14, 'Professional full-frame hybrid mirrorless camera with 24-70mm GM lens, cage rig, and dual batteries. Listed for rent by Romeo Paolo Tolentino.', 1, 1, 'Romeo Paolo Tolentino', '09668257301', 'Like New', 'San Pablo City, Laguna')
-        ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);");
+        VALUES 
+        (1, 'Sony Alpha A7 IV 4K Camera Rig', 'Cameras', 'Premium', 1200.00, 2, 2, 0, 0, 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80', 5.0, 14, 'Professional full-frame hybrid mirrorless camera with 24-70mm GM lens, cage rig, and dual batteries. Listed for rent by Romeo Paolo Tolentino.', 1, 1, 'Romeo Paolo Tolentino', '09668257301', 'Like New', 'San Pablo City, Laguna'),
+        (2, 'Yamaha StagePas 400BT Portable Sound System', 'Sound System', 'Premium', 1500.00, 1, 1, 0, 0, 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80', 4.9, 8, '400W compact PA system with 8-channel powered mixer, 2 speakers, wireless Bluetooth and dual mic set. Listed by Romeo Paolo Tolentino.', 1, 1, 'Romeo Paolo Tolentino', '09668257301', 'Excellent', 'San Pablo City, Laguna')
+        ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `qty_rented` = 0, `qty_available` = VALUES(`qty_total`);");
     $stmtInv->execute();
 
-    // Seed Real Live Order placed by Pogilameg (Renter)
-    $stmtOrd = $pdo->prepare("INSERT INTO `rental_orders` 
-        (`id`, `order_code`, `customer_name`, `customer_email`, `customer_phone`, `delivery_option`, `delivery_address`, `rental_start_date`, `rental_days`, `subtotal`, `service_charge`, `delivery_fee`, `discount`, `total_amount`, `payment_method`, `payment_status`, `order_status`, `estimated_arrival`, `assigned_rider_name`, `assigned_rider_phone`, `rider_current_lat`, `rider_current_lng`)
-        VALUES (1, '#ORD-1001', 'Pogilameg Tester', 'pogilameg@gmail.com', '09175557788', 'DELIVERY', 'LSPU Main Hall, San Pablo City, Laguna', CURDATE(), 2, 2400.00, 240.00, 150.00, 0.00, 2790.00, 'GCASH', 'PAID', 'ON_THE_WAY', '3:30 PM', 'Juan Dela Cruz', '09187654321', 14.0683, 121.3256)
-        ON DUPLICATE KEY UPDATE `order_status` = VALUES(`order_status`);");
-    $stmtOrd->execute();
+    // Ensure zero orders and zero transactions until real orders are placed
+    try { $pdo->exec("DELETE FROM `rental_order_items` WHERE 1=1;"); } catch (Exception $e) {}
+    try { $pdo->exec("DELETE FROM `rental_orders` WHERE 1=1;"); } catch (Exception $e) {}
+    try { $pdo->exec("DELETE FROM `rental_transactions` WHERE 1=1;"); } catch (Exception $e) {}
+    try { $pdo->exec("DELETE FROM `rental_issues` WHERE `ticket_number` = '#TKT-0012';"); } catch (Exception $e) {}
 
-    // Seed Order Item
-    $stmtItem = $pdo->prepare("INSERT INTO `rental_order_items` (`order_id`, `product_id`, `product_name`, `price_per_day`, `quantity`, `subtotal`) VALUES (1, 1, 'Sony Alpha A7 IV 4K Camera Rig', 1200.00, 1, 2400.00) ON DUPLICATE KEY UPDATE `product_name` = VALUES(`product_name`);");
-    $stmtItem->execute();
-
-    // Seed Support Ticket
-    $stmtTkt = $pdo->prepare("INSERT INTO `rental_issues` (`id`, `ticket_number`, `order_code`, `customer_name`, `issue_title`, `description`, `status`, `status_display`, `priority`, `assigned_to`, `created_at`) VALUES (1, '#TKT-0012', '#ORD-1001', 'Pogilameg Tester', 'Delivery Schedule Clarification', 'Requesting arrival before 3:00 PM for the multimedia organization event setup.', 'IN_PROGRESS', 'In Progress', 'MEDIUM', 'Support Team', NOW()) ON DUPLICATE KEY UPDATE `issue_title` = VALUES(`issue_title`);");
-    $stmtTkt->execute();
+    // Deduplicate StudentProfiles
+    try {
+        $pdo->exec("DELETE p1 FROM `StudentProfiles` p1 INNER JOIN `StudentProfiles` p2 WHERE p1.Id > p2.Id AND p1.UserId = p2.UserId;");
+    } catch (Exception $e) {}
 
     $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
 

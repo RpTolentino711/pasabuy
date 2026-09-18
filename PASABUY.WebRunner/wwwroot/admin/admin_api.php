@@ -180,52 +180,19 @@ if ($db) {
         }
     } catch (Exception $e) {}
 
-    // 5. Seed Live Rental Order for Pogilameg (Renter) if none
+    // Clear seeded demo orders and transactions so platform starts with zero sales until real orders are placed
     try {
-        $orderCount = $db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `order_code` = '#ORD-1001' OR `customer_email` = 'pogilameg@gmail.com'")->fetchColumn();
-        if ($orderCount == 0) {
-            $stmtOrd = $db->prepare("INSERT INTO `rental_orders` 
-                (`order_code`, `customer_name`, `customer_email`, `customer_phone`, `delivery_option`, `delivery_address`, `rental_start_date`, `rental_days`, `subtotal`, `service_charge`, `delivery_fee`, `discount`, `total_amount`, `payment_method`, `payment_status`, `order_status`, `estimated_arrival`, `assigned_rider_name`, `assigned_rider_phone`, `rider_current_lat`, `rider_current_lng`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $db->exec("DELETE FROM `rental_order_items` WHERE `order_id` IN (SELECT id FROM `rental_orders` WHERE `order_code` = '#ORD-1001')");
+        $db->exec("DELETE FROM `rental_orders` WHERE `order_code` = '#ORD-1001'");
+        $db->exec("DELETE FROM `rental_transactions` WHERE `transaction_code` = '#TRX-8801'");
+        $db->exec("DELETE FROM `rental_issues` WHERE `ticket_number` = '#TKT-0012'");
+        $db->exec("UPDATE `rental_inventory` SET `qty_rented` = 0, `qty_available` = `qty_total` WHERE `qty_rented` > 0");
+    } catch (Exception $eClean) {}
 
-            $stmtOrd->execute([
-                '#ORD-1001',
-                'Pogilameg Tester',
-                'pogilameg@gmail.com',
-                '09175557788',
-                'DELIVERY',
-                'LSPU Main Hall, San Pablo City, Laguna',
-                date('Y-m-d'),
-                2,
-                2400.00,
-                240.00,
-                150.00,
-                0.00,
-                2790.00,
-                'GCASH',
-                'PAID',
-                'ON_THE_WAY',
-                '3:30 PM',
-                'Juan Dela Cruz',
-                '09187654321',
-                14.0683,
-                121.3256
-            ]);
-            $newOrderId = $db->lastInsertId();
-
-            // Insert order item
-            $stmtItemRow = $db->prepare("INSERT INTO `rental_order_items` (`order_id`, `product_id`, `product_name`, `price_per_day`, `quantity`, `subtotal`) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtItemRow->execute([$newOrderId, 1, 'Sony Alpha A7 IV 4K Camera Rig', 1200.00, 1, 2400.00]);
-
-            // Insert matching transaction
-            $stmtTrx = $db->prepare("INSERT INTO `rental_transactions` (`transaction_code`, `order_code`, `customer_name`, `amount`, `type`, `status`, `payment_channel`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-            $stmtTrx->execute(['#TRX-8801', '#ORD-1001', 'Pogilameg Tester', 2790.00, 'PAYMENT', 'SUCCESSFUL', 'GCash']);
-
-            // Insert matching support ticket
-            $stmtTkt = $db->prepare("INSERT INTO `rental_issues` (`ticket_number`, `order_code`, `customer_name`, `issue_title`, `description`, `status`, `status_display`, `priority`, `assigned_to`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-            $stmtTkt->execute(['#TKT-0012', '#ORD-1001', 'Pogilameg Tester', 'Delivery Schedule Clarification', 'Pogilameg requested arrival before 3:00 PM for the multimedia organization event setup.', 'IN_PROGRESS', 'In Progress', 'MEDIUM', 'Support Team']);
-        }
-    } catch (Exception $e) {}
+    // Deduplicate StudentProfiles so users appear only once
+    try {
+        $db->exec("DELETE p1 FROM `StudentProfiles` p1 INNER JOIN `StudentProfiles` p2 WHERE p1.Id > p2.Id AND p1.UserId = p2.UserId;");
+    } catch (Exception $eDedup) {}
 }
 
 $inputRaw = file_get_contents('php://input');
@@ -551,7 +518,7 @@ if ($action === 'update_order_status') {
 }
 
 // ----------------------------------------------------------
-// 5. CUSTOMERS MODULE (User Database)
+// 5. CUSTOMERS MODULE (User Database & Management)
 // ----------------------------------------------------------
 if ($action === 'get_customers') {
     if (!$db) { echo json_encode(['success' => true, 'customers' => []]); exit; }
@@ -559,11 +526,11 @@ if ($action === 'get_customers') {
     $status = trim((string)($req['status'] ?? 'All'));
 
     $sql = "SELECT u.Id, u.Email, u.Role, u.Status, u.CreatedAt,
-                   COALESCE(p.FirstName, 'Student') as FirstName,
-                   COALESCE(p.LastName, 'Member') as LastName,
-                   COALESCE(p.StudentNumber, 'N/A') as PhoneOrId,
-                   COALESCE(p.SchoolEmail, u.Email) as SchoolEmail,
-                   COALESCE(p.Rating, 5.0) as Rating,
+                   COALESCE(MAX(p.FirstName), 'Student') as FirstName,
+                   COALESCE(MAX(p.LastName), 'Member') as LastName,
+                   COALESCE(MAX(p.StudentNumber), 'N/A') as PhoneOrId,
+                   COALESCE(MAX(p.SchoolEmail), u.Email) as SchoolEmail,
+                   COALESCE(MAX(p.Rating), 5.0) as Rating,
                    (SELECT COUNT(*) FROM `rental_orders` o WHERE o.customer_email = u.Email) as total_orders
             FROM `Users` u
             LEFT JOIN `StudentProfiles` p ON u.Id = p.UserId
@@ -584,12 +551,47 @@ if ($action === 'get_customers') {
         $params[] = "%{$search}%";
     }
 
-    $sql .= " ORDER BY u.Id ASC";
+    $sql .= " GROUP BY u.Id ORDER BY u.Id ASC";
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $customers = $stmt->fetchAll();
 
     echo json_encode(['success' => true, 'count' => count($customers), 'customers' => $customers]);
+    exit;
+}
+
+if ($action === 'add_customer') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $first = trim((string)($req['first_name'] ?? ''));
+    $last = trim((string)($req['last_name'] ?? ''));
+    $email = trim((string)($req['email'] ?? ''));
+    $phoneOrId = trim((string)($req['student_number'] ?? ''));
+    $course = trim((string)($req['course'] ?? 'BSIT'));
+    $year = trim((string)($req['year_level'] ?? '1st Yr'));
+    $pass = trim((string)($req['password'] ?? 'Pogilameg@10'));
+
+    if (empty($first) || empty($last) || empty($email)) {
+        echo json_encode(['success' => false, 'message' => 'First name, last name, and email are required.']);
+        exit;
+    }
+
+    // Check if email already exists
+    $stmtCheck = $db->prepare("SELECT Id FROM `Users` WHERE `Email` = ? LIMIT 1");
+    $stmtCheck->execute([$email]);
+    if ($stmtCheck->fetch()) {
+        echo json_encode(['success' => false, 'message' => 'User with this email already exists.']);
+        exit;
+    }
+
+    $hash = password_hash($pass, PASSWORD_DEFAULT);
+    $stmtUser = $db->prepare("INSERT INTO `Users` (`Email`, `PasswordHash`, `Role`, `Status`, `CreatedAt`, `UpdatedAt`) VALUES (?, ?, 'STUDENT', 'VERIFIED', NOW(), NOW())");
+    $stmtUser->execute([$email, $hash]);
+    $newUserId = $db->lastInsertId();
+
+    $stmtProfile = $db->prepare("INSERT INTO `StudentProfiles` (`UserId`, `FirstName`, `LastName`, `StudentNumber`, `SchoolEmail`, `Course`, `YearLevel`, `Rating`, `VerificationStatus`, `CreatedAt`, `UpdatedAt`) VALUES (?, ?, ?, ?, ?, ?, ?, 5.0, 'VERIFIED', NOW(), NOW())");
+    $stmtProfile->execute([$newUserId, $first, $last, $phoneOrId, $email, $course, $year]);
+
+    echo json_encode(['success' => true, 'message' => "Customer '{$first} {$last}' added successfully."]);
     exit;
 }
 

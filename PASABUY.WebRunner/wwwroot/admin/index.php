@@ -874,7 +874,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <h4 class="fw-extrabold mb-1 text-dark">Customers</h4>
                         <p class="text-muted fs-8 mb-0">Manage your customer database and view their activity.</p>
                     </div>
-                    <button type="button" class="btn-admin-primary" onclick="alert('Student users register dynamically via registration or tester account.')">
+                    <button type="button" class="btn-admin-primary" onclick="openAddCustomerModal()">
                         <i class="fa-solid fa-user-plus"></i> Add Customer
                     </button>
                 </div>
@@ -1600,6 +1600,70 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         </div>
     </div>
 
+    <!-- Add Customer Modal -->
+    <div class="modal fade" id="addCustomerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="fw-extrabold text-dark mb-0">
+                        <i class="fa-solid fa-user-plus text-primary me-2" style="color: var(--admin-primary) !important;"></i>
+                        Add New Customer / Student
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="row g-2 mb-2.5">
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="mCustFirst" placeholder="e.g. Maria">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="mCustLast" placeholder="e.g. Santos">
+                        </div>
+                    </div>
+                    <div class="mb-2.5">
+                        <label class="form-label fs-9 fw-bold">School Email / Login Email <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control form-control-sm" id="mCustEmail" placeholder="e.g. maria.santos@gmail.com">
+                    </div>
+                    <div class="row g-2 mb-2.5">
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Student # / Phone</label>
+                            <input type="text" class="form-control form-control-sm" id="mCustPhone" placeholder="e.g. 09171234567">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Course / Program</label>
+                            <input type="text" class="form-control form-control-sm" id="mCustCourse" value="BSIT" placeholder="e.g. BSIT">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Year Level</label>
+                            <select class="form-select form-select-sm" id="mCustYear">
+                                <option value="1st Yr">1st Yr</option>
+                                <option value="2nd Yr">2nd Yr</option>
+                                <option value="3rd Yr" selected>3rd Yr</option>
+                                <option value="4th Yr">4th Yr</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fs-9 fw-bold">Password</label>
+                            <div class="input-group input-group-sm">
+                                <input type="password" class="form-control form-control-sm" id="mCustPass" value="Pogilameg@10">
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleCustPassVisibility(this)">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-admin-primary w-100 justify-content-center py-2" id="btnSubmitAddCustomer" onclick="submitAddCustomer()">
+                        <i class="fa-solid fa-user-check me-1"></i> Create Customer Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -2048,6 +2112,85 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 await fetch(`${API_URL}?action=update_customer_status&id=${id}&status=${next}`);
                 loadCustomers();
             } catch (e) {}
+        }
+
+        function openAddCustomerModal() {
+            document.getElementById('mCustFirst').value = '';
+            document.getElementById('mCustLast').value = '';
+            document.getElementById('mCustEmail').value = '';
+            document.getElementById('mCustPhone').value = '';
+            document.getElementById('mCustCourse').value = 'BSIT';
+            document.getElementById('mCustYear').value = '3rd Yr';
+            document.getElementById('mCustPass').value = 'Pogilameg@10';
+            const m = new bootstrap.Modal(document.getElementById('addCustomerModal'));
+            m.show();
+        }
+
+        function toggleCustPassVisibility(btn) {
+            const el = document.getElementById('mCustPass');
+            if (!el) return;
+            const icon = btn.querySelector('i');
+            if (el.type === 'password') {
+                el.type = 'text';
+                if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+            } else {
+                el.type = 'password';
+                if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+            }
+        }
+
+        async function submitAddCustomer() {
+            const first = document.getElementById('mCustFirst')?.value.trim() || '';
+            const last = document.getElementById('mCustLast')?.value.trim() || '';
+            const email = document.getElementById('mCustEmail')?.value.trim() || '';
+            const phone = document.getElementById('mCustPhone')?.value.trim() || '';
+            const course = document.getElementById('mCustCourse')?.value.trim() || 'BSIT';
+            const year = document.getElementById('mCustYear')?.value.trim() || '3rd Yr';
+            const pass = document.getElementById('mCustPass')?.value.trim() || 'Pogilameg@10';
+
+            if (!first || !last || !email) {
+                alert('Please provide First Name, Last Name, and Email.');
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmitAddCustomer');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Creating...';
+            }
+
+            try {
+                const res = await fetch(`${API_URL}?action=add_customer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        first_name: first,
+                        last_name: last,
+                        email: email,
+                        student_number: phone,
+                        course: course,
+                        year_level: year,
+                        password: pass
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Customer account created successfully!');
+                    const modalEl = document.getElementById('addCustomerModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                    loadCustomers();
+                } else {
+                    alert(data.message || 'Failed to create customer.');
+                }
+            } catch (err) {
+                alert('Error creating customer: ' + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-user-check me-1"></i> Create Customer Account';
+                }
+            }
         }
 
         // ----------------------------------------------------------
