@@ -468,19 +468,15 @@ if ($action === 'delete_product') {
     $id = (int)($req['id'] ?? 0);
     $stmt = $db->prepare("DELETE FROM `rental_inventory` WHERE `id` = ?");
     $stmt->execute([$id]);
-    echo json_encode(['success' => true, 'message' => 'Product removed successfully.']);
+    echo json_encode(['success' => true, 'message' => 'Equipment listing taken down successfully by Admin.']);
     exit;
 }
 
 if ($action === 'adjust_stock') {
-    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
-    $id = (int)($req['id'] ?? 0);
-    $qty = (int)($req['qty_total'] ?? 0);
-    $avail = (int)($req['qty_available'] ?? 0);
-
-    $stmt = $db->prepare("UPDATE `rental_inventory` SET `qty_total` = ?, `qty_available` = ? WHERE `id` = ?");
-    $stmt->execute([$qty, $avail, $id]);
-    echo json_encode(['success' => true, 'message' => 'Stock updated successfully.']);
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Admins cannot adjust equipment stock. Stock adjustments are restricted to the student lender.'
+    ]);
     exit;
 }
 

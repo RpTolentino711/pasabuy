@@ -1945,10 +1945,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <td><span class="badge ${p.badge_class}">${p.stock_status}</span></td>
                             <td>${p.qty_total}</td>
                             <td>
-                                <div class="d-flex gap-1">
-                                    <button class="btn btn-sm btn-light border py-1 px-2 fs-9" onclick="quickEditStock(${p.id}, ${p.qty_total}, ${p.qty_available})"><i class="fa-solid fa-pen-to-square text-secondary"></i></button>
-                                    <button class="btn btn-sm btn-light border py-1 px-2 fs-9 text-danger" onclick="deleteProductItem(${p.id})"><i class="fa-solid fa-trash"></i></button>
-                                </div>
+                                <button class="btn btn-sm btn-outline-danger py-1 px-2.5 fs-9 fw-bold d-inline-flex align-items-center gap-1" onclick="deleteProductItem(${p.id}, '${(p.name || 'Equipment').replace(/'/g, "\\'")}')" title="Take down equipment listing from platform">
+                                    <i class="fa-solid fa-ban"></i> Take Down
+                                </button>
                             </td>
                         </tr>
                     `).join('');
@@ -1996,29 +1995,26 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             }
         }
 
-        async function deleteProductItem(id) {
-            if (!confirm('Remove this equipment from inventory?')) return;
+        async function deleteProductItem(id, name) {
+            const safeName = name || 'this equipment listing';
+            if (!confirm(`Are you sure you want to TAKE DOWN "${safeName}" from the platform?\n\nAs admin, you have moderation power to remove this listing. (Note: Stock and pricing adjustments can only be made by the student lender who listed it).`)) return;
             try {
                 const res = await fetch(`${API_URL}?action=delete_product&id=${id}`);
                 const data = await res.json();
                 if (data.success) {
+                    alert(`✅ Equipment "${safeName}" has been taken down successfully.`);
                     loadProducts();
                     loadInventory();
+                } else {
+                    alert(data.message || 'Error taking down listing.');
                 }
-            } catch (e) {}
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+            }
         }
 
-        async function quickEditStock(id, currentTotal, currentAvail) {
-            const newTotal = prompt("Enter new Total Stock count:", currentTotal);
-            if (newTotal === null) return;
-            const newAvail = prompt("Enter new Available Stock count:", currentAvail);
-            if (newAvail === null) return;
-
-            try {
-                await fetch(`${API_URL}?action=adjust_stock&id=${id}&qty_total=${newTotal}&qty_available=${newAvail}`);
-                loadProducts();
-                loadInventory();
-            } catch (e) {}
+        function quickEditStock(id, currentTotal, currentAvail) {
+            alert("ℹ️ Admin Notice: Admins cannot adjust equipment stock or listing details. Only the student lender (renter/owner) who posted this equipment can adjust its stock and pricing. Admins only hold moderation power to take down listings.");
         }
 
         // ----------------------------------------------------------
@@ -2050,7 +2046,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <td class="text-muted">5</td>
                                 <td><span class="badge ${p.badge_class}">${p.stock_status}</span></td>
                                 <td>
-                                    <button class="btn btn-sm btn-light border py-1 px-2 fs-9 fw-bold" onclick="quickEditStock(${p.id}, ${p.qty_total}, ${p.qty_available})"><i class="fa-solid fa-sliders me-1"></i> Adjust</button>
+                                    <button class="btn btn-sm btn-outline-danger py-1 px-2.5 fs-9 fw-bold d-inline-flex align-items-center gap-1" onclick="deleteProductItem(${p.id}, '${(p.name || 'Equipment').replace(/'/g, "\\'")}')" title="Take down equipment listing from platform">
+                                        <i class="fa-solid fa-ban"></i> Take Down
+                                    </button>
                                 </td>
                             </tr>
                         `).join('');
