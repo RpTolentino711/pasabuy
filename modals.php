@@ -1012,7 +1012,7 @@
                 </div>
 
                 <!-- Quantity Stepper (Screen 3) -->
-                <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light border mb-2">
+                <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light border mb-2" id="detailQtyContainer">
                     <span class="fw-extrabold text-dark fs-8">Quantity <span class="text-muted fw-normal fs-9" id="detailMaxStockLabel">(Max 10)</span></span>
                     <div class="d-flex align-items-center gap-2.5">
                         <button type="button" class="btn btn-sm btn-white rounded-circle p-0 d-flex align-items-center justify-content-center border shadow-2xs" 
@@ -1024,6 +1024,17 @@
                                 style="width:30px; height:30px; background:#fff;" onclick="adjustDetailQty(1)">
                             <i class="fa-solid fa-plus text-dark fs-9"></i>
                         </button>
+                    </div>
+                </div>
+
+                <!-- Owner Equipment Notice Banner (When logged-in user is the owner) -->
+                <div class="p-3 rounded-4 bg-primary-subtle border border-primary-subtle d-flex align-items-center gap-2.5 mb-2" id="detailOwnerNoticeContainer" style="display:none;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-white shadow-2xs" style="width:36px; height:36px; flex-shrink:0;">
+                        <i class="fa-solid fa-crown text-primary fs-7"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-extrabold text-dark fs-8 mb-0.5">Your Equipment Listing</h6>
+                        <p class="fs-9 text-muted mb-0">You posted this item for rent. Renter bookings will be delivered from your stock inventory.</p>
                     </div>
                 </div>
 

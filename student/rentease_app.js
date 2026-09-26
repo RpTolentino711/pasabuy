@@ -98,17 +98,55 @@ function renderFeaturedRentals() {
                             <span class="fw-bold text-dark fs-9">${parseFloat(item.rating).toFixed(1)}</span>
                             <span class="text-muted fs-9">(${item.reviews_count})</span>
                         </div>
-                        <button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white" 
-                                style="width:28px; height:28px; background: linear-gradient(135deg, #5B3FA8, #341F97);"
-                                onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id})" title="Add to Cart">
-                            <i class="fa-solid fa-cart-plus fs-9"></i>
-                        </button>
+                        ${isCurrentUserOwnerOfItem(item) 
+                            ? `<button class="btn btn-sm rounded-pill px-2 py-0.5 text-white border-0 fw-bold fs-9" 
+                                       style="background: #475569;"
+                                       onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Your Equipment">
+                                   <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.65rem;"></i> Yours
+                               </button>`
+                            : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white" 
+                                       style="width:28px; height:28px; background: linear-gradient(135deg, #5B3FA8, #341F97);"
+                                       onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id})" title="Add to Cart">
+                                   <i class="fa-solid fa-cart-plus fs-9"></i>
+                               </button>`
+                        }
                     </div>
                 </div>
             </div>
         </div>`;
     });
     container.innerHTML = html;
+}
+
+function isCurrentUserOwnerOfItem(item) {
+    if (!item) return false;
+    const currentUser = getRentEaseCurrentUser();
+    const currentName = (currentUser.name || '').toLowerCase().trim();
+    const currentEmail = (currentUser.email || '').toLowerCase().trim();
+    const currentId = parseInt(currentUser.id || 0);
+
+    let postedIds = [];
+    try {
+        postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
+    } catch (e) {}
+
+    const idNum = parseInt(item.id);
+    if (postedIds.includes(idNum) || postedIds.includes(String(item.id))) return true;
+
+    if (item.owner_id && parseInt(item.owner_id) === currentId && currentId > 0) return true;
+    if (item.seller_id && parseInt(item.seller_id) === currentId && currentId > 0) return true;
+
+    const itemOwnerEmail = (item.owner_email || '').toLowerCase().trim();
+    if (itemOwnerEmail && currentEmail && itemOwnerEmail === currentEmail) return true;
+
+    const owner = (item.owner_name || item.seller_name || '').toLowerCase().trim();
+    if (owner && currentName) {
+        if (owner === currentName) return true;
+        if (currentEmail.includes('romeopaolo') && (owner.includes('romeo') || owner.includes('tolentino'))) return true;
+        if (currentName.includes('romeo') && (owner.includes('romeo') || owner.includes('tolentino'))) return true;
+    }
+
+    return false;
 }
 
 function openCategoryTab(category) {
@@ -227,14 +265,24 @@ function renderGridElements(items) {
 
     let html = '';
     items.forEach(p => {
+        const isMine = isCurrentUserOwnerOfItem(p);
         const inCart = rentEaseCart.some(c => c.id === p.id);
-        const cartBtnClass = inCart 
-            ? 'btn-success text-white' 
-            : 'text-white';
-        const cartBtnStyle = inCart 
-            ? 'background: linear-gradient(135deg, #10B981, #059669); border:none;' 
-            : 'background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;';
-        const cartBtnText = inCart ? '<i class="fa-solid fa-check me-1"></i> Added' : '<i class="fa-solid fa-cart-plus me-1"></i> Add to Cart';
+
+        let cartBtnClass = 'text-white';
+        let cartBtnStyle = 'background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;';
+        let cartBtnText = '<i class="fa-solid fa-cart-plus me-1"></i> Add to Cart';
+        let cartOnClick = `event.stopPropagation(); quickAddRentEaseItem(${p.id})`;
+
+        if (isMine) {
+            cartBtnClass = 'text-white';
+            cartBtnStyle = 'background: #475569; border:none;';
+            cartBtnText = '<i class="fa-solid fa-crown text-warning me-1"></i> Your Equipment';
+            cartOnClick = `event.stopPropagation(); openEquipmentDetail(${p.id})`;
+        } else if (inCart) {
+            cartBtnClass = 'btn-success text-white';
+            cartBtnStyle = 'background: linear-gradient(135deg, #10B981, #059669); border:none;';
+            cartBtnText = '<i class="fa-solid fa-check me-1"></i> Added';
+        }
 
         html += `
         <div class="col-6 mb-3">
@@ -257,7 +305,7 @@ function renderGridElements(items) {
                         <span class="badge ${p.qty_available > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-bold" style="font-size: 0.65rem;">
                             <i class="fa-solid fa-boxes-stacked me-1"></i>Stock: ${p.qty_available ?? p.qty_total}
                         </span>
-                        ${p.owner_name ? `<span class="text-muted" style="font-size:0.62rem;"><i class="fa-regular fa-user me-0.5"></i>${p.owner_name.split(' ')[0]}</span>` : ''}
+                        ${isMine ? `<span class="badge bg-primary-subtle text-primary" style="font-size:0.62rem;"><i class="fa-solid fa-crown me-0.5"></i>Yours</span>` : (p.owner_name ? `<span class="text-muted" style="font-size:0.62rem;"><i class="fa-regular fa-user me-0.5"></i>${p.owner_name.split(' ')[0]}</span>` : '')}
                     </div>
                     <div class="d-flex align-items-center gap-1 mb-2.5">
                         <i class="fa-solid fa-star text-warning fs-9"></i>
@@ -266,7 +314,7 @@ function renderGridElements(items) {
                     </div>
                 </div>
                 <button class="btn btn-sm rounded-pill w-100 fw-bold fs-9 py-1.5 shadow-2xs ${cartBtnClass}" 
-                        style="${cartBtnStyle}" onclick="event.stopPropagation(); quickAddRentEaseItem(${p.id})">
+                        style="${cartBtnStyle}" onclick="${cartOnClick}">
                     ${cartBtnText}
                 </button>
             </div>
@@ -320,6 +368,45 @@ function openEquipmentDetail(id) {
         }
     }
 
+    // Check if the current user is the owner of this equipment!
+    const isOwner = isCurrentUserOwnerOfItem(item);
+    const qtyContainer = document.getElementById('detailQtyContainer');
+    const ownerNotice = document.getElementById('detailOwnerNoticeContainer');
+    const footerActions = document.getElementById('detailFooterActions');
+    const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
+
+    if (isOwner) {
+        if (qtyContainer) qtyContainer.style.setProperty('display', 'none', 'important');
+        if (ownerNotice) ownerNotice.style.setProperty('display', 'flex', 'important');
+        if (footerActions) {
+            footerActions.innerHTML = `
+                <button type="button" class="btn btn-outline-danger rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5" 
+                        style="min-width:130px;" onclick="bootstrap.Modal.getInstance(document.getElementById('productDetailModal'))?.hide(); deleteUserRentalItem(${item.id}, '${safeTitle}')">
+                    <i class="fa-solid fa-trash me-1"></i> Remove Item
+                </button>
+                <button type="button" class="btn btn-primary flex-grow-1 py-2.5 rounded-4 fw-extrabold shadow-sm fs-7" 
+                        style="background: #5B3FA8; border: none;" onclick="bootstrap.Modal.getInstance(document.getElementById('productDetailModal'))?.hide(); switchTab('profile');">
+                    <i class="fa-solid fa-boxes-stacked me-1.5"></i> Manage in My Listings
+                </button>
+            `;
+        }
+    } else {
+        if (qtyContainer) qtyContainer.style.removeProperty('display');
+        if (ownerNotice) ownerNotice.style.setProperty('display', 'none', 'important');
+        if (footerActions) {
+            footerActions.innerHTML = `
+                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5" 
+                        style="border-color:#5B3FA8; color:#5B3FA8; min-width:130px;" onclick="chatWithOwnerFromDetail()">
+                    <i class="fa-regular fa-comment-dots fs-7"></i> Chat Owner
+                </button>
+                <button type="button" class="btn btn-primary flex-grow-1 py-2.5 rounded-4 fw-extrabold shadow-sm fs-7" 
+                        style="background: #5B3FA8; border: none;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart()">
+                    Add to Cart
+                </button>
+            `;
+        }
+    }
+
     const modalEl = document.getElementById('productDetailModal');
     if (modalEl) {
         if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
@@ -327,6 +414,9 @@ function openEquipmentDetail(id) {
         bsModal.show();
     }
 }
+
+window.openRentalDetail = openEquipmentDetail;
+window.openEquipmentDetail = openEquipmentDetail;
 
 function adjustDetailQty(delta) {
     const maxStock = (currentDetailProduct && currentDetailProduct.qty_available) ? parseInt(currentDetailProduct.qty_available) : 99;
@@ -337,6 +427,10 @@ function adjustDetailQty(delta) {
 
 function confirmAddDetailToCart() {
     if (!currentDetailProduct) return;
+    if (isCurrentUserOwnerOfItem(currentDetailProduct)) {
+        alert("ℹ️ You cannot rent or add your own equipment to the cart.");
+        return;
+    }
     addRentEaseCartItem(currentDetailProduct, currentDetailQty);
 
     const modalEl = document.getElementById('productDetailModal');
@@ -350,11 +444,19 @@ function confirmAddDetailToCart() {
 function quickAddRentEaseItem(id) {
     const item = rentEaseInventory.find(i => i.id == id);
     if (!item) return;
+    if (isCurrentUserOwnerOfItem(item)) {
+        alert("ℹ️ You cannot rent or add your own equipment to the cart.");
+        return;
+    }
     addRentEaseCartItem(item, 1);
     renderExploreCatalog();
 }
 
 function addRentEaseCartItem(product, qty = 1) {
+    if (isCurrentUserOwnerOfItem(product)) {
+        alert("ℹ️ You cannot rent or add your own equipment to the cart.");
+        return;
+    }
     const existing = rentEaseCart.find(i => i.id === product.id);
     if (existing) {
         existing.quantity += qty;
@@ -1911,6 +2013,10 @@ window.openVerificationModal = function () {
 // Chat with item owner from Product Details modal
 window.chatWithOwnerFromDetail = function () {
     const p = window.currentDetailProduct;
+    if (typeof isCurrentUserOwnerOfItem === 'function' && isCurrentUserOwnerOfItem(p)) {
+        alert("ℹ️ You are the owner of this equipment listing.");
+        return;
+    }
     const modalEl = document.getElementById('productDetailModal');
     if (modalEl) {
         try {
