@@ -515,10 +515,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center gap-2 bg-light px-3 py-1.5 rounded-pill border">
+                <div class="d-flex align-items-center gap-2 bg-light px-3 py-1.5 rounded-pill border shadow-2xs">
                     <span class="pulse-live"></span>
-                    <span class="fs-9 fw-bold text-success">HOSTINGER LIVE DB</span>
-                    <span class="fs-9 text-muted ms-1" id="liveClockDisplay">--:--</span>
+                    <span class="fs-9 fw-bold text-dark" id="liveClockDisplay">--:--</span>
                 </div>
                 <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs position-relative" style="width:38px; height:38px;" onclick="switchAdminTab('support')">
                     <i class="fa-regular fa-bell text-secondary fs-7"></i>
@@ -545,9 +544,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <h4 class="fw-extrabold mb-1 text-dark">Executive Operations Dashboard</h4>
                         <p class="text-muted fs-8 mb-0">Overview of platform rentals, inventory health, deliveries, and ticket resolution.</p>
                     </div>
-                    <button type="button" class="btn-admin-primary" onclick="loadDashboardStats()">
-                        <i class="fa-solid fa-rotate"></i> Refresh Live Data
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 rounded-pill fw-bold fs-9 d-flex align-items-center gap-1.5 shadow-2xs">
+                            <span class="pulse-live" style="width:7px; height:7px;"></span> Live
+                        </span>
+                    </div>
                 </div>
 
                 <!-- Metrics 4-Grid -->
@@ -1762,12 +1763,31 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         let categoryChartInstance = null;
         let selectedOrderIdForModal = null;
 
-        // Auto clock
+        // Auto clock & live real-time sync
         setInterval(() => {
             const now = new Date();
             const el = document.getElementById('liveClockDisplay');
             if (el) el.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }, 1000);
+
+        let liveAdminPollingInterval = null;
+        function startLiveAdminPolling() {
+            if (liveAdminPollingInterval) clearInterval(liveAdminPollingInterval);
+            liveAdminPollingInterval = setInterval(() => {
+                const authOverlay = document.getElementById('authOverlay');
+                if (authOverlay && authOverlay.style.display !== 'none') return;
+
+                if (currentActiveSection === 'dashboard') {
+                    loadDashboardStats();
+                } else if (currentActiveSection === 'orders') {
+                    loadOrders();
+                } else if (currentActiveSection === 'inventory') {
+                    loadInventory();
+                } else if (currentActiveSection === 'support') {
+                    loadTickets();
+                }
+            }, 3000);
+        }
 
         // ----------------------------------------------------------
         // TAB SWITCHING ENGINE
@@ -1844,6 +1864,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('authOverlay').style.display = 'none';
+                    startLiveAdminPolling();
                     switchAdminTab('dashboard');
                 } else {
                     err.innerText = data.message || 'Invalid credentials.';
@@ -2850,6 +2871,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
 
         // Initialize on Load
         document.addEventListener('DOMContentLoaded', () => {
+            startLiveAdminPolling();
             <?php if ($isAdminLoggedIn): ?>
             switchAdminTab('dashboard');
             <?php endif; ?>
