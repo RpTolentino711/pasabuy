@@ -65,10 +65,21 @@ if ($db) {
 
     // Auto-migrate new fields for user item postings (Video, Owner, Condition, Location)
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `video_url` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT 'Student Renter'"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT 'Romeo Paolo Tolentino'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_email` VARCHAR(150) DEFAULT 'romeopaolotolentino@gmail.com'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT '09668257301'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
+
+    // Auto-migrate rental_orders fields for duration, COD downpayment, owner and return status
+    try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT 'Romeo Paolo Tolentino'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_email` VARCHAR(150) DEFAULT 'romeopaolotolentino@gmail.com'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rental_days` INT DEFAULT 1"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rental_end_date` DATE DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `payment_type` VARCHAR(50) DEFAULT 'FULL'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `downpayment_amount` DECIMAL(10,2) DEFAULT 0.00"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `balance_amount` DECIMAL(10,2) DEFAULT 0.00"); } catch (Exception $e) {}
 
     // Automatically purge all hardcoded dummy/seed items from database
     try {
@@ -213,6 +224,15 @@ if ($action === 'calculate_charges') {
         $subtotal += ($price * $qty * $days);
     }
 
+    $rentalDays = max(1, (int)($data['rental_days'] ?? 1));
+
+    $subtotal = 0.00;
+    foreach ($items as $it) {
+        $price = (float)($it['price_per_day'] ?? $it['price'] ?? 0);
+        $qty = max(1, (int)($it['quantity'] ?? $it['qty'] ?? 1));
+        $subtotal += ($price * $qty * $rentalDays);
+    }
+
     $serviceCharge = $subtotal > 0 ? 100.00 : 0.00;
     $deliveryFee = ($deliveryOption === 'DELIVERY' && $subtotal > 0) ? 150.00 : 0.00;
     
@@ -227,16 +247,23 @@ if ($action === 'calculate_charges') {
 
     $total = max(0.00, ($subtotal + $serviceCharge + $deliveryFee - $discount));
 
+    // COD Downpayment (30%) & Remaining Balance (70%)
+    $downpayment = round($total * 0.30, 2);
+    $balance = round($total - $downpayment, 2);
+
     echo json_encode([
         'success' => true,
         'computation' => [
+            'rental_days' => $rentalDays,
             'subtotal' => round($subtotal, 2),
             'service_charge' => round($serviceCharge, 2),
             'delivery_fee' => round($deliveryFee, 2),
             'discount' => round($discount, 2),
             'total' => round($total, 2),
+            'downpayment' => $downpayment,
+            'balance' => $balance,
             'delivery_option' => $deliveryOption,
-            'breakdown_label' => "Rental Subtotal (₱" . number_format($subtotal, 2) . ") + Service Charge (₱" . number_format($serviceCharge, 2) . ") + Delivery Fee (₱" . number_format($deliveryFee, 2) . ") - Discount (₱" . number_format($discount, 2) . ") = ₱" . number_format($total, 2)
+            'breakdown_label' => "Rental Subtotal ({$rentalDays} days: ₱" . number_format($subtotal, 2) . ") + Service Charge (₱" . number_format($serviceCharge, 2) . ") + Delivery Fee (₱" . number_format($deliveryFee, 2) . ") - Discount (₱" . number_format($discount, 2) . ") = ₱" . number_format($total, 2)
         ]
     ]);
     exit;
@@ -246,13 +273,16 @@ if ($action === 'calculate_charges') {
 // 5. CREATE ORDER & CHECKOUT (Screen 5 & Screen 6)
 // ----------------------------------------------------------
 if ($action === 'create_order') {
-    $customerName = trim((string)($data['customer_name'] ?? 'Student Customer'));
-    $customerEmail = trim((string)($data['customer_email'] ?? 'customer@campus.edu.ph'));
+    $customerName = trim((string)($data['customer_name'] ?? 'Pogilameg Tester'));
+    $customerEmail = trim((string)($data['customer_email'] ?? 'pogilameg@gmail.com'));
     $customerPhone = trim((string)($data['customer_phone'] ?? '0917-123-4567'));
     $deliveryOption = strtoupper(trim((string)($data['delivery_option'] ?? 'DELIVERY')));
     $deliveryAddress = trim((string)($data['delivery_address'] ?? 'San Pablo, Laguna'));
-    $rentalStartDate = trim((string)($data['rental_start_date'] ?? date('Y-m-d', strtotime('+7 days'))));
-    $paymentMethod = strtoupper(trim((string)($data['payment_method'] ?? 'GCASH')));
+    $rentalDays = max(1, (int)($data['rental_days'] ?? 1));
+    $rentalStartDate = trim((string)($data['rental_start_date'] ?? date('Y-m-d')));
+    $rentalEndDate = date('Y-m-d', strtotime($rentalStartDate . " +{$rentalDays} days"));
+    $paymentMethod = strtoupper(trim((string)($data['payment_method'] ?? 'COD')));
+    $paymentType = strtoupper(trim((string)($data['payment_type'] ?? ($paymentMethod === 'COD' ? 'DOWNPAYMENT_COD' : 'FULL'))));
     $items = $data['items'] ?? [];
 
     if (empty($items)) {
@@ -266,12 +296,32 @@ if ($action === 'create_order') {
     foreach ($items as $it) {
         $price = (float)($it['price_per_day'] ?? $it['price'] ?? 0);
         $qty = max(1, (int)($it['quantity'] ?? $it['qty'] ?? 1));
-        $subtotal += ($price * $qty);
+        $subtotal += ($price * $qty * $rentalDays);
     }
     $serviceCharge = 100.00;
     $deliveryFee = ($deliveryOption === 'DELIVERY') ? 150.00 : 0.00;
     $discount = $subtotal >= 1500 ? 200.00 : ($subtotal >= 1000 ? 50.00 : 0.00);
     $total = max(0.00, $subtotal + $serviceCharge + $deliveryFee - $discount);
+
+    $downpayment = ($paymentType === 'DOWNPAYMENT_COD' || $paymentMethod === 'COD') ? round($total * 0.30, 2) : $total;
+    $balance = round($total - $downpayment, 2);
+
+    // Identify Equipment Owner
+    $ownerName = 'Romeo Paolo Tolentino';
+    $ownerEmail = 'romeopaolotolentino@gmail.com';
+    $firstProductId = (int)($items[0]['id'] ?? 0);
+    $firstItemName = (string)($items[0]['name'] ?? $items[0]['title'] ?? 'Event Equipment');
+    if ($firstProductId > 0 && $db) {
+        try {
+            $pStmt = $db->prepare("SELECT `owner_name`, `owner_email` FROM `rental_inventory` WHERE `id` = ? LIMIT 1");
+            $pStmt->execute([$firstProductId]);
+            $pRow = $pStmt->fetch();
+            if ($pRow) {
+                if (!empty($pRow['owner_name'])) $ownerName = $pRow['owner_name'];
+                if (!empty($pRow['owner_email'])) $ownerEmail = $pRow['owner_email'];
+            }
+        } catch (Exception $eO) {}
+    }
 
     // Generate Order Code
     $randomCode = strtoupper(substr(md5(uniqid(rand(), true)), 0, 5));
@@ -280,12 +330,13 @@ if ($action === 'create_order') {
     $db->beginTransaction();
     try {
         $stmt = $db->prepare("INSERT INTO `rental_orders` 
-            (`order_code`, `customer_name`, `customer_email`, `customer_phone`, `delivery_option`, `delivery_address`, `rental_start_date`, `subtotal`, `service_charge`, `delivery_fee`, `discount`, `total_amount`, `payment_method`, `payment_status`, `order_status`, `estimated_arrival`, `assigned_rider_name`, `assigned_rider_phone`, `rider_current_lat`, `rider_current_lng`) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PAID', 'CONFIRMED', '4:30 PM', 'Juan Dela Cruz', '09187654321', 14.65150000, 121.06920000)");
+            (`order_code`, `customer_name`, `customer_email`, `customer_phone`, `owner_name`, `owner_email`, `delivery_option`, `delivery_address`, `rental_start_date`, `rental_end_date`, `rental_days`, `subtotal`, `service_charge`, `delivery_fee`, `discount`, `total_amount`, `payment_method`, `payment_type`, `downpayment_amount`, `balance_amount`, `payment_status`, `order_status`, `estimated_arrival`, `assigned_rider_name`, `assigned_rider_phone`, `rider_current_lat`, `rider_current_lng`) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PAID', 'CONFIRMED', '4:30 PM', 'Juan Dela Cruz', '09187654321', 14.65150000, 121.06920000)");
         $stmt->execute([
-            $orderCode, $customerName, $customerEmail, $customerPhone, $deliveryOption,
-            $deliveryAddress, $rentalStartDate, $subtotal, $serviceCharge, $deliveryFee,
-            $discount, $total, $paymentMethod
+            $orderCode, $customerName, $customerEmail, $customerPhone, $ownerName, $ownerEmail,
+            $deliveryOption, $deliveryAddress, $rentalStartDate, $rentalEndDate, $rentalDays,
+            $subtotal, $serviceCharge, $deliveryFee, $discount, $total,
+            $paymentMethod, $paymentType, $downpayment, $balance
         ]);
         $orderId = $db->lastInsertId();
 
@@ -297,13 +348,24 @@ if ($action === 'create_order') {
             $pName = (string)($it['title'] ?? $it['name'] ?? 'Rental Item');
             $pPrice = (float)($it['price_per_day'] ?? $it['price'] ?? 0);
             $pQty = (int)($it['quantity'] ?? $it['qty'] ?? 1);
-            $pSub = $pPrice * $pQty;
+            $pSub = $pPrice * $pQty * $rentalDays;
 
             $itemStmt->execute([$orderId, $productId, $pName, $pPrice, $pQty, $pSub]);
             if ($productId > 0) {
                 $updStockStmt->execute([$pQty, $pQty, $productId]);
             }
         }
+
+        // Automated notification & chat insertion from Renter (User 105) to Owner (User 104)
+        try {
+            $payInfo = ($paymentType === 'DOWNPAYMENT_COD' || $paymentMethod === 'COD') 
+                ? "COD with ₱" . number_format($downpayment, 2) . " Downpayment (₱" . number_format($balance, 2) . " balance upon delivery)" 
+                : "Full Payment of ₱" . number_format($total, 2);
+            $chatMsg = "Hi {$ownerName}! I rented your '{$firstItemName}' for {$rentalDays} day(s) (Order {$orderCode}). Payment: {$payInfo}. Let's coordinate delivery!";
+            
+            $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())");
+            $chatStmt->execute([105, 104, $customerName, $chatMsg, $firstItemName]);
+        } catch (Exception $eChat) {}
 
         $db->commit();
 
@@ -312,8 +374,16 @@ if ($action === 'create_order') {
             'message' => 'Order successfully booked & confirmed!',
             'order_id' => $orderId,
             'order_code' => $orderCode,
+            'rental_days' => $rentalDays,
+            'rental_start_date' => $rentalStartDate,
+            'rental_end_date' => $rentalEndDate,
             'total_amount' => $total,
-            'payment_method' => $paymentMethod
+            'downpayment_amount' => $downpayment,
+            'balance_amount' => $balance,
+            'payment_type' => $paymentType,
+            'payment_method' => $paymentMethod,
+            'owner_name' => $ownerName,
+            'owner_email' => $ownerEmail
         ]);
         exit;
     } catch (Exception $e) {
@@ -350,10 +420,20 @@ if ($action === 'get_order_tracking') {
     $orderItemsStmt->execute([$order['id']]);
     $items = $orderItemsStmt->fetchAll();
 
-    // Route coordinates for Leaflet map polyline
-    $warehouseCoords = [14.64880, 121.06870]; // RentEase Hub
+    $warehouseCoords = [14.64880, 121.06870]; // RentEase / Owner Hub
     $riderCoords = [(float)$order['rider_current_lat'], (float)$order['rider_current_lng']];
-    $destinationCoords = [14.65400, 121.07450]; // San Pablo, Laguna dropoff
+    $destinationCoords = [14.65400, 121.07450]; // Renter location
+
+    $st = $order['order_status'];
+
+    $stages = [
+        ['key' => 'CONFIRMED', 'title' => 'Order Confirmed', 'time' => date('M j, g:i A', strtotime($order['created_at'])), 'completed' => true],
+        ['key' => 'PREPARING', 'title' => 'Preparing Equipment', 'time' => 'Equipment inspection & packaging', 'completed' => in_array($st, ['PREPARING', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'])],
+        ['key' => 'ON_THE_WAY', 'title' => 'Out for Delivery (To Renter)', 'time' => 'Estimated Arrival: ' . ($order['estimated_arrival'] ?: '4:30 PM'), 'completed' => in_array($st, ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'ON_THE_WAY')],
+        ['key' => 'DELIVERED', 'title' => 'Delivered & Active Rental', 'time' => 'Rental Active (' . ($order['rental_days'] ?? 1) . ' days, Due: ' . ($order['rental_end_date'] ?: 'Tomorrow') . ')', 'completed' => in_array($st, ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'DELIVERED')],
+        ['key' => 'RETURN_DELIVERY', 'title' => 'Return Trip (Out to Owner)', 'time' => 'Driver picking up and returning to ' . ($order['owner_name'] ?: 'Owner'), 'completed' => in_array($st, ['RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'RETURN_DELIVERY')],
+        ['key' => 'RETURNED', 'title' => 'Returned & Stock Restored', 'time' => 'Equipment back in inventory stock', 'completed' => ($st === 'RETURNED'), 'current' => ($st === 'RETURNED')]
+    ];
 
     echo json_encode([
         'success' => true,
@@ -361,11 +441,21 @@ if ($action === 'get_order_tracking') {
         'items' => $items,
         'tracking' => [
             'order_code' => $order['order_code'],
-            'order_status' => $order['order_status'],
+            'order_status' => $st,
+            'rental_days' => $order['rental_days'] ?? 1,
+            'rental_end_date' => $order['rental_end_date'] ?? date('Y-m-d'),
+            'owner_name' => $order['owner_name'] ?? 'Romeo Paolo Tolentino',
+            'owner_email' => $order['owner_email'] ?? 'romeopaolotolentino@gmail.com',
+            'customer_name' => $order['customer_name'] ?? 'Pogilameg Tester',
+            'customer_email' => $order['customer_email'] ?? 'pogilameg@gmail.com',
+            'payment_type' => $order['payment_type'] ?? 'FULL',
+            'downpayment_amount' => (float)($order['downpayment_amount'] ?? 0),
+            'balance_amount' => (float)($order['balance_amount'] ?? 0),
+            'total_amount' => (float)$order['total_amount'],
             'estimated_arrival' => $order['estimated_arrival'],
             'rider' => [
-                'name' => $order['assigned_rider_name'],
-                'phone' => $order['assigned_rider_phone'],
+                'name' => $order['assigned_rider_name'] ?: 'Juan Dela Cruz',
+                'phone' => $order['assigned_rider_phone'] ?: '09187654321',
                 'role' => 'Delivery Rider',
                 'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
                 'vehicle' => 'Honda Click 125i (MC-8888-JY)',
@@ -377,16 +467,86 @@ if ($action === 'get_order_tracking') {
                 'rider' => $riderCoords,
                 'destination' => $destinationCoords
             ],
-            'stages' => [
-                ['key' => 'CONFIRMED', 'title' => 'Order Confirmed', 'time' => 'May 25, 2026 • 10:30 AM', 'completed' => true],
-                ['key' => 'PREPARING', 'title' => 'Preparing Equipment', 'time' => 'May 25, 2026 • 12:00 PM', 'completed' => in_array($order['order_status'], ['PREPARING', 'PICKUP', 'ON_THE_WAY', 'DELIVERED'])],
-                ['key' => 'PICKUP', 'title' => 'Pickup', 'time' => 'May 25, 2026 • 2:00 PM', 'completed' => in_array($order['order_status'], ['PICKUP', 'ON_THE_WAY', 'DELIVERED'])],
-                ['key' => 'ON_THE_WAY', 'title' => 'On the Way', 'time' => 'Estimated Arrival: ' . $order['estimated_arrival'], 'completed' => in_array($order['order_status'], ['ON_THE_WAY', 'DELIVERED']), 'current' => ($order['order_status'] === 'ON_THE_WAY')],
-                ['key' => 'DELIVERED', 'title' => 'Delivered', 'time' => 'Pending dropoff verification', 'completed' => ($order['order_status'] === 'DELIVERED')]
-            ]
+            'stages' => $stages
         ]
     ]);
     exit;
+}
+
+// ----------------------------------------------------------
+// RETURN EQUIPMENT BACK TO OWNER & RESTORE STOCK
+// ----------------------------------------------------------
+if ($action === 'return_equipment' || $action === 'complete_return') {
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    if (!$orderCode && isset($data['order_id'])) {
+        $stmtFind = $db->prepare("SELECT `order_code` FROM `rental_orders` WHERE `id` = ?");
+        $stmtFind->execute([(int)$data['order_id']]);
+        $orderCode = $stmtFind->fetchColumn();
+    }
+
+    if (!$orderCode) {
+        $stmtLast = $db->query("SELECT `order_code` FROM `rental_orders` ORDER BY `id` DESC LIMIT 1");
+        $orderCode = $stmtLast->fetchColumn();
+    }
+
+    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmt->execute([$orderCode]);
+    $order = $stmt->fetch();
+
+    if (!$order) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Order not found.']);
+        exit;
+    }
+
+    $db->beginTransaction();
+    try {
+        // Set order status to RETURNED
+        $updOrder = $db->prepare("UPDATE `rental_orders` SET `order_status` = 'RETURNED' WHERE `id` = ?");
+        $updOrder->execute([$order['id']]);
+
+        // Restock inventory items for this order
+        $itemsStmt = $db->prepare("SELECT `product_id`, `product_name`, `quantity` FROM `rental_order_items` WHERE `order_id` = ?");
+        $itemsStmt->execute([$order['id']]);
+        $items = $itemsStmt->fetchAll();
+
+        $restockedItems = [];
+        $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + ?, `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
+
+        foreach ($items as $it) {
+            $pId = (int)$it['product_id'];
+            $pQty = (int)$it['quantity'];
+            if ($pId > 0) {
+                $updStock->execute([$pQty, $pQty, $pId]);
+                $restockedItems[] = "{$pQty}x {$it['product_name']}";
+            }
+        }
+
+        // Send return notification chat to owner and renter
+        try {
+            $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
+            $custName = $order['customer_name'] ?: 'Pogilameg Tester';
+            $returnMsg = "✅ Rental Returned & Restocked: Order {$order['order_code']} has completed its rental period. All equipment has been safely delivered back to {$ownerName}'s inventory stock!";
+            $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'RentEase System', ?, 'Rental Return Complete', NOW())");
+            $chatStmt->execute([$returnMsg]);
+        } catch (Exception $eChat) {}
+
+        $db->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Order {$orderCode} has been delivered back to owner and stock is fully restored!",
+            'order_code' => $orderCode,
+            'order_status' => 'RETURNED',
+            'restocked_items' => $restockedItems
+        ]);
+        exit;
+    } catch (Exception $eRet) {
+        $db->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Failed to process return: ' . $eRet->getMessage()]);
+        exit;
+    }
 }
 
 // ----------------------------------------------------------
@@ -678,13 +838,15 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
         exit;
     }
 
+    $ownerEmail = trim((string)($data['owner_email'] ?? 'romeopaolotolentino@gmail.com'));
+
     try {
         $stmt = $db->prepare("INSERT INTO `rental_inventory` 
-            (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `video_url`, `description`, `item_condition`, `location`, `owner_name`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
-            VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
+            (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `video_url`, `description`, `item_condition`, `location`, `owner_name`, `owner_email`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
+            VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
         $stmt->execute([
             $name, $category, $materialTag, $price, $qtyTotal, $qtyTotal,
-            $imgUrl, $videoUrl, $desc, $condition, $location, $ownerName, $ownerContact
+            $imgUrl, $videoUrl, $desc, $condition, $location, $ownerName, $ownerEmail, $ownerContact
         ]);
 
         $newId = (int)$db->lastInsertId();

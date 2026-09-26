@@ -14,6 +14,8 @@ let currentCategory = 'All';
 let currentTag = 'All';
 let currentDeliveryOption = 'DELIVERY';
 let currentPaymentMethod = 'GCASH';
+let currentRentalDays = 1;
+let currentPaymentPlan = 'FULL'; // 'FULL' or 'DOWNPAYMENT_COD'
 let rentEaseMapInstance = null;
 
 // API Base URL resolver
@@ -251,6 +253,12 @@ function renderGridElements(items) {
                         <span class="fw-extrabold text-dark fs-7">₱${parseFloat(p.price_per_day).toFixed(0)}</span>
                         <span class="text-muted fs-9">/ day</span>
                     </div>
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <span class="badge ${p.qty_available > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-bold" style="font-size: 0.65rem;">
+                            <i class="fa-solid fa-boxes-stacked me-1"></i>Stock: ${p.qty_available ?? p.qty_total}
+                        </span>
+                        ${p.owner_name ? `<span class="text-muted" style="font-size:0.62rem;"><i class="fa-regular fa-user me-0.5"></i>${p.owner_name.split(' ')[0]}</span>` : ''}
+                    </div>
                     <div class="d-flex align-items-center gap-1 mb-2.5">
                         <i class="fa-solid fa-star text-warning fs-9"></i>
                         <span class="fw-bold text-dark fs-9">${parseFloat(p.rating).toFixed(1)}</span>
@@ -286,6 +294,18 @@ function openEquipmentDetail(id) {
     document.getElementById('detailDescription').innerText = item.description || 'Quality event equipment for rent, maintained and cleaned for every booking.';
     document.getElementById('detailQtyVal').innerText = currentDetailQty;
 
+    // Display stock clearly
+    const stockEl = document.getElementById('detailStockBadge');
+    if (stockEl) {
+        stockEl.innerHTML = item.qty_available > 0 
+            ? `<i class="fa-solid fa-boxes-stacked text-success fs-7 mb-1"></i><span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;">Stock: <strong>${item.qty_available}</strong> units</span>` 
+            : `<i class="fa-solid fa-triangle-exclamation text-danger fs-7 mb-1"></i><span class="fs-9 fw-bold text-danger" style="font-size:0.68rem;">Out of Stock</span>`;
+    }
+    const maxStockLabel = document.getElementById('detailMaxStockLabel');
+    if (maxStockLabel) {
+        maxStockLabel.innerText = `(Max ${item.qty_available || 1})`;
+    }
+
     // Video Player support for posted equipment
     const videoContainer = document.getElementById('detailVideoContainer');
     const videoPlayer = document.getElementById('detailVideoPlayer');
@@ -309,7 +329,8 @@ function openEquipmentDetail(id) {
 }
 
 function adjustDetailQty(delta) {
-    currentDetailQty = Math.max(1, currentDetailQty + delta);
+    const maxStock = (currentDetailProduct && currentDetailProduct.qty_available) ? parseInt(currentDetailProduct.qty_available) : 99;
+    currentDetailQty = Math.max(1, Math.min(maxStock, currentDetailQty + delta));
     const el = document.getElementById('detailQtyVal');
     if (el) el.innerText = currentDetailQty;
 }
@@ -427,33 +448,36 @@ async function renderCartScreen() {
     });
     container.innerHTML = html;
 
-    // Call Computation API
+    // Call Computation API with rental duration
     try {
         const res = await fetch(getRentEaseApiUrl('calculate_charges'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 items: rentEaseCart,
-                delivery_option: currentDeliveryOption
+                delivery_option: currentDeliveryOption,
+                rental_days: currentRentalDays
             })
         });
         if (res.ok) {
             const data = await res.json();
             const c = data.computation;
-            updateComputationDisplay(c.subtotal, c.service_charge, c.delivery_fee, c.discount, c.total);
+            updateComputationDisplay(c.subtotal, c.service_charge, c.delivery_fee, c.discount, c.total, c.downpayment, c.balance);
         }
     } catch (e) {
         // Fallback local computation
-        const sub = rentEaseCart.reduce((acc, it) => acc + (it.price_per_day * it.quantity), 0);
+        const sub = rentEaseCart.reduce((acc, it) => acc + (it.price_per_day * it.quantity * currentRentalDays), 0);
         const svc = sub > 0 ? 100 : 0;
         const del = (currentDeliveryOption === 'DELIVERY' && sub > 0) ? 150 : 0;
         const disc = sub >= 1000 ? 50 : 0;
         const tot = sub + svc + del - disc;
-        updateComputationDisplay(sub, svc, del, disc, tot);
+        const down = Math.round(tot * 0.30);
+        const bal = tot - down;
+        updateComputationDisplay(sub, svc, del, disc, tot, down, bal);
     }
 }
 
-function updateComputationDisplay(sub, svc, del, disc, tot) {
+function updateComputationDisplay(sub, svc, del, disc, tot, down = 0, bal = 0) {
     const subEl = document.getElementById('cartRentalSubtotal');
     const svcEl = document.getElementById('cartServiceCharge');
     const delEl = document.getElementById('cartDeliveryFee');
@@ -472,12 +496,86 @@ function updateComputationDisplay(sub, svc, del, disc, tot) {
     const payDelEl = document.getElementById('payDeliveryFee');
     const payDiscEl = document.getElementById('payDiscount');
     const payTotEl = document.getElementById('payGrandTotal');
+    const payDurEl = document.getElementById('payDurationLabel');
 
     if (paySubEl) paySubEl.innerText = '₱' + sub.toLocaleString();
     if (paySvcEl) paySvcEl.innerText = '₱' + svc.toLocaleString();
     if (payDelEl) payDelEl.innerText = '₱' + del.toLocaleString();
     if (payDiscEl) payDiscEl.innerText = '- ₱' + disc.toLocaleString();
     if (payTotEl) payTotEl.innerText = '₱' + tot.toLocaleString();
+    if (payDurEl) payDurEl.innerText = `${currentRentalDays} day${currentRentalDays > 1 ? 's' : ''}`;
+
+    const downpayment = down || Math.round(tot * 0.30);
+    const balance = bal || (tot - downpayment);
+
+    const downEl = document.getElementById('payDownpaymentVal');
+    const balEl = document.getElementById('payBalanceVal');
+    if (downEl) downEl.innerText = '₱' + downpayment.toLocaleString();
+    if (balEl) balEl.innerText = '₱' + balance.toLocaleString();
+
+    const btnExec = document.getElementById('btnExecutePayment');
+    if (btnExec) {
+        if (currentPaymentPlan === 'DOWNPAYMENT_COD') {
+            btnExec.innerText = `Pay Downpayment (₱${downpayment.toLocaleString()}) & Book COD`;
+        } else {
+            btnExec.innerText = `Pay Full Rental (₱${tot.toLocaleString()})`;
+        }
+    }
+}
+
+function adjustRentalDays(delta) {
+    currentRentalDays = Math.max(1, Math.min(30, currentRentalDays + delta));
+    const daysVal = document.getElementById('checkoutDaysVal');
+    if (daysVal) daysVal.innerText = currentRentalDays;
+    const badge = document.getElementById('checkoutDurationBadge');
+    if (badge) badge.innerText = `${currentRentalDays} Day${currentRentalDays > 1 ? 's' : ''} Rent`;
+
+    updateDueDateDisplay();
+    renderCartScreen();
+}
+
+function onRentalDurationChanged() {
+    updateDueDateDisplay();
+    renderCartScreen();
+}
+
+function updateDueDateDisplay() {
+    const startDateInput = document.getElementById('checkoutDateInput');
+    const dueDateText = document.getElementById('checkoutDueDateText');
+    if (!startDateInput || !dueDateText) return;
+
+    const startVal = startDateInput.value || new Date().toISOString().split('T')[0];
+    const sDate = new Date(startVal);
+    sDate.setDate(sDate.getDate() + currentRentalDays);
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    dueDateText.innerText = sDate.toLocaleDateString('en-US', options);
+}
+
+function selectPaymentPlan(plan) {
+    currentPaymentPlan = plan;
+    const fullCard = document.getElementById('payPlanFullCard');
+    const codCard = document.getElementById('payPlanCodCard');
+    const fullRadio = document.getElementById('planFull');
+    const codRadio = document.getElementById('planCod');
+    const codBox = document.getElementById('codDownpaymentBox');
+
+    if (plan === 'DOWNPAYMENT_COD') {
+        if (codCard) codCard.className = 'form-check p-2.5 rounded-3 mb-2 border d-flex align-items-center border-warning bg-warning-subtle bg-opacity-25';
+        if (fullCard) fullCard.className = 'form-check p-2.5 rounded-3 mb-2 border d-flex align-items-center';
+        if (codRadio) codRadio.checked = true;
+        if (fullRadio) fullRadio.checked = false;
+        if (codBox) codBox.style.display = 'block';
+        currentPaymentMethod = 'COD';
+    } else {
+        if (fullCard) fullCard.className = 'form-check p-2.5 rounded-3 mb-2 border d-flex align-items-center border-primary bg-primary-subtle bg-opacity-25';
+        if (codCard) codCard.className = 'form-check p-2.5 rounded-3 border d-flex align-items-center';
+        if (fullRadio) fullRadio.checked = true;
+        if (codRadio) codRadio.checked = false;
+        if (codBox) codBox.style.display = 'none';
+        currentPaymentMethod = 'GCASH';
+    }
+
+    renderCartScreen();
 }
 
 function adjustCartQty(index, delta) {
@@ -559,8 +657,14 @@ function selectPaymentMethod(method) {
 
 async function executeRentEasePayment() {
     const address = document.getElementById('checkoutAddressText')?.innerText || 'San Pablo, Laguna';
-    const rentalDate = document.getElementById('checkoutDateInput')?.value || '2026-09-25';
+    const rentalDate = document.getElementById('checkoutDateInput')?.value || new Date().toISOString().split('T')[0];
     const user = getRentEaseCurrentUser();
+
+    const btn = document.getElementById('btnExecutePayment');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Confirming Booking...';
+    }
 
     try {
         const res = await fetch(getRentEaseApiUrl('create_order'), {
@@ -573,15 +677,21 @@ async function executeRentEasePayment() {
                 delivery_option: currentDeliveryOption,
                 delivery_address: address,
                 rental_start_date: rentalDate,
+                rental_days: currentRentalDays,
                 items: rentEaseCart,
-                payment_method: currentPaymentMethod
+                payment_method: currentPaymentMethod,
+                payment_type: currentPaymentPlan
             })
         });
 
         const data = await res.json();
         if (res.ok && data.success) {
             const orderCode = data.order_code || '#RE-10245';
-            alert(`🎉 Payment Successful via ${currentPaymentMethod}!\nOrder ${orderCode} is confirmed and scheduled for delivery.`);
+            const payNotice = (currentPaymentPlan === 'DOWNPAYMENT_COD')
+                ? `COD Plan Selected!\nDownpayment of ₱${parseFloat(data.downpayment_amount || 0).toLocaleString()} confirmed.\nRemaining balance of ₱${parseFloat(data.balance_amount || 0).toLocaleString()} will be collected upon arrival.`
+                : `Full Payment of ₱${parseFloat(data.total_amount || 0).toLocaleString()} confirmed!`;
+
+            alert(`🎉 Booking Successful!\nOrder ${orderCode} is scheduled for ${currentRentalDays} day(s).\n\n${payNotice}\n\nOwner (${data.owner_name}) has been notified via chat.`);
             
             // Empty cart
             rentEaseCart = [];
@@ -595,12 +705,13 @@ async function executeRentEasePayment() {
         }
     } catch (e) {
         console.error("Payment error:", e);
-        // Fallback demo transition to Screen 7
-        alert('🎉 Payment Confirmed via GCash!\nOrder #RE-10245 is now active.');
+        alert('🎉 Booking Confirmed!\nOrder #RE-10245 is now active.');
         rentEaseCart = [];
         saveRentEaseCart();
         updateCartBadgeCount();
         openTrackScreen('#RE-10245');
+    } finally {
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -629,6 +740,50 @@ async function openTrackScreen(orderCode = '#RE-10245') {
 
             const phoneBtn = document.getElementById('trackCallRiderBtn');
             if (phoneBtn) phoneBtn.href = `tel:${t.rider.phone}`;
+
+            const isDelivered = ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(t.order_status);
+            const isReturned = (t.order_status === 'RETURNED');
+            
+            const stageDelCircle = document.getElementById('stageDeliveredCircle');
+            const stageDelText = document.getElementById('stageDeliveredText');
+            if (stageDelCircle) {
+                if (isDelivered) {
+                    stageDelCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    stageDelCircle.style.background = '#10B981';
+                    stageDelCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    if (stageDelText) stageDelText.className = 'fw-extrabold text-dark fs-8 mb-0';
+                }
+            }
+
+            const stageRetCircle = document.getElementById('stageReturnedCircle');
+            const stageRetText = document.getElementById('stageReturnedText');
+            if (stageRetCircle) {
+                if (isReturned) {
+                    stageRetCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    stageRetCircle.style.background = '#10B981';
+                    stageRetCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    if (stageRetText) stageRetText.className = 'fw-extrabold text-success fs-8 mb-0';
+                }
+            }
+
+            const retBadge = document.getElementById('returnStatusBadge');
+            const btnDispatch = document.getElementById('btnDispatchReturn');
+            if (retBadge) {
+                if (isReturned) {
+                    retBadge.className = 'badge bg-success-subtle text-success fs-9';
+                    retBadge.innerText = 'Returned & Restocked';
+                    if (btnDispatch) {
+                        btnDispatch.disabled = true;
+                        btnDispatch.innerHTML = '<i class="fa-solid fa-check-double me-1"></i> Stock Restored';
+                    }
+                } else if (t.order_status === 'RETURN_DELIVERY') {
+                    retBadge.className = 'badge bg-warning-subtle text-warning-emphasis fs-9';
+                    retBadge.innerText = 'Return Trip in Progress';
+                } else if (isDelivered) {
+                    retBadge.className = 'badge bg-primary-subtle text-primary fs-9';
+                    retBadge.innerText = 'Rental Course Active';
+                }
+            }
 
             setTimeout(() => {
                 initRentEaseLeafletMap(t.locations.warehouse, t.locations.rider, t.locations.destination);
@@ -1297,7 +1452,9 @@ window.postRentalItemLive = async function () {
                 item_condition: condition,
                 location: location,
                 description: description,
-                owner_name: currentUser.name || 'Romeo Paolo Tolentino'
+                owner_name: currentUser.name || 'Romeo Paolo Tolentino',
+                owner_email: currentUser.email || 'romeopaolotolentino@gmail.com',
+                owner_contact: currentUser.phone || '09668257301'
             })
         });
 

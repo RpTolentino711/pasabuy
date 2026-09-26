@@ -993,8 +993,8 @@
                 <div class="row g-2 mb-3">
                     <div class="col-4">
                         <div class="p-2 rounded-3 text-center border bg-light h-100 d-flex flex-column align-items-center justify-content-center">
-                            <i class="fa-solid fa-circle-check text-success fs-7 mb-1"></i>
-                            <span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;">Available in stock</span>
+                            <i class="fa-solid fa-boxes-stacked text-success fs-7 mb-1"></i>
+                            <span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;" id="detailStockBadge">Stock: 10 available</span>
                         </div>
                     </div>
                     <div class="col-4">
@@ -1013,13 +1013,13 @@
 
                 <!-- Quantity Stepper (Screen 3) -->
                 <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light border mb-2">
-                    <span class="fw-extrabold text-dark fs-8">Quantity</span>
+                    <span class="fw-extrabold text-dark fs-8">Quantity <span class="text-muted fw-normal fs-9" id="detailMaxStockLabel">(Max 10)</span></span>
                     <div class="d-flex align-items-center gap-2.5">
                         <button type="button" class="btn btn-sm btn-white rounded-circle p-0 d-flex align-items-center justify-content-center border shadow-2xs" 
                                 style="width:30px; height:30px; background:#fff;" onclick="adjustDetailQty(-1)">
                             <i class="fa-solid fa-minus text-dark fs-9"></i>
                         </button>
-                        <span class="fw-extrabold text-dark fs-7 px-2" id="detailQtyVal">10</span>
+                        <span class="fw-extrabold text-dark fs-7 px-2" id="detailQtyVal">1</span>
                         <button type="button" class="btn btn-sm btn-white rounded-circle p-0 d-flex align-items-center justify-content-center border shadow-2xs" 
                                 style="width:30px; height:30px; background:#fff;" onclick="adjustDetailQty(1)">
                             <i class="fa-solid fa-plus text-dark fs-9"></i>
@@ -1029,9 +1029,13 @@
 
             </div>
 
-            <!-- Bottom Sticky Action Bar: Full Width [Add to Cart] (Screen 3) -->
-            <div class="modal-footer border-top bg-white p-3 d-flex align-items-center justify-content-center sticky-bottom" id="detailFooterActions">
-                <button type="button" class="btn btn-primary w-100 py-3 rounded-4 fw-extrabold shadow-sm fs-7" 
+            <!-- Bottom Sticky Action Bar: [Chat Owner] + [Add to Cart] -->
+            <div class="modal-footer border-top bg-white p-3 d-flex align-items-center gap-2 sticky-bottom" id="detailFooterActions">
+                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5" 
+                        style="border-color:#5B3FA8; color:#5B3FA8; min-width:130px;" onclick="chatWithOwnerFromDetail()">
+                    <i class="fa-regular fa-comment-dots fs-7"></i> Chat Owner
+                </button>
+                <button type="button" class="btn btn-primary flex-grow-1 py-2.5 rounded-4 fw-extrabold shadow-sm fs-7" 
                         style="background: #5B3FA8; border: none;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart()">
                     Add to Cart
                 </button>

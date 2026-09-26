@@ -526,16 +526,48 @@ if ($action === 'update_order_status') {
     if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
     $id = (int)($req['id'] ?? 0);
     $status = strtoupper(trim((string)($req['status'] ?? '')));
+    $riderName = trim((string)($req['rider_name'] ?? $req['driver_name'] ?? ''));
+    $riderPhone = trim((string)($req['rider_phone'] ?? $req['driver_phone'] ?? ''));
 
-    $valid = ['PENDING', 'CONFIRMED', 'PROCESSING', 'ON_THE_WAY', 'DELIVERED', 'CANCELLED'];
+    $valid = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'CANCELLED'];
     if (!in_array($status, $valid)) {
         echo json_encode(['success' => false, 'message' => 'Invalid status']);
         exit;
     }
 
-    $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ? WHERE `id` = ?");
-    $stmt->execute([$status, $id]);
-    echo json_encode(['success' => true, 'message' => "Order status changed to {$status}."]);
+    if ($riderName !== '') {
+        $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `assigned_rider_name` = ?, `assigned_rider_phone` = ? WHERE `id` = ?");
+        $stmt->execute([$status, $riderName, $riderPhone ?: '09187654321', $id]);
+    } else {
+        $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ? WHERE `id` = ?");
+        $stmt->execute([$status, $id]);
+    }
+
+    // If order is completed & returned, restore inventory stock to owner
+    if ($status === 'RETURNED') {
+        try {
+            $itemsStmt = $db->prepare("SELECT product_id, product_name, quantity FROM `rental_order_items` WHERE `order_id` = ?");
+            $itemsStmt->execute([$id]);
+            $orderItems = $itemsStmt->fetchAll();
+
+            $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + ?, `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
+            foreach ($orderItems as $oit) {
+                $pId = (int)$oit['product_id'];
+                $pQty = (int)$oit['quantity'];
+                if ($pId > 0) {
+                    $updStock->execute([$pQty, $pQty, $pId]);
+                }
+            }
+
+            // Notification
+            $ordRow = $db->query("SELECT order_code, owner_name, customer_name FROM `rental_orders` WHERE id = {$id}")->fetch();
+            $ordCode = $ordRow['order_code'] ?? "#ORD-{$id}";
+            $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Admin Operations', ?, 'Order Returned', NOW())");
+            $chatStmt->execute(["✅ Admin confirmed return for Order {$ordCode}: Equipment has been safely returned to inventory stock!"]);
+        } catch (Exception $eRestock) {}
+    }
+
+    echo json_encode(['success' => true, 'message' => "Order #{$id} status changed to {$status}."]);
     exit;
 }
 
