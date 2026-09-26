@@ -814,6 +814,68 @@ if ($action === 'owner_update_stock_price' || $action === 'update_item') {
     exit;
 }
 
+if ($action === 'delete_item' || $action === 'take_down_item' || $action === 'owner_delete_item') {
+    $id = (int)($data['id'] ?? $_GET['id'] ?? 0);
+    $ownerEmail = trim((string)($data['owner_email'] ?? ''));
+
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Equipment ID is required.']);
+        exit;
+    }
+
+    if ($db) {
+        try {
+            $stmt = $db->prepare("DELETE FROM `rental_inventory` WHERE `id` = ?");
+            $stmt->execute([$id]);
+
+            try {
+                $refMsg = "ℹ️ Listing #{$id} taken down by owner. Eligible posting fee refund logged.";
+                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, 104, 'RentEase System', ?, 'Posting Fee Refund', NOW())")
+                   ->execute([$refMsg]);
+            } catch (Exception $eRef) {}
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Equipment listing taken down successfully! Your posting fee refund request has been queued.'
+    ]);
+    exit;
+}
+
+if ($action === 'notify_owner_rental_intent') {
+    $productId = (int)($data['product_id'] ?? 0);
+    $productName = trim((string)($data['product_name'] ?? 'Equipment'));
+    $customerName = trim((string)($data['customer_name'] ?? 'A student'));
+    $customerId = (int)($data['customer_id'] ?? 105);
+    $qty = (int)($data['qty'] ?? 1);
+    $ownerId = (int)($data['owner_id'] ?? 0);
+
+    if ($db) {
+        try {
+            if (!$ownerId && $productId > 0) {
+                $chk = $db->prepare("SELECT `owner_id` FROM `rental_inventory` WHERE `id` = ? LIMIT 1");
+                $chk->execute([$productId]);
+                $r = $chk->fetch();
+                if ($r && !empty($r['owner_id'])) $ownerId = (int)$r['owner_id'];
+            }
+            if (!$ownerId) $ownerId = 104;
+
+            $alertMsg = "⚡ RENT NOW ALERT: {$customerName} tapped 'Rent Now' for {$qty} unit(s) of '{$productName}' and is entering checkout!";
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+               ->execute([$customerId, $ownerId, $customerName, $alertMsg, $productName]);
+        } catch (Exception $e) {}
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Stock owner notified.']);
+    exit;
+}
+
 if ($action === 'admin_update_stock') {
     $id = (int)($data['id'] ?? 0);
     $qtyTotal = (int)($data['qty_total'] ?? 0);

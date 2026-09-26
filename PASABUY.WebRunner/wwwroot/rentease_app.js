@@ -77,40 +77,41 @@ function renderFeaturedRentals() {
     featured.forEach(item => {
         html += `
         <div class="col-6 mb-2">
-            <div class="card border-0 rounded-4 shadow-sm h-100 p-2.5 bg-white position-relative" style="cursor:pointer;" onclick="openEquipmentDetail(${item.id})">
-                <div class="position-relative">
-                    <img src="${item.image_url}" class="rounded-3 w-100" style="height: 125px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
-                    <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" 
-                            style="width:26px; height:26px; background:rgba(255,255,255,0.9);" 
-                            onclick="event.stopPropagation(); toggleWishlist(this, ${item.id})">
-                        <i class="fa-regular fa-heart text-dark fs-9"></i>
-                    </button>
-                </div>
-                <div class="pt-2">
+            <div class="card border-0 rounded-4 shadow-sm h-100 bg-white position-relative d-flex flex-column justify-content-between overflow-hidden" 
+                 style="padding: 10px; cursor:pointer;" onclick="openEquipmentDetail(${item.id})">
+                <div>
+                    <div class="position-relative mb-2">
+                        <img src="${item.image_url}" class="rounded-3 w-100" style="height: 125px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                        <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" 
+                                style="width:26px; height:26px; background:rgba(255,255,255,0.9);" 
+                                onclick="event.stopPropagation(); toggleWishlist(this, ${item.id})">
+                            <i class="fa-regular fa-heart text-dark fs-9"></i>
+                        </button>
+                    </div>
                     <h6 class="fw-bold mb-1 text-dark fs-8 text-truncate" title="${item.name}">${item.name}</h6>
                     <div class="d-flex align-items-baseline gap-1 mb-1">
                         <span class="fw-extrabold text-dark fs-7">₱${parseFloat(item.price_per_day).toFixed(0)}</span>
                         <span class="text-muted fs-9">/ day</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-1">
-                            <i class="fa-solid fa-star text-warning fs-9"></i>
-                            <span class="fw-bold text-dark fs-9">${parseFloat(item.rating).toFixed(1)}</span>
-                            <span class="text-muted fs-9">(${item.reviews_count})</span>
-                        </div>
-                        ${isCurrentUserOwnerOfItem(item) 
-                            ? `<button class="btn btn-sm rounded-pill px-2 py-0.5 text-white border-0 fw-bold fs-9" 
-                                       style="background: #475569;"
-                                       onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Your Equipment">
-                                   <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.65rem;"></i> Yours
-                               </button>`
-                            : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white" 
-                                       style="width:28px; height:28px; background: linear-gradient(135deg, #5B3FA8, #341F97);"
-                                       onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id})" title="Add to Cart">
-                                   <i class="fa-solid fa-cart-plus fs-9"></i>
-                               </button>`
-                        }
+                </div>
+                <div class="d-flex align-items-center justify-content-between pt-1">
+                    <div class="d-flex align-items-center gap-1">
+                        <i class="fa-solid fa-star text-warning fs-9"></i>
+                        <span class="fw-bold text-dark fs-9">${parseFloat(item.rating).toFixed(1)}</span>
+                        <span class="text-muted fs-9">(${item.reviews_count})</span>
                     </div>
+                    ${isCurrentUserOwnerOfItem(item) 
+                        ? `<button class="btn btn-sm rounded-pill px-2.5 py-1 text-white border-0 fw-bold fs-9 shadow-xs" 
+                                   style="background: #475569;"
+                                   onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Your Equipment">
+                               <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.65rem;"></i> Yours
+                           </button>`
+                        : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
+                                   style="width:30px; height:30px; background: linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink: 0;"
+                                   onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id})" title="Add to Cart">
+                               <i class="fa-solid fa-cart-plus fs-8"></i>
+                           </button>`
+                    }
                 </div>
             </div>
         </div>`;
@@ -286,7 +287,8 @@ function renderGridElements(items) {
 
         html += `
         <div class="col-6 mb-3">
-            <div class="card border-0 rounded-4 shadow-sm h-100 p-2.5 bg-white position-relative d-flex flex-column justify-content-between" style="cursor:pointer;" onclick="openEquipmentDetail(${p.id})">
+            <div class="card border-0 rounded-4 shadow-sm h-100 bg-white position-relative d-flex flex-column justify-content-between overflow-hidden" 
+                 style="padding: 10px; cursor:pointer;" onclick="openEquipmentDetail(${p.id})">
                 <div>
                     <div class="position-relative mb-2">
                         <img src="${p.image_url}" class="rounded-3 w-100" style="height: 130px; object-fit: cover;" alt="${p.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
@@ -313,7 +315,7 @@ function renderGridElements(items) {
                         <span class="text-muted fs-9">(${p.reviews_count})</span>
                     </div>
                 </div>
-                <button class="btn btn-sm rounded-pill w-100 fw-bold fs-9 py-1.5 shadow-2xs ${cartBtnClass}" 
+                <button class="btn btn-sm rounded-pill w-100 fw-bold fs-9 py-2 shadow-2xs ${cartBtnClass}" 
                         style="${cartBtnStyle}" onclick="${cartOnClick}">
                     ${cartBtnText}
                 </button>
@@ -326,32 +328,70 @@ function renderGridElements(items) {
 // ----------------------------------------------------------
 // 2. SCREEN 3: PRODUCT DETAIL MODAL
 // ----------------------------------------------------------
+// 2. SCREEN 3: PRODUCT DETAIL MODAL
+// ----------------------------------------------------------
 function openEquipmentDetail(id) {
-    const item = rentEaseInventory.find(i => i.id == id);
+    let item = (rentEaseInventory || []).find(i => i.id == id);
+    if (!item && typeof allProductsCache !== 'undefined') {
+        const p = allProductsCache.find(x => x.id == id);
+        if (p) {
+            item = {
+                id: p.id,
+                name: p.title,
+                price_per_day: parseFloat(String(p.price || 0).replace(/[^\d.]/g, '')) || 0,
+                image_url: p.img || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
+                video_url: p.videoUrl || '',
+                description: p.description || '',
+                qty_available: p.stockQuantity ?? 1,
+                qty_total: p.stockQuantity ?? 1,
+                rating: 5.0,
+                reviews_count: 1,
+                owner_id: p.sellerId || 104,
+                owner_name: p.seller || 'Student'
+            };
+        }
+    }
     if (!item) return;
 
     currentDetailProduct = item;
     currentDetailQty = 1;
 
-    document.getElementById('detailHeaderTitle').innerText = item.name;
-    document.getElementById('detailTitle').innerText = item.name;
-    document.getElementById('detailMainImg').src = item.image_url;
-    document.getElementById('detailRatingVal').innerText = parseFloat(item.rating || 5.0).toFixed(1);
-    document.getElementById('detailReviewCount').innerText = item.reviews_count || 1;
-    document.getElementById('detailPrice').innerText = '₱' + parseFloat(item.price_per_day).toFixed(0);
-    document.getElementById('detailDescription').innerText = item.description || 'Quality event equipment for rent, maintained and cleaned for every booking.';
-    document.getElementById('detailQtyVal').innerText = currentDetailQty;
+    const headerTitle = document.getElementById('detailHeaderTitle');
+    if (headerTitle) headerTitle.innerText = item.name || 'Equipment Details';
+    const detailTitle = document.getElementById('detailTitle');
+    if (detailTitle) detailTitle.innerText = item.name;
+
+    const mainImg = document.getElementById('detailMainImg');
+    if (mainImg) {
+        mainImg.src = item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+        mainImg.onerror = function () {
+            this.onerror = null;
+            this.src = 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+        };
+    }
+
+    const ratingValEl = document.getElementById('detailRatingVal');
+    if (ratingValEl) ratingValEl.innerText = parseFloat(item.rating || 5.0).toFixed(1);
+    const reviewCountEl = document.getElementById('detailReviewCount');
+    if (reviewCountEl) reviewCountEl.innerText = item.reviews_count || 1;
+    const priceEl = document.getElementById('detailPrice');
+    if (priceEl) priceEl.innerText = '₱' + parseFloat(item.price_per_day || 0).toFixed(0);
+    const descEl = document.getElementById('detailDescription');
+    if (descEl) descEl.innerText = item.description || 'Quality event equipment for rent, maintained and cleaned for every booking.';
+    const qtyValEl = document.getElementById('detailQtyVal');
+    if (qtyValEl) qtyValEl.innerText = currentDetailQty;
 
     // Display stock clearly
+    const avail = parseInt(item.qty_available ?? item.qty_total ?? 1);
     const stockEl = document.getElementById('detailStockBadge');
     if (stockEl) {
-        stockEl.innerHTML = item.qty_available > 0 
-            ? `<i class="fa-solid fa-boxes-stacked text-success fs-7 mb-1"></i><span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;">Stock: <strong>${item.qty_available}</strong> units</span>` 
+        stockEl.innerHTML = avail > 0 
+            ? `<i class="fa-solid fa-boxes-stacked text-success fs-7 mb-1"></i><span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;">Stock: <strong>${avail}</strong> units</span>` 
             : `<i class="fa-solid fa-triangle-exclamation text-danger fs-7 mb-1"></i><span class="fs-9 fw-bold text-danger" style="font-size:0.68rem;">Out of Stock</span>`;
     }
     const maxStockLabel = document.getElementById('detailMaxStockLabel');
     if (maxStockLabel) {
-        maxStockLabel.innerText = `(Max ${item.qty_available || 1})`;
+        maxStockLabel.innerText = `(Max ${avail})`;
     }
 
     // Video Player support for posted equipment
@@ -371,37 +411,54 @@ function openEquipmentDetail(id) {
     // Check if the current user is the owner of this equipment!
     const isOwner = isCurrentUserOwnerOfItem(item);
     const qtyContainer = document.getElementById('detailQtyContainer');
+    const ownerSection = document.getElementById('detailOwnerControlSection');
     const ownerNotice = document.getElementById('detailOwnerNoticeContainer');
     const footerActions = document.getElementById('detailFooterActions');
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
 
     if (isOwner) {
         if (qtyContainer) qtyContainer.style.setProperty('display', 'none', 'important');
-        if (ownerNotice) ownerNotice.style.setProperty('display', 'flex', 'important');
+        if (ownerNotice) ownerNotice.style.setProperty('display', 'none', 'important');
+        if (ownerSection) ownerSection.style.setProperty('display', 'block', 'important');
+
+        const pInput = document.getElementById('detailOwnerPriceInput');
+        if (pInput) pInput.value = parseFloat(item.price_per_day || 0).toFixed(0);
+        const sInput = document.getElementById('detailOwnerStockInput');
+        if (sInput) sInput.value = avail;
+
         if (footerActions) {
             footerActions.innerHTML = `
-                <button type="button" class="btn btn-outline-danger rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5" 
-                        style="min-width:130px;" onclick="bootstrap.Modal.getInstance(document.getElementById('productDetailModal'))?.hide(); deleteUserRentalItem(${item.id}, '${safeTitle}')">
-                    <i class="fa-solid fa-trash me-1"></i> Remove Item
+                <button type="button" class="btn btn-outline-danger rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 flex-grow-1" 
+                        onclick="promptTakeDownOwnerItem(${item.id}, '${safeTitle}')">
+                    <i class="fa-solid fa-trash-can me-1"></i> Take Down Listing
                 </button>
-                <button type="button" class="btn btn-primary flex-grow-1 py-2.5 rounded-4 fw-extrabold shadow-sm fs-7" 
-                        style="background: #5B3FA8; border: none;" onclick="bootstrap.Modal.getInstance(document.getElementById('productDetailModal'))?.hide(); switchTab('profile');">
-                    <i class="fa-solid fa-boxes-stacked me-1.5"></i> Manage in My Listings
+                <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 border text-secondary" 
+                        data-bs-dismiss="modal">
+                    Close
                 </button>
             `;
         }
     } else {
         if (qtyContainer) qtyContainer.style.removeProperty('display');
         if (ownerNotice) ownerNotice.style.setProperty('display', 'none', 'important');
+        if (ownerSection) ownerSection.style.setProperty('display', 'none', 'important');
+
         if (footerActions) {
             footerActions.innerHTML = `
-                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5" 
-                        style="border-color:#5B3FA8; color:#5B3FA8; min-width:130px;" onclick="chatWithOwnerFromDetail()">
-                    <i class="fa-regular fa-comment-dots fs-7"></i> Chat Owner
+                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1 text-nowrap" 
+                        style="border-color:#5B3FA8; color:#5B3FA8;" onclick="chatWithOwnerFromDetail()" title="Chat with Owner">
+                    <i class="fa-regular fa-comment-dots fs-6"></i>
+                    <span>Chat</span>
                 </button>
-                <button type="button" class="btn btn-primary flex-grow-1 py-2.5 rounded-4 fw-extrabold shadow-sm fs-7" 
-                        style="background: #5B3FA8; border: none;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart()">
-                    Add to Cart
+                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs text-nowrap" 
+                        style="border: 2px solid #5B3FA8; color: #5B3FA8; background: #fff;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart()">
+                    <i class="fa-solid fa-cart-plus fs-6"></i>
+                    <span>Add to Cart</span>
+                </button>
+                <button type="button" class="btn btn-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5 shadow-sm text-nowrap" 
+                        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border: none; color: #fff;" id="detailRentNowBtn" onclick="confirmRentNowDetail()">
+                    <i class="fa-solid fa-bolt fs-6 text-warning"></i>
+                    <span>Rent Now</span>
                 </button>
             `;
         }
@@ -419,11 +476,148 @@ window.openRentalDetail = openEquipmentDetail;
 window.openEquipmentDetail = openEquipmentDetail;
 
 function adjustDetailQty(delta) {
-    const maxStock = (currentDetailProduct && currentDetailProduct.qty_available) ? parseInt(currentDetailProduct.qty_available) : 99;
+    const maxStock = (currentDetailProduct && (currentDetailProduct.qty_available ?? currentDetailProduct.qty_total)) 
+        ? parseInt(currentDetailProduct.qty_available ?? currentDetailProduct.qty_total) 
+        : 99;
     currentDetailQty = Math.max(1, Math.min(maxStock, currentDetailQty + delta));
     const el = document.getElementById('detailQtyVal');
     if (el) el.innerText = currentDetailQty;
 }
+
+// RENT NOW ACTION: Adds item to cart, notifies stock owner, and jumps straight to Checkout!
+window.confirmRentNowDetail = async function () {
+    if (!currentDetailProduct) return;
+    if (isCurrentUserOwnerOfItem(currentDetailProduct)) {
+        alert("ℹ️ You cannot rent your own equipment.");
+        return;
+    }
+    const avail = parseInt(currentDetailProduct.qty_available ?? currentDetailProduct.qty_total ?? 1);
+    if (avail <= 0) {
+        alert("⚠️ Sorry, this equipment is currently out of stock.");
+        return;
+    }
+
+    // Add to cart with current selected quantity
+    addRentEaseCartItem(currentDetailProduct, currentDetailQty);
+
+    // Notify the stock owner immediately via backend API
+    try {
+        const currentUser = getRentEaseCurrentUser();
+        fetch(getRentEaseApiUrl('notify_owner_rental_intent'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                product_id: currentDetailProduct.id,
+                product_name: currentDetailProduct.name || currentDetailProduct.title,
+                customer_name: currentUser.name || 'Campus Student',
+                customer_id: currentUser.id || 105,
+                qty: currentDetailQty,
+                owner_id: currentDetailProduct.owner_id || currentDetailProduct.seller_id || 104
+            })
+        }).catch(e => console.error("Rent now notify error:", e));
+    } catch (e) {}
+
+    // Hide product detail modal
+    const modalEl = document.getElementById('productDetailModal');
+    if (modalEl) {
+        const bs = bootstrap.Modal.getInstance(modalEl);
+        if (bs) bs.hide();
+    }
+
+    // Switch to cart tab and open checkout screen directly!
+    switchTab('cart');
+    openCheckoutScreen();
+};
+
+// OWNER ACTIONS: Save live stock and rental price
+window.saveOwnerStockPriceFromDetail = async function () {
+    if (!currentDetailProduct) return;
+    const pInput = document.getElementById('detailOwnerPriceInput');
+    const sInput = document.getElementById('detailOwnerStockInput');
+    const saveBtn = document.getElementById('btnSaveOwnerDetailChanges');
+
+    const price = parseFloat(pInput?.value || 0);
+    const avail = parseInt(sInput?.value || 0);
+
+    if (price <= 0) {
+        alert("⚠️ Please enter a valid daily rental price.");
+        return;
+    }
+    if (avail < 0) {
+        alert("⚠️ Stock units cannot be negative.");
+        return;
+    }
+
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+    }
+
+    const currentUser = getRentEaseCurrentUser();
+    try {
+        const res = await fetch(getRentEaseApiUrl('owner_update_stock_price'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: currentDetailProduct.id,
+                price_per_day: price,
+                qty_available: avail,
+                qty_total: Math.max(currentDetailProduct.qty_total || avail, avail),
+                owner_id: currentUser.id || 0,
+                owner_email: currentUser.email || ''
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            currentDetailProduct.price_per_day = price;
+            currentDetailProduct.qty_available = avail;
+            const priceEl = document.getElementById('detailPrice');
+            if (priceEl) priceEl.innerText = '₱' + price.toFixed(0);
+            const stockEl = document.getElementById('detailStockBadge');
+            if (stockEl) {
+                stockEl.innerHTML = avail > 0 
+                    ? `<i class="fa-solid fa-boxes-stacked text-success fs-7 mb-1"></i><span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;">Stock: <strong>${avail}</strong> units</span>` 
+                    : `<i class="fa-solid fa-triangle-exclamation text-danger fs-7 mb-1"></i><span class="fs-9 fw-bold text-danger" style="font-size:0.68rem;">Out of Stock</span>`;
+            }
+            await loadRentEaseCatalog();
+            alert("✅ Successfully updated rental rate to ₱" + price.toFixed(0) + "/day and stock to " + avail + " units!");
+        } else {
+            alert("❌ " + (data.message || "Failed to update item."));
+        }
+    } catch (e) {
+        alert("❌ Error connecting to server to save changes.");
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> Save Stock & Price Changes';
+        }
+    }
+};
+
+// OWNER ACTIONS: Take down item with refund warning confirmation
+window.promptTakeDownOwnerItem = function (id, name) {
+    const item = currentDetailProduct || { id: id, name: name };
+    const itemName = name || item.name || 'this equipment';
+    const warningMsg = 
+`⚠️ TAKE DOWN LISTING & REFUND WARNING
+
+Are you sure you want to take down "${itemName}"?
+
+• NOTICE: You can receive a REFUND of your listing fee once taken down (provided no active rental bookings remain unfulfilled).
+• Once taken down, this equipment will immediately be removed from campus search and student catalog.
+• Any ongoing active bookings must still be honored.
+
+Do you want to proceed and take down this listing?`;
+
+    if (confirm(warningMsg)) {
+        const modalEl = document.getElementById('productDetailModal');
+        if (modalEl) {
+            const bs = bootstrap.Modal.getInstance(modalEl);
+            if (bs) bs.hide();
+        }
+        deleteUserRentalItem(item.id || id, itemName);
+    }
+};
 
 function confirmAddDetailToCart() {
     if (!currentDetailProduct) return;
@@ -431,25 +625,71 @@ function confirmAddDetailToCart() {
         alert("ℹ️ You cannot rent or add your own equipment to the cart.");
         return;
     }
+    const avail = parseInt(currentDetailProduct.qty_available ?? currentDetailProduct.qty_total ?? 1);
+    if (avail <= 0) {
+        alert("⚠️ Sorry, this equipment is currently out of stock.");
+        return;
+    }
     addRentEaseCartItem(currentDetailProduct, currentDetailQty);
 
-    const modalEl = document.getElementById('productDetailModal');
-    if (modalEl) {
-        const bs = bootstrap.Modal.getInstance(modalEl);
-        if (bs) bs.hide();
+    const btn = document.getElementById('detailAddToCartBtn');
+    if (btn) {
+        const origHtml = btn.innerHTML;
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-success', 'text-white');
+        btn.innerHTML = '<i class="fa-solid fa-check fs-6"></i> Added to Cart!';
+        setTimeout(() => {
+            if (btn) {
+                btn.classList.remove('btn-success', 'text-white');
+                btn.classList.add('btn-outline-primary');
+                btn.innerHTML = origHtml;
+            }
+        }, 1800);
     }
+
+    showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, currentDetailQty);
     renderExploreCatalog();
 }
 
 function quickAddRentEaseItem(id) {
-    const item = rentEaseInventory.find(i => i.id == id);
+    const item = (rentEaseInventory || []).find(i => i.id == id);
     if (!item) return;
     if (isCurrentUserOwnerOfItem(item)) {
         alert("ℹ️ You cannot rent or add your own equipment to the cart.");
         return;
     }
+    const avail = parseInt(item.qty_available ?? item.qty_total ?? 1);
+    if (avail <= 0) {
+        alert("⚠️ Sorry, this equipment is currently out of stock.");
+        return;
+    }
     addRentEaseCartItem(item, 1);
+    showCartToastNotification(item.name || item.title, 1);
     renderExploreCatalog();
+}
+
+function showCartToastNotification(name, qty) {
+    let toast = document.getElementById('renteaseCartToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'renteaseCartToast';
+        toast.style.cssText = 'position:fixed; bottom:78px; left:50%; transform:translateX(-50%); z-index:99999; min-width:280px; max-width:92%; background:#1E293B; color:#fff; border-radius:30px; padding:10px 16px; box-shadow:0 10px 25px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:between; gap:12px; font-size:12px; font-weight:600; animation:fadeInUp 0.25s ease;';
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = `
+        <div class="d-flex align-items-center gap-2 text-truncate">
+            <i class="fa-solid fa-circle-check text-success fs-6"></i>
+            <span class="text-truncate">Added ${qty}x ${name} to cart</span>
+        </div>
+        <button class="btn btn-sm btn-light rounded-pill px-2.5 py-0.5 fw-bold fs-9 text-nowrap" style="color:#5B3FA8;" onclick="switchTab('cart')">
+            View Cart
+        </button>
+    `;
+    toast.style.display = 'flex';
+    clearTimeout(window._cartToastTimer);
+    window._cartToastTimer = setTimeout(() => {
+        if (toast) toast.style.display = 'none';
+    }, 3500);
 }
 
 function addRentEaseCartItem(product, qty = 1) {
@@ -457,20 +697,50 @@ function addRentEaseCartItem(product, qty = 1) {
         alert("ℹ️ You cannot rent or add your own equipment to the cart.");
         return;
     }
-    const existing = rentEaseCart.find(i => i.id === product.id);
+    const pid = product.id;
+    const title = product.name || product.title;
+    const price = parseFloat(product.price_per_day || product.price || 0);
+    const img = product.image_url || product.img || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+
+    const existing = rentEaseCart.find(i => i.id == pid);
     if (existing) {
         existing.quantity += qty;
     } else {
         rentEaseCart.push({
-            id: product.id,
-            title: product.name,
-            price_per_day: parseFloat(product.price_per_day),
+            id: pid,
+            title: title,
+            price_per_day: price,
             quantity: qty,
-            image_url: product.image_url
+            image_url: img
         });
     }
     saveRentEaseCart();
+
+    // Sync to pasabuyCart in localStorage so it is available across both models!
+    try {
+        let pCart = JSON.parse(localStorage.getItem('pasabuy_cart_items') || '[]');
+        const pExisting = pCart.find(i => (i.listingId && i.listingId == pid) || i.title === title);
+        if (pExisting) {
+            pExisting.quantity += qty;
+        } else {
+            pCart.push({
+                listingId: pid,
+                title: title,
+                price: price,
+                sellerId: product.owner_id || product.sellerId || 104,
+                img: img,
+                quantity: qty,
+                isSold: false
+            });
+        }
+        localStorage.setItem('pasabuy_cart_items', JSON.stringify(pCart));
+        if (typeof pasabuyCart !== 'undefined') {
+            pasabuyCart = pCart;
+        }
+    } catch(e) {}
+
     updateCartBadgeCount();
+    if (typeof updateCartBadge === 'function') updateCartBadge();
 }
 
 function saveRentEaseCart() {
@@ -500,6 +770,28 @@ async function renderCartScreen() {
     showCartScreen();
     const container = document.getElementById('cartItemsListContainer');
     if (!container) return;
+
+    try {
+        rentEaseCart = JSON.parse(localStorage.getItem('rentease_cart') || '[]');
+    } catch(e) {}
+
+    if (rentEaseCart.length === 0) {
+        try {
+            const pCart = JSON.parse(localStorage.getItem('pasabuy_cart_items') || '[]');
+            if (pCart.length > 0) {
+                pCart.forEach(it => {
+                    rentEaseCart.push({
+                        id: it.listingId || it.id,
+                        title: it.title || it.name,
+                        price_per_day: parseFloat(it.price) || 0,
+                        quantity: it.quantity || 1,
+                        image_url: it.img || it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'
+                    });
+                });
+                saveRentEaseCart();
+            }
+        } catch(e) {}
+    }
 
     if (rentEaseCart.length === 0) {
         container.innerHTML = `
@@ -1727,11 +2019,17 @@ window.switchTab = function (tabName) {
     }
 
     if (tabName === 'cart') {
-        if (typeof openCartModal === 'function') {
-            openCartModal();
-        } else if (typeof renderCartScreen === 'function') {
-            renderCartScreen();
-        }
+        ['cartCheckoutModal', 'productDetailModal'].forEach(mid => {
+            const m = document.getElementById(mid);
+            if (m) {
+                const inst = bootstrap.Modal.getInstance(m);
+                if (inst) inst.hide();
+            }
+        });
+        const cartTab = document.getElementById('tabCart');
+        if (cartTab) cartTab.style.display = 'block';
+        showCartScreen();
+        renderCartScreen();
         return;
     } else if (tabName === 'messages') {
         const tabBadge = document.getElementById('tabMessagesBadge');

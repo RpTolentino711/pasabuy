@@ -331,7 +331,7 @@
             </div>
             <div class="d-flex align-items-center gap-2" id="headerUserActions" style="display: none !important;">
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="openCartModal()" title="RentEase Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
+                    onclick="switchTab('cart')" title="RentEase Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-cart-shopping text-secondary fs-7"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; padding: 2px 4px; display:none;">0</span>
                 </button>
@@ -1745,19 +1745,32 @@
                         }
 
                         function switchTab(tabName) {
-                            if (tabName === 'cart') {
-                                if (typeof openCartModal === 'function') openCartModal();
-                                return;
-                            }
-                            const tabs = ['home', 'explore', 'sell', 'wanted', 'messages', 'profile'];
+                            const tabs = ['home', 'explore', 'cart', 'sell', 'wanted', 'messages', 'profile'];
                             tabs.forEach(t => {
                                 const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
                                 const nav = document.getElementById('tabNav' + t.charAt(0).toUpperCase() + t.slice(1));
                                 if (el) el.style.display = (t === tabName) ? 'block' : 'none';
                                 if (nav) nav.classList.toggle('active', t === tabName);
                             });
-                            document.getElementById('chatView').style.display = 'none';
-                            document.getElementById('authScreen').style.display = 'none';
+                            const cv = document.getElementById('chatView');
+                            if (cv) cv.style.display = 'none';
+                            const as = document.getElementById('authScreen');
+                            if (as) as.style.display = 'none';
+
+                            if (tabName === 'cart') {
+                                ['productDetailModal', 'cartCheckoutModal'].forEach(mid => {
+                                    const m = document.getElementById(mid);
+                                    if (m) {
+                                        const inst = bootstrap.Modal.getInstance(m);
+                                        if (inst) inst.hide();
+                                    }
+                                });
+                                const tabCartEl = document.getElementById('tabCart');
+                                if (tabCartEl) tabCartEl.style.display = 'block';
+                                if (typeof showCartScreen === 'function') showCartScreen();
+                                if (typeof renderCartScreen === 'function') renderCartScreen();
+                                return;
+                            }
                             document.querySelector('.app-tabbar').style.display = 'flex';
 
                             // Header cart button is always visible floating in header
@@ -3205,19 +3218,7 @@
                         };
 
                         window.openCartModal = function () {
-                            updateCartBadge();
-                            renderCartItems();
-                            const modalEl = document.getElementById('cartCheckoutModal');
-                            if (modalEl) {
-                                if (modalEl.parentElement !== document.body) {
-                                    document.body.appendChild(modalEl);
-                                }
-                                let modalObj = bootstrap.Modal.getInstance(modalEl);
-                                if (!modalObj) {
-                                    modalObj = new bootstrap.Modal(modalEl);
-                                }
-                                modalObj.show();
-                            }
+                            switchTab('cart');
                         };
 
                         function renderCartItems() {
