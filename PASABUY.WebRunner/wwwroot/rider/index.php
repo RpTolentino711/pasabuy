@@ -247,7 +247,7 @@ session_start();
             </div>
 
             <!-- Active Event Rental Delivery Dispatch Card (Screen 7 Sync) -->
-            <div id="riderActiveJobCard" class="rider-card border-primary shadow-lg" style="background: rgba(30, 41, 59, 0.95);">
+            <div id="riderActiveJobCard" class="rider-card border-primary shadow-lg mb-3" style="background: rgba(30, 41, 59, 0.95);">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="badge text-white fw-extrabold fs-8 px-2.5 py-1" style="background:#5B3FA8;" id="riderJobStageBadge">
                         <i class="fa-solid fa-truck-fast me-1"></i> STAGE: OUT FOR DELIVERY
@@ -257,60 +257,66 @@ session_start();
 
                 <div class="d-flex justify-content-between align-items-start mb-1">
                     <div>
-                        <h5 class="fw-extrabold text-white mb-0" id="riderJobTitle">Birthday Celebration Package</h5>
-                        <span class="text-secondary fs-8">Order <strong class="text-info" id="riderJobCode">#RE-10245</strong> • Total: ₱1,749.00</span>
+                        <h5 class="fw-extrabold text-white mb-0" id="riderJobTitle">Assigned Equipment Delivery</h5>
+                        <span class="text-secondary fs-8">Order <strong class="text-info" id="riderJobCode">#RE-10245</strong> • Total: <span id="riderJobTotalText">₱1,749.00</span></span>
                     </div>
                 </div>
 
                 <p class="text-secondary fs-8 mb-3 mt-1" id="riderJobAddressesText">
-                    <i class="fa-solid fa-warehouse me-1 text-success"></i> <strong>Central Warehouse</strong> ➔ 
-                    <i class="fa-solid fa-location-dot me-1 text-danger"></i> <strong>San Pablo, Laguna (Student Center)</strong>
+                    <i class="fa-solid fa-warehouse me-1 text-success"></i> <strong id="riderPickupText">Pasabuy Hub, Lipa City</strong> ➔ 
+                    <i class="fa-solid fa-location-dot me-1 text-danger"></i> <strong id="riderDropoffText">San Pablo, Laguna (Student Center)</strong>
                 </p>
 
                 <!-- Equipment Manifest Checklist -->
                 <div class="mb-3">
                     <strong class="fs-8 text-white d-block mb-1.5"><i class="fa-solid fa-clipboard-check me-1 text-warning"></i> Equipment Manifest Checklist:</strong>
-                    <div class="manifest-pill">
-                        <span class="fs-8 text-white"><i class="fa-solid fa-chair text-primary me-2"></i>Monoblock Chairs (White Plastic)</span>
-                        <span class="badge bg-primary text-white">50 units</span>
-                    </div>
-                    <div class="manifest-pill">
-                        <span class="fs-8 text-white"><i class="fa-solid fa-table text-primary me-2"></i>Heavy Duty Folding Tables (6ft)</span>
-                        <span class="badge bg-primary text-white">5 units</span>
-                    </div>
-                    <div class="manifest-pill">
-                        <span class="fs-8 text-white"><i class="fa-solid fa-campground text-primary me-2"></i>Waterproof Event Tent (10x10ft)</span>
-                        <span class="badge bg-primary text-white">1 unit</span>
+                    <div id="riderManifestContainer">
+                        <div class="manifest-pill">
+                            <span class="fs-8 text-white"><i class="fa-solid fa-box text-primary me-2"></i>Event Rental Equipment</span>
+                            <span class="badge bg-primary text-white">1 set</span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Contacts -->
                 <div class="p-2.5 rounded-3 mb-3" style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155;">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary fs-8"><i class="fa-solid fa-user text-success me-1"></i> Customer: <strong class="text-white" id="riderJobCustomerName">Bea Solis</strong></span>
-                        <a href="tel:09171234567" class="btn btn-outline-success btn-sm py-0 px-2 fs-9"><i class="fa-solid fa-phone me-1"></i> Call Customer</a>
+                        <span class="text-secondary fs-8"><i class="fa-solid fa-user text-success me-1"></i> Customer: <strong class="text-white" id="riderJobCustomerName">Pogilameg Tester</strong></span>
+                        <a href="tel:09981234567" id="riderCallCustomerBtn" class="btn btn-outline-success btn-sm py-0 px-2 fs-9"><i class="fa-solid fa-phone me-1"></i> Call Customer</a>
                     </div>
                     <div class="d-flex align-items-center justify-content-between">
-                        <span class="text-secondary fs-8"><i class="fa-solid fa-headset text-warning me-1"></i> RentEase Hub Dispatch</span>
-                        <a href="tel:09178889999" class="btn btn-outline-warning btn-sm py-0 px-2 fs-9"><i class="fa-solid fa-phone me-1"></i> Call Hub</a>
+                        <span class="text-secondary fs-8"><i class="fa-solid fa-store text-warning me-1"></i> Stock Owner: <strong class="text-white" id="riderJobOwnerName">Romeo Paolo Tolentino</strong></span>
+                        <a href="tel:09668257301" id="riderCallOwnerBtn" class="btn btn-outline-warning btn-sm py-0 px-2 fs-9"><i class="fa-solid fa-phone me-1"></i> Call Owner</a>
                     </div>
                 </div>
 
                 <!-- Leaflet Stage Route Map -->
-                <div class="leaflet-map-container" id="riderDriverMap"></div>
+                <div class="leaflet-map-container mb-3" id="riderDriverMap"></div>
 
                 <!-- Stage Action Buttons -->
-                <div class="mt-3" id="riderStageActionContainer">
+                <div class="d-flex flex-column gap-2" id="riderStageActionContainer">
                     <button class="nav-btn-stage shadow-lg" id="btnRiderStageAction" onclick="advanceRentalDeliveryStage()">
                         <i class="fa-solid fa-circle-check me-2"></i> Confirm Delivery &amp; Inspection Completed
                     </button>
+                    <button class="btn btn-outline-danger btn-sm w-100 py-2 fw-bold fs-8 rounded-3" id="btnRiderCancelPickup" onclick="cancelCurrentRiderJob()">
+                        <i class="fa-solid fa-ban me-1.5"></i> Cancel Pickup (Vehicle Issue / Emergency)
+                    </button>
                 </div>
+            </div>
+
+            <!-- Standby message when no active job is accepted -->
+            <div id="riderNoActiveJobNotice" class="rider-card text-center p-4 mb-3 text-secondary" style="display:none;">
+                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width:50px; height:50px; background:rgba(255,255,255,0.05);">
+                    <i class="fa-solid fa-motorcycle text-warning fs-5"></i>
+                </div>
+                <h6 class="text-white fw-bold fs-7 mb-1">No Active Delivery Trip</h6>
+                <p class="fs-9 mb-0">Check the available broadcast deliveries below and click <strong>Accept Delivery Job</strong> to claim a package.</p>
             </div>
 
             <!-- Open Scheduled Deliveries Broadcast Section -->
             <div class="mb-3">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="fw-extrabold text-white mb-0"><i class="fa-solid fa-bell me-1 text-warning"></i> Scheduled Event Deliveries</h6>
+                    <h6 class="fw-extrabold text-white mb-0"><i class="fa-solid fa-satellite-dish me-1 text-warning"></i> Open Broadcast Deliveries</h6>
                     <button class="btn btn-dark btn-sm fs-9 text-secondary py-1" onclick="fetchRiderJobAlerts()"><i class="fa-solid fa-rotate me-1"></i> Refresh</button>
                 </div>
 
@@ -329,7 +335,8 @@ session_start();
 
 <script>
 let currentRiderUser = null;
-let currentStageIndex = 2; // Default ON_THE_WAY for live demo
+let currentActiveOrder = null;
+let currentStageIndex = 2; // Default ON_THE_WAY
 let riderLeafletMap = null;
 let riderMarker = null;
 
@@ -338,9 +345,9 @@ const riderCoords = [14.1870, 121.2650];
 const destination = [14.1950, 121.2720];
 
 const stages = [
-    { key: 'CONFIRMED', badge: 'STAGE 1: ORDER CONFIRMED', btnText: 'Start Equipment Preparation at Warehouse', icon: 'fa-boxes-packing', next: 'PREPARING' },
+    { key: 'CONFIRMED', badge: 'STAGE 1: ORDER CONFIRMED', btnText: 'Start Equipment Preparation', icon: 'fa-boxes-packing', next: 'PREPARING' },
     { key: 'PREPARING', badge: 'STAGE 2: PREPARING EQUIPMENT', btnText: 'Confirm Equipment Loaded (Out for Delivery)', icon: 'fa-truck-ramp-box', next: 'ON_THE_WAY' },
-    { key: 'ON_THE_WAY', badge: 'STAGE 3: OUT FOR DELIVERY', btnText: 'Confirm Delivery & Inspection Completed', icon: 'fa-circle-check', next: 'DELIVERED' },
+    { key: 'ON_THE_WAY', badge: 'STAGE 3: OUT FOR DELIVERY', btnText: 'Confirm Delivery & Handover Completed', icon: 'fa-circle-check', next: 'DELIVERED' },
     { key: 'DELIVERED', badge: 'STAGE 4: DELIVERED AT VENUE', btnText: 'Order Completed (Ready for Event)', icon: 'fa-champagne-glasses', next: 'CONFIRMED' }
 ];
 
@@ -456,7 +463,7 @@ function initRiderMap() {
             className: '',
             iconSize: [28, 28]
         });
-        L.marker(warehouse, { icon: whIcon }).addTo(map).bindPopup('RentEase Central Warehouse');
+        L.marker(warehouse, { icon: whIcon }).addTo(map).bindPopup('Owner Stock / Pickup Location');
 
         // Rider Marker
         const rIcon = L.divIcon({
@@ -472,7 +479,7 @@ function initRiderMap() {
             className: '',
             iconSize: [28, 28]
         });
-        L.marker(destination, { icon: destIcon }).addTo(map).bindPopup('Event Venue: San Pablo, Laguna');
+        L.marker(destination, { icon: destIcon }).addTo(map).bindPopup('Renter Delivery Destination');
 
         // Route Polyline
         L.polyline([warehouse, riderCoords, destination], {
@@ -487,68 +494,253 @@ function initRiderMap() {
     }
 }
 
-async function advanceRentalDeliveryStage() {
-    const current = stages[currentStageIndex % stages.length];
-    const nextStage = current.next;
+async function fetchRiderJobAlerts() {
+    try {
+        let apiUrl = '../rentease_api.php?action=rider_get_jobs&rider_id=1&rider_name=Juan+Dela+Cruz';
+        let res = await fetch(apiUrl);
+        if (!res.ok) {
+            res = await fetch('/rentease_api.php?action=rider_get_jobs&rider_id=1&rider_name=Juan+Dela+Cruz');
+        }
+        const data = await res.json();
+        
+        const activeCard = document.getElementById('riderActiveJobCard');
+        const noActiveNotice = document.getElementById('riderNoActiveJobNotice');
+        const container = document.getElementById('riderJobAlertsListContainer');
+
+        // Handle Active Assigned Job
+        if (data.success && data.active_order) {
+            currentActiveOrder = data.active_order;
+            if (activeCard) activeCard.style.display = 'block';
+            if (noActiveNotice) noActiveNotice.style.display = 'none';
+
+            const ord = data.active_order;
+            document.getElementById('riderJobCode').innerText = ord.order_code || '#RE-10245';
+            document.getElementById('riderJobTotalText').innerText = `₱${parseFloat(ord.total_amount || 0).toLocaleString('en-US', {minimumFractionDigits:2})}`;
+            document.getElementById('riderPickupText').innerText = ord.pickup_address || 'Pasabuy Hub, Lipa City';
+            document.getElementById('riderDropoffText').innerText = ord.delivery_address || 'San Pablo, Laguna';
+            document.getElementById('riderJobCustomerName').innerText = `${ord.customer_name || 'Pogilameg Tester'} (${ord.customer_phone || '09981234567'})`;
+            document.getElementById('riderJobOwnerName').innerText = `${ord.owner_name || 'Romeo Paolo Tolentino'}`;
+
+            if (ord.customer_phone) document.getElementById('riderCallCustomerBtn').href = `tel:${ord.customer_phone}`;
+
+            // Render manifest
+            const mContainer = document.getElementById('riderManifestContainer');
+            if (mContainer) {
+                if (Array.isArray(ord.items) && ord.items.length > 0) {
+                    mContainer.innerHTML = ord.items.map(it => `
+                        <div class="manifest-pill">
+                            <span class="fs-8 text-white"><i class="fa-solid fa-box text-primary me-2"></i>${it.product_name}</span>
+                            <span class="badge bg-primary text-white">${it.quantity} units</span>
+                        </div>
+                    `).join('');
+                } else {
+                    mContainer.innerHTML = `
+                        <div class="manifest-pill">
+                            <span class="fs-8 text-white"><i class="fa-solid fa-box text-primary me-2"></i>Rental Equipment</span>
+                            <span class="badge bg-primary text-white">Package</span>
+                        </div>
+                    `;
+                }
+            }
+
+            // Sync Stage Badge
+            const st = ord.order_status || 'ON_THE_WAY';
+            const badge = document.getElementById('riderJobStageBadge');
+            const btn = document.getElementById('btnRiderStageAction');
+            if (st === 'DELIVERED') {
+                badge.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> STAGE: DELIVERED`;
+                btn.className = 'btn btn-success w-100 py-3 fw-extrabold rounded-3 shadow-lg';
+                btn.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> Handover Completed`;
+            } else {
+                badge.innerHTML = `<i class="fa-solid fa-truck-fast me-1"></i> STAGE: OUT FOR DELIVERY`;
+                btn.className = 'nav-btn-stage shadow-lg';
+                btn.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> Confirm Delivery & Inspection Completed`;
+            }
+        } else {
+            currentActiveOrder = null;
+            if (activeCard) activeCard.style.display = 'none';
+            if (noActiveNotice) noActiveNotice.style.display = 'block';
+        }
+
+        // Render Broadcast Deliveries (Open for acceptance)
+        if (container) {
+            if (data.success && Array.isArray(data.broadcast_jobs) && data.broadcast_jobs.length > 0) {
+                let html = '';
+                data.broadcast_jobs.forEach(job => {
+                    const itemsText = Array.isArray(job.items) && job.items.length > 0 
+                        ? job.items.map(i => `${i.quantity}x ${i.product_name}`).join(', ')
+                        : 'Rental Equipment Package';
+
+                    html += `
+                    <div class="rider-card border-secondary mb-2.5 p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1.5">
+                            <span class="badge text-white fw-bold fs-9" style="background:#5B3FA8;">${job.order_code}</span>
+                            <span class="badge bg-warning text-dark fw-bold fs-9">Fee: ₱150.00</span>
+                        </div>
+                        <h6 class="fw-extrabold text-white mb-1 fs-8">${job.customer_name} • Total ₱${parseFloat(job.total_amount).toFixed(2)}</h6>
+                        <div class="fs-9 text-secondary mb-1">
+                            <i class="fa-solid fa-warehouse text-success me-1"></i> Pickup: <strong class="text-white">${job.pickup_address || 'Stock Location'}</strong>
+                        </div>
+                        <div class="fs-9 text-secondary mb-2">
+                            <i class="fa-solid fa-location-dot text-danger me-1"></i> Deliver to: <strong class="text-white">${job.delivery_address || 'Address'}</strong>
+                        </div>
+                        <div class="p-1.5 rounded-2 mb-2" style="background:rgba(255,255,255,0.06);">
+                            <span class="fs-9 text-white"><i class="fa-solid fa-box text-warning me-1"></i> ${itemsText}</span>
+                        </div>
+                        <button class="btn btn-warning btn-sm w-100 fw-bold fs-8 rounded-pill text-dark shadow-sm" onclick="acceptRiderJob('${job.order_code}')">
+                            <i class="fa-solid fa-bolt me-1"></i> Accept Delivery Job
+                        </button>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `
+                    <div class="text-center p-3 rider-card text-secondary fs-8">
+                        <i class="fa-solid fa-circle-check me-2 text-success"></i> All current event deliveries assigned. Standing by for next reservation dispatch.
+                    </div>`;
+            }
+        }
+    } catch (e) {
+        console.error("fetchRiderJobAlerts error:", e);
+    }
+}
+
+async function acceptRiderJob(orderCode) {
+    if (!confirm(`Do you want to ACCEPT the delivery job for Order ${orderCode}?`)) return;
 
     try {
-        const res = await fetch('../rentease_api.php?action=rider_update_stage', {
+        let apiUrl = '../rentease_api.php?action=rider_accept_job';
+        let res = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                order_number: '#RE-10245',
-                stage: nextStage,
+                order_code: orderCode,
+                rider_id: 1,
+                rider_name: 'Juan Dela Cruz',
+                rider_phone: '09187654321',
+                rider_vehicle: 'Honda Click 125i (MC-8888-JY)',
                 lat: riderCoords[0],
                 lng: riderCoords[1]
             })
         });
+
+        if (!res.ok) {
+            res = await fetch('/rentease_api.php?action=rider_accept_job', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_code: orderCode,
+                    rider_id: 1,
+                    rider_name: 'Juan Dela Cruz',
+                    rider_phone: '09187654321',
+                    rider_vehicle: 'Honda Click 125i (MC-8888-JY)',
+                    lat: riderCoords[0],
+                    lng: riderCoords[1]
+                })
+            });
+        }
+
         const data = await res.json();
-    } catch (e) {}
-
-    currentStageIndex = (currentStageIndex + 1) % stages.length;
-    const stageObj = stages[currentStageIndex];
-
-    const badge = document.getElementById('riderJobStageBadge');
-    const btn = document.getElementById('btnRiderStageAction');
-
-    badge.innerHTML = `<i class="fa-solid ${stageObj.icon} me-1"></i> ${stageObj.badge}`;
-    btn.innerHTML = `<i class="fa-solid ${stageObj.icon} me-2"></i> ${stageObj.btnText}`;
-
-    if (stageObj.key === 'DELIVERED') {
-        btn.className = 'btn btn-success w-100 py-3 fw-extrabold rounded-3 shadow-lg';
-        alert('🎉 Event Delivery Confirmed! Order #RE-10245 successfully delivered to Bea Solis at San Pablo Laguna.');
-    } else {
-        btn.className = 'nav-btn-stage shadow-lg';
-        alert(`🚚 Delivery Stage Advanced to: ${stageObj.badge}`);
+        if (data.success) {
+            alert(`🎉 Success!\n\nYou have accepted the delivery for Order ${orderCode}.\nProceed to the stock owner's pickup location.`);
+            fetchRiderJobAlerts();
+        } else {
+            alert(data.message || '⚠️ Unable to accept job. It may have been claimed by another rider.');
+            fetchRiderJobAlerts();
+        }
+    } catch (e) {
+        alert('Connection error accepting delivery job.');
     }
 }
 
-async function fetchRiderJobAlerts() {
-    try {
-        const res = await fetch('../rentease_api.php?action=rider_get_jobs');
-        const data = await res.json();
-        const container = document.getElementById('riderJobAlertsListContainer');
-        if (!container) return;
+async function cancelCurrentRiderJob() {
+    if (!currentActiveOrder) {
+        alert('No active delivery job to cancel.');
+        return;
+    }
 
-        if (data.success && Array.isArray(data.broadcast_jobs) && data.broadcast_jobs.length > 0) {
-            let html = '';
-            data.broadcast_jobs.slice(1, 4).forEach(job => {
-                html += `
-                <div class="rider-card border-secondary mb-2 p-3">
-                    <div class="d-flex align-items-center justify-content-between mb-1">
-                        <span class="badge bg-light text-dark border fs-9">#${job.order_number}</span>
-                        <strong class="text-success fs-8">₱${parseFloat(job.total_amount).toFixed(2)}</strong>
-                    </div>
-                    <h6 class="fw-extrabold text-white mb-1 fs-8">${job.customer_name} • ${job.fulfillment_type}</h6>
-                    <p class="text-secondary fs-9 mb-2"><i class="fa-solid fa-location-dot me-1 text-danger"></i> ${job.delivery_address || 'Event Venue'}</p>
-                    <button class="btn btn-outline-primary btn-sm w-100 fw-bold fs-9 rounded-pill" onclick="alert('Dispatch assigned to your fleet queue.')">
-                        <i class="fa-solid fa-calendar-check me-1"></i> Add to Route Schedule
-                    </button>
-                </div>`;
+    const orderCode = currentActiveOrder.order_code;
+    const reason = prompt(`Please enter cancellation reason for Order ${orderCode}:`, 'Flat tire / emergency mechanical delay');
+    if (!reason) return;
+
+    try {
+        let apiUrl = '../rentease_api.php?action=rider_cancel_job';
+        let res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                order_code: orderCode,
+                rider_name: 'Juan Dela Cruz',
+                reason: reason
+            })
+        });
+
+        if (!res.ok) {
+            res = await fetch('/rentease_api.php?action=rider_cancel_job', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_code: orderCode,
+                    rider_name: 'Juan Dela Cruz',
+                    reason: reason
+                })
             });
-            container.innerHTML = html || '<div class="text-center p-3 text-secondary fs-9">No other broadcasts pending.</div>';
         }
-    } catch (e) {}
+
+        const data = await res.json();
+        if (data.success) {
+            alert(`⚠️ Delivery Cancelled.\n\nOrder ${orderCode} has been cancelled by driver.\nThe stock owner has been notified and can re-notify riders.`);
+            currentActiveOrder = null;
+            fetchRiderJobAlerts();
+        } else {
+            alert(data.message || 'Error cancelling delivery job.');
+        }
+    } catch (e) {
+        alert('Connection error cancelling delivery job.');
+    }
+}
+
+async function advanceRentalDeliveryStage() {
+    if (!currentActiveOrder) {
+        alert('No active delivery order.');
+        return;
+    }
+
+    const orderCode = currentActiveOrder.order_code;
+    const nextStage = 'DELIVERED';
+
+    try {
+        let apiUrl = '../rentease_api.php?action=rider_update_stage';
+        let res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                order_code: orderCode,
+                stage: nextStage,
+                lat: destination[0],
+                lng: destination[1]
+            })
+        });
+
+        if (!res.ok) {
+            res = await fetch('/rentease_api.php?action=rider_update_stage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_code: orderCode,
+                    stage: nextStage,
+                    lat: destination[0],
+                    lng: destination[1]
+                })
+            });
+        }
+
+        const data = await res.json();
+        alert(`🎉 Event Delivery Confirmed!\n\nOrder ${orderCode} successfully handed over and inspection completed.`);
+        fetchRiderJobAlerts();
+    } catch (e) {
+        alert('Error updating delivery stage.');
+    }
 }
 
 function startRiderGpsPinger() {

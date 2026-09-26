@@ -718,7 +718,47 @@ async function executeRentEasePayment() {
 // ----------------------------------------------------------
 // 6. SCREEN 7: LIVE ORDER & DELIVERY TRACKING WITH MAP
 // ----------------------------------------------------------
+let currentTrackingOrderCode = '#RE-10245';
+
+window.updateSellPostingFeeTier = function(price) {
+    price = parseFloat(price) || 0;
+    let fee = 0;
+    let tier = 'Free';
+    if (price > 0 && price < 100) { fee = 10; tier = '₱1 - ₱99'; }
+    else if (price >= 100 && price <= 500) { fee = 15; tier = '₱100 - ₱500'; }
+    else if (price > 500 && price <= 1000) { fee = 20; tier = '₱501 - ₱1,000'; }
+    else if (price > 1000 && price <= 2500) { fee = 30; tier = '₱1,001 - ₱2,500'; }
+    else if (price > 2500 && price <= 5000) { fee = 50; tier = '₱2,501 - ₱5,000'; }
+    else if (price > 5000) { fee = 100; tier = 'Above ₱5,000'; }
+
+    const badge = document.getElementById('sellPostingFeeBadge');
+    if (badge) {
+        badge.innerText = `₱${fee.toFixed(2)} (Tier: ${tier})`;
+    }
+};
+
+window.stockOwnerNotifyRidersAgain = async function() {
+    const orderCode = currentTrackingOrderCode || '#RE-10245';
+    try {
+        const res = await fetch(getRentEaseApiUrl('stock_owner_notify_riders_again'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_code: orderCode })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`🚀 Broadcast Re-sent!\n\nDelivery request for Order ${orderCode} has been broadcasted to all active fleet riders.`);
+            openTrackScreen(orderCode);
+        } else {
+            alert(data.message || 'Error notifying delivery riders.');
+        }
+    } catch(e) {
+        alert('Network error notifying delivery riders.');
+    }
+};
+
 async function openTrackScreen(orderCode = '#RE-10245') {
+    currentTrackingOrderCode = orderCode;
     switchTab('track');
     const titleEl = document.getElementById('trackOrderCodeTitle');
     if (titleEl) titleEl.innerText = `Order ${orderCode}`;
@@ -740,6 +780,29 @@ async function openTrackScreen(orderCode = '#RE-10245') {
 
             const phoneBtn = document.getElementById('trackCallRiderBtn');
             if (phoneBtn) phoneBtn.href = `tel:${t.rider.phone}`;
+
+            // Handle Rider Broadcast & Cancellation Alert Cards
+            const broadcastCard = document.getElementById('riderBroadcastWaitingCard');
+            const cancelCard = document.getElementById('riderCancelledAlertCard');
+            const cancelReasonText = document.getElementById('riderCancelledReasonText');
+            const riderCard = document.getElementById('trackRiderName')?.closest('.card');
+
+            if (t.order_status === 'LOOKING_FOR_RIDER') {
+                if (broadcastCard) broadcastCard.style.display = 'block';
+                if (cancelCard) cancelCard.style.display = 'none';
+                if (riderCard) riderCard.style.display = 'none';
+            } else if (t.order_status === 'RIDER_CANCELLED') {
+                if (broadcastCard) broadcastCard.style.display = 'none';
+                if (cancelCard) cancelCard.style.display = 'block';
+                if (cancelReasonText && data.order?.cancellation_reason) {
+                    cancelReasonText.innerText = `The assigned driver cancelled pickup (Reason: "${data.order.cancellation_reason}"). The equipment remains safe at the stock owner's inventory.`;
+                }
+                if (riderCard) riderCard.style.display = 'none';
+            } else {
+                if (broadcastCard) broadcastCard.style.display = 'none';
+                if (cancelCard) cancelCard.style.display = 'none';
+                if (riderCard) riderCard.style.display = 'flex';
+            }
 
             const isDelivered = ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(t.order_status);
             const isReturned = (t.order_status === 'RETURNED');
@@ -1387,6 +1450,18 @@ window.switchTab = function (tabName) {
         renderCartScreen();
     } else if (tabName === 'explore') {
         renderExploreCatalog();
+    } else if (tabName === 'sell') {
+        const currentUser = getRentEaseCurrentUser();
+        const isRomeo = (currentUser.email === 'romeopaolotolentino@gmail.com' || currentUser.id === 104);
+        const isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.verification_status === 'VERIFIED');
+        const vBanner = document.getElementById('sellVerificationBanner');
+        if (vBanner) {
+            vBanner.style.display = isVerified ? 'none' : 'block';
+        }
+        if (typeof updateSellPostingFeeTier === 'function') {
+            const curPrice = document.getElementById('sellPrice')?.value || 100;
+            updateSellPostingFeeTier(curPrice);
+        }
     } else if (tabName === 'track') {
         openTrackScreen('#RE-10245');
     } else if (tabName === 'profile') {
@@ -1452,6 +1527,7 @@ window.postRentalItemLive = async function () {
                 item_condition: condition,
                 location: location,
                 description: description,
+                owner_id: currentUser.id || (currentUser.email === 'romeopaolotolentino@gmail.com' ? 104 : 0),
                 owner_name: currentUser.name || 'Romeo Paolo Tolentino',
                 owner_email: currentUser.email || 'romeopaolotolentino@gmail.com',
                 owner_contact: currentUser.phone || '09668257301'
@@ -1469,7 +1545,8 @@ window.postRentalItemLive = async function () {
                 } catch(e) {}
             }
 
-            alert(`🎉 Success!\n\n"${title}" has been published live for rent on RentEase!`);
+            const feeInfo = data.posting_fee ? `\n🏷️ Posting Fee: ₱${parseFloat(data.posting_fee).toFixed(2)}` : '';
+            alert(`🎉 Success!\n\n"${title}" has been published live for rent on RentEase!${feeInfo}`);
             
             // Clear inputs
             if (document.getElementById('sellTitle')) document.getElementById('sellTitle').value = '';
@@ -1486,7 +1563,7 @@ window.postRentalItemLive = async function () {
             // Switch to profile tab so user sees their posted equipment
             switchTab('profile');
         } else {
-            alert('❌ ' + (data.message || 'Failed to post item. Please try again.'));
+            alert(data.message || '❌ Failed to post item. Please try again.');
         }
     } catch (e) {
         console.error("Error posting rental item:", e);

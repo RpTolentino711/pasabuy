@@ -144,6 +144,35 @@
         </div>
     </div>
 
+    <!-- Rider Broadcast Status Card (When searching for nearby drivers) -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3" id="riderBroadcastWaitingCard" style="display:none; background: #EFF6FF; border: 1px solid #BFDBFE !important;">
+        <div class="d-flex align-items-center gap-2.5">
+            <div class="rounded-circle d-flex align-items-center justify-content-center p-2 text-primary shadow-2xs" style="background:#DBEAFE; width:40px; height:40px; flex-shrink:0;">
+                <i class="fa-solid fa-satellite-dish fa-beat text-primary fs-6"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="fw-extrabold text-dark fs-8 mb-0.5">Looking for Fleet Driver...</h6>
+                <p class="fs-9 text-muted mb-0">Delivery request broadcasted across active motor riders. Nearby riders can review and accept this trip.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rider Cancelled Alert Card (Allows Stock Owner to Notify Riders Again) -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3" id="riderCancelledAlertCard" style="display:none; background: #FFF1F2; border: 1px solid #FECDD3 !important;">
+        <div class="d-flex align-items-start gap-2.5 mb-2.5">
+            <div class="rounded-circle d-flex align-items-center justify-content-center p-2 text-danger shadow-2xs" style="background:#FFE4E6; width:38px; height:38px; flex-shrink:0;">
+                <i class="fa-solid fa-triangle-exclamation text-danger fs-6"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="fw-extrabold text-danger fs-8 mb-0.5">Delivery Cancelled by Driver</h6>
+                <p class="fs-9 text-dark mb-0" id="riderCancelledReasonText">The assigned driver cancelled pickup due to emergency / vehicle conflict. Package is safe at stock owner's inventory.</p>
+            </div>
+        </div>
+        <button type="button" class="btn btn-warning w-100 rounded-3 py-2 fw-extrabold fs-8 text-dark shadow-sm" onclick="stockOwnerNotifyRidersAgain()">
+            <i class="fa-solid fa-satellite-dish me-1"></i> Notify Delivery Riders Again
+        </button>
+    </div>
+
     <!-- Return Equipment to Owner Action Card -->
     <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-4" id="returnActionCard">
         <div class="d-flex align-items-center justify-content-between mb-2">

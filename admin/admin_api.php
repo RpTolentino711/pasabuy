@@ -525,19 +525,25 @@ if ($action === 'get_orders') {
 if ($action === 'update_order_status') {
     if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
     $id = (int)($req['id'] ?? 0);
+    $orderCode = trim((string)($req['order_code'] ?? ''));
+    if ($id <= 0 && !empty($orderCode)) {
+        $findStmt = $db->prepare("SELECT id FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+        $findStmt->execute([$orderCode]);
+        $id = (int)$findStmt->fetchColumn();
+    }
     $status = strtoupper(trim((string)($req['status'] ?? '')));
     $riderName = trim((string)($req['rider_name'] ?? $req['driver_name'] ?? ''));
     $riderPhone = trim((string)($req['rider_phone'] ?? $req['driver_phone'] ?? ''));
 
-    $valid = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'CANCELLED'];
+    $valid = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'LOOKING_FOR_RIDER', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'CANCELLED', 'RIDER_CANCELLED'];
     if (!in_array($status, $valid)) {
         echo json_encode(['success' => false, 'message' => 'Invalid status']);
         exit;
     }
 
     if ($riderName !== '') {
-        $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `assigned_rider_name` = ?, `assigned_rider_phone` = ? WHERE `id` = ?");
-        $stmt->execute([$status, $riderName, $riderPhone ?: '09187654321', $id]);
+        $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `assigned_rider_name` = ?, `assigned_rider_phone` = ?, `rider_name` = ?, `rider_phone` = ? WHERE `id` = ?");
+        $stmt->execute([$status, $riderName, $riderPhone ?: '09187654321', $riderName, $riderPhone ?: '09187654321', $id]);
     } else {
         $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ? WHERE `id` = ?");
         $stmt->execute([$status, $id]);

@@ -81,6 +81,16 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `downpayment_amount` DECIMAL(10,2) DEFAULT 0.00"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `balance_amount` DECIMAL(10,2) DEFAULT 0.00"); } catch (Exception $e) {}
 
+    // Auto-migrate posting fee and rider dispatch fields
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `posting_fee` DECIMAL(10,2) DEFAULT 0.00"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `assigned_rider_id` INT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rider_name` VARCHAR(100) NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rider_phone` VARCHAR(50) NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rider_vehicle` VARCHAR(100) NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `cancellation_reason` TEXT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rider_assigned_at` DATETIME NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `pickup_address` VARCHAR(255) DEFAULT 'Pasabuy Hub, Lipa City'"); } catch (Exception $e) {}
+
     // Automatically purge all hardcoded dummy/seed items from database
     try {
         $db->exec("DELETE FROM `rental_inventory` WHERE `name` IN ('Monoblock Chair', 'Banquet Chair', 'Folding Chair', 'Cushioned Chair', 'Folding Table', 'Round Banquet Table', 'Event Tent (10x10ft)', 'Large Pavilion Tent (20x20ft)', 'Sound System & Dual Mic', 'LED Stage Par Lights', 'Balloon Arch & Backdrop Frame', 'Modular Stage Platform (4x8ft)')");
@@ -93,6 +103,26 @@ if ($db) {
 
 $inputRaw = file_get_contents('php://input');
 $data = json_decode($inputRaw, true) ?: $_REQUEST;
+
+/**
+ * RentEase Posting Fee Tier Calculator:
+ * - ₱1 to ₱99: ₱10
+ * - ₱100 to ₱500: ₱15
+ * - ₱501 to ₱1,000: ₱20
+ * - ₱1,001 to ₱2,500: ₱30
+ * - ₱2,501 to ₱5,000: ₱50
+ * - Above ₱5,000: ₱100
+ */
+function calculatePostingFee($price) {
+    $price = (float)$price;
+    if ($price <= 0) return 0.00;
+    if ($price < 100) return 10.00;
+    if ($price <= 500) return 15.00;
+    if ($price <= 1000) return 20.00;
+    if ($price <= 2500) return 30.00;
+    if ($price <= 5000) return 50.00;
+    return 100.00;
+}
 
 function getRentEaseItemsFallback() {
     $file = __DIR__ . '/rentease_local_items.json';
@@ -307,21 +337,26 @@ if ($action === 'create_order') {
     $balance = round($total - $downpayment, 2);
 
     // Identify Equipment Owner
+    // Identify Equipment Owner & Stock Location
     $ownerName = 'Romeo Paolo Tolentino';
     $ownerEmail = 'romeopaolotolentino@gmail.com';
+    $ownerLocation = 'Pasabuy Hub, Lipa City';
     $firstProductId = (int)($items[0]['id'] ?? 0);
     $firstItemName = (string)($items[0]['name'] ?? $items[0]['title'] ?? 'Event Equipment');
     if ($firstProductId > 0 && $db) {
         try {
-            $pStmt = $db->prepare("SELECT `owner_name`, `owner_email` FROM `rental_inventory` WHERE `id` = ? LIMIT 1");
+            $pStmt = $db->prepare("SELECT `owner_name`, `owner_email`, `location` FROM `rental_inventory` WHERE `id` = ? LIMIT 1");
             $pStmt->execute([$firstProductId]);
             $pRow = $pStmt->fetch();
             if ($pRow) {
                 if (!empty($pRow['owner_name'])) $ownerName = $pRow['owner_name'];
                 if (!empty($pRow['owner_email'])) $ownerEmail = $pRow['owner_email'];
+                if (!empty($pRow['location'])) $ownerLocation = $pRow['location'];
             }
         } catch (Exception $eO) {}
     }
+
+    $initialStatus = ($deliveryOption === 'DELIVERY') ? 'LOOKING_FOR_RIDER' : 'CONFIRMED';
 
     // Generate Order Code
     $randomCode = strtoupper(substr(md5(uniqid(rand(), true)), 0, 5));
@@ -330,13 +365,13 @@ if ($action === 'create_order') {
     $db->beginTransaction();
     try {
         $stmt = $db->prepare("INSERT INTO `rental_orders` 
-            (`order_code`, `customer_name`, `customer_email`, `customer_phone`, `owner_name`, `owner_email`, `delivery_option`, `delivery_address`, `rental_start_date`, `rental_end_date`, `rental_days`, `subtotal`, `service_charge`, `delivery_fee`, `discount`, `total_amount`, `payment_method`, `payment_type`, `downpayment_amount`, `balance_amount`, `payment_status`, `order_status`, `estimated_arrival`, `assigned_rider_name`, `assigned_rider_phone`, `rider_current_lat`, `rider_current_lng`) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PAID', 'CONFIRMED', '4:30 PM', 'Juan Dela Cruz', '09187654321', 14.65150000, 121.06920000)");
+            (`order_code`, `customer_name`, `customer_email`, `customer_phone`, `owner_name`, `owner_email`, `pickup_address`, `delivery_option`, `delivery_address`, `rental_start_date`, `rental_end_date`, `rental_days`, `subtotal`, `service_charge`, `delivery_fee`, `discount`, `total_amount`, `payment_method`, `payment_type`, `downpayment_amount`, `balance_amount`, `payment_status`, `order_status`, `estimated_arrival`, `assigned_rider_name`, `assigned_rider_phone`, `rider_current_lat`, `rider_current_lng`) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '4:30 PM', NULL, NULL, 14.65150000, 121.06920000)");
         $stmt->execute([
-            $orderCode, $customerName, $customerEmail, $customerPhone, $ownerName, $ownerEmail,
+            $orderCode, $customerName, $customerEmail, $customerPhone, $ownerName, $ownerEmail, $ownerLocation,
             $deliveryOption, $deliveryAddress, $rentalStartDate, $rentalEndDate, $rentalDays,
             $subtotal, $serviceCharge, $deliveryFee, $discount, $total,
-            $paymentMethod, $paymentType, $downpayment, $balance
+            $paymentMethod, $paymentType, $downpayment, $balance, 'PAID', $initialStatus
         ]);
         $orderId = $db->lastInsertId();
 
@@ -780,12 +815,53 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
     $location = trim((string)($data['location'] ?? $data['meetup_location'] ?? 'San Pablo, Laguna'));
     $ownerName = trim((string)($data['owner_name'] ?? 'Verified Renter'));
     $ownerContact = trim((string)($data['owner_contact'] ?? ''));
+    $ownerId = (int)($data['owner_id'] ?? $data['user_id'] ?? 0);
+    $ownerEmail = trim((string)($data['owner_email'] ?? 'romeopaolotolentino@gmail.com'));
 
     if (!$name) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Equipment title / name is required.']);
         exit;
     }
+
+    // 1. Verification Guard: Only verified users can post equipment for rent
+    $isVerified = false;
+    if ($ownerId === 104 || strtolower($ownerEmail) === 'romeopaolotolentino@gmail.com') {
+        $isVerified = true;
+    }
+
+    if (!$isVerified && $db) {
+        try {
+            if ($ownerId > 0) {
+                $chk1 = $db->prepare("SELECT `VerificationStatus` FROM `StudentProfiles` WHERE `UserId` = ?");
+                $chk1->execute([$ownerId]);
+                $row1 = $chk1->fetch();
+                if ($row1 && strtoupper($row1['VerificationStatus'] ?? '') === 'VERIFIED') {
+                    $isVerified = true;
+                }
+            }
+            if (!$isVerified && !empty($ownerEmail)) {
+                $chk2 = $db->prepare("SELECT sp.`VerificationStatus` FROM `StudentProfiles` sp JOIN `Users` u ON sp.`UserId` = u.`Id` WHERE u.`Email` = ?");
+                $chk2->execute([$ownerEmail]);
+                $row2 = $chk2->fetch();
+                if ($row2 && strtoupper($row2['VerificationStatus'] ?? '') === 'VERIFIED') {
+                    $isVerified = true;
+                }
+            }
+        } catch (Exception $eVer) {}
+    }
+
+    if (!$isVerified) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'message' => '❌ Account Verification Required: You cannot post items for rent until your account is verified by Admin. Please submit your verification request in your Profile tab first.'
+        ]);
+        exit;
+    }
+
+    // 2. Calculate Tiered Posting Fee based on daily rental rate
+    $postingFee = calculatePostingFee($price);
 
     if (!$imgUrl) {
         $categoryDefaults = [
@@ -810,6 +886,7 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
             'category' => $category,
             'material_tag' => $materialTag,
             'price_per_day' => $price,
+            'posting_fee' => $postingFee,
             'qty_total' => $qtyTotal,
             'qty_available' => $qtyTotal,
             'qty_rented' => 0,
@@ -831,21 +908,20 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
 
         echo json_encode([
             'success' => true,
-            'message' => "🎉 '{$name}' has been successfully posted for rent on RentEase!",
+            'message' => "🎉 '{$name}' has been successfully posted for rent! Posting Fee: ₱" . number_format($postingFee, 2),
             'id' => $newId,
+            'posting_fee' => $postingFee,
             'item' => $newItem
         ]);
         exit;
     }
 
-    $ownerEmail = trim((string)($data['owner_email'] ?? 'romeopaolotolentino@gmail.com'));
-
     try {
         $stmt = $db->prepare("INSERT INTO `rental_inventory` 
-            (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `video_url`, `description`, `item_condition`, `location`, `owner_name`, `owner_email`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
-            VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
+            (`name`, `category`, `material_tag`, `price_per_day`, `posting_fee`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `video_url`, `description`, `item_condition`, `location`, `owner_name`, `owner_email`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
         $stmt->execute([
-            $name, $category, $materialTag, $price, $qtyTotal, $qtyTotal,
+            $name, $category, $materialTag, $price, $postingFee, $qtyTotal, $qtyTotal,
             $imgUrl, $videoUrl, $desc, $condition, $location, $ownerName, $ownerEmail, $ownerContact
         ]);
 
@@ -856,8 +932,9 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
 
         echo json_encode([
             'success' => true,
-            'message' => "🎉 '{$name}' has been successfully posted for rent on RentEase!",
+            'message' => "🎉 '{$name}' has been successfully posted for rent on RentEase! Posting Fee: ₱" . number_format($postingFee, 2) . " (Daily rate: ₱" . number_format($price, 2) . ")",
             'id' => $newId,
+            'posting_fee' => $postingFee,
             'item' => $newItem
         ]);
         exit;
@@ -914,20 +991,209 @@ if ($action === 'admin_assign_rider' || $action === 'admin_update_order_status')
 // ----------------------------------------------------------
 // 10. RIDER FLEET DISPATCH & LIVE STAGES
 // ----------------------------------------------------------
-if ($action === 'rider_get_jobs') {
-    $stmt = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 10");
-    $orders = $stmt->fetchAll();
+if ($action === 'rider_get_jobs' || $action === 'rider_get_available_jobs') {
+    $riderId = (int)($data['rider_id'] ?? $_GET['rider_id'] ?? 0);
+    $riderName = trim((string)($data['rider_name'] ?? $_GET['rider_name'] ?? 'Juan Dela Cruz'));
+
+    // Available broadcast jobs (only unassigned orders looking for riders)
+    $stmtBroadcast = $db->query("SELECT * FROM `rental_orders` 
+        WHERE (`order_status` IN ('LOOKING_FOR_RIDER', 'PREPARING') OR `order_status` IS NULL)
+        AND `delivery_option` = 'DELIVERY' 
+        ORDER BY `id` DESC LIMIT 10");
+    $broadcastJobs = $stmtBroadcast ? $stmtBroadcast->fetchAll() : [];
+
+    foreach ($broadcastJobs as &$bj) {
+        $itemStmt = $db->prepare("SELECT product_name, quantity, price_per_day FROM `rental_order_items` WHERE order_id = ?");
+        $itemStmt->execute([(int)$bj['id']]);
+        $bj['items'] = $itemStmt->fetchAll() ?: [];
+        $bj['pickup_address'] = !empty($bj['pickup_address']) ? $bj['pickup_address'] : 'Pasabuy Hub, Lipa City';
+    }
+
+    // Active job for this rider (already accepted)
+    $activeOrder = null;
+    $stmtActive = $db->prepare("SELECT * FROM `rental_orders` 
+        WHERE (`assigned_rider_id` = ? OR `assigned_rider_name` = ? OR `rider_name` = ?) 
+        AND `order_status` IN ('ON_THE_WAY', 'PICKUP', 'DRIVER_ASSIGNED') 
+        ORDER BY `id` DESC LIMIT 1");
+    $stmtActive->execute([$riderId, $riderName, $riderName]);
+    $activeOrder = $stmtActive->fetch();
+
+    if ($activeOrder) {
+        $itemStmt2 = $db->prepare("SELECT product_name, quantity, price_per_day FROM `rental_order_items` WHERE order_id = ?");
+        $itemStmt2->execute([(int)$activeOrder['id']]);
+        $activeOrder['items'] = $itemStmt2->fetchAll() ?: [];
+        $activeOrder['pickup_address'] = !empty($activeOrder['pickup_address']) ? $activeOrder['pickup_address'] : 'Pasabuy Hub, Lipa City';
+    }
 
     echo json_encode([
         'success' => true,
-        'active_order' => $orders[0] ?? null,
-        'broadcast_jobs' => $orders
+        'active_order' => $activeOrder,
+        'broadcast_jobs' => $broadcastJobs
+    ]);
+    exit;
+}
+
+if ($action === 'rider_accept_job') {
+    $orderCode = trim((string)($data['order_code'] ?? $data['order_number'] ?? ''));
+    $riderId = (int)($data['rider_id'] ?? 1);
+    $riderName = trim((string)($data['rider_name'] ?? 'Juan Dela Cruz'));
+    $riderPhone = trim((string)($data['rider_phone'] ?? '09187654321'));
+    $riderVehicle = trim((string)($data['rider_vehicle'] ?? 'Honda Click 125i (MC-8888-JY)'));
+    $lat = (float)($data['lat'] ?? 14.1870);
+    $lng = (float)($data['lng'] ?? 121.2650);
+
+    if (!$orderCode) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Order code is required.']);
+        exit;
+    }
+
+    // Check if order is still open for riders
+    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmt->execute([$orderCode]);
+    $order = $stmt->fetch();
+
+    if (!$order) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => "Order {$orderCode} not found."]);
+        exit;
+    }
+
+    if (!in_array($order['order_status'], ['LOOKING_FOR_RIDER', 'PREPARING', 'CONFIRMED'])) {
+        http_response_code(409);
+        echo json_encode(['success' => false, 'message' => "⚠️ This delivery job has already been accepted by another fleet rider!"]);
+        exit;
+    }
+
+    $upd = $db->prepare("UPDATE `rental_orders` SET 
+        `order_status` = 'ON_THE_WAY', 
+        `assigned_rider_id` = ?, 
+        `rider_name` = ?, 
+        `rider_phone` = ?, 
+        `rider_vehicle` = ?, 
+        `assigned_rider_name` = ?, 
+        `assigned_rider_phone` = ?, 
+        `rider_current_lat` = ?, 
+        `rider_current_lng` = ?, 
+        `rider_assigned_at` = NOW() 
+        WHERE `order_code` = ?");
+    $upd->execute([$riderId, $riderName, $riderPhone, $riderVehicle, $riderName, $riderPhone, $lat, $lng, $orderCode]);
+
+    // Send automated notification in chat to Renter and Owner
+    try {
+        $chatMsg = "🚚 Delivery Update: Fleet Driver {$riderName} ({$riderPhone} • {$riderVehicle}) has ACCEPTED your delivery order {$orderCode} and is en route to pick up the equipment!";
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+           ->execute([100, 105, 'RentEase Fleet Dispatch', $chatMsg, $orderCode]);
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+           ->execute([100, 104, 'RentEase Fleet Dispatch', $chatMsg, $orderCode]);
+    } catch (Exception $eChat) {}
+
+    // Return the updated order with manifest
+    $stmtRefetch = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmtRefetch->execute([$orderCode]);
+    $updatedOrder = $stmtRefetch->fetch();
+
+    $itemStmt = $db->prepare("SELECT product_name, quantity, price_per_day FROM `rental_order_items` WHERE order_id = ?");
+    $itemStmt->execute([(int)$updatedOrder['id']]);
+    $updatedOrder['items'] = $itemStmt->fetchAll() ?: [];
+    $updatedOrder['pickup_address'] = !empty($updatedOrder['pickup_address']) ? $updatedOrder['pickup_address'] : 'Pasabuy Hub, Lipa City';
+
+    echo json_encode([
+        'success' => true,
+        'message' => "🎉 You accepted the delivery job for Order {$orderCode}! Proceed to pickup location.",
+        'order' => $updatedOrder
+    ]);
+    exit;
+}
+
+if ($action === 'rider_cancel_job') {
+    $orderCode = trim((string)($data['order_code'] ?? $data['order_number'] ?? ''));
+    $riderName = trim((string)($data['rider_name'] ?? 'Juan Dela Cruz'));
+    $reason = trim((string)($data['reason'] ?? 'Rider flat tire / vehicle emergency'));
+
+    if (!$orderCode) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Order code is required.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmt->execute([$orderCode]);
+    $order = $stmt->fetch();
+
+    if (!$order) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => "Order {$orderCode} not found."]);
+        exit;
+    }
+
+    // Cancel pickup: Reset rider assignments and set status to RIDER_CANCELLED
+    $upd = $db->prepare("UPDATE `rental_orders` SET 
+        `order_status` = 'RIDER_CANCELLED', 
+        `cancellation_reason` = ?, 
+        `assigned_rider_id` = NULL, 
+        `rider_name` = NULL, 
+        `rider_phone` = NULL, 
+        `rider_vehicle` = NULL, 
+        `assigned_rider_name` = NULL, 
+        `assigned_rider_phone` = NULL 
+        WHERE `order_code` = ?");
+    $upd->execute([$reason, $orderCode]);
+
+    // Send notification to Owner and Renter
+    try {
+        $cancelNotice = "⚠️ Delivery Notice: Driver {$riderName} cancelled pickup for Order {$orderCode} (Reason: {$reason}). The stock owner can notify riders again to dispatch a new driver.";
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+           ->execute([100, 104, 'RentEase Fleet Dispatch', $cancelNotice, $orderCode]);
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+           ->execute([100, 105, 'RentEase Fleet Dispatch', $cancelNotice, $orderCode]);
+    } catch (Exception $eChat) {}
+
+    echo json_encode([
+        'success' => true,
+        'message' => "Delivery job for Order {$orderCode} cancelled. The stock owner has been notified to re-dispatch."
+    ]);
+    exit;
+}
+
+if ($action === 'stock_owner_notify_riders_again' || $action === 'rebroadcast_to_riders') {
+    $orderCode = trim((string)($data['order_code'] ?? $data['order_number'] ?? ''));
+
+    if (!$orderCode) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Order code is required.']);
+        exit;
+    }
+
+    $upd = $db->prepare("UPDATE `rental_orders` SET 
+        `order_status` = 'LOOKING_FOR_RIDER', 
+        `cancellation_reason` = NULL, 
+        `assigned_rider_id` = NULL, 
+        `rider_name` = NULL, 
+        `rider_phone` = NULL, 
+        `rider_vehicle` = NULL, 
+        `assigned_rider_name` = NULL, 
+        `assigned_rider_phone` = NULL 
+        WHERE `order_code` = ?");
+    $upd->execute([$orderCode]);
+
+    try {
+        $reNotice = "📡 Stock owner requested new fleet driver for Order {$orderCode}. Broadcasted to nearby available motor riders!";
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+           ->execute([100, 104, 'RentEase Fleet Dispatch', $reNotice, $orderCode]);
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+           ->execute([100, 105, 'RentEase Fleet Dispatch', $reNotice, $orderCode]);
+    } catch (Exception $eChat) {}
+
+    echo json_encode([
+        'success' => true,
+        'message' => "🚀 Delivery broadcast re-sent to all fleet riders for Order {$orderCode}!"
     ]);
     exit;
 }
 
 if ($action === 'rider_update_stage') {
-    $orderNumber = trim((string)($data['order_number'] ?? '#RE-10245'));
+    $orderNumber = trim((string)($data['order_number'] ?? $data['order_code'] ?? '#RE-10245'));
     $stage = strtoupper(trim((string)($data['stage'] ?? 'ON_THE_WAY')));
     $lat = (float)($data['lat'] ?? 14.1870);
     $lng = (float)($data['lng'] ?? 121.2650);
@@ -937,12 +1203,24 @@ if ($action === 'rider_update_stage') {
         'PREPARING' => 'Preparing Equipment',
         'PICKUP' => 'Equipment Dispatched',
         'ON_THE_WAY' => 'Out for Delivery',
-        'DELIVERED' => 'Delivered'
+        'DELIVERED' => 'Delivered & Active Rental',
+        'RETURNED' => 'Returned to Owner Stock'
     ];
     $display = $displayMap[$stage] ?? 'Out for Delivery';
 
-    $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ?, `rider_current_lat` = ?, `rider_current_lng` = ? WHERE `order_number` = ?");
-    $stmt->execute([$stage, $display, $lat, $lng, $orderNumber]);
+    $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ?, `rider_current_lat` = ?, `rider_current_lng` = ? WHERE `order_code` = ? OR `order_code` = ?");
+    $stmt->execute([$stage, $display, $lat, $lng, $orderNumber, '#' . ltrim($orderNumber, '#')]);
+
+    // If delivered, notify both renter and owner
+    if ($stage === 'DELIVERED') {
+        try {
+            $msg = "🎉 Order {$orderNumber} has been successfully delivered and handed over! Active rental period has begun.";
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+               ->execute([100, 105, 'RentEase Fleet Dispatch', $msg, $orderNumber]);
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+               ->execute([100, 104, 'RentEase Fleet Dispatch', $msg, $orderNumber]);
+        } catch (Exception $e) {}
+    }
 
     echo json_encode([
         'success' => true,

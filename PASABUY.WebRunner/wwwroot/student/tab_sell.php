@@ -29,6 +29,20 @@
         </div>
     </div>
 
+    <!-- User Verification Required Banner -->
+    <div id="sellVerificationBanner" class="alert alert-warning border-0 rounded-4 shadow-sm p-3 mb-3" style="display:none; background:#FFFBEB; border-left: 4px solid #F59E0B !important;">
+        <div class="d-flex align-items-start gap-2.5">
+            <i class="fa-solid fa-shield-halved text-warning fs-5 mt-0.5"></i>
+            <div>
+                <h6 class="fw-extrabold text-dark fs-7 mb-0.5">Account Verification Required to List Equipment</h6>
+                <p class="fs-9 text-muted mb-2">Only verified campus lenders can post items for rent to protect renter deposits and ensure equipment safety.</p>
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 fs-8 fw-bold text-dark shadow-2xs" onclick="switchTab('profile')">
+                    <i class="fa-solid fa-id-card me-1"></i> Submit Account Verification in Profile
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Listing Form -->
     <div class="card border-0 rounded-4 shadow-sm p-3.5 bg-white mb-4">
 
@@ -82,7 +96,12 @@
                 </label>
                 <div class="input-group">
                     <span class="input-group-text bg-light fw-bold fs-7">₱</span>
-                    <input type="number" class="form-control rounded-end-3 fs-7 fw-bold" id="sellPrice" value="100" min="1">
+                    <input type="number" class="form-control rounded-end-3 fs-7 fw-bold" id="sellPrice" value="100" min="1" oninput="updateSellPostingFeeTier(this.value)">
+                </div>
+                <!-- Dynamic Posting Fee Tier Indicator -->
+                <div id="sellPostingFeeContainer" class="mt-1.5 p-1.5 rounded-2 d-flex align-items-center justify-content-between" style="background:#F3E8FF; border:1px solid #D8B4FE;">
+                    <span class="fs-9 fw-bold text-dark"><i class="fa-solid fa-receipt me-1" style="color:#7C3AED;"></i> Posting Fee:</span>
+                    <span class="badge fw-extrabold fs-9" id="sellPostingFeeBadge" style="background:#7C3AED; color:#fff;">₱15.00 (Tier: ₱100 - ₱500)</span>
                 </div>
             </div>
             <div class="col-6">
