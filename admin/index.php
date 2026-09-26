@@ -2644,6 +2644,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 if (data.pending_action_count !== undefined) {
                     updatePendingTicketsBadges(data.pending_action_count);
                 }
+
+                if (data.success && data.tickets && data.tickets.length > 0) {
                     tbody.innerHTML = data.tickets.map(t => `
                         <tr>
                             <td class="fw-bold text-muted">${t.ticket_number}</td>
