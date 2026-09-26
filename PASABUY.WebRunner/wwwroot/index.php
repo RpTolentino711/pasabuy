@@ -923,22 +923,51 @@
                             }
                         };
 
-                        async function saveProfileSettings() {
-                            const firstName = document.getElementById('settingsFirstName').value.trim();
-                            const lastName = document.getElementById('settingsLastName').value.trim();
-                            const studentNo = document.getElementById('settingsStudentNumber').value.trim();
-                            const course = document.getElementById('settingsCourse').value.trim();
-                            const yearLevel = document.getElementById('settingsYearLevel').value;
+                        window.previewSettingsAvatar = function (event) {
+                            const file = event.target.files && event.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                window.newAvatarDataUrl = e.target.result;
+                                const prev = document.getElementById('settingsAvatarPreview');
+                                if (prev) prev.src = window.newAvatarDataUrl;
+                            };
+                            reader.readAsDataURL(file);
+                        };
+
+                        window.saveProfileSettings = async function () {
+                            const fnEl = document.getElementById('settingsFirstName');
+                            const lnEl = document.getElementById('settingsLastName');
+                            const snEl = document.getElementById('settingsStudentNumber');
+                            const csEl = document.getElementById('settingsCourse');
+                            const ylEl = document.getElementById('settingsYearLevel');
+                            const prevEl = document.getElementById('settingsAvatarPreview');
+
+                            const firstName = fnEl ? fnEl.value.trim() : '';
+                            const lastName = lnEl ? lnEl.value.trim() : '';
+                            const studentNo = snEl ? snEl.value.trim() : '';
+                            const course = csEl ? csEl.value.trim() : '';
+                            const yearLevel = ylEl ? ylEl.value : '4th Yr';
 
                             if (!firstName || !lastName) {
                                 alert('Please enter your First Name and Last Name.');
                                 return;
                             }
 
-                            const storedUserStr = localStorage.getItem('pasabuy_student_user');
+                            const saveBtn = document.querySelector('#profileSettingsModal button.btn-primary');
+                            if (saveBtn) {
+                                saveBtn.disabled = true;
+                                saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Saving...';
+                            }
+
                             let studentUser = {};
-                            try { studentUser = storedUserStr ? JSON.parse(storedUserStr) : {}; } catch (e) { }
+                            try {
+                                const storedUserStr = localStorage.getItem('pasabuy_student_user');
+                                studentUser = storedUserStr ? JSON.parse(storedUserStr) : {};
+                            } catch (e) { }
+
                             const currentUserId = studentUser.id || studentUser.userId || 104;
+                            const finalAvatar = (typeof window.newAvatarDataUrl !== 'undefined' && window.newAvatarDataUrl) ? window.newAvatarDataUrl : (prevEl?.src || studentUser.profileImage || studentUser.avatar || '');
 
                             const fullName = `${firstName} ${lastName}`;
                             let subParts = [];
@@ -952,16 +981,45 @@
                                 userId: currentUserId,
                                 firstName: firstName,
                                 lastName: lastName,
+                                name: fullName,
+                                fullName: fullName,
                                 studentNumber: studentNo,
+                                phoneNumber: studentNo,
+                                phone: studentNo,
                                 course: course,
                                 yearLevel: yearLevel,
-                                profileImage: newAvatarDataUrl || studentUser.profileImage
+                                Course: course,
+                                YearLevel: yearLevel,
+                                StudentNumber: studentNo,
+                                profileImage: finalAvatar,
+                                avatar: finalAvatar
                             };
                             localStorage.setItem('pasabuy_student_user', JSON.stringify(updatedUser));
 
+                            // Also sync rentease_user_profile for RentEase components
+                            try {
+                                const renteaseProfile = {
+                                    id: currentUserId,
+                                    name: fullName,
+                                    firstName: firstName,
+                                    lastName: lastName,
+                                    sub: `${course} • ${yearLevel}`,
+                                    email: studentUser.email || studentUser.SchoolEmail || 'romeopaolotolentino@gmail.com',
+                                    phone: studentNo,
+                                    studentNumber: studentNo,
+                                    course: course,
+                                    yearLevel: yearLevel,
+                                    avatar: finalAvatar,
+                                    is_verified: true,
+                                    verification_status: 'VERIFIED'
+                                };
+                                localStorage.setItem('rentease_user_profile', JSON.stringify(renteaseProfile));
+                            } catch (e) { }
+
                             // Sync profile & avatar image directly to Hostinger MySQL Database
                             try {
-                                await fetch('/pasabuy_api.php?action=update_profile', {
+                                let apiUrl = window.location.pathname.includes('/student/') ? '../pasabuy_api.php?action=update_profile' : 'pasabuy_api.php?action=update_profile';
+                                await fetch(apiUrl, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
@@ -971,23 +1029,63 @@
                                         studentNumber: studentNo,
                                         course: course,
                                         yearLevel: yearLevel,
-                                        profileImage: newAvatarDataUrl || studentUser.profileImage
+                                        profileImage: finalAvatar
                                     })
                                 });
                             } catch (e) { console.error("Sync profile error:", e); }
 
-                            document.getElementById('profileName').innerText = fullName;
-                            document.getElementById('profileSub').innerText = subInfo;
-                            document.getElementById('homeWelcomeName').innerText = `Good day, ${firstName}!`;
-                            if (newAvatarDataUrl) {
-                                document.getElementById('profileAvatar').src = newAvatarDataUrl;
-                                document.getElementById('homeAvatar').src = newAvatarDataUrl;
+                            // Safely update DOM elements without throwing if any is missing
+                            const nameEl = document.getElementById('profileName');
+                            if (nameEl) nameEl.innerText = fullName;
+
+                            const subEl = document.getElementById('profileSub');
+                            if (subEl) subEl.innerText = subInfo;
+
+                            const stuNoEl = document.getElementById('profileStudentNumber');
+                            if (stuNoEl) stuNoEl.innerText = `Student ID: ${studentNo}`;
+
+                            const welcomeEl = document.getElementById('homeWelcomeName');
+                            if (welcomeEl) welcomeEl.innerText = `Good day, ${firstName}!`;
+
+                            const profAvatarEl = document.getElementById('profileAvatar');
+                            if (profAvatarEl && finalAvatar) profAvatarEl.src = finalAvatar;
+
+                            const homeAvatarEl = document.getElementById('homeAvatar');
+                            if (homeAvatarEl && finalAvatar) homeAvatarEl.src = finalAvatar;
+
+                            const hubName = document.getElementById('settingsHubName');
+                            if (hubName) hubName.innerText = fullName;
+
+                            const hubSub = document.getElementById('settingsHubSub');
+                            if (hubSub) hubSub.innerText = `${course} • ${yearLevel}`;
+
+                            const hubAvatar = document.getElementById('settingsHubAvatar');
+                            if (hubAvatar && finalAvatar) hubAvatar.src = finalAvatar;
+
+                            if (typeof syncRentEaseProfileUI === 'function') {
+                                syncRentEaseProfileUI();
                             }
 
-                            if (settingsModalInstance) settingsModalInstance.hide();
+                            // Close modal safely
+                            const modalEl = document.getElementById('profileSettingsModal');
+                            if (modalEl) {
+                                try {
+                                    const inst = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+                                    if (inst) inst.hide();
+                                } catch (e) { }
+                            }
+
+                            if (saveBtn) {
+                                saveBtn.disabled = false;
+                                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> Save & Update Profile';
+                            }
+
                             alert('🎉 Account Profile & Settings saved successfully!');
-                            await filterProducts();
-                        }
+
+                            try {
+                                if (typeof filterProducts === 'function') await filterProducts();
+                            } catch (e) { }
+                        };
 
                         function openReportModal() {
                             if (!reportModalInstance) {
