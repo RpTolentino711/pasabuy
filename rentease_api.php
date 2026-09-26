@@ -785,8 +785,35 @@ if ($action === 'admin_toggle_featured') {
 }
 
 // ----------------------------------------------------------
-// 9. ADMIN STOCK & EQUIPMENT OPERATIONS
+// 9. EQUIPMENT STOCK & PRICE OPERATIONS
 // ----------------------------------------------------------
+if ($action === 'owner_update_stock_price' || $action === 'update_item') {
+    $id = (int)($data['id'] ?? 0);
+    $price = (float)($data['price_per_day'] ?? $data['price'] ?? 0);
+    $qtyTotal = (int)($data['qty_total'] ?? $data['quantity'] ?? 0);
+    $qtyAvail = (int)($data['qty_available'] ?? $qtyTotal);
+
+    if (!$id || $price <= 0 || $qtyTotal <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Valid equipment ID, daily price, and stock are required.']);
+        exit;
+    }
+
+    if (!$db) {
+        echo json_encode(['success' => true, 'message' => 'Equipment price and stock updated.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("UPDATE `rental_inventory` SET `qty_total` = ?, `qty_available` = ?, `price_per_day` = ? WHERE `id` = ?");
+    $stmt->execute([$qtyTotal, $qtyAvail, $price, $id]);
+
+    echo json_encode([
+        'success' => true, 
+        'message' => 'Equipment price and stock updated successfully!'
+    ]);
+    exit;
+}
+
 if ($action === 'admin_update_stock') {
     $id = (int)($data['id'] ?? 0);
     $qtyTotal = (int)($data['qty_total'] ?? 0);

@@ -1882,18 +1882,31 @@ window.loadUserRentedOutItems = async function () {
     }
 
     const currentUser = getRentEaseCurrentUser();
-    const currentName = (currentUser.name || 'Romeo Paolo Tolentino').toLowerCase().trim();
+    const currentUserId = parseInt(currentUser.id || 0);
+    const currentUserEmail = (currentUser.email || '').toLowerCase().trim();
 
     let postedIds = [];
     try {
         postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
+        postedIds = postedIds.map(x => parseInt(x));
     } catch (e) {}
 
+    // Strict ownership verification:
+    // Only display items explicitly posted by this user in session OR matching owner ID / exact email
     const myItems = (rentEaseInventory || []).filter(item => {
         const idNum = parseInt(item.id);
-        if (postedIds.includes(idNum) || postedIds.includes(String(item.id))) return true;
-        const owner = (item.owner_name || '').toLowerCase().trim();
-        if (owner && (owner.includes('romeo') || owner.includes('tolentino') || owner === currentName)) return true;
+        const itemOwnerId = parseInt(item.owner_id || 0);
+        const itemOwnerEmail = (item.owner_email || '').toLowerCase().trim();
+
+        // 1. Explicitly published in this user's active session
+        if (postedIds.includes(idNum)) return true;
+
+        // 2. Strict ID match if user is authenticated with a valid ID
+        if (currentUserId > 0 && itemOwnerId === currentUserId) return true;
+
+        // 3. Strict exact Email match if both exist and match
+        if (currentUserEmail && itemOwnerEmail && currentUserEmail === itemOwnerEmail) return true;
+
         return false;
     });
 
@@ -1920,6 +1933,9 @@ window.loadUserRentedOutItems = async function () {
     container.innerHTML = myItems.map(item => {
         const img = item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80';
         const price = parseFloat(item.price_per_day || item.price || 0).toLocaleString();
+        const rawPrice = parseFloat(item.price_per_day || item.price || 100);
+        const availStock = item.qty_available ?? item.qty_total ?? 1;
+        const totalStock = item.qty_total ?? 1;
         const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
         return `
             <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden p-3" id="rentalItemCard_${item.id}">
@@ -1943,23 +1959,27 @@ window.loadUserRentedOutItems = async function () {
                                 <span class="text-muted fs-9"> / day</span>
                             </div>
                             <div class="text-muted fs-9">
-                                Stock: <strong class="text-dark">${item.qty_available ?? item.qty_total ?? 1}</strong> / ${item.qty_total ?? 1}
+                                Stock: <strong class="text-dark">${availStock}</strong> / ${totalStock}
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2.5">
-                    <span class="text-muted fs-9 text-truncate me-2">
+                <div class="d-flex align-items-center justify-content-between border-top pt-2 mt-2.5 flex-wrap gap-2">
+                    <span class="text-muted fs-9 text-truncate me-1">
                         <i class="fa-solid fa-location-dot me-1 text-secondary"></i>${item.location || 'Campus Hub'}
                     </span>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold text-dark border" 
+                    <div class="d-flex gap-1.5">
+                        <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold text-dark border shadow-2xs" 
                                 onclick="openRentalDetail(${item.id})">
                             <i class="fa-solid fa-eye me-1"></i>View
                         </button>
+                        <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 fs-9 fw-bold text-primary shadow-2xs" 
+                                onclick="openEditStockPriceModal(${item.id}, '${safeTitle}', ${rawPrice}, ${availStock}, ${totalStock})">
+                            <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                        </button>
                         <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" 
                                 onclick="deleteUserRentalItem(${item.id}, '${safeTitle}')">
-                            <i class="fa-solid fa-trash me-1"></i>Delete
+                            <i class="fa-solid fa-ban me-1"></i>Take Down
                         </button>
                     </div>
                 </div>
@@ -1968,33 +1988,120 @@ window.loadUserRentedOutItems = async function () {
     }).join('');
 };
 
-window.deleteUserRentalItem = async function (id, name) {
-    if (!confirm(`Are you sure you want to remove "${name || 'this item'}" from your rental listings?`)) {
+window.openEditStockPriceModal = function (id, title, price, avail, total) {
+    const idEl = document.getElementById('modalEditItemId');
+    const titleEl = document.getElementById('modalEditItemTitle');
+    const priceEl = document.getElementById('modalEditItemPrice');
+    const availEl = document.getElementById('modalEditItemAvailStock');
+    const totalEl = document.getElementById('modalEditItemTotalStock');
+
+    if (idEl) idEl.value = id;
+    if (titleEl) titleEl.innerText = title || 'Equipment';
+    if (priceEl) priceEl.value = price || 100;
+    if (availEl) availEl.value = avail ?? total ?? 1;
+    if (totalEl) totalEl.value = total ?? 1;
+
+    const modalEl = document.getElementById('editRentalStockPriceModal');
+    if (modalEl) {
+        new bootstrap.Modal(modalEl).show();
+    }
+};
+
+window.saveRentalStockPriceChanges = async function () {
+    const id = parseInt(document.getElementById('modalEditItemId')?.value || 0);
+    const price = parseFloat(document.getElementById('modalEditItemPrice')?.value || 0);
+    const avail = parseInt(document.getElementById('modalEditItemAvailStock')?.value || 0);
+    const total = parseInt(document.getElementById('modalEditItemTotalStock')?.value || 0);
+
+    if (!id || price <= 0 || total <= 0) {
+        alert('⚠️ Please enter a valid daily rental price and stock quantity.');
         return;
     }
+
+    if (avail > total) {
+        alert('⚠️ Available stock units cannot be greater than total stock units.');
+        return;
+    }
+
+    const currentUser = getRentEaseCurrentUser();
+
     try {
+        const res = await fetch(getRentEaseApiUrl('owner_update_stock_price'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: id,
+                price_per_day: price,
+                qty_available: avail,
+                qty_total: total,
+                owner_id: currentUser.id || 0,
+                owner_email: currentUser.email || ''
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            const modalEl = document.getElementById('editRentalStockPriceModal');
+            if (modalEl) {
+                const modalInst = bootstrap.Modal.getInstance(modalEl);
+                if (modalInst) modalInst.hide();
+            }
+
+            await loadRentEaseCatalog();
+            await loadUserRentedOutItems();
+            alert('✅ Success! Your equipment price and stock have been updated live.');
+        } else {
+            alert('❌ ' + (data.message || 'Failed to update equipment details.'));
+        }
+    } catch(e) {
+        alert('❌ Error connecting to server to update equipment.');
+    }
+};
+
+window.deleteUserRentalItem = async function (id, name) {
+    const warningMsg = 
+`⚠️ WARNING: TAKE DOWN EQUIPMENT LISTING
+
+Are you sure you want to take down "${name || 'this equipment'}"?
+
+• NOTICE: If you take down this listing, you can get a refund on your posting fee (provided no active bookings remain unfulfilled).
+• Once taken down, this equipment will immediately be unlisted and removed from campus search and student catalog.
+• Any ongoing accepted bookings must still be honored.
+
+Do you want to proceed and take down this listing?`;
+
+    if (!confirm(warningMsg)) {
+        return;
+    }
+
+    try {
+        const currentUser = getRentEaseCurrentUser();
         const res = await fetch(getRentEaseApiUrl('delete_item'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: id })
+            body: JSON.stringify({ 
+                id: id,
+                owner_id: currentUser.id || 0,
+                owner_email: currentUser.email || ''
+            })
         });
         const data = await res.json();
         if (data.success) {
             try {
                 let postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
-                postedIds = postedIds.filter(pid => pid != id);
+                postedIds = postedIds.filter(pid => parseInt(pid) !== parseInt(id));
                 localStorage.setItem('rentease_user_posted_ids', JSON.stringify(postedIds));
             } catch (e) {}
 
             await loadRentEaseCatalog();
             await loadUserRentedOutItems();
-            alert(`Equipment "${name}" has been removed.`);
+            alert(`✅ Equipment "${name}" has been taken down.\n\nYour posting fee refund request has been logged.`);
         } else {
-            alert('❌ ' + (data.message || 'Failed to remove equipment.'));
+            alert('❌ ' + (data.message || 'Failed to take down equipment.'));
         }
     } catch (e) {
         console.error("Delete rental item error:", e);
-        alert('❌ Error connecting to server to delete equipment.');
+        alert('❌ Error connecting to server to take down equipment.');
     }
 };
 

@@ -64,6 +64,71 @@
 </div>
 
 <!-- ==========================================================
+     EDIT EQUIPMENT PRICE & STOCK MODAL (OWNER ONLY)
+     ========================================================== -->
+<div class="modal fade" id="editRentalStockPriceModal" tabindex="-1" aria-labelledby="editRentalStockPriceModalLabel" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3.5 shadow-lg bg-white">
+            <div class="modal-header border-0 pb-2 d-flex align-items-center justify-content-between">
+                <h6 class="modal-title fw-extrabold text-dark fs-7 d-flex align-items-center gap-2 mb-0" id="editRentalStockPriceModalLabel">
+                    <i class="fa-solid fa-sliders" style="color:#5B3FA8;"></i> Adjust Price & Stock
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-1">
+                <div class="p-2.5 rounded-3 bg-light border mb-3">
+                    <div class="fw-extrabold text-dark fs-8 text-truncate" id="modalEditItemTitle">Equipment Title</div>
+                    <span class="fs-9 text-muted">You are editing your own equipment listing. Changes reflect immediately across campus search.</span>
+                </div>
+
+                <input type="hidden" id="modalEditItemId" value="0">
+
+                <div class="mb-3">
+                    <label class="form-label fw-extrabold text-dark fs-8 mb-1">
+                        Daily Rental Price (₱ / day) <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white fw-bold text-dark fs-7" style="border-radius:12px 0 0 12px; color:#5B3FA8 !important;">₱</span>
+                        <input type="number" class="form-control fw-extrabold fs-6 text-dark" id="modalEditItemPrice" min="1" step="1" style="border-radius:0 12px 12px 0;">
+                    </div>
+                    <span class="fs-9 text-muted mt-1 d-block">Price charged per 24 hours of equipment booking.</span>
+                </div>
+
+                <div class="row g-2.5 mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-extrabold text-dark fs-8 mb-1">
+                            Available Stock <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" class="form-control fw-extrabold fs-6 text-dark rounded-3" id="modalEditItemAvailStock" min="0">
+                        <span class="fs-9 text-muted mt-1 d-block">Ready to rent now</span>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-extrabold text-dark fs-8 mb-1">
+                            Total Units <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" class="form-control fw-extrabold fs-6 text-dark rounded-3" id="modalEditItemTotalStock" min="1">
+                        <span class="fs-9 text-muted mt-1 d-block">Total equipment owned</span>
+                    </div>
+                </div>
+
+                <div class="p-2.5 rounded-3 border-0 bg-success-subtle text-success fs-9 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-circle-check fs-7"></i>
+                    <span>Updated rates & stock will sync immediately to the live student catalog.</span>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-2 d-flex gap-2">
+                <button type="button" class="btn btn-light rounded-pill px-3 py-1.5 fs-8 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 py-1.5 fs-8 fw-extrabold text-white shadow-sm" 
+                        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
+                        onclick="saveRentalStockPriceChanges()">
+                    <i class="fa-solid fa-check me-1"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================
      SETTINGS & ACCOUNT HUB MODAL
      Triggered by Settings Gear on Profile Tab
      Displays: My Orders, Purchase History, Saved Addresses,
