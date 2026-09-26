@@ -20,11 +20,34 @@
             <!-- Dynamically populated from localStorage: rentease_cart -->
         </div>
 
+        <!-- Rental Duration Card (Screen 4) -->
+        <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3" id="cartDurationCard">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="fw-extrabold text-dark fs-8"><i class="fa-regular fa-calendar-days me-1.5" style="color:#5B3FA8 !important;"></i> Rental Duration</div>
+                    <div class="text-muted fs-9">How many days will you rent this equipment?</div>
+                </div>
+                <!-- Stepper for Days -->
+                <div class="d-flex align-items-center gap-1.5 bg-light border rounded-pill px-2.5 py-1">
+                    <button type="button" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
+                            style="width:26px; height:26px; background:#fff;" onclick="adjustRentalDaysCart(-1)">
+                        <i class="fa-solid fa-minus fs-9 text-dark"></i>
+                    </button>
+                    <span class="fw-extrabold text-dark fs-8 px-1" id="cartRentalDaysVal">1</span>
+                    <span class="fs-9 fw-semibold text-secondary" id="cartRentalDaysUnit">day</span>
+                    <button type="button" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
+                            style="width:26px; height:26px; background:#fff;" onclick="adjustRentalDaysCart(1)">
+                        <i class="fa-solid fa-plus fs-9 text-dark"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Computation Summary Card (Screen 4) -->
         <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3" id="cartSummaryCard">
             <h6 class="fw-extrabold text-dark fs-8 mb-2.5">Summary</h6>
             <div class="d-flex justify-content-between fs-8 text-secondary mb-1.5">
-                <span>Rental Subtotal</span>
+                <span id="cartSubtotalLabel">Rental Subtotal (1 day)</span>
                 <span class="fw-bold text-dark" id="cartRentalSubtotal">₱0</span>
             </div>
             <div class="d-flex justify-content-between fs-8 text-secondary mb-1.5">

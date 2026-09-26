@@ -14,7 +14,7 @@ let currentCategory = 'All';
 let currentTag = 'All';
 let currentDeliveryOption = 'DELIVERY';
 let currentPaymentMethod = 'GCASH';
-let currentRentalDays = 1;
+let currentRentalDays = parseInt(localStorage.getItem('rentease_rental_days') || '1') || 1;
 let currentPaymentPlan = 'FULL'; // 'FULL' or 'DOWNPAYMENT_COD'
 let rentEaseMapInstance = null;
 
@@ -930,10 +930,26 @@ function addRentEaseCartItem(product, qty = 1) {
 
 function saveRentEaseCart() {
     localStorage.setItem('rentease_cart', JSON.stringify(rentEaseCart));
+    // ALWAYS sync to pasabuy_cart_items so deletions and changes persist across both apps!
+    const pCart = rentEaseCart.map(it => ({
+        listingId: it.id,
+        id: it.id,
+        title: it.title,
+        price: it.price_per_day,
+        quantity: it.quantity,
+        img: it.image_url,
+        image_url: it.image_url
+    }));
+    localStorage.setItem('pasabuy_cart_items', JSON.stringify(pCart));
+    if (typeof pasabuyCart !== 'undefined') {
+        pasabuyCart = pCart;
+    }
+    updateCartBadgeCount();
+    if (typeof updateCartBadge === 'function') updateCartBadge();
 }
 
 function updateCartBadgeCount() {
-    const count = rentEaseCart.reduce((acc, it) => acc + (it.quantity || 1), 0);
+    const count = rentEaseCart.reduce((acc, it) => acc + (parseInt(it.quantity) || 1), 0);
     const badges = [
         document.getElementById('tabCartBadge'), 
         document.getElementById('cartCountBadge'),
@@ -957,26 +973,30 @@ async function renderCartScreen() {
     if (!container) return;
 
     try {
-        rentEaseCart = JSON.parse(localStorage.getItem('rentease_cart') || '[]');
-    } catch(e) {}
-
-    if (rentEaseCart.length === 0) {
-        try {
+        const stored = localStorage.getItem('rentease_cart');
+        if (stored !== null) {
+            rentEaseCart = JSON.parse(stored);
+        } else {
+            // First time only: check pasabuy_cart_items
             const pCart = JSON.parse(localStorage.getItem('pasabuy_cart_items') || '[]');
-            if (pCart.length > 0) {
-                pCart.forEach(it => {
-                    rentEaseCart.push({
-                        id: it.listingId || it.id,
-                        title: it.title || it.name,
-                        price_per_day: parseFloat(it.price) || 0,
-                        quantity: it.quantity || 1,
-                        image_url: it.img || it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'
-                    });
-                });
-                saveRentEaseCart();
-            }
-        } catch(e) {}
+            rentEaseCart = pCart.map(it => ({
+                id: it.listingId || it.id,
+                title: it.title || it.name,
+                price_per_day: parseFloat(it.price) || 0,
+                quantity: parseInt(it.quantity) || 1,
+                image_url: it.img || it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'
+            }));
+            localStorage.setItem('rentease_cart', JSON.stringify(rentEaseCart));
+        }
+    } catch(e) {
+        rentEaseCart = [];
     }
+
+    // Sync days display in cart duration card
+    const daysVal = document.getElementById('cartRentalDaysVal');
+    if (daysVal) daysVal.innerText = currentRentalDays;
+    const daysUnit = document.getElementById('cartRentalDaysUnit');
+    if (daysUnit) daysUnit.innerText = currentRentalDays > 1 ? 'days' : 'day';
 
     if (rentEaseCart.length === 0) {
         container.innerHTML = `
@@ -986,20 +1006,31 @@ async function renderCartScreen() {
             <p class="fs-9 text-muted mb-3">Browse our catalog to add chairs, tables, tents, and audio equipment.</p>
             <button class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" style="background:#5B3FA8; border:none;" onclick="switchTab('explore')">Explore Equipment</button>
         </div>`;
+        const durCard = document.getElementById('cartDurationCard');
+        if (durCard) durCard.style.display = 'none';
+        const sumCard = document.getElementById('cartSummaryCard');
+        if (sumCard) sumCard.style.display = 'none';
         updateComputationDisplay(0, 0, 0, 0, 0);
         return;
     }
 
+    const durCard = document.getElementById('cartDurationCard');
+    if (durCard) durCard.style.display = 'block';
+    const sumCard = document.getElementById('cartSummaryCard');
+    if (sumCard) sumCard.style.display = 'block';
+
     let html = '';
     rentEaseCart.forEach((item, index) => {
-        const itemSubtotal = item.price_per_day * item.quantity;
+        const itemQty = parseInt(item.quantity) || 1;
+        const itemDailyRate = parseFloat(item.price_per_day) || 0;
+        const itemTotalForDays = itemDailyRate * itemQty * currentRentalDays;
         html += `
-        <div class="card border-0 rounded-4 shadow-sm p-3 bg-white d-flex flex-row align-items-center justify-content-between">
+        <div class="card border-0 rounded-4 shadow-sm p-3 bg-white d-flex flex-row align-items-center justify-content-between mb-2">
             <div class="d-flex align-items-center gap-3">
-                <img src="${item.image_url}" class="rounded-3 border" width="60" height="60" style="object-fit:cover;" alt="${item.title}">
+                <img src="${item.image_url}" class="rounded-3 border" width="60" height="60" style="object-fit:cover;" alt="${item.title}" onerror="this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
                 <div>
                     <h6 class="fw-bold text-dark fs-8 mb-0.5">${item.title}</h6>
-                    <div class="fs-9 text-muted mb-2">₱${item.price_per_day.toFixed(0)} / day</div>
+                    <div class="fs-9 text-muted mb-2">₱${itemDailyRate.toFixed(0)} / day</div>
                     
                     <!-- Stepper -->
                     <div class="d-flex align-items-center gap-2">
@@ -1007,7 +1038,7 @@ async function renderCartScreen() {
                                 style="width:24px; height:24px;" onclick="adjustCartQty(${index}, -1)">
                             <i class="fa-solid fa-minus fs-9 text-dark"></i>
                         </button>
-                        <span class="fw-bold text-dark fs-8 px-1">${item.quantity}</span>
+                        <span class="fw-bold text-dark fs-8 px-1">${itemQty}</span>
                         <button type="button" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center border shadow-2xs" 
                                 style="width:24px; height:24px;" onclick="adjustCartQty(${index}, 1)">
                             <i class="fa-solid fa-plus fs-9 text-dark"></i>
@@ -1017,11 +1048,14 @@ async function renderCartScreen() {
             </div>
 
             <div class="d-flex flex-column align-items-end justify-content-between h-100 gap-3">
-                <button class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center text-danger" 
+                <button type="button" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center text-danger" 
                         style="width:28px; height:28px; background:rgba(239,68,68,0.08);" onclick="removeCartItem(${index})" title="Remove">
                     <i class="fa-solid fa-trash-can fs-9"></i>
                 </button>
-                <div class="fw-extrabold text-dark fs-7">₱${itemSubtotal.toLocaleString()}</div>
+                <div class="text-end">
+                    <div class="fw-extrabold text-dark fs-7">₱${itemTotalForDays.toLocaleString()}</div>
+                    <div class="fs-9 text-muted">${itemQty} unit${itemQty > 1 ? 's' : ''} × ${currentRentalDays}d</div>
+                </div>
             </div>
         </div>`;
     });
@@ -1042,18 +1076,19 @@ async function renderCartScreen() {
             const data = await res.json();
             const c = data.computation;
             updateComputationDisplay(c.subtotal, c.service_charge, c.delivery_fee, c.discount, c.total, c.downpayment, c.balance);
+            return;
         }
-    } catch (e) {
-        // Fallback local computation
-        const sub = rentEaseCart.reduce((acc, it) => acc + (it.price_per_day * it.quantity * currentRentalDays), 0);
-        const svc = sub > 0 ? 100 : 0;
-        const del = (currentDeliveryOption === 'DELIVERY' && sub > 0) ? 150 : 0;
-        const disc = sub >= 1000 ? 50 : 0;
-        const tot = sub + svc + del - disc;
-        const down = Math.round(tot * 0.30);
-        const bal = tot - down;
-        updateComputationDisplay(sub, svc, del, disc, tot, down, bal);
-    }
+    } catch (e) {}
+
+    // Fallback local computation with rental duration
+    const sub = rentEaseCart.reduce((acc, it) => acc + ((parseFloat(it.price_per_day) || 0) * (parseInt(it.quantity) || 1) * currentRentalDays), 0);
+    const svc = sub > 0 ? 100 : 0;
+    const del = (currentDeliveryOption === 'DELIVERY' && sub > 0) ? 150 : 0;
+    const disc = sub >= 1000 ? 50 : 0;
+    const tot = sub + svc + del - disc;
+    const down = Math.round(tot * 0.30);
+    const bal = tot - down;
+    updateComputationDisplay(sub, svc, del, disc, tot, down, bal);
 }
 
 function updateComputationDisplay(sub, svc, del, disc, tot, down = 0, bal = 0) {
@@ -1062,6 +1097,16 @@ function updateComputationDisplay(sub, svc, del, disc, tot, down = 0, bal = 0) {
     const delEl = document.getElementById('cartDeliveryFee');
     const discEl = document.getElementById('cartDiscount');
     const totEl = document.getElementById('cartGrandTotal');
+    const subLabel = document.getElementById('cartSubtotalLabel');
+
+    if (subLabel) {
+        subLabel.innerText = `Rental Subtotal (${currentRentalDays} day${currentRentalDays > 1 ? 's' : ''})`;
+    }
+    if (subEl) subEl.innerText = '₱' + sub.toLocaleString();
+    if (svcEl) svcEl.innerText = '₱' + svc.toLocaleString();
+    if (delEl) delEl.innerText = '₱' + del.toLocaleString();
+    if (discEl) discEl.innerText = '- ₱' + disc.toLocaleString();
+    if (totEl) totEl.innerText = '₱' + tot.toLocaleString();
 
     if (subEl) subEl.innerText = '₱' + sub.toLocaleString();
     if (svcEl) svcEl.innerText = '₱' + svc.toLocaleString();
@@ -1157,20 +1202,45 @@ function selectPaymentPlan(plan) {
     renderCartScreen();
 }
 
-function adjustCartQty(index, delta) {
-    if (!rentEaseCart[index]) return;
-    rentEaseCart[index].quantity = Math.max(1, rentEaseCart[index].quantity + delta);
+window.adjustCartQty = function (index, delta) {
+    if (!rentEaseCart || !rentEaseCart[index]) return;
+    const currentQty = parseInt(rentEaseCart[index].quantity) || 1;
+    const newQty = currentQty + delta;
+    if (newQty <= 0) {
+        window.removeCartItem(index);
+        return;
+    }
+    rentEaseCart[index].quantity = newQty;
     saveRentEaseCart();
-    updateCartBadgeCount();
     renderCartScreen();
-}
+};
 
-function removeCartItem(index) {
+window.removeCartItem = function (index) {
+    if (!rentEaseCart || !rentEaseCart[index]) return;
     rentEaseCart.splice(index, 1);
     saveRentEaseCart();
-    updateCartBadgeCount();
     renderCartScreen();
-}
+};
+
+window.adjustRentalDaysCart = function (delta) {
+    currentRentalDays = Math.max(1, Math.min(30, (currentRentalDays || 1) + delta));
+    localStorage.setItem('rentease_rental_days', currentRentalDays);
+    
+    // Update days in cart duration card
+    const daysVal = document.getElementById('cartRentalDaysVal');
+    if (daysVal) daysVal.innerText = currentRentalDays;
+    const daysUnit = document.getElementById('cartRentalDaysUnit');
+    if (daysUnit) daysUnit.innerText = currentRentalDays > 1 ? 'days' : 'day';
+
+    // Also update checkout duration
+    const checkoutDaysVal = document.getElementById('checkoutDaysVal');
+    if (checkoutDaysVal) checkoutDaysVal.innerText = currentRentalDays;
+    const checkoutBadge = document.getElementById('checkoutDurationBadge');
+    if (checkoutBadge) checkoutBadge.innerText = `${currentRentalDays} Day${currentRentalDays > 1 ? 's' : ''} Rent`;
+
+    if (typeof updateDueDateDisplay === 'function') updateDueDateDisplay();
+    renderCartScreen();
+};
 
 function showCartScreen() {
     document.getElementById('cartScreenView').style.display = 'block';
