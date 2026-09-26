@@ -331,7 +331,7 @@
             </div>
             <div class="d-flex align-items-center gap-2" id="headerUserActions" style="display: none !important;">
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="switchTab('cart')" title="RentEase Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
+                    onclick="openCartModal()" title="RentEase Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-cart-shopping text-secondary fs-7"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; padding: 2px 4px; display:none;">0</span>
                 </button>
@@ -380,10 +380,10 @@
                 </div>
                 <span style="font-size:0.65rem; font-weight:700; color:#5B3FA8; margin-top:-8px;">Rent Out</span>
             </div>
-            <div class="tab-item position-relative" onclick="switchTab('cart')" id="tabNavCart">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span>Cart</span>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="tabCartBadge" style="font-size:0.6rem; padding:2px 4px; display:none;">0</span>
+            <div class="tab-item position-relative" onclick="switchTab('messages')" id="tabNavMessages" title="Messages & Inquiries">
+                <i class="fa-solid fa-comment-dots"></i>
+                <span>Messages</span>
+                <span class="badge rounded-pill bg-danger position-absolute" id="tabMessagesBadge" style="top:2px; right:10px; font-size:0.6rem; padding:2px 5px; display:none; box-shadow:0 2px 4px rgba(220,53,69,0.5);">0</span>
             </div>
             <div class="tab-item" onclick="switchTab('profile')" id="tabNavProfile">
                 <i class="fa-solid fa-user"></i>
@@ -1745,6 +1745,10 @@
                         }
 
                         function switchTab(tabName) {
+                            if (tabName === 'cart') {
+                                if (typeof openCartModal === 'function') openCartModal();
+                                return;
+                            }
                             const tabs = ['home', 'explore', 'sell', 'wanted', 'messages', 'profile'];
                             tabs.forEach(t => {
                                 const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -1774,6 +1778,8 @@
                                 filterProducts();
                                 updateUnreadBadges();
                             } else if (tabName === 'messages') {
+                                const tabBadge = document.getElementById('tabMessagesBadge');
+                                if (tabBadge) tabBadge.style.display = 'none';
                                 markMessagesAsRead();
                                 loadChatConversationsList();
                             } else if (tabName === 'explore') {
@@ -2706,6 +2712,7 @@
 
                         function startLiveChatPolling() {
                             if (liveChatPollingTimer) clearInterval(liveChatPollingTimer);
+                            updateUnreadBadges();
                             liveChatPollingTimer = setInterval(async () => {
                                 try {
                                     const chatVw = document.getElementById('chatView');
@@ -2716,6 +2723,7 @@
                                     } else if (tabMsgs && tabMsgs.style.display !== 'none') {
                                         await loadChatConversationsList();
                                     }
+                                    await updateUnreadBadges();
                                 } catch (e) { }
                             }, 3000);
                         }

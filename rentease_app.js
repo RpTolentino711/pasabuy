@@ -1727,7 +1727,20 @@ window.switchTab = function (tabName) {
     }
 
     if (tabName === 'cart') {
-        renderCartScreen();
+        if (typeof openCartModal === 'function') {
+            openCartModal();
+        } else if (typeof renderCartScreen === 'function') {
+            renderCartScreen();
+        }
+        return;
+    } else if (tabName === 'messages') {
+        const tabBadge = document.getElementById('tabMessagesBadge');
+        if (tabBadge) tabBadge.style.display = 'none';
+        if (typeof markMessagesAsRead === 'function') markMessagesAsRead();
+        if (typeof loadChatConversationsList === 'function') loadChatConversationsList();
+    } else if (tabName === 'home') {
+        if (typeof updateUnreadBadges === 'function') updateUnreadBadges();
+        if (typeof pollRentEaseUnreadMessages === 'function') pollRentEaseUnreadMessages();
     } else if (tabName === 'explore') {
         renderExploreCatalog();
     } else if (tabName === 'sell') {
@@ -2132,11 +2145,46 @@ window.dispatchReturnDelivery = async function () {
     }
 };
 
+// Poll unread messages for Messages tab badge and notifications
+function pollRentEaseUnreadMessages() {
+    let storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+    const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+    fetch(`/pasabuy_api.php?action=get_unread&user_id=${currentUserId}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+            if (!data) return;
+            const count = data.unreadCount || 0;
+            const tabBadge = document.getElementById('tabMessagesBadge');
+            const notifBadge = document.getElementById('headerNotifBadge');
+            if (tabBadge) {
+                if (count > 0) {
+                    tabBadge.innerText = count;
+                    tabBadge.style.display = 'inline-block';
+                } else {
+                    tabBadge.style.display = 'none';
+                }
+            }
+            if (notifBadge) {
+                if (count > 0) {
+                    notifBadge.innerText = count;
+                    notifBadge.style.display = 'inline-block';
+                } else {
+                    notifBadge.style.display = 'none';
+                }
+            }
+        })
+        .catch(() => {});
+}
+window.pollRentEaseUnreadMessages = pollRentEaseUnreadMessages;
+
 // Automatic bootstrap on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     loadRentEaseCatalog();
     syncRentEaseProfileUI();
     updateCartBadgeCount();
+    pollRentEaseUnreadMessages();
+    setInterval(pollRentEaseUnreadMessages, 4000);
     const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in') === 'true';
     if (isLoggedIn) {
         switchTab('home');

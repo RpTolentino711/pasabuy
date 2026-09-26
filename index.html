@@ -930,10 +930,10 @@
                     <i class="fa-solid fa-plus text-white fs-5"></i>
                 </div>
             </div>
-            <div class="tab-item position-relative" onclick="openCartModal()" id="tabNavCart">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span>Cart</span>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; display:none; padding:2px 4px;">0</span>
+            <div class="tab-item position-relative" onclick="switchTab('messages')" id="tabNavMessages" title="Messages & Inquiries">
+                <i class="fa-solid fa-comment-dots"></i>
+                <span>Messages</span>
+                <span class="badge rounded-pill bg-danger position-absolute" id="tabMessagesBadge" style="top:2px; right:10px; font-size:0.6rem; padding:2px 5px; display:none; box-shadow:0 2px 4px rgba(220,53,69,0.5);">0</span>
             </div>
             <div class="tab-item" onclick="switchTab('wanted')" id="tabNavWanted">
                 <i class="fa-solid fa-clipboard-list"></i>
