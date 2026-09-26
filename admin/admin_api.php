@@ -827,7 +827,24 @@ if ($action === 'get_tickets') {
     $stmt->execute($params);
     $tickets = $stmt->fetchAll();
 
-    echo json_encode(['success' => true, 'count' => count($tickets), 'tickets' => $tickets]);
+    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_issues` WHERE `status` != 'RESOLVED'")->fetchColumn();
+
+    echo json_encode([
+        'success' => true, 
+        'count' => count($tickets), 
+        'tickets' => $tickets,
+        'pending_action_count' => $pendingCount
+    ]);
+    exit;
+}
+
+if ($action === 'get_pending_tickets_count') {
+    if (!$db) { echo json_encode(['success' => true, 'pending_action_count' => 0]); exit; }
+    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_issues` WHERE `status` != 'RESOLVED'")->fetchColumn();
+    echo json_encode([
+        'success' => true, 
+        'pending_action_count' => $pendingCount
+    ]);
     exit;
 }
 

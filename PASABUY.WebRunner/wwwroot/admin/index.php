@@ -461,8 +461,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="javascript:void(0)" class="nav-link" onclick="switchAdminTab('support', this)">
-                        <i class="fa-solid fa-headset"></i> <span>Support / Issues</span>
+                    <a href="javascript:void(0)" class="nav-link d-flex align-items-center justify-content-between" onclick="switchAdminTab('support', this)">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-headset"></i> <span>Support / Issues</span>
+                        </div>
+                        <span class="badge rounded-pill bg-danger" id="sidebarSupportBadge" style="font-size:0.65rem; padding:2px 5px; display:none;">0</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -519,9 +522,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     <span class="pulse-live"></span>
                     <span class="fs-9 fw-bold text-dark" id="liveClockDisplay">--:--</span>
                 </div>
-                <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs position-relative" style="width:38px; height:38px;" onclick="switchAdminTab('support')">
+                <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs position-relative" style="width:38px; height:38px;" onclick="switchAdminTab('support')" title="Support Tickets Hub (Action Required)" id="adminHeaderBellBtn">
                     <i class="fa-regular fa-bell text-secondary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" id="topBellBadge"></span>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light shadow-sm" id="topBellBadge" style="font-size:0.65rem; padding:2px 5px; display:none; min-width:18px; line-height:1;">0</span>
                 </button>
                 <div class="d-flex align-items-center gap-2 ps-2 border-start">
                     <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-2xs" style="width:34px; height:34px; background: linear-gradient(135deg, #5B3FA8, #341F97); font-size:0.8rem;">
@@ -1770,12 +1773,51 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             if (el) el.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }, 1000);
 
+        function updatePendingTicketsBadges(count) {
+            const num = parseInt(count) || 0;
+            const bellBadge = document.getElementById('topBellBadge');
+            if (bellBadge) {
+                if (num > 0) {
+                    bellBadge.innerText = num > 99 ? '99+' : num;
+                    bellBadge.style.display = 'inline-block';
+                } else {
+                    bellBadge.style.display = 'none';
+                }
+            }
+            const sideBadge = document.getElementById('sidebarSupportBadge');
+            if (sideBadge) {
+                if (num > 0) {
+                    sideBadge.innerText = num > 99 ? '99+' : num;
+                    sideBadge.style.display = 'inline-block';
+                } else {
+                    sideBadge.style.display = 'none';
+                }
+            }
+            const dashTicketsMetric = document.getElementById('dashMetricTickets');
+            if (dashTicketsMetric && currentActiveSection !== 'dashboard') {
+                dashTicketsMetric.innerText = num;
+            }
+        }
+
+        async function pollPendingTicketsCount() {
+            try {
+                const res = await fetch(`${API_URL}?action=get_pending_tickets_count`);
+                const data = await res.json();
+                if (data && data.success) {
+                    updatePendingTicketsBadges(data.pending_action_count || 0);
+                }
+            } catch (e) {}
+        }
+
         let liveAdminPollingInterval = null;
         function startLiveAdminPolling() {
             if (liveAdminPollingInterval) clearInterval(liveAdminPollingInterval);
+            pollPendingTicketsCount();
             liveAdminPollingInterval = setInterval(() => {
                 const authOverlay = document.getElementById('authOverlay');
                 if (authOverlay && authOverlay.style.display !== 'none') return;
+
+                pollPendingTicketsCount();
 
                 if (currentActiveSection === 'dashboard') {
                     loadDashboardStats();
@@ -1901,6 +1943,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     document.getElementById('dashMetricStock').innerText = s.total_stock;
                     document.getElementById('dashMetricLowStockText').innerText = `${s.low_stock_items} items low stock`;
                     document.getElementById('dashMetricTickets').innerText = s.active_tickets;
+                    updatePendingTicketsBadges(s.active_tickets);
 
                     // Render recent orders table
                     const tbody = document.getElementById('dashOrdersTableBody');
@@ -2598,7 +2641,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const data = await res.json();
                 const tbody = document.getElementById('ticketsTableBody');
 
-                if (data.success && data.tickets.length > 0) {
+                if (data.pending_action_count !== undefined) {
+                    updatePendingTicketsBadges(data.pending_action_count);
+                }
                     tbody.innerHTML = data.tickets.map(t => `
                         <tr>
                             <td class="fw-bold text-muted">${t.ticket_number}</td>
@@ -2658,6 +2703,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 await fetch(`${API_URL}?action=update_ticket_status&id=${id}&status=RESOLVED`);
                 loadTickets();
                 loadDashboardStats();
+                pollPendingTicketsCount();
             } catch (e) {}
         }
 
