@@ -328,8 +328,212 @@ function renderGridElements(items) {
 // ----------------------------------------------------------
 // 2. SCREEN 3: PRODUCT DETAIL MODAL
 // ----------------------------------------------------------
-// 2. SCREEN 3: PRODUCT DETAIL MODAL
+// 2. SCREEN 3: PRODUCT DETAIL MODAL & DYNAMIC MEDIA CAROUSEL
 // ----------------------------------------------------------
+window.setupDetailMediaCarousel = function (item) {
+    const carouselEl = document.getElementById('detailMediaCarousel');
+    const innerEl = document.getElementById('detailCarouselInner');
+    const indicatorsEl = document.getElementById('detailCarouselIndicators');
+    const prevBtn = document.getElementById('detailCarouselPrevBtn');
+    const nextBtn = document.getElementById('detailCarouselNextBtn');
+    const badgeEl = document.getElementById('detailMediaBadge');
+    const countEl = document.getElementById('detailMediaCount');
+    if (!carouselEl || !innerEl) return;
+
+    // Dispose previous instance cleanly
+    if (window.detailBsCarousel) {
+        try { window.detailBsCarousel.dispose(); } catch (e) {}
+        window.detailBsCarousel = null;
+    }
+
+    // Collect all media items (photos and video)
+    let media = [];
+
+    // 1. Primary photo
+    const mainPhoto = item.image_url || item.img || item.ImageUrl || item.image;
+    if (mainPhoto && typeof mainPhoto === 'string' && mainPhoto.trim()) {
+        media.push({ type: 'image', url: mainPhoto.trim() });
+    }
+
+    // 2. Additional photos (arrays, JSON string, or comma-separated list)
+    let extraPhotos = item.photos || item.images || item.image_urls || item.gallery;
+    if (typeof extraPhotos === 'string') {
+        try {
+            extraPhotos = JSON.parse(extraPhotos);
+        } catch (e) {
+            extraPhotos = extraPhotos.split(',').map(s => s.trim()).filter(Boolean);
+        }
+    }
+    if (Array.isArray(extraPhotos)) {
+        extraPhotos.forEach(u => {
+            if (u && typeof u === 'string' && u.trim() && !media.some(m => m.url === u.trim())) {
+                media.push({ type: 'image', url: u.trim() });
+            }
+        });
+    }
+
+    // 3. Video demonstration (item.video_url / item.videoUrl / item.VideoUrl)
+    const video = item.video_url || item.videoUrl || item.VideoUrl;
+    if (video && typeof video === 'string' && video.trim()) {
+        media.push({ type: 'video', url: video.trim() });
+    }
+
+    // Fallback if no media at all
+    if (media.length === 0) {
+        media.push({ type: 'image', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80' });
+    }
+
+    // Build Slides & Indicators HTML
+    let slidesHtml = '';
+    let indicatorsHtml = '';
+
+    media.forEach((m, idx) => {
+        const isActive = idx === 0 ? 'active' : '';
+        indicatorsHtml += `
+            <button type="button" data-bs-target="#detailMediaCarousel" data-bs-slide-to="${idx}" 
+                    class="${isActive} rounded-pill" aria-label="Slide ${idx + 1}" 
+                    style="${idx === 0 ? 'width:20px; height:6px; background-color:#fff;' : 'width:6px; height:6px; background-color:rgba(255,255,255,0.6);'} border:none; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></button>
+        `;
+
+        if (m.type === 'video') {
+            slidesHtml += `
+            <div class="carousel-item ${isActive}" style="height:260px; background:#000;">
+                <div class="position-relative w-100 h-100 d-flex align-items-center justify-content-center bg-black">
+                    <video src="${m.url}" controls playsinline preload="metadata" 
+                           class="w-100 h-100" style="object-fit:contain; max-height:260px;"
+                           onplay="if(window.detailBsCarousel) window.detailBsCarousel.pause();"
+                           onpause="if(window.detailBsCarousel) window.detailBsCarousel.cycle();"></video>
+                    <span class="badge bg-danger position-absolute top-0 start-0 m-2.5 shadow-sm fs-9" style="backdrop-filter:blur(4px);">
+                        <i class="fa-solid fa-circle-play me-1"></i> Video Demo
+                    </span>
+                </div>
+            </div>`;
+        } else {
+            slidesHtml += `
+            <div class="carousel-item ${isActive}" style="height:260px;">
+                <img src="${m.url}" class="d-block w-100 h-100" style="object-fit:cover;" alt="${item.name || 'Equipment'}"
+                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+            </div>`;
+        }
+    });
+
+    innerEl.innerHTML = slidesHtml;
+    if (indicatorsEl) indicatorsEl.innerHTML = indicatorsHtml;
+
+    const hasMultiple = media.length > 1;
+    if (prevBtn) prevBtn.style.display = hasMultiple ? 'flex' : 'none';
+    if (nextBtn) nextBtn.style.display = hasMultiple ? 'flex' : 'none';
+    if (indicatorsEl) indicatorsEl.style.display = hasMultiple ? 'flex' : 'none';
+    if (badgeEl) {
+        badgeEl.style.display = hasMultiple ? 'block' : 'none';
+        if (countEl) countEl.innerText = `1/${media.length}`;
+    }
+
+    // Initialize Bootstrap Carousel with 3.5s auto-slide and touch support
+    window.detailBsCarousel = new bootstrap.Carousel(carouselEl, {
+        interval: hasMultiple ? 3500 : false,
+        ride: hasMultiple ? 'carousel' : false,
+        wrap: true,
+        touch: true
+    });
+
+    if (hasMultiple) {
+        window.detailBsCarousel.cycle();
+    }
+
+    // Slide transition handler to update indicators and counters
+    carouselEl.onbsSlide = function (e) {
+        if (countEl) countEl.innerText = `${e.to + 1}/${media.length}`;
+        if (indicatorsEl) {
+            const buttons = indicatorsEl.querySelectorAll('button');
+            buttons.forEach((btn, idx) => {
+                if (idx === e.to) {
+                    btn.style.width = '20px';
+                    btn.style.backgroundColor = '#fff';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.width = '6px';
+                    btn.style.backgroundColor = 'rgba(255,255,255,0.6)';
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        // Pause any video from the previous slide
+        const videos = innerEl.querySelectorAll('video');
+        videos.forEach(v => { try { v.pause(); } catch(err){} });
+    };
+
+    carouselEl.removeEventListener('slide.bs.carousel', carouselEl._slideHandler || (()=>{}));
+    carouselEl._slideHandler = carouselEl.onbsSlide;
+    carouselEl.addEventListener('slide.bs.carousel', carouselEl._slideHandler);
+
+    // Attach touch swiping & mouse dragging gestures
+    enableCarouselTouchAndDrag(carouselEl);
+};
+
+function enableCarouselTouchAndDrag(carouselEl) {
+    if (!carouselEl || carouselEl._touchDragAttached) return;
+    carouselEl._touchDragAttached = true;
+
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+    const threshold = 40;
+
+    // Mobile touch events
+    carouselEl.addEventListener('touchstart', function (e) {
+        if (e.touches && e.touches.length === 1) {
+            startX = e.touches[0].clientX;
+            currentX = startX;
+        }
+    }, { passive: true });
+
+    carouselEl.addEventListener('touchmove', function (e) {
+        if (e.touches && e.touches.length === 1) {
+            currentX = e.touches[0].clientX;
+        }
+    }, { passive: true });
+
+    carouselEl.addEventListener('touchend', function () {
+        const diffX = currentX - startX;
+        if (Math.abs(diffX) > threshold && window.detailBsCarousel) {
+            if (diffX < 0) {
+                window.detailBsCarousel.next();
+            } else {
+                window.detailBsCarousel.prev();
+            }
+        }
+    }, { passive: true });
+
+    // Desktop mouse drag events
+    carouselEl.addEventListener('mousedown', function (e) {
+        if (e.target.tagName.toLowerCase() === 'video' || e.target.tagName.toLowerCase() === 'button' || e.target.closest('button')) return;
+        isDragging = true;
+        startX = e.clientX;
+        currentX = startX;
+        carouselEl.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', function (e) {
+        if (!isDragging) return;
+        currentX = e.clientX;
+    });
+
+    window.addEventListener('mouseup', function () {
+        if (!isDragging) return;
+        isDragging = false;
+        if (carouselEl) carouselEl.style.cursor = 'grab';
+        const diffX = currentX - startX;
+        if (Math.abs(diffX) > threshold && window.detailBsCarousel) {
+            if (diffX < 0) {
+                window.detailBsCarousel.next();
+            } else {
+                window.detailBsCarousel.prev();
+            }
+        }
+    });
+}
+
 function openEquipmentDetail(id) {
     let item = (rentEaseInventory || []).find(i => i.id == id);
     if (!item && typeof allProductsCache !== 'undefined') {
@@ -341,6 +545,7 @@ function openEquipmentDetail(id) {
                 price_per_day: parseFloat(String(p.price || 0).replace(/[^\d.]/g, '')) || 0,
                 image_url: p.img || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
                 video_url: p.videoUrl || '',
+                photos: p.photos || p.images || [],
                 description: p.description || '',
                 qty_available: p.stockQuantity ?? 1,
                 qty_total: p.stockQuantity ?? 1,
@@ -361,14 +566,8 @@ function openEquipmentDetail(id) {
     const detailTitle = document.getElementById('detailTitle');
     if (detailTitle) detailTitle.innerText = item.name;
 
-    const mainImg = document.getElementById('detailMainImg');
-    if (mainImg) {
-        mainImg.src = item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
-        mainImg.onerror = function () {
-            this.onerror = null;
-            this.src = 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
-        };
-    }
+    // Setup Dynamic Media Carousel with Auto-slide & Touch Swiping
+    window.setupDetailMediaCarousel(item);
 
     const ratingValEl = document.getElementById('detailRatingVal');
     if (ratingValEl) ratingValEl.innerText = parseFloat(item.rating || 5.0).toFixed(1);
@@ -392,20 +591,6 @@ function openEquipmentDetail(id) {
     const maxStockLabel = document.getElementById('detailMaxStockLabel');
     if (maxStockLabel) {
         maxStockLabel.innerText = `(Max ${avail})`;
-    }
-
-    // Video Player support for posted equipment
-    const videoContainer = document.getElementById('detailVideoContainer');
-    const videoPlayer = document.getElementById('detailVideoPlayer');
-    if (videoContainer && videoPlayer) {
-        if (item.video_url && item.video_url.trim() !== '') {
-            videoPlayer.src = item.video_url;
-            videoContainer.style.display = 'block';
-        } else {
-            videoPlayer.pause();
-            videoPlayer.src = '';
-            videoContainer.style.display = 'none';
-        }
     }
 
     // Check if the current user is the owner of this equipment!
@@ -2114,6 +2299,7 @@ window.postRentalItemLive = async function () {
                 price_per_day: price,
                 qty_total: quantity,
                 image_url: photoUrl,
+                photos: (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > 0) ? uploadedPhotoUrls : (photoUrl ? [photoUrl] : []),
                 video_url: videoUrl,
                 item_condition: condition,
                 location: location,

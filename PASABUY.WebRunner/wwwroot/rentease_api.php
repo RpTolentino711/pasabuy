@@ -63,8 +63,9 @@ if ($db) {
         }
     }
 
-    // Auto-migrate new fields for user item postings (Video, Owner, Condition, Location)
+    // Auto-migrate new fields for user item postings (Video, Photos, Owner, Condition, Location)
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `video_url` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `photos` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT 'Romeo Paolo Tolentino'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_email` VARCHAR(150) DEFAULT 'romeopaolotolentino@gmail.com'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT '09668257301'"); } catch (Exception $e) {}
@@ -898,6 +899,8 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
     $price = (float)($data['price_per_day'] ?? $data['price'] ?? 50.00);
     $qtyTotal = (int)($data['qty_total'] ?? $data['quantity'] ?? 1);
     $imgUrl = trim((string)($data['image_url'] ?? $data['photo_url'] ?? ''));
+    $photosInput = $data['photos'] ?? null;
+    $photosJson = is_array($photosInput) ? json_encode($photosInput) : (is_string($photosInput) ? $photosInput : null);
     $videoUrl = trim((string)($data['video_url'] ?? ''));
     $desc = trim((string)($data['description'] ?? 'Event equipment available for rent on RentEase.'));
     $condition = trim((string)($data['item_condition'] ?? $data['condition'] ?? 'Good'));
@@ -1007,11 +1010,11 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
 
     try {
         $stmt = $db->prepare("INSERT INTO `rental_inventory` 
-            (`name`, `category`, `material_tag`, `price_per_day`, `posting_fee`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `video_url`, `description`, `item_condition`, `location`, `owner_name`, `owner_email`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
+            (`name`, `category`, `material_tag`, `price_per_day`, `posting_fee`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `photos`, `video_url`, `description`, `item_condition`, `location`, `owner_name`, `owner_email`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
         $stmt->execute([
             $name, $category, $materialTag, $price, $postingFee, $qtyTotal, $qtyTotal,
-            $imgUrl, $videoUrl, $desc, $condition, $location, $ownerName, $ownerEmail, $ownerContact
+            $imgUrl, $photosJson, $videoUrl, $desc, $condition, $location, $ownerName, $ownerEmail, $ownerContact
         ]);
 
         $newId = (int)$db->lastInsertId();

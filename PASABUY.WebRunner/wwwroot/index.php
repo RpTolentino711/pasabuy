@@ -777,30 +777,20 @@
 
                             currentDetailProductId = listing.id;
 
-                            const mainImg = document.getElementById('detailMainImg');
-                            const mainVid = document.getElementById('detailMainVideo');
-                            if (listing.videoUrl) {
-                                if (mainImg) mainImg.style.display = 'none';
-                                if (mainVid) {
-                                    mainVid.src = listing.videoUrl;
-                                    mainVid.style.display = 'block';
-                                }
+                            // Setup Dynamic Media Carousel with Auto-slide & Touch Swiping
+                            if (typeof window.setupDetailMediaCarousel === 'function') {
+                                window.setupDetailMediaCarousel({
+                                    name: listing.title,
+                                    image_url: listing.img || 'LOGO.png',
+                                    photos: listing.photos || listing.images || [],
+                                    video_url: listing.videoUrl || ''
+                                });
                             } else {
-                                if (mainVid) mainVid.style.display = 'none';
+                                const mainImg = document.getElementById('detailMainImg');
                                 if (mainImg) {
                                     mainImg.src = listing.img || 'LOGO.png';
                                     mainImg.style.display = 'block';
                                 }
-                            }
-
-                            // Render Thumbnails Gallery
-                            const thumbsContainer = document.getElementById('detailThumbnailsRow');
-                            if (thumbsContainer) {
-                                let thumbsHtml = `<img src="${listing.img}" class="rounded-3 border border-2 border-primary" style="width:54px; height:54px; object-fit:cover; cursor:pointer;" onclick="switchDetailMedia('${listing.img}', false)">`;
-                                if (listing.videoUrl) {
-                                    thumbsHtml += `<div class="position-relative rounded-3 border bg-dark" style="width:54px; height:54px; cursor:pointer;" onclick="switchDetailMedia('${listing.videoUrl}', true)"><video src="${listing.videoUrl}" style="width:54px; height:54px; object-fit:cover; opacity:0.7;"></video><i class="fa-solid fa-play text-white position-absolute top-50 start-50 translate-middle fs-8"></i></div>`;
-                                }
-                                thumbsContainer.innerHTML = thumbsHtml;
                             }
 
                             document.getElementById('detailTitle').innerText = listing.title;

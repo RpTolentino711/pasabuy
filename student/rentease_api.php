@@ -63,8 +63,9 @@ if ($db) {
         }
     }
 
-    // Auto-migrate new fields for user item postings (Video, Owner, Condition, Location)
+    // Auto-migrate new fields for user item postings (Video, Photos, Owner, Condition, Location)
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `video_url` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `photos` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT 'Romeo Paolo Tolentino'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_email` VARCHAR(150) DEFAULT 'romeopaolotolentino@gmail.com'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT '09668257301'"); } catch (Exception $e) {}
@@ -898,6 +899,8 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
     $price = (float)($data['price_per_day'] ?? $data['price'] ?? 50.00);
     $qtyTotal = (int)($data['qty_total'] ?? $data['quantity'] ?? 1);
     $imgUrl = trim((string)($data['image_url'] ?? $data['photo_url'] ?? ''));
+    $photosInput = $data['photos'] ?? null;
+    $photosJson = is_array($photosInput) ? json_encode($photosInput) : (is_string($photosInput) ? $photosInput : null);
     $videoUrl = trim((string)($data['video_url'] ?? ''));
     $desc = trim((string)($data['description'] ?? 'Event equipment available for rent on RentEase.'));
     $condition = trim((string)($data['item_condition'] ?? $data['condition'] ?? 'Good'));
@@ -1007,11 +1010,11 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
 
     try {
         $stmt = $db->prepare("INSERT INTO `rental_inventory` 
-            (`name`, `category`, `material_tag`, `price_per_day`, `posting_fee`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `video_url`, `description`, `item_condition`, `location`, `owner_name`, `owner_email`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
+            (`name`, `category`, `material_tag`, `price_per_day`, `posting_fee`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `photos`, `video_url`, `description`, `item_condition`, `location`, `owner_name`, `owner_email`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
         $stmt->execute([
             $name, $category, $materialTag, $price, $postingFee, $qtyTotal, $qtyTotal,
-            $imgUrl, $videoUrl, $desc, $condition, $location, $ownerName, $ownerEmail, $ownerContact
+            $imgUrl, $photosJson, $videoUrl, $desc, $condition, $location, $ownerName, $ownerEmail, $ownerContact
         ]);
 
         $newId = (int)$db->lastInsertId();
@@ -1318,6 +1321,111 @@ if ($action === 'rider_update_stage') {
         'display' => $display
     ]);
     exit;
+}
+
+// ----------------------------------------------------------
+// OWNER ITEM MANAGEMENT: UPDATE STOCK & PRICE
+// ----------------------------------------------------------
+if ($action === 'owner_update_stock_price') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $id = (int)($input['id'] ?? 0);
+    $price = (float)($input['price_per_day'] ?? 0);
+    $qty = (int)($input['qty_available'] ?? 0);
+    $qtyTotal = (int)($input['qty_total'] ?? $qty);
+
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid product ID.']);
+        exit;
+    }
+
+    try {
+        $stmt = $db->prepare("UPDATE `rental_equipment` SET `price_per_day` = ?, `qty_available` = ?, `qty_total` = ? WHERE `id` = ?");
+        $stmt->execute([$price, $qty, $qtyTotal, $id]);
+
+        try {
+            $db->prepare("UPDATE `Listings` SET `Price` = ?, `Quantity` = ? WHERE `Id` = ?")
+               ->execute([$price, $qty, $id]);
+        } catch (Exception $e2) {}
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Successfully updated equipment price and stock!',
+            'price_per_day' => $price,
+            'qty_available' => $qty
+        ]);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------
+// OWNER ITEM MANAGEMENT: TAKE DOWN ITEM & REFUND FEE
+// ----------------------------------------------------------
+if ($action === 'delete_item') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $id = (int)($input['id'] ?? 0);
+    $name = trim($input['name'] ?? 'Equipment');
+    $ownerId = (int)($input['owner_id'] ?? 104);
+
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid item ID.']);
+        exit;
+    }
+
+    try {
+        $stmt = $db->prepare("DELETE FROM `rental_equipment` WHERE `id` = ?");
+        $stmt->execute([$id]);
+
+        try {
+            $db->prepare("DELETE FROM `Listings` WHERE `Id` = ?")->execute([$id]);
+        } catch (Exception $e2) {}
+
+        // Send refund confirmation chat message
+        try {
+            $refundMsg = "💸 LISTING REFUND ISSUED: Your equipment '{$name}' was taken down. Any listing security fee has been credited back to your account.";
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+               ->execute([100, $ownerId, 'RentEase System', $refundMsg, 'Listing Refund']);
+        } catch (Exception $eChat) {}
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Item '{$name}' was successfully taken down. Your listing fee refund has been processed."
+        ]);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------
+// NOTIFY OWNER ON RENT NOW INTENT
+// ----------------------------------------------------------
+if ($action === 'notify_owner_rental_intent') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $prodName = $input['product_name'] ?? 'Equipment';
+    $custName = $input['customer_name'] ?? 'Student Renter';
+    $qty = (int)($input['qty'] ?? 1);
+    $ownerId = (int)($input['owner_id'] ?? 104);
+    $custId = (int)($input['customer_id'] ?? 105);
+
+    try {
+        $notifyMsg = "⚡ RENT NOW ALERT: {$custName} just clicked 'Rent Now' for {$qty} unit(s) of '{$prodName}' and is entering checkout!";
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+           ->execute([$custId, $ownerId, $custName, $notifyMsg, $prodName]);
+
+        echo json_encode(['success' => true, 'message' => 'Owner notified successfully.']);
+        exit;
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
 }
 
 // Fallback

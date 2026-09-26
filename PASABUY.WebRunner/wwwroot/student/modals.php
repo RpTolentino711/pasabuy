@@ -948,26 +948,48 @@
             <!-- Modal Body Scrollable Area (Screen 3) -->
             <div class="modal-body p-3 bg-white" id="productDetailModalBody">
                 
-                <!-- Main Equipment Image Carousel View -->
-                <div class="position-relative mb-2.5 rounded-4 overflow-hidden border bg-light text-center" style="min-height:220px;">
-                    <img id="detailMainImg" src="https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80" 
-                         class="img-fluid rounded-4" style="max-height:260px; width:100%; object-fit:cover;"
-                         onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
-                    <!-- Carousel Dots -->
-                    <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2 d-flex gap-1.5 z-2">
-                        <span class="rounded-pill bg-white shadow-xs" style="width:16px; height:6px;"></span>
-                        <span class="rounded-circle bg-white opacity-50 shadow-xs" style="width:6px; height:6px;"></span>
-                        <span class="rounded-circle bg-white opacity-50 shadow-xs" style="width:6px; height:6px;"></span>
+                <!-- Dynamic Media Carousel with Auto-slide & Touch Swiping -->
+                <div id="detailMediaCarousel" class="carousel slide rounded-4 overflow-hidden border bg-dark mb-2.5 position-relative shadow-sm" 
+                     data-bs-ride="carousel" data-bs-interval="3500" data-bs-touch="true" style="min-height:230px; user-select:none; -webkit-user-select:none;">
+                    
+                    <!-- Carousel Inner Slides (Images & Videos) -->
+                    <div class="carousel-inner" id="detailCarouselInner" style="max-height:260px; min-height:230px; background:#0f172a;">
+                        <div class="carousel-item active" style="height:260px;">
+                            <img id="detailMainImg" src="https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80" 
+                                 class="d-block w-100 h-100" style="object-fit:cover;"
+                                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                        </div>
+                    </div>
+
+                    <!-- Slide Indicator Dots -->
+                    <div class="carousel-indicators mb-2.5 gap-1.5" id="detailCarouselIndicators" style="margin-bottom:8px;">
+                        <button type="button" data-bs-target="#detailMediaCarousel" data-bs-slide-to="0" class="active rounded-pill" aria-current="true" style="width:18px; height:6px; background-color:#fff; border:none; transition:all 0.3s ease;"></button>
+                    </div>
+
+                    <!-- Navigation Chevrons -->
+                    <button class="carousel-control-prev" type="button" data-bs-target="#detailMediaCarousel" data-bs-slide="prev" id="detailCarouselPrevBtn" style="width:44px; opacity:0.9; display:none;">
+                        <span class="d-flex align-items-center justify-content-center rounded-circle bg-dark bg-opacity-50 text-white shadow-sm" style="width:32px; height:32px; backdrop-filter:blur(4px);">
+                            <i class="fa-solid fa-chevron-left fs-8"></i>
+                        </span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#detailMediaCarousel" data-bs-slide="next" id="detailCarouselNextBtn" style="width:44px; opacity:0.9; display:none;">
+                        <span class="d-flex align-items-center justify-content-center rounded-circle bg-dark bg-opacity-50 text-white shadow-sm" style="width:32px; height:32px; backdrop-filter:blur(4px);">
+                            <i class="fa-solid fa-chevron-right fs-8"></i>
+                        </span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                    
+                    <!-- Media Badge Counter in Top Right (e.g. 1/3) -->
+                    <div class="position-absolute top-0 end-0 m-2.5 z-2" id="detailMediaBadge" style="pointer-events:none; display:none;">
+                        <span class="badge rounded-pill bg-black bg-opacity-60 text-white px-2 py-1 fs-9 fw-semibold shadow-xs" style="backdrop-filter:blur(4px);">
+                            <i class="fa-regular fa-images me-1"></i> <span id="detailMediaCount">1/1</span>
+                        </span>
                     </div>
                 </div>
 
-                <!-- Equipment Video Player (Optional for items posted with video) -->
-                <div id="detailVideoContainer" class="mb-3 rounded-4 overflow-hidden border bg-dark text-center" style="display:none;">
-                    <div class="d-flex align-items-center justify-content-between p-2 px-3 bg-dark text-white border-bottom border-secondary">
-                        <span class="fs-9 fw-bold"><i class="fa-solid fa-video text-danger me-1"></i> Live Equipment Video Demonstration</span>
-                    </div>
-                    <video id="detailVideoPlayer" controls style="width:100%; max-height:220px; background:#000; object-fit:contain;"></video>
-                </div>
+                <!-- Hidden fallback video player container for backwards compatibility -->
+                <div id="detailVideoContainer" style="display:none;"><video id="detailVideoPlayer"></video></div>
 
                 <!-- Title, Rating & Price (Screen 3) -->
                 <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle">Equipment Details</h4>

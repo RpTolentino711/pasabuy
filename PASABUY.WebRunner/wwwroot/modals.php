@@ -948,24 +948,48 @@
             <!-- Modal Body Scrollable Area (Screen 3) -->
             <div class="modal-body p-3 bg-white" id="productDetailModalBody">
                 
-                <!-- Main Equipment Image Carousel View -->
-                <div class="position-relative mb-2.5 rounded-4 overflow-hidden border bg-light text-center" style="min-height:240px;">
-                    <img id="detailMainImg" src="" class="img-fluid rounded-4" style="max-height:260px; width:100%; object-fit:cover;">
-                    <!-- Carousel Dots -->
-                    <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2 d-flex gap-1.5 z-2">
-                        <span class="rounded-pill bg-white shadow-xs" style="width:16px; height:6px;"></span>
-                        <span class="rounded-circle bg-white opacity-50 shadow-xs" style="width:6px; height:6px;"></span>
-                        <span class="rounded-circle bg-white opacity-50 shadow-xs" style="width:6px; height:6px;"></span>
+                <!-- Dynamic Media Carousel with Auto-slide & Touch Swiping -->
+                <div id="detailMediaCarousel" class="carousel slide rounded-4 overflow-hidden border bg-dark mb-2.5 position-relative shadow-sm" 
+                     data-bs-ride="carousel" data-bs-interval="3500" data-bs-touch="true" style="min-height:230px; user-select:none; -webkit-user-select:none;">
+                    
+                    <!-- Carousel Inner Slides (Images & Videos) -->
+                    <div class="carousel-inner" id="detailCarouselInner" style="max-height:260px; min-height:230px; background:#0f172a;">
+                        <div class="carousel-item active" style="height:260px;">
+                            <img id="detailMainImg" src="https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80" 
+                                 class="d-block w-100 h-100" style="object-fit:cover;"
+                                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                        </div>
+                    </div>
+
+                    <!-- Slide Indicator Dots -->
+                    <div class="carousel-indicators mb-2.5 gap-1.5" id="detailCarouselIndicators" style="margin-bottom:8px;">
+                        <button type="button" data-bs-target="#detailMediaCarousel" data-bs-slide-to="0" class="active rounded-pill" aria-current="true" style="width:18px; height:6px; background-color:#fff; border:none; transition:all 0.3s ease;"></button>
+                    </div>
+
+                    <!-- Navigation Chevrons -->
+                    <button class="carousel-control-prev" type="button" data-bs-target="#detailMediaCarousel" data-bs-slide="prev" id="detailCarouselPrevBtn" style="width:44px; opacity:0.9; display:none;">
+                        <span class="d-flex align-items-center justify-content-center rounded-circle bg-dark bg-opacity-50 text-white shadow-sm" style="width:32px; height:32px; backdrop-filter:blur(4px);">
+                            <i class="fa-solid fa-chevron-left fs-8"></i>
+                        </span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#detailMediaCarousel" data-bs-slide="next" id="detailCarouselNextBtn" style="width:44px; opacity:0.9; display:none;">
+                        <span class="d-flex align-items-center justify-content-center rounded-circle bg-dark bg-opacity-50 text-white shadow-sm" style="width:32px; height:32px; backdrop-filter:blur(4px);">
+                            <i class="fa-solid fa-chevron-right fs-8"></i>
+                        </span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                    
+                    <!-- Media Badge Counter in Top Right (e.g. 1/3) -->
+                    <div class="position-absolute top-0 end-0 m-2.5 z-2" id="detailMediaBadge" style="pointer-events:none; display:none;">
+                        <span class="badge rounded-pill bg-black bg-opacity-60 text-white px-2 py-1 fs-9 fw-semibold shadow-xs" style="backdrop-filter:blur(4px);">
+                            <i class="fa-regular fa-images me-1"></i> <span id="detailMediaCount">1/1</span>
+                        </span>
                     </div>
                 </div>
 
-                <!-- Equipment Video Player (Optional for items posted with video) -->
-                <div id="detailVideoContainer" class="mb-3 rounded-4 overflow-hidden border bg-dark text-center" style="display:none;">
-                    <div class="d-flex align-items-center justify-content-between p-2 px-3 bg-dark text-white border-bottom border-secondary">
-                        <span class="fs-9 fw-bold"><i class="fa-solid fa-video text-danger me-1"></i> Live Equipment Video Demonstration</span>
-                    </div>
-                    <video id="detailVideoPlayer" controls style="width:100%; max-height:220px; background:#000; object-fit:contain;"></video>
-                </div>
+                <!-- Hidden fallback video player container for backwards compatibility -->
+                <div id="detailVideoContainer" style="display:none;"><video id="detailVideoPlayer"></video></div>
 
                 <!-- Title, Rating & Price (Screen 3) -->
                 <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle">Equipment Details</h4>
@@ -985,7 +1009,7 @@
                 <div class="mb-3">
                     <h6 class="fw-extrabold text-dark fs-8 mb-1">Description</h6>
                     <p class="fs-8 text-secondary lh-sm mb-0" id="detailDescription">
-                        Durable and lightweight monoblock chair, perfect for any event.
+                        Quality event equipment for rent, maintained and cleaned for every booking.
                     </p>
                 </div>
 
@@ -994,7 +1018,7 @@
                     <div class="col-4">
                         <div class="p-2 rounded-3 text-center border bg-light h-100 d-flex flex-column align-items-center justify-content-center">
                             <i class="fa-solid fa-boxes-stacked text-success fs-7 mb-1"></i>
-                            <span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;" id="detailStockBadge">Stock: 10 available</span>
+                            <span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;" id="detailStockBadge">Stock: 1 units</span>
                         </div>
                     </div>
                     <div class="col-4">
@@ -1011,9 +1035,9 @@
                     </div>
                 </div>
 
-                <!-- Quantity Stepper (Screen 3) -->
+                <!-- Quantity Stepper (Screen 3 - Non-Owner View) -->
                 <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light border mb-2" id="detailQtyContainer">
-                    <span class="fw-extrabold text-dark fs-8">Quantity <span class="text-muted fw-normal fs-9" id="detailMaxStockLabel">(Max 10)</span></span>
+                    <span class="fw-extrabold text-dark fs-8">Quantity <span class="text-muted fw-normal fs-9" id="detailMaxStockLabel">(Max 1)</span></span>
                     <div class="d-flex align-items-center gap-2.5">
                         <button type="button" class="btn btn-sm btn-white rounded-circle p-0 d-flex align-items-center justify-content-center border shadow-2xs" 
                                 style="width:30px; height:30px; background:#fff;" onclick="adjustDetailQty(-1)">
@@ -1027,30 +1051,85 @@
                     </div>
                 </div>
 
-                <!-- Owner Equipment Notice Banner (When logged-in user is the owner) -->
-                <div class="p-3 rounded-4 bg-primary-subtle border border-primary-subtle d-flex align-items-center gap-2.5 mb-2" id="detailOwnerNoticeContainer" style="display:none;">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-white shadow-2xs" style="width:36px; height:36px; flex-shrink:0;">
-                        <i class="fa-solid fa-crown text-primary fs-7"></i>
+                <!-- Owner Controls & Management Section (Visible ONLY when logged-in user is Owner) -->
+                <div id="detailOwnerControlSection" style="display:none;" class="mb-2">
+                    <!-- Owner Alert Banner with Take Down & Refund Warning -->
+                    <div class="p-3 rounded-4 bg-warning bg-opacity-15 border border-warning-subtle mb-3">
+                        <div class="d-flex align-items-start gap-2.5 mb-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-warning text-dark shadow-2xs mt-0.5" style="width:32px; height:32px; flex-shrink:0;">
+                                <i class="fa-solid fa-triangle-exclamation fs-6"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-extrabold text-dark fs-7 mb-1">⚠️ You Own This Equipment Listing</h6>
+                                <p class="fs-9 text-secondary mb-0">
+                                    This equipment is active on campus. Fellow students can rent it based on your stock and pricing below.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="p-2.5 rounded-3 bg-white border border-warning-subtle text-dark fs-9">
+                            <div class="fw-bold text-danger mb-0.5"><i class="fa-solid fa-shield-halved me-1 text-danger"></i> Take Down & Refund Notice:</div>
+                            <span>Taking this item down removes it immediately from catalog search. You are eligible for a <strong>refund of your posting fee</strong> provided no active bookings remain.</span>
+                        </div>
                     </div>
-                    <div class="flex-grow-1">
-                        <h6 class="fw-extrabold text-dark fs-8 mb-0.5">Your Equipment Listing</h6>
-                        <p class="fs-9 text-muted mb-0">You posted this item for rent. Renter bookings will be delivered from your stock inventory.</p>
+
+                    <!-- Inline Price & Stock Management Card -->
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-light mb-2">
+                        <div class="d-flex align-items-center justify-content-between mb-1.5">
+                            <h6 class="fw-extrabold text-dark fs-8 mb-0">
+                                <i class="fa-solid fa-pen-to-square me-1" style="color: #5B3FA8;"></i> Edit Rental Rate & Stock
+                            </h6>
+                            <span class="badge bg-primary-subtle text-primary fw-bold fs-9">Live Update</span>
+                        </div>
+                        <p class="fs-9 text-muted mb-2.5">Update daily rate and available units directly in database.</p>
+                        
+                        <div class="row g-2 mb-2.5">
+                            <div class="col-6">
+                                <label class="form-label fs-9 fw-bold text-dark mb-1">Rental Rate (₱ / day)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white fw-extrabold text-dark fs-8">₱</span>
+                                    <input type="number" class="form-control rounded-end-3 fs-8 fw-bold" id="detailOwnerPriceInput" min="1" step="1" placeholder="Price">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fs-9 fw-bold text-dark mb-1">Available Units</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control rounded-start-3 fs-8 fw-bold" id="detailOwnerStockInput" min="0" step="1" placeholder="Stock">
+                                    <span class="input-group-text bg-white fs-9 text-muted">units</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-primary w-100 rounded-pill py-2 fw-extrabold fs-8 shadow-xs d-flex align-items-center justify-content-center gap-1.5" 
+                                style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" id="btnSaveOwnerDetailChanges" onclick="saveOwnerStockPriceFromDetail()">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Stock & Price Changes
+                        </button>
                     </div>
                 </div>
 
             </div>
 
-            <!-- Bottom Sticky Action Bar: [Chat Owner] + [Add to Cart] -->
+            <!-- Bottom Sticky Action Bar: [Chat Owner] + [Add to Cart] + [Rent Now] -->
             <div class="modal-footer border-top bg-white p-3 d-flex align-items-center gap-2 sticky-bottom" id="detailFooterActions">
-                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5" 
-                        style="border-color:#5B3FA8; color:#5B3FA8; min-width:130px;" onclick="chatWithOwnerFromDetail()">
-                    <i class="fa-regular fa-comment-dots fs-7"></i> Chat Owner
+                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1 text-nowrap" 
+                        style="border-color:#5B3FA8; color:#5B3FA8;" onclick="chatWithOwnerFromDetail()" title="Chat with Owner">
+                    <i class="fa-regular fa-comment-dots fs-6"></i>
+                    <span>Chat</span>
                 </button>
-                <button type="button" class="btn btn-primary flex-grow-1 py-2.5 rounded-4 fw-extrabold shadow-sm fs-7" 
-                        style="background: #5B3FA8; border: none;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart()">
-                    Add to Cart
+                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs text-nowrap" 
+                        style="border: 2px solid #5B3FA8; color: #5B3FA8; background: #fff;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart()">
+                    <i class="fa-solid fa-cart-plus fs-6"></i>
+                    <span>Add to Cart</span>
+                </button>
+                <button type="button" class="btn btn-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5 shadow-sm text-nowrap" 
+                        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border: none; color: #fff;" id="detailRentNowBtn" onclick="confirmRentNowDetail()">
+                    <i class="fa-solid fa-bolt fs-6 text-warning"></i>
+                    <span>Rent Now</span>
                 </button>
             </div>
+
+        </div>
+    </div>
+</div>
 
         </div>
     </div>
