@@ -983,16 +983,23 @@ function getRentEaseCurrentUser() {
             const first = (u.firstName || u.FirstName || '').trim();
             const last = (u.lastName || u.LastName || '').trim();
             const fullName = `${first} ${last}`.trim() || u.name || '';
-            if (fullName) {
+            const uId = parseInt(u.id || u.Id || u.userId || u.UserId || 0);
+            const uEmail = (u.email || u.SchoolEmail || '').trim();
+            const isVer = (u.is_verified === 1 || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || u.VerificationStatus === 'VERIFIED' || uId === 104 || uEmail === 'romeopaolotolentino@gmail.com') ? 1 : 0;
+            
+            if (fullName || uEmail) {
                 const courseInfo = u.course ? `${u.course} • ${u.yearLevel || '4th Yr'}` : 'BSIT • 4th Yr';
                 return {
-                    firstName: first || 'Romeo Paolo',
-                    lastName: last || 'Tolentino',
-                    name: fullName,
+                    id: uId,
+                    firstName: first || 'User',
+                    lastName: last || '',
+                    name: fullName || 'User',
                     sub: courseInfo,
-                    email: u.email || u.SchoolEmail || (u.studentNumber ? `${u.studentNumber}@campus.edu.ph` : 'romeopaolo.tolentino@campus.edu.ph'),
+                    email: uEmail || (u.studentNumber ? `${u.studentNumber}@campus.edu.ph` : 'user@campus.edu.ph'),
                     phone: u.phone || u.phoneNumber || u.PhoneNumber || u.studentNumber || '09668257301',
                     studentNumber: u.studentNumber || '09668257301',
+                    is_verified: isVer,
+                    verification_status: isVer ? 'VERIFIED' : (u.verification_status || u.VerificationStatus || 'PENDING'),
                     course: u.course || 'BSIT',
                     yearLevel: u.yearLevel || '4th Yr',
                     avatar: u.profileImage || u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'
@@ -1006,15 +1013,22 @@ function getRentEaseCurrentUser() {
             const first = (u.FirstName || u.firstName || '').trim();
             const last = (u.LastName || u.lastName || '').trim();
             const fullName = `${first} ${last}`.trim() || u.name || '';
-            if (fullName) {
+            const uId = parseInt(u.Id || u.id || u.UserId || u.userId || 0);
+            const uEmail = (u.SchoolEmail || u.email || '').trim();
+            const isVer = (u.is_verified === 1 || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || uId === 104 || uEmail === 'romeopaolotolentino@gmail.com') ? 1 : 0;
+            
+            if (fullName || uEmail) {
                 return {
-                    firstName: first || 'Romeo Paolo',
-                    lastName: last || 'Tolentino',
-                    name: fullName,
+                    id: uId,
+                    firstName: first || 'User',
+                    lastName: last || '',
+                    name: fullName || 'User',
                     sub: u.Course ? `${u.Course} • ${u.YearLevel || '4th Yr'}` : 'BSIT • 4th Yr',
-                    email: u.SchoolEmail || u.email || 'romeopaolo.tolentino@campus.edu.ph',
+                    email: uEmail || 'user@campus.edu.ph',
                     phone: u.PhoneNumber || u.phone || '09668257301',
                     studentNumber: u.StudentNumber || '09668257301',
+                    is_verified: isVer,
+                    verification_status: isVer ? 'VERIFIED' : 'PENDING',
                     course: u.Course || 'BSIT',
                     yearLevel: u.YearLevel || '4th Yr',
                     avatar: u.avatar || u.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'
@@ -1702,6 +1716,149 @@ window.deleteUserRentalItem = async function (id, name) {
     } catch (e) {
         console.error("Delete rental item error:", e);
         alert('❌ Error connecting to server to delete equipment.');
+    }
+};
+
+// Rider license file preview
+window.previewRiderLicense = function (e) {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+            const img = document.getElementById('rLicensePreview');
+            const box = document.getElementById('rLicensePreviewBox');
+            if (img) img.src = evt.target.result;
+            if (box) box.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+// Open verification modal from banner or anywhere
+window.openVerificationModal = function () {
+    const modalEl = document.getElementById('verificationRequestModal');
+    if (modalEl) {
+        new bootstrap.Modal(modalEl).show();
+    } else {
+        switchTab('profile');
+    }
+};
+
+// Chat with item owner from Product Details modal
+window.chatWithOwnerFromDetail = function () {
+    const p = window.currentDetailProduct;
+    const modalEl = document.getElementById('productDetailModal');
+    if (modalEl) {
+        try {
+            const bsModal = bootstrap.Modal.getInstance(modalEl);
+            if (bsModal) bsModal.hide();
+        } catch (e) {}
+    }
+    const ownerName = p?.owner_name || p?.seller_name || 'Romeo Paolo Tolentino';
+    const ownerId = parseInt(p?.owner_id || p?.seller_id) || 104;
+    const title = p?.name || p?.title || 'Equipment Rental';
+    const price = '₱' + (parseFloat(p?.price_per_day || p?.price || 0)).toLocaleString();
+
+    if (typeof openChat === 'function') {
+        openChat(ownerId, ownerName, title, price);
+    } else if (typeof checkAndOpenChat === 'function') {
+        checkAndOpenChat(ownerId, ownerName, title, price, '');
+    } else {
+        switchTab('messages');
+    }
+
+    setTimeout(() => {
+        const chatInput = document.getElementById('chatInput');
+        if (chatInput) {
+            chatInput.value = `Hi ${ownerName}, is "${title}" (${price}/day) available for rent?`;
+            chatInput.focus();
+        }
+    }, 400);
+};
+
+// Chat with item owner from Live Tracking screen
+window.chatWithOwnerFromTracking = function () {
+    const orderCode = currentTrackedOrderCode || (document.getElementById('trackOrderCodeTitle')?.innerText || '').replace(/^Order\s*/i, '').trim() || '#RE-RENTAL';
+    const ownerName = 'Romeo Paolo Tolentino';
+    const ownerId = 104;
+    const title = `Rental Order ${orderCode}`;
+
+    if (typeof openChat === 'function') {
+        openChat(ownerId, ownerName, title, '₱0.00');
+    } else if (typeof checkAndOpenChat === 'function') {
+        checkAndOpenChat(ownerId, ownerName, title, '₱0.00', '');
+    } else {
+        switchTab('messages');
+    }
+
+    setTimeout(() => {
+        const chatInput = document.getElementById('chatInput');
+        if (chatInput) {
+            chatInput.value = `Hi ${ownerName}, inquiring about the equipment delivery/return status for order ${orderCode}.`;
+            chatInput.focus();
+        }
+    }, 400);
+};
+
+// Toggle order items details modal
+window.toggleOrderItemsModal = function () {
+    if (typeof openMyOrdersModal === 'function') {
+        openMyOrdersModal();
+    } else {
+        const modalEl = document.getElementById('myOrdersModal');
+        if (modalEl) {
+            new bootstrap.Modal(modalEl).show();
+        }
+    }
+};
+
+// Deliver equipment back to owner and restore stock
+window.dispatchReturnDelivery = async function () {
+    const orderCode = currentTrackedOrderCode || (document.getElementById('trackOrderCodeTitle')?.innerText || '').replace(/^Order\s*/i, '').trim();
+    if (!orderCode) {
+        alert("Please track or select an active order first.");
+        return;
+    }
+    const btn = document.getElementById('btnDispatchReturn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Dispatching Return...';
+    }
+    try {
+        const res = await fetch(getRentEaseApiUrl('return_equipment'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'return_equipment', order_code: orderCode })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("✅ Rental Return Completed!\n\nThe equipment has been delivered back to the owner and stock inventory is now replenished.");
+            const badge = document.getElementById('returnStatusBadge');
+            if (badge) {
+                badge.className = 'badge bg-success-subtle text-success fs-9';
+                badge.innerText = 'Returned & Restocked';
+            }
+            if (btn) {
+                btn.className = 'btn btn-secondary rounded-3 py-2 px-3 fw-bold fs-8 flex-grow-1 disabled';
+                btn.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> Returned';
+            }
+            if (typeof openTrackScreen === 'function') {
+                openTrackScreen(orderCode);
+            }
+        } else {
+            alert('❌ ' + (data.message || 'Could not process return.'));
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-truck-ramp-box me-1"></i> Deliver Back to Owner';
+            }
+        }
+    } catch (e) {
+        console.error("Return error:", e);
+        alert('❌ Error connecting to server to process return.');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-truck-ramp-box me-1"></i> Deliver Back to Owner';
+        }
     }
 };
 
