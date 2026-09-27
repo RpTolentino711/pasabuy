@@ -290,8 +290,17 @@ session_start();
                     </div>
                 </div>
 
-                <!-- Leaflet Stage Route Map -->
-                <div class="leaflet-map-container mb-3" id="riderDriverMap"></div>
+                <!-- Pickup Instruction Box (When rider has accepted and needs to pick up package from owner) -->
+                <div id="riderPickupInstructionBox" class="p-3 rounded-3 mb-3" style="display:none; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35);">
+                    <div class="d-flex align-items-center gap-2 mb-1.5">
+                        <i class="fa-solid fa-boxes-packing text-warning fs-6"></i>
+                        <strong class="text-white fs-8">Proceed to Hub: Collect Equipment</strong>
+                    </div>
+                    <p class="fs-9 text-secondary mb-0">Go to the pickup hub (<strong class="text-white" id="riderPickupInstructionAddress">Pasabuy Hub</strong>). Check the manifest items, collect the package from the owner, and click <strong>Confirm Package Picked Up</strong> below to activate live GPS map tracking.</p>
+                </div>
+
+                <!-- Leaflet Stage Route Map (Shown ONLY when package is picked up) -->
+                <div class="leaflet-map-container mb-3" id="riderDriverMap" style="display:none;"></div>
 
                 <!-- Stage Action Buttons -->
                 <div class="d-flex flex-column gap-2" id="riderStageActionContainer">
@@ -720,18 +729,56 @@ async function fetchRiderJobAlerts() {
                 }
             }
 
-            // Sync Stage Badge
-            const st = ord.order_status || 'ON_THE_WAY';
+            // Sync Stage Badge & Action Button
+            const st = ord.order_status || 'PICKUP';
             const badge = document.getElementById('riderJobStageBadge');
             const btn = document.getElementById('btnRiderStageAction');
-            if (st === 'DELIVERED') {
-                badge.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> STAGE: DELIVERED`;
-                btn.className = 'btn btn-success w-100 py-3 fw-extrabold rounded-3 shadow-lg';
-                btn.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> Handover Completed`;
+            const mapContainer = document.getElementById('riderDriverMap');
+            const pickupBox = document.getElementById('riderPickupInstructionBox');
+            const addrHint = document.getElementById('riderPickupInstructionAddress');
+            if (addrHint) addrHint.innerText = ord.pickup_address || 'Pasabuy Hub, Lipa City';
+
+            if (st === 'PICKUP' || st === 'LOOKING_FOR_RIDER' || st === 'PREPARING') {
+                if (badge) {
+                    badge.style.background = '#D97706';
+                    badge.innerHTML = `<i class="fa-solid fa-box-open me-1"></i> STAGE: HEADING TO HUB (PICKUP)`;
+                }
+                if (pickupBox) pickupBox.style.display = 'block';
+                if (mapContainer) mapContainer.style.display = 'none';
+
+                if (btn) {
+                    btn.className = 'btn btn-warning w-100 py-3 fw-extrabold rounded-3 shadow-lg text-dark fs-7';
+                    btn.innerHTML = `<i class="fa-solid fa-box-archive me-2"></i> Confirm Package Picked Up from Owner`;
+                    btn.onclick = () => riderConfirmPickup();
+                }
+            } else if (st === 'DELIVERED') {
+                if (badge) {
+                    badge.style.background = '#10B981';
+                    badge.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> STAGE: DELIVERED`;
+                }
+                if (pickupBox) pickupBox.style.display = 'none';
+                if (mapContainer) mapContainer.style.display = 'block';
+                if (btn) {
+                    btn.className = 'btn btn-success w-100 py-3 fw-extrabold rounded-3 shadow-lg fs-7';
+                    btn.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> Handover Completed`;
+                    btn.onclick = null;
+                }
+                setTimeout(() => { initRiderMap(); }, 200);
             } else {
-                badge.innerHTML = `<i class="fa-solid fa-truck-fast me-1"></i> STAGE: OUT FOR DELIVERY`;
-                btn.className = 'nav-btn-stage shadow-lg';
-                btn.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> Confirm Delivery & Inspection Completed`;
+                // ON_THE_WAY: Package has been picked up, out for delivery!
+                if (badge) {
+                    badge.style.background = '#5B3FA8';
+                    badge.innerHTML = `<i class="fa-solid fa-truck-fast me-1"></i> STAGE: OUT FOR DELIVERY`;
+                }
+                if (pickupBox) pickupBox.style.display = 'none';
+                if (mapContainer) mapContainer.style.display = 'block';
+
+                if (btn) {
+                    btn.className = 'nav-btn-stage shadow-lg';
+                    btn.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> Confirm Delivery & Inspection Completed`;
+                    btn.onclick = () => advanceRentalDeliveryStage();
+                }
+                setTimeout(() => { initRiderMap(); }, 200);
             }
         } else {
             currentActiveOrder = null;
@@ -895,6 +942,56 @@ async function cancelCurrentRiderJob() {
         }
     } catch (e) {
         alert('Connection error cancelling delivery job.');
+    }
+}
+
+async function riderConfirmPickup() {
+    if (!currentActiveOrder) {
+        alert('No active delivery order.');
+        return;
+    }
+    const orderCode = currentActiveOrder.order_code;
+    if (!confirm(`Confirm that you have arrived at the stock owner's pickup location and safely collected the equipment package for Order ${orderCode}?\n\nThis will mark the order as PICKED UP and activate live GPS route tracking on all 3 sides (Renter, Stock Owner, and Rider).`)) {
+        return;
+    }
+
+    try {
+        let apiUrl = '../rentease_api.php?action=rider_update_stage';
+        let res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                order_code: orderCode,
+                order_number: orderCode,
+                stage: 'ON_THE_WAY',
+                lat: riderCoords[0],
+                lng: riderCoords[1]
+            })
+        });
+
+        if (!res.ok) {
+            res = await fetch('/rentease_api.php?action=rider_update_stage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_code: orderCode,
+                    order_number: orderCode,
+                    stage: 'ON_THE_WAY',
+                    lat: riderCoords[0],
+                    lng: riderCoords[1]
+                })
+            });
+        }
+
+        const data = await res.json();
+        if (data.success) {
+            alert(`📦 Package Picked Up!\n\nYou are now OUT FOR DELIVERY for Order ${orderCode}.\nLive GPS route tracking is now active!`);
+            fetchRiderJobAlerts();
+        } else {
+            alert(data.message || 'Error updating delivery stage.');
+        }
+    } catch (e) {
+        alert('Connection error confirming package pickup.');
     }
 }
 

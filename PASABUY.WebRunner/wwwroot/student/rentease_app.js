@@ -1109,12 +1109,53 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
 
                         <!-- Action Bar for Owner -->
                         <div class="d-flex align-items-center gap-2 pt-2 border-top">
-                            ${status !== 'RETURNED' ? `
-                                <button class="btn btn-sm btn-outline-secondary rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="updateOwnerOrderStatus(${order.id}, '${order.order_code}', 'PREPARING')">
-                                    <i class="fa-solid fa-boxes-packing me-1"></i> Preparing
+                            ${status === 'CONFIRMED' ? `
+                                <button class="btn btn-sm btn-outline-warning rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="updateOwnerOrderStatus(${order.id}, '${order.order_code}', 'PREPARING')">
+                                    <i class="fa-solid fa-boxes-packing me-1"></i> Package Equipment (Processing)
                                 </button>
+                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-3 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${order.order_code}')">
+                                    <i class="fa-solid fa-eye me-1"></i> Details
+                                </button>
+                            ` : status === 'PREPARING' ? `
+                                <button class="btn btn-sm text-white rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background:#5B3FA8; border:none;" onclick="updateOwnerOrderStatus(${order.id}, '${order.order_code}', 'LOOKING_FOR_RIDER')">
+                                    <i class="fa-solid fa-satellite-dish me-1"></i> Packaged & Notify Rider to Pick Up
+                                </button>
+                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-3 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${order.order_code}')">
+                                    <i class="fa-solid fa-eye me-1"></i> Details
+                                </button>
+                            ` : status === 'LOOKING_FOR_RIDER' ? `
+                                <div class="d-flex align-items-center justify-content-between w-100 gap-2">
+                                    <span class="badge bg-warning-subtle text-warning-emphasis fs-9 py-1.5 px-2.5 rounded-pill fw-bold">
+                                        <i class="fa-solid fa-satellite-dish fa-beat me-1"></i> Notified Riders • Waiting Acceptance
+                                    </span>
+                                    <button class="btn btn-sm btn-outline-warning rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="stockOwnerNotifyRidersAgain('${order.order_code}')">
+                                        <i class="fa-solid fa-rotate me-1"></i> Re-notify
+                                    </button>
+                                </div>
+                            ` : status === 'PICKUP' ? `
+                                <div class="d-flex align-items-center justify-content-between w-100 gap-2">
+                                    <span class="badge bg-info-subtle text-info-emphasis fs-9 py-1.5 px-2.5 rounded-pill fw-bold">
+                                        <i class="fa-solid fa-motorcycle me-1"></i> Driver Assigned (${order.assigned_rider_name || order.rider_name || 'Driver'}) — En Route for Pickup
+                                    </span>
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="openTrackScreen('${order.order_code}')">
+                                        <i class="fa-solid fa-eye me-1"></i> Order
+                                    </button>
+                                </div>
+                            ` : status === 'ON_THE_WAY' ? `
+                                <div class="d-flex align-items-center justify-content-between w-100 gap-2">
+                                    <span class="badge bg-primary-subtle text-primary fs-9 py-1.5 px-2.5 rounded-pill fw-bold">
+                                        <i class="fa-solid fa-truck-fast me-1"></i> Package Picked Up • Out for Delivery
+                                    </span>
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="openTrackScreen('${order.order_code}')">
+                                        <i class="fa-solid fa-map-location-dot me-1"></i> Track Live Map
+                                    </button>
+                                </div>
+                            ` : status === 'DELIVERED' || status === 'RETURN_DELIVERY' ? `
                                 <button class="btn btn-sm btn-primary rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1" style="background: linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(${order.id}, '${order.order_code}')">
                                     <i class="fa-solid fa-circle-check me-1"></i> Mark Returned & Restock
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="openTrackScreen('${order.order_code}')">
+                                    <i class="fa-solid fa-eye me-1"></i> View
                                 </button>
                             ` : `
                                 <div class="w-100 text-center py-1 text-success fs-9 fw-bold">
@@ -1932,11 +1973,11 @@ async function openTrackScreen(orderCode = '#RE-10245') {
             const phoneBtn = document.getElementById('trackCallRiderBtn');
             if (phoneBtn) phoneBtn.href = `tel:${t.rider.phone}`;
 
-            // Handle Rider Broadcast & Cancellation Alert Cards
+            // Handle Rider Broadcast, Cancellation Alert, and Rider Cards
             const broadcastCard = document.getElementById('riderBroadcastWaitingCard');
             const cancelCard = document.getElementById('riderCancelledAlertCard');
             const cancelReasonText = document.getElementById('riderCancelledReasonText');
-            const riderCard = document.getElementById('trackRiderName')?.closest('.card');
+            const riderCard = document.getElementById('trackRiderCard') || document.getElementById('trackRiderName')?.closest('.card');
 
             if (t.order_status === 'LOOKING_FOR_RIDER') {
                 if (broadcastCard) broadcastCard.style.display = 'block';
@@ -1949,14 +1990,105 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                     cancelReasonText.innerText = `The assigned driver cancelled pickup (Reason: "${data.order.cancellation_reason}"). The equipment remains safe at the stock owner's inventory.`;
                 }
                 if (riderCard) riderCard.style.display = 'none';
+            } else if (['CONFIRMED', 'PREPARING'].includes(t.order_status)) {
+                if (broadcastCard) broadcastCard.style.display = 'none';
+                if (cancelCard) cancelCard.style.display = 'none';
+                if (riderCard) riderCard.style.display = 'none';
             } else {
+                // PICKUP, ON_THE_WAY, DELIVERED
                 if (broadcastCard) broadcastCard.style.display = 'none';
                 if (cancelCard) cancelCard.style.display = 'none';
                 if (riderCard) riderCard.style.display = 'flex';
+                if (t.order_status === 'PICKUP' && roleEl) {
+                    roleEl.innerText = `${t.rider?.role || 'Delivery Rider'} • En route to owner for pickup`;
+                }
             }
 
-            const isDelivered = ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(t.order_status);
-            const isReturned = (t.order_status === 'RETURNED');
+            const st = t.order_status;
+            const isPrepDone = ['LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
+            const isPickedUp = ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
+            const showMap = ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY'].includes(st);
+            const isDelivered = ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
+            const isReturned = (st === 'RETURNED');
+
+            // Synchronize Vertical Timeline Stages Dynamically
+            // Stage 2: Preparing Equipment
+            const prepCircle = document.getElementById('stagePreparingCircle');
+            const prepLine = document.getElementById('stagePreparingLine');
+            const prepTime = document.getElementById('stagePreparingTime');
+            if (prepCircle) {
+                if (isPrepDone) {
+                    prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    prepCircle.style.background = '#10B981';
+                    prepCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    if (prepLine) prepLine.style.background = '#10B981';
+                    if (prepTime) prepTime.innerText = 'Equipment Packaged & Inspected';
+                } else if (st === 'PREPARING') {
+                    prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    prepCircle.style.background = '#F59E0B';
+                    prepCircle.innerHTML = '<i class="fa-solid fa-boxes-packing fa-beat"></i>';
+                    if (prepTime) prepTime.innerText = 'Stock owner packaging equipment';
+                } else {
+                    prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
+                    prepCircle.style.background = '#fff';
+                    prepCircle.innerHTML = '<i class="fa-regular fa-circle"></i>';
+                    if (prepTime) prepTime.innerText = 'Pending stock owner preparation';
+                }
+            }
+
+            // Stage 3: Pickup from Owner
+            const pickupCircle = document.getElementById('stagePickupCircle');
+            const pickupLine = document.getElementById('stagePickupLine');
+            const pickupTime = document.getElementById('stagePickupTime');
+            if (pickupCircle) {
+                if (isPickedUp) {
+                    pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    pickupCircle.style.background = '#10B981';
+                    pickupCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    if (pickupLine) pickupLine.style.background = '#10B981';
+                    if (pickupTime) pickupTime.innerText = 'Package Picked Up from Owner';
+                } else if (st === 'PICKUP') {
+                    pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    pickupCircle.style.background = '#3B82F6';
+                    pickupCircle.innerHTML = '<i class="fa-solid fa-motorcycle fa-beat"></i>';
+                    if (pickupTime) pickupTime.innerText = 'Driver en route to owner hub for pickup';
+                } else if (st === 'LOOKING_FOR_RIDER') {
+                    pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    pickupCircle.style.background = '#F59E0B';
+                    pickupCircle.innerHTML = '<i class="fa-solid fa-satellite-dish fa-beat"></i>';
+                    if (pickupTime) pickupTime.innerText = 'Awaiting driver to accept delivery';
+                } else {
+                    pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
+                    pickupCircle.style.background = '#fff';
+                    pickupCircle.innerHTML = '<i class="fa-regular fa-circle"></i>';
+                    if (pickupTime) pickupTime.innerText = 'Scheduled after packaging';
+                }
+            }
+
+            // Stage 4: On the Way (Out for Delivery)
+            const otwCircle = document.getElementById('stageOnTheWayCircle');
+            const otwLine = document.getElementById('stageOnTheWayLine');
+            const otwTitle = document.getElementById('stageOnTheWayTitle');
+            if (otwCircle) {
+                if (isDelivered) {
+                    otwCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    otwCircle.style.background = '#10B981';
+                    otwCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    if (otwLine) otwLine.style.background = '#10B981';
+                } else if (st === 'ON_THE_WAY') {
+                    otwCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm';
+                    otwCircle.style.background = '#5B3FA8';
+                    otwCircle.innerHTML = '<i class="fa-solid fa-truck-fast"></i>';
+                    if (otwLine) otwLine.style.background = '#E2E8F0';
+                    if (otwTitle) otwTitle.style.color = '#5B3FA8';
+                } else {
+                    otwCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
+                    otwCircle.style.background = '#fff';
+                    otwCircle.innerHTML = '<i class="fa-regular fa-circle"></i>';
+                    if (otwLine) otwLine.style.background = '#E2E8F0';
+                    if (otwTitle) otwTitle.style.color = '';
+                }
+            }
 
             // Handle Shopee-Style Proof of Delivery Card
             const podCard = document.getElementById('shopeeProofOfDeliveryCard');
@@ -2027,19 +2159,22 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                 }
             }
 
-            setTimeout(() => {
-                initRentEaseLeafletMap(t.locations.warehouse, t.locations.rider, t.locations.destination);
-            }, 250);
+            // Map ONLY displays if package has been picked up (ON_THE_WAY, DELIVERED, RETURN_DELIVERY)
+            const mapCard = document.getElementById('renteaseTrackMapCard');
+            if (mapCard) {
+                mapCard.style.display = showMap ? 'block' : 'none';
+            }
+
+            if (showMap) {
+                setTimeout(() => {
+                    initRentEaseLeafletMap(t.locations?.warehouse || [14.6488, 121.0687], t.locations?.rider || [14.6515, 121.0692], t.locations?.destination || [14.6540, 121.0745]);
+                }, 250);
+            }
             return;
         }
     } catch (e) {
         console.error("Order tracking load error:", e);
     }
-
-    // Default map coordinates
-    setTimeout(() => {
-        initRentEaseLeafletMap([14.6488, 121.0687], [14.6515, 121.0692], [14.6540, 121.0745]);
-    }, 250);
 }
 
 function initRentEaseLeafletMap(warehouse, rider, destination) {

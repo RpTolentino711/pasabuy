@@ -467,13 +467,15 @@ if ($action === 'get_order_tracking') {
     $destinationCoords = [14.65400, 121.07450]; // Renter location
 
     $st = $order['order_status'];
+    $isPickedUp = in_array($st, ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']);
+    $showMap = in_array($st, ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY']);
 
     $stages = [
         ['key' => 'CONFIRMED', 'title' => 'Order Confirmed', 'time' => date('M j, g:i A', strtotime($order['created_at'])), 'completed' => true],
-        ['key' => 'PREPARING', 'title' => 'Preparing Equipment', 'time' => 'Equipment inspection & packaging', 'completed' => in_array($st, ['PREPARING', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'])],
+        ['key' => 'PREPARING', 'title' => 'Preparing Equipment', 'time' => 'Equipment inspection & packaging', 'completed' => in_array($st, ['PREPARING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'PREPARING')],
+        ['key' => 'PICKUP', 'title' => 'Package Picked Up', 'time' => $isPickedUp ? 'Package picked up from stock owner' : ($st === 'PICKUP' ? 'Driver assigned & en route to pick up' : ($st === 'LOOKING_FOR_RIDER' ? 'Awaiting driver pickup' : 'Scheduled')), 'completed' => $isPickedUp, 'current' => ($st === 'PICKUP' || $st === 'LOOKING_FOR_RIDER')],
         ['key' => 'ON_THE_WAY', 'title' => 'Out for Delivery (To Renter)', 'time' => 'Estimated Arrival: ' . ($order['estimated_arrival'] ?: '4:30 PM'), 'completed' => in_array($st, ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'ON_THE_WAY')],
         ['key' => 'DELIVERED', 'title' => 'Delivered & Active Rental', 'time' => 'Rental Active (' . ($order['rental_days'] ?? 1) . ' days, Due: ' . ($order['rental_end_date'] ?: 'Tomorrow') . ')', 'completed' => in_array($st, ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'DELIVERED')],
-        ['key' => 'RETURN_DELIVERY', 'title' => 'Return Trip (Out to Owner)', 'time' => 'Driver picking up and returning to ' . ($order['owner_name'] ?: 'Owner'), 'completed' => in_array($st, ['RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'RETURN_DELIVERY')],
         ['key' => 'RETURNED', 'title' => 'Returned & Stock Restored', 'time' => 'Equipment back in inventory stock', 'completed' => ($st === 'RETURNED'), 'current' => ($st === 'RETURNED')]
     ];
 
@@ -484,6 +486,8 @@ if ($action === 'get_order_tracking') {
         'tracking' => [
             'order_code' => $order['order_code'],
             'order_status' => $st,
+            'show_map' => $showMap,
+            'is_picked_up' => $isPickedUp,
             'rental_days' => $order['rental_days'] ?? 1,
             'rental_end_date' => $order['rental_end_date'] ?? date('Y-m-d'),
             'owner_name' => $order['owner_name'] ?? 'Romeo Paolo Tolentino',
@@ -1204,7 +1208,8 @@ if ($action === 'rider_accept_job') {
     }
 
     $upd = $db->prepare("UPDATE `rental_orders` SET 
-        `order_status` = 'ON_THE_WAY', 
+        `order_status` = 'PICKUP', 
+        `status_display` = 'Driver Assigned - Heading to Hub for Pickup',
         `assigned_rider_id` = ?, 
         `rider_name` = ?, 
         `rider_phone` = ?, 
@@ -1219,7 +1224,7 @@ if ($action === 'rider_accept_job') {
 
     // Send automated notification in chat to Renter and Owner
     try {
-        $chatMsg = "🚚 Delivery Update: Fleet Driver {$riderName} ({$riderPhone} • {$riderVehicle}) has ACCEPTED your delivery order {$orderCode} and is en route to pick up the equipment!";
+        $chatMsg = "🚚 Delivery Update: Fleet Driver {$riderName} ({$riderPhone} • {$riderVehicle}) has ACCEPTED delivery order {$orderCode} and is en route to pick up the package from the stock owner!";
         $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
            ->execute([100, 105, 'RentEase Fleet Dispatch', $chatMsg, $orderCode]);
         $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
@@ -1386,8 +1391,16 @@ if ($action === 'rider_update_stage') {
         $stmt->execute([$stage, $display, $lat, $lng, $orderNumber, '#' . ltrim($orderNumber, '#')]);
     }
 
-    // If delivered, notify both renter and owner
-    if ($stage === 'DELIVERED') {
+    // Notifications
+    if ($stage === 'ON_THE_WAY') {
+        try {
+            $msg = "🚀 Order {$orderNumber} package has been PICKED UP from stock owner by Fleet Driver! Live route tracking is now active.";
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+               ->execute([100, 105, 'RentEase Fleet Dispatch', $msg, $orderNumber]);
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+               ->execute([100, 104, 'RentEase Fleet Dispatch', $msg, $orderNumber]);
+        } catch (Exception $e) {}
+    } elseif ($stage === 'DELIVERED') {
         try {
             $msg = "🎉 Order {$orderNumber} has been successfully delivered by Motorcycle ({$plateNumber}) with Verified Proof of Delivery! Active rental period has begun.";
             $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
