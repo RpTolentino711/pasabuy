@@ -1164,7 +1164,7 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                             ` : status === 'PICKUP' ? `
                                 <div class="d-flex align-items-center justify-content-between w-100 gap-2">
                                     <span class="badge bg-info-subtle text-info-emphasis fs-9 py-1.5 px-2.5 rounded-pill fw-bold">
-                                        <i class="fa-solid fa-motorcycle me-1"></i> Driver Assigned (${order.assigned_rider_name || order.rider_name || 'Driver'}) — En Route for Pickup
+                                        <i class="fa-solid fa-motorcycle me-1"></i> ${order.assigned_rider_name || order.rider_name ? `Driver ${order.assigned_rider_name || order.rider_name} Assigned` : 'Driver Assigned — En Route for Pickup'}
                                     </span>
                                     <button class="btn btn-sm btn-outline-primary rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="openTrackScreen('${order.order_code}')">
                                         <i class="fa-solid fa-eye me-1"></i> Order
@@ -2254,13 +2254,16 @@ async function openTrackScreen(orderCode = '#RE-10245') {
             if (arrEl) arrEl.innerText = `Estimated Arrival: ${t.estimated_arrival}`;
 
             const nameEl = document.getElementById('trackRiderName');
-            if (nameEl) nameEl.innerText = t.rider?.name || 'Assigned Driver';
+            if (nameEl) nameEl.innerText = (t.rider && t.rider.name) ? t.rider.name : 'Awaiting Driver Match';
 
             const roleEl = document.getElementById('trackRiderRole');
-            if (roleEl) roleEl.innerText = `${t.rider?.role || 'Delivery Rider'} • ${t.rider?.vehicle || 'Motorcycle'}`;
+            if (roleEl) roleEl.innerText = (t.rider && t.rider.name) ? `${t.rider?.role || 'Delivery Rider'} • ${t.rider?.vehicle || 'Motorcycle'}` : 'Delivery Courier Match Pending';
 
             const phoneBtn = document.getElementById('trackCallRiderBtn');
-            if (phoneBtn) phoneBtn.href = `tel:${t.rider?.phone || ''}`;
+            if (phoneBtn) {
+                phoneBtn.href = t.rider?.phone ? `tel:${t.rider.phone}` : 'javascript:void(0)';
+                phoneBtn.style.display = t.rider?.phone ? 'flex' : 'none';
+            }
 
             const currentUser = getRentEaseCurrentUser();
             const isOwner = (currentUser.email && t.owner_email && currentUser.email.toLowerCase() === t.owner_email.toLowerCase())
@@ -2382,7 +2385,7 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                     }
                 } else if (t.order_status === 'PICKUP') {
                     if (ownerSub) ownerSub.innerText = 'Step 4: Driver Assigned • En Route for Pickup';
-                    if (ownerInst) ownerInst.innerText = `Driver ${t.rider?.name || 'Assigned'} is arriving at your hub to collect the package.`;
+                    if (ownerInst) ownerInst.innerText = t.rider?.name ? `Driver ${t.rider.name} is arriving at your hub to collect the package.` : 'A delivery driver has accepted the job and is arriving at your hub to collect the package.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
                             <div class="p-2 rounded-3 bg-white border text-center fs-9 fw-bold text-primary">
@@ -2488,7 +2491,7 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                         pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
                         pickupCircle.style.background = '#3B82F6';
                         pickupCircle.innerHTML = '<i class="fa-solid fa-motorcycle fa-beat"></i>';
-                        if (pickupTime) pickupTime.innerText = `Driver ${t.rider?.name || 'Juan Dela Cruz'} en route to your hub for pickup`;
+                        if (pickupTime) pickupTime.innerText = t.rider?.name ? `Driver ${t.rider.name} en route to your hub for pickup` : 'Driver assigned and en route for pickup';
                     }
                 } else if (st === 'LOOKING_FOR_RIDER') {
                     pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
@@ -2543,7 +2546,7 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                     if (timeEl) timeEl.innerText = pop.picked_up_at ? `Picked Up on ${pop.picked_up_at}` : 'Verified Hub Collection';
 
                     const riderEl = document.getElementById('pickupProofRiderName');
-                    if (riderEl) riderEl.innerText = pop.rider_name || t.rider?.name || 'Juan Dela Cruz';
+                    if (riderEl) riderEl.innerText = pop.rider_name || t.rider?.name || '—';
 
                     const noteEl = document.getElementById('pickupProofNote');
                     if (noteEl) noteEl.innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${pop.note || 'Equipment inspected and collected safely.'}`;
@@ -2571,7 +2574,7 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                     if (vp) vp.innerText = `${pod.vehicle_type || 'Motorcycle'} • ${pod.plate_number || 'MC-8888-JY'}`;
 
                     const rn = document.getElementById('trackPodRiderName');
-                    if (rn) rn.innerText = pod.rider_name || t.rider?.name || 'Juan Dela Cruz';
+                    if (rn) rn.innerText = pod.rider_name || t.rider?.name || '—';
 
                     const note = document.getElementById('trackPodNote');
                     if (note) note.innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${pod.note || 'Package handed over and inspected in excellent condition at doorstep.'}`;
@@ -2736,7 +2739,7 @@ function initRentEaseLeafletMap(warehouse, rider, destination) {
             className: '',
             iconSize: [34, 34]
         });
-        L.marker(rider, { icon: riderIcon }).addTo(map).bindPopup('Juan Dela Cruz (Delivery Rider)');
+        L.marker(rider, { icon: riderIcon }).addTo(map).bindPopup((t.rider?.name || 'Assigned Courier') + ' (Delivery Rider)');
 
         // Destination Pin
         const destIcon = L.divIcon({

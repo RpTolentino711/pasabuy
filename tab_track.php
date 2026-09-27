@@ -162,7 +162,7 @@
             <img id="pickupProofPhotoImg" src="" alt="Proof of Pickup" class="w-100 object-fit-cover" style="max-height: 180px; display:none;">
         </div>
         <div class="p-2 rounded-3 bg-light border fs-9 text-dark mb-2">
-            <div class="mb-1"><i class="fa-solid fa-motorcycle text-primary me-1"></i> Courier: <strong id="pickupProofRiderName">Juan Dela Cruz</strong></div>
+            <div class="mb-1"><i class="fa-solid fa-motorcycle text-primary me-1"></i> Courier: <strong id="pickupProofRiderName">—</strong></div>
             <div id="pickupProofNote" class="text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> Equipment inspected and collected safely.</div>
         </div>
         <div class="p-1.5 rounded-2 bg-success bg-opacity-10 text-success fs-9 text-center">
@@ -196,7 +196,7 @@
             </div>
             <div class="d-flex justify-content-between mb-1">
                 <span><i class="fa-solid fa-id-badge text-primary me-1"></i> Courier:</span>
-                <span id="trackPodRiderName">Juan Dela Cruz</span>
+                <span id="trackPodRiderName">—</span>
             </div>
             <div id="trackPodNote" class="text-secondary mt-1 pt-1 border-top"><i class="fa-solid fa-quote-left text-muted me-1"></i> Package handed over safely.</div>
         </div>

@@ -104,6 +104,8 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_confirmed` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_time` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rider_broadcast_at` DATETIME NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `assigned_rider_name` VARCHAR(100) NULL DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("UPDATE `rental_orders` SET `assigned_rider_name` = NULL, `rider_name` = NULL, `rider_phone` = NULL, `rider_vehicle` = NULL WHERE `order_status` IN ('CONFIRMED', 'PREPARING', 'LOOKING_FOR_RIDER') OR `assigned_rider_id` IS NULL"); } catch (Exception $e) {}
 
     // Support step-by-step reporting to admin across all workflow stages
     try { $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `stage` VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
@@ -248,8 +250,8 @@ function send_rental_step_emails($order, $stepName, $extraData = []) {
     $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
     $ownerEmail = $order['owner_email'] ?: 'romeopaolotolentino@gmail.com';
     $deliveryAddress = $order['delivery_address'] ?: 'San Pablo City, Laguna';
-    $riderName = $extraData['rider_name'] ?? ($order['assigned_rider_name'] ?: ($order['rider_name'] ?: 'Juan Dela Cruz'));
-    $riderPhone = $extraData['rider_phone'] ?? ($order['assigned_rider_phone'] ?: ($order['rider_phone'] ?: '09187654321'));
+    $riderName = $extraData['rider_name'] ?? ($order['assigned_rider_name'] ?: ($order['rider_name'] ?: ''));
+    $riderPhone = $extraData['rider_phone'] ?? ($order['assigned_rider_phone'] ?: ($order['rider_phone'] ?: ''));
     $riderVehicle = $extraData['rider_vehicle'] ?? ($order['rider_vehicle'] ?: ($order['delivery_vehicle_type'] ?: 'Honda Click 125i (MC-8888-JY)'));
     $proofPhoto = $extraData['proof_photo'] ?? ($order['pickup_proof_photo'] ?? ($order['delivery_proof_photo'] ?? ''));
     $proofNote = $extraData['proof_note'] ?? ($order['pickup_proof_note'] ?? ($order['delivery_proof_note'] ?? ''));
@@ -858,70 +860,75 @@ if ($action === 'get_order_tracking') {
         ['key' => 'RETURNED', 'title' => 'Returned & Stock Restored', 'time' => 'Equipment back in inventory stock', 'completed' => ($st === 'RETURNED'), 'current' => ($st === 'RETURNED')]
     ];
 
-    echo json_encode([
-        'success' => true,
-        'order' => $order,
-        'items' => $items,
-        'tracking' => [
-            'order_code' => $order['order_code'],
-            'order_status' => $st,
-            'rider_broadcast_at' => $order['rider_broadcast_at'] ?? null,
-            'cooldown_remaining_seconds' => (!empty($order['rider_broadcast_at']) && $st === 'LOOKING_FOR_RIDER')
-                ? max(0, 600 - (time() - strtotime($order['rider_broadcast_at'])))
-                : 0,
-            'show_map' => $showMap,
-            'is_picked_up' => $isPickedUp,
-            'rental_days' => $order['rental_days'] ?? 1,
-            'rental_end_date' => $order['rental_end_date'] ?? date('Y-m-d'),
-            'owner_name' => $order['owner_name'] ?? 'Romeo Paolo Tolentino',
-            'owner_email' => $order['owner_email'] ?? 'romeopaolotolentino@gmail.com',
-            'customer_name' => $order['customer_name'] ?? 'Pogilameg Tester',
-            'customer_email' => $order['customer_email'] ?? 'pogilameg@gmail.com',
-            'payment_type' => $order['payment_type'] ?? 'FULL',
-            'downpayment_amount' => (float)($order['downpayment_amount'] ?? 0),
-            'balance_amount' => (float)($order['balance_amount'] ?? 0),
-            'total_amount' => (float)$order['total_amount'],
-            'estimated_arrival' => $order['estimated_arrival'],
-            'rider' => [
-                'name' => $order['assigned_rider_name'] ?? ($order['rider_name'] ?? 'Juan Dela Cruz'),
-                'phone' => $order['assigned_rider_phone'] ?? ($order['rider_phone'] ?? '09187654321'),
-                'role' => 'Delivery Rider',
-                'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
-                'vehicle' => $order['rider_vehicle'] ?? 'Honda Click 125i (MC-8888-JY)',
-                'lat' => (float)($order['rider_current_lat'] ?? 14.6515),
-                'lng' => (float)($order['rider_current_lng'] ?? 121.0712)
-            ],
-            'locations' => [
-                'warehouse' => $warehouseCoords,
-                'rider' => $riderCoords,
-                'destination' => $destinationCoords
-            ],
-            'stages' => $stages,
-            'pickup_address' => $order['pickup_address'] ?? 'Pasabuy Hub, Lipa City',
-            'delivery_address' => $order['delivery_address'] ?? 'San Pablo, Laguna',
-            'renter_received_confirmed' => (int)($order['renter_received_confirmed'] ?? 0),
-            'renter_received_time' => $order['renter_received_time'] ?? null,
-            'proof_of_pickup' => [
-                'has_proof' => !empty($order['pickup_proof_photo']),
-                'photo_url' => $order['pickup_proof_photo'] ?? null,
-                'note' => $order['pickup_proof_note'] ?? 'Package collected from stock owner hub in verified condition.',
-                'picked_up_at' => $order['pickup_proof_time'] ?? null,
-                'rider_name' => $order['assigned_rider_name'] ?? ($order['rider_name'] ?? 'Juan Dela Cruz')
-            ],
-            'proof_of_delivery' => [
-                'has_proof' => (!empty($order['delivery_proof_photo']) || in_array($st, ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'])),
-                'photo_url' => !empty($order['delivery_proof_photo']) ? $order['delivery_proof_photo'] : 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80',
-                'note' => !empty($order['delivery_proof_note']) ? $order['delivery_proof_note'] : 'Package handed over and inspected in excellent condition at doorstep.',
-                'delivered_at' => !empty($order['delivery_proof_time']) ? $order['delivery_proof_time'] : (!empty($order['updated_at']) ? $order['updated_at'] : date('Y-m-d H:i:s')),
-                'recipient_name' => !empty($order['delivery_proof_recipient']) ? $order['delivery_proof_recipient'] : ($order['customer_name'] ?? 'Verified Recipient'),
-                'vehicle_type' => !empty($order['delivery_vehicle_type']) ? $order['delivery_vehicle_type'] : ($order['vehicle_type'] ?? 'Motorcycle'),
-                'plate_number' => !empty($order['delivery_plate_number']) ? $order['delivery_plate_number'] : ($order['plate_number'] ?? 'MC-8888-JY'),
-                'rider_name' => !empty($order['assigned_rider_name']) ? $order['assigned_rider_name'] : ($order['rider_name'] ?? 'Juan Dela Cruz'),
-                'gps_coordinates' => [(float)($order['rider_current_lat'] ?? 14.6515), (float)($order['rider_current_lng'] ?? 121.0712)]
+    $isRiderAssigned = !empty($order['assigned_rider_id']) && in_array($st, ['PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']);
+    $assignedName = $isRiderAssigned ? (!empty($order['assigned_rider_name']) ? $order['assigned_rider_name'] : ($order['rider_name'] ?? null)) : null;
+
+        $riderObj = ($isRiderAssigned && !empty($assignedName)) ? [
+            'name' => $assignedName,
+            'phone' => !empty($order['assigned_rider_phone']) ? $order['assigned_rider_phone'] : ($order['rider_phone'] ?? ''),
+            'role' => 'Delivery Rider',
+            'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
+            'vehicle' => !empty($order['rider_vehicle']) ? $order['rider_vehicle'] : 'Motorcycle',
+            'lat' => (float)($order['rider_current_lat'] ?? 14.6515),
+            'lng' => (float)($order['rider_current_lng'] ?? 121.0712)
+        ] : null;
+
+        echo json_encode([
+            'success' => true,
+            'order' => $order,
+            'items' => $items,
+            'tracking' => [
+                'order_code' => $order['order_code'],
+                'order_status' => $st,
+                'rider_broadcast_at' => $order['rider_broadcast_at'] ?? null,
+                'cooldown_remaining_seconds' => (!empty($order['rider_broadcast_at']) && $st === 'LOOKING_FOR_RIDER')
+                    ? max(0, 600 - (time() - strtotime($order['rider_broadcast_at'])))
+                    : 0,
+                'show_map' => $showMap,
+                'is_picked_up' => $isPickedUp,
+                'rental_days' => $order['rental_days'] ?? 1,
+                'rental_end_date' => $order['rental_end_date'] ?? date('Y-m-d'),
+                'owner_name' => $order['owner_name'] ?? 'Romeo Paolo Tolentino',
+                'owner_email' => $order['owner_email'] ?? 'romeopaolotolentino@gmail.com',
+                'customer_name' => $order['customer_name'] ?? 'Pogilameg Tester',
+                'customer_email' => $order['customer_email'] ?? 'pogilameg@gmail.com',
+                'payment_type' => $order['payment_type'] ?? 'FULL',
+                'downpayment_amount' => (float)($order['downpayment_amount'] ?? 0),
+                'balance_amount' => (float)($order['balance_amount'] ?? 0),
+                'total_amount' => (float)$order['total_amount'],
+                'estimated_arrival' => $order['estimated_arrival'],
+                'rider' => $riderObj,
+                'locations' => [
+                    'warehouse' => $warehouseCoords,
+                    'rider' => $riderCoords,
+                    'destination' => $destinationCoords
+                ],
+                'stages' => $stages,
+                'pickup_address' => $order['pickup_address'] ?? 'Pasabuy Hub, Lipa City',
+                'delivery_address' => $order['delivery_address'] ?? 'San Pablo, Laguna',
+                'renter_received_confirmed' => (int)($order['renter_received_confirmed'] ?? 0),
+                'renter_received_time' => $order['renter_received_time'] ?? null,
+                'proof_of_pickup' => [
+                    'has_proof' => !empty($order['pickup_proof_photo']),
+                    'photo_url' => $order['pickup_proof_photo'] ?? null,
+                    'note' => $order['pickup_proof_note'] ?? 'Package collected from stock owner hub in verified condition.',
+                    'picked_up_at' => $order['pickup_proof_time'] ?? null,
+                    'rider_name' => $assignedName
+                ],
+                'proof_of_delivery' => [
+                    'has_proof' => (!empty($order['delivery_proof_photo']) || in_array($st, ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'])),
+                    'photo_url' => !empty($order['delivery_proof_photo']) ? $order['delivery_proof_photo'] : 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80',
+                    'note' => !empty($order['delivery_proof_note']) ? $order['delivery_proof_note'] : 'Package handed over and inspected in excellent condition at doorstep.',
+                    'delivered_at' => !empty($order['delivery_proof_time']) ? $order['delivery_proof_time'] : (!empty($order['updated_at']) ? $order['updated_at'] : date('Y-m-d H:i:s')),
+                    'recipient_name' => !empty($order['delivery_proof_recipient']) ? $order['delivery_proof_recipient'] : ($order['customer_name'] ?? 'Verified Recipient'),
+                    'vehicle_type' => !empty($order['delivery_vehicle_type']) ? $order['delivery_vehicle_type'] : ($order['vehicle_type'] ?? 'Motorcycle'),
+                    'plate_number' => !empty($order['delivery_plate_number']) ? $order['delivery_plate_number'] : ($order['plate_number'] ?? 'MC-8888-JY'),
+                    'rider_name' => $assignedName,
+                    'gps_coordinates' => [(float)($order['rider_current_lat'] ?? 14.6515), (float)($order['rider_current_lng'] ?? 121.0712)]
+                ]
             ]
-        ]
-    ]);
-    exit;
+        ]);
+        exit;
 }
 
 // ----------------------------------------------------------

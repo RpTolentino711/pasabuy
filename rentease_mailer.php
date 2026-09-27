@@ -129,8 +129,8 @@ if (!function_exists('send_rental_step_emails')) {
         $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
         $ownerEmail = $order['owner_email'] ?: 'romeopaolotolentino@gmail.com';
         $deliveryAddress = $order['delivery_address'] ?: 'San Pablo City, Laguna';
-        $riderName = $extraData['rider_name'] ?? ($order['assigned_rider_name'] ?: ($order['rider_name'] ?: 'Juan Dela Cruz'));
-        $riderPhone = $extraData['rider_phone'] ?? ($order['assigned_rider_phone'] ?: ($order['rider_phone'] ?: '09187654321'));
+        $riderName = $extraData['rider_name'] ?? ($order['assigned_rider_name'] ?: ($order['rider_name'] ?: ''));
+        $riderPhone = $extraData['rider_phone'] ?? ($order['assigned_rider_phone'] ?: ($order['rider_phone'] ?: ''));
         $riderVehicle = $extraData['rider_vehicle'] ?? ($order['rider_vehicle'] ?: ($order['delivery_vehicle_type'] ?: 'Honda Click 125i (MC-8888-JY)'));
         $proofPhoto = $extraData['proof_photo'] ?? ($order['pickup_proof_photo'] ?? ($order['delivery_proof_photo'] ?? ''));
         $proofNote = $extraData['proof_note'] ?? ($order['pickup_proof_note'] ?? ($order['delivery_proof_note'] ?? ''));
