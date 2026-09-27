@@ -146,6 +146,89 @@
         <div id="renteaseTrackMap" style="width:100%; height:190px; z-index:1;"></div>
     </div>
 
+    <!-- Verified Proof of Pickup Card (Shown on ON_THE_WAY, DELIVERED, RETURNED) -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3" id="proofOfPickupCard" style="display:none; border-left: 4px solid #F59E0B !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-box-archive text-warning fs-6"></i>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Proof of Package Pickup</h6>
+                    <span class="fs-9 text-muted" id="pickupProofTime">Verified Hub Collection</span>
+                </div>
+            </div>
+            <span class="badge bg-warning bg-opacity-10 text-dark fw-bold fs-9">PICKED UP</span>
+        </div>
+        <div class="rounded-3 overflow-hidden mb-2 text-center bg-light border" style="max-height: 180px;">
+            <img id="pickupProofPhotoImg" src="" alt="Proof of Pickup" class="w-100 object-fit-cover" style="max-height: 180px; display:none;">
+        </div>
+        <div class="p-2 rounded-3 bg-light border fs-9 text-dark mb-2">
+            <div class="mb-1"><i class="fa-solid fa-motorcycle text-primary me-1"></i> Courier: <strong id="pickupProofRiderName">Juan Dela Cruz</strong></div>
+            <div id="pickupProofNote" class="text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> Equipment inspected and collected safely.</div>
+        </div>
+        <div class="p-1.5 rounded-2 bg-success bg-opacity-10 text-success fs-9 text-center">
+            <i class="fa-solid fa-envelope-circle-check me-1"></i> Pickup confirmation with photo has been emailed to the renter.
+        </div>
+    </div>
+
+    <!-- Verified Shopee-Style Proof of Delivery Card (Shown on DELIVERED) -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3" id="shopeeProofOfDeliveryCard" style="display:none; border-left: 4px solid #10B981 !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-circle-check text-success fs-6"></i>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Proof of Delivery (Handover)</h6>
+                    <span class="fs-9 text-muted" id="trackPodTime">Doorstep Handover Verified</span>
+                </div>
+            </div>
+            <span class="badge bg-success bg-opacity-10 text-success fw-bold fs-9">HANDOVER VERIFIED</span>
+        </div>
+        <div class="rounded-3 overflow-hidden mb-2 text-center bg-light border" style="max-height: 180px;">
+            <img id="trackPodPhotoImg" src="" alt="Proof of Delivery" class="w-100 object-fit-cover" style="max-height: 180px;">
+        </div>
+        <div class="p-2 rounded-3 bg-light border fs-9 text-dark mb-1.5">
+            <div class="d-flex justify-content-between mb-1">
+                <span><i class="fa-solid fa-user-check text-success me-1"></i> Recipient:</span>
+                <strong id="trackPodRecipient">Verified Student</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span><i class="fa-solid fa-motorcycle text-info me-1"></i> Delivery Rig:</span>
+                <span id="trackPodVehiclePlate">Motorcycle • MC-8888-JY</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span><i class="fa-solid fa-id-badge text-primary me-1"></i> Courier:</span>
+                <span id="trackPodRiderName">Juan Dela Cruz</span>
+            </div>
+            <div id="trackPodNote" class="text-secondary mt-1 pt-1 border-top"><i class="fa-solid fa-quote-left text-muted me-1"></i> Package handed over safely.</div>
+        </div>
+    </div>
+
+    <!-- Step 6: Renter "Item Received / Received Package" Action Card -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3" id="renterReceivedActionCard" style="display:none; background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); border: 1.5px solid #6EE7B7 !important;">
+        <div id="renterUnconfirmedBox">
+            <div class="d-flex align-items-center gap-2.5 mb-2.5">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs" style="width:36px; height:36px; background:linear-gradient(135deg, #10B981, #059669); flex-shrink:0;">
+                    <i class="fa-solid fa-box-open fs-7"></i>
+                </div>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0.5">Did you receive your equipment?</h6>
+                    <span class="fs-9 text-muted">Confirm that the courier has handed over the package.</span>
+                </div>
+            </div>
+            <button type="button" class="btn btn-success w-100 rounded-pill py-2.5 fw-extrabold fs-8 shadow-sm text-white" id="btnRenterConfirmReceived" onclick="renterConfirmReceivedPackage()">
+                <i class="fa-solid fa-circle-check me-1.5"></i> I Have Received the Package
+            </button>
+        </div>
+        <div id="renterConfirmedBox" style="display:none;">
+            <div class="d-flex align-items-center gap-2.5 p-2 rounded-3 bg-white border border-success shadow-2xs">
+                <i class="fa-solid fa-circle-check text-success fs-5"></i>
+                <div>
+                    <h6 class="fw-extrabold text-success fs-8 mb-0">Item Received &amp; Verified by Renter</h6>
+                    <span class="fs-9 text-muted" id="renterReceivedTimestampText">Active rental course is running.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Assigned Driver Card: Shown when rider is assigned / en route -->
     <div class="card border-0 rounded-4 shadow-sm p-3 bg-white d-flex flex-row align-items-center justify-content-between mb-3" id="trackRiderCard" style="display:none;">
         <div class="d-flex align-items-center gap-2.5">

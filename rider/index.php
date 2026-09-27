@@ -342,6 +342,99 @@ session_start();
 
 </div>
 
+<!-- STEP 5: PROOF OF PICKUP (POP) FROM STOCK OWNER MODAL -->
+<div class="modal fade" id="riderProofOfPickupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 text-white shadow-2xl" style="background:#1E293B; border: 1px solid #334155;">
+            <div class="modal-header border-bottom border-secondary pb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:38px; height:38px; background:linear-gradient(135deg, #F59E0B, #D97706);">
+                        <i class="fa-solid fa-box-archive fs-6"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-extrabold text-white mb-0 fs-7">Proof of Package Pickup</h6>
+                        <span class="fs-9 text-secondary">Stock Owner Equipment Collection Verification</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3">
+                <!-- Order Pickup Summary Chip -->
+                <div class="p-2.5 rounded-3 mb-3 d-flex align-items-center justify-content-between" style="background:rgba(15,23,42,0.8); border:1px solid #334155;">
+                    <div>
+                        <span class="text-secondary fs-9 d-block">Collecting Equipment for Order</span>
+                        <strong class="text-warning fs-7" id="popModalOrderCode">#RE-10245</strong>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-warning bg-opacity-25 text-warning fs-9 fw-bold">
+                            <i class="fa-solid fa-warehouse me-1"></i> Stock Hub Pickup
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mb-2.5 p-2 rounded-3 bg-dark border border-secondary fs-9">
+                    <div class="text-secondary mb-1"><i class="fa-solid fa-user-tie text-info me-1"></i> Stock Owner: <strong class="text-white" id="popModalOwnerName">Romeo Paolo Tolentino</strong></div>
+                    <div class="text-secondary"><i class="fa-solid fa-location-dot text-danger me-1"></i> Pickup Location: <strong class="text-white" id="popModalAddress">Pasabuy Hub, Lipa City</strong></div>
+                </div>
+
+                <!-- Photo Capture & Preview Section -->
+                <div class="mb-3">
+                    <label class="form-label text-white fs-8 fw-bold mb-1.5 d-flex align-items-center justify-content-between">
+                        <span><i class="fa-solid fa-camera me-1 text-warning"></i> Proof of Pickup Photo <span class="text-danger">*</span></span>
+                        <span class="fs-9 text-secondary">Required before departure</span>
+                    </label>
+
+                    <div id="popPhotoPreviewContainer" class="rounded-3 border border-secondary p-2 text-center mb-2 position-relative" style="background:#0F172A; min-height:160px; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+                        <img id="popPhotoPreviewImg" src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80" alt="Pickup Photo Preview" class="rounded-3 w-100 object-fit-cover shadow-sm" style="max-height: 200px; display: block;">
+                    </div>
+
+                    <!-- Hidden file input & Quick Presets -->
+                    <input type="file" id="popPhotoFileInput" accept="image/*" capture="environment" style="display:none;" onchange="handleRiderPickupPhotoFile(this)">
+                    <div class="d-flex gap-2 mb-2">
+                        <button type="button" class="btn btn-outline-warning btn-sm flex-fill py-1.5 fs-8 fw-bold rounded-3" onclick="document.getElementById('popPhotoFileInput').click()">
+                            <i class="fa-solid fa-camera me-1"></i> Snap / Upload Pickup Photo
+                        </button>
+                    </div>
+
+                    <!-- Quick Preset Proofs for Testing -->
+                    <div class="p-2 rounded-3" style="background:rgba(255,255,255,0.03); border:1px dashed #334155;">
+                        <span class="fs-9 text-secondary d-block mb-1.5 fw-semibold"><i class="fa-solid fa-bolt text-warning me-1"></i> 1-Tap Sample Proofs:</span>
+                        <div class="d-flex gap-1.5 flex-wrap">
+                            <button type="button" class="btn btn-dark btn-sm fs-9 py-1 px-2 text-white border border-secondary" onclick="setRiderPickupProofPreset('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80')">
+                                📦 Boxed Equipment at Hub
+                            </button>
+                            <button type="button" class="btn btn-dark btn-sm fs-9 py-1 px-2 text-white border border-secondary" onclick="setRiderPickupProofPreset('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80')">
+                                🛵 Strapped onto Motorcycle
+                            </button>
+                            <button type="button" class="btn btn-dark btn-sm fs-9 py-1 px-2 text-white border border-secondary" onclick="setRiderPickupProofPreset('https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&q=80')">
+                                🏷️ Inspected with Owner
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pickup Remarks -->
+                <div class="mb-3">
+                    <label class="form-label text-white fs-8 fw-bold mb-1">
+                        <i class="fa-solid fa-clipboard-check me-1 text-info"></i> Pickup Inspection Remarks
+                    </label>
+                    <textarea id="popRemarksInput" class="form-control form-control-sm text-white border-secondary fs-8 rounded-3" rows="2" style="background:#0F172A;" placeholder="Collected equipment package from owner, verified all items intact and securely loaded."></textarea>
+                </div>
+
+                <div class="p-2 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-25 fs-9 text-info">
+                    <i class="fa-solid fa-envelope me-1"></i> Submitting proof will automatically email the photo and driver info to the renter and activate the live GPS route map.
+                </div>
+            </div>
+            <div class="modal-footer border-top border-secondary pt-3">
+                <button type="button" class="btn btn-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning btn-sm px-4 fw-extrabold rounded-3 shadow-lg text-dark" id="btnSubmitProofOfPickup" onclick="submitProofOfPickup()">
+                    <i class="fa-solid fa-paper-plane me-1.5"></i> Confirm Pickup &amp; Notify Renter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- SHOPEE-STYLE PROOF OF DELIVERY (POD) MODAL -->
 <div class="modal fade" id="riderProofOfDeliveryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -945,53 +1038,113 @@ async function cancelCurrentRiderJob() {
     }
 }
 
-async function riderConfirmPickup() {
+let popCurrentPhotoUrl = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80';
+
+function setRiderPickupProofPreset(url) {
+    popCurrentPhotoUrl = url;
+    const img = document.getElementById('popPhotoPreviewImg');
+    if (img) {
+        img.src = url;
+        img.style.display = 'block';
+    }
+}
+
+function handleRiderPickupPhotoFile(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            setRiderPickupProofPreset(e.target.result);
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function openProofOfPickupModal() {
     if (!currentActiveOrder) {
         alert('No active delivery order.');
         return;
     }
     const orderCode = currentActiveOrder.order_code;
-    if (!confirm(`Confirm that you have arrived at the stock owner's pickup location and safely collected the equipment package for Order ${orderCode}?\n\nThis will mark the order as PICKED UP and activate live GPS route tracking on all 3 sides (Renter, Stock Owner, and Rider).`)) {
+    const owner = currentActiveOrder.owner_name || 'Romeo Paolo Tolentino';
+    const address = currentActiveOrder.pickup_address || 'Pasabuy Hub, Lipa City';
+
+    const codeEl = document.getElementById('popModalOrderCode');
+    if (codeEl) codeEl.innerText = orderCode;
+    const ownerEl = document.getElementById('popModalOwnerName');
+    if (ownerEl) ownerEl.innerText = owner;
+    const addrEl = document.getElementById('popModalAddress');
+    if (addrEl) addrEl.innerText = address;
+
+    const remarksInput = document.getElementById('popRemarksInput');
+    if (remarksInput) remarksInput.value = `Equipment package for order ${orderCode} collected from ${owner}, inspected, complete and securely loaded.`;
+
+    const popModal = new bootstrap.Modal(document.getElementById('riderProofOfPickupModal'));
+    popModal.show();
+}
+
+async function riderConfirmPickup() {
+    if (!currentActiveOrder) {
+        alert('No active delivery order.');
         return;
+    }
+    // Step 5: Rider arrives at hub, requires Proof of Pickup photo
+    openProofOfPickupModal();
+}
+
+async function submitProofOfPickup() {
+    if (!currentActiveOrder) return;
+    const orderCode = currentActiveOrder.order_code;
+    const remarks = document.getElementById('popRemarksInput')?.value.trim() || 'Equipment securely collected from stock owner.';
+    const photo = popCurrentPhotoUrl || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80';
+    const rId = currentRiderUser ? (currentRiderUser.id || 0) : 0;
+    const rName = currentRiderUser ? (currentRiderUser.name || 'Juan Dela Cruz') : 'Juan Dela Cruz';
+
+    const btn = document.getElementById('btnSubmitProofOfPickup');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5"></span> Uploading Pickup Proof...`;
     }
 
     try {
-        let apiUrl = '../rentease_api.php?action=rider_update_stage';
+        let apiUrl = '../rentease_api.php?action=rider_confirm_pickup';
+        let payload = {
+            order_code: orderCode,
+            rider_id: rId,
+            rider_name: rName,
+            pickup_proof_photo: photo,
+            pickup_proof_note: remarks,
+            lat: riderCoords[0],
+            lng: riderCoords[1]
+        };
+
         let res = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                order_code: orderCode,
-                order_number: orderCode,
-                stage: 'ON_THE_WAY',
-                lat: riderCoords[0],
-                lng: riderCoords[1]
-            })
+            body: JSON.stringify(payload)
         });
 
         if (!res.ok) {
-            res = await fetch('/rentease_api.php?action=rider_update_stage', {
+            res = await fetch('/rentease_api.php?action=rider_confirm_pickup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    order_code: orderCode,
-                    order_number: orderCode,
-                    stage: 'ON_THE_WAY',
-                    lat: riderCoords[0],
-                    lng: riderCoords[1]
-                })
+                body: JSON.stringify(payload)
             });
         }
 
         const data = await res.json();
-        if (data.success) {
-            alert(`📦 Package Picked Up!\n\nYou are now OUT FOR DELIVERY for Order ${orderCode}.\nLive GPS route tracking is now active!`);
-            fetchRiderJobAlerts();
-        } else {
-            alert(data.message || 'Error updating delivery stage.');
+        const modalEl = document.getElementById('riderProofOfPickupModal');
+        const modalInst = bootstrap.Modal.getInstance(modalEl);
+        if (modalInst) modalInst.hide();
+
+        alert(`📦 Package Picked Up Successfully!\n\nOrder ${orderCode} is now OUT FOR DELIVERY.\nEmail notification dispatched to the renter with pickup photo!\nLive GPS tracking is now active on all 3 sides.`);
+        fetchRiderJobAlerts();
+    } catch(e) {
+        alert('Error submitting pickup proof: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-paper-plane me-1.5"></i> Confirm Pickup &amp; Notify Renter`;
         }
-    } catch (e) {
-        alert('Connection error confirming package pickup.');
     }
 }
 

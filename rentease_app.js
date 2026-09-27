@@ -2054,6 +2054,12 @@ async function openTrackScreen(orderCode = '#RE-10245') {
             const phoneBtn = document.getElementById('trackCallRiderBtn');
             if (phoneBtn) phoneBtn.href = `tel:${t.rider?.phone || ''}`;
 
+            const currentUser = getRentEaseCurrentUser();
+            const isOwner = (currentUser.email && t.owner_email && currentUser.email.toLowerCase() === t.owner_email.toLowerCase())
+                || (currentUser.name && t.owner_name && currentUser.name.toLowerCase() === t.owner_name.toLowerCase())
+                || (currentUser.id && currentUser.id === 104);
+            const isRenter = !isOwner;
+
             // Handle Rider Broadcast, Cancellation Alert, and Rider Cards
             const broadcastCard = document.getElementById('riderBroadcastWaitingCard');
             const cancelCard = document.getElementById('riderCancelledAlertCard');
@@ -2075,50 +2081,60 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                 if (broadcastCard) broadcastCard.style.display = 'none';
                 if (cancelCard) cancelCard.style.display = 'none';
                 if (riderCard) riderCard.style.display = 'none';
+            } else if (t.order_status === 'PICKUP') {
+                // Step 4: Rider accepted. Stock owner sees driver en route, Renter only sees "Order in Process"!
+                if (broadcastCard) broadcastCard.style.display = 'none';
+                if (cancelCard) cancelCard.style.display = 'none';
+                if (isOwner && t.rider && t.rider.name && t.rider.name !== 'Pending Driver Match') {
+                    if (riderCard) riderCard.style.display = 'flex';
+                    if (roleEl) roleEl.innerText = `${t.rider?.role || 'Delivery Rider'} • Heading to Hub for Package Pickup`;
+                } else {
+                    // Hidden for renter! Renter only sees Order in Process
+                    if (riderCard) riderCard.style.display = 'none';
+                }
             } else {
-                // PICKUP, ON_THE_WAY, DELIVERED
+                // ON_THE_WAY, DELIVERED, RETURNED
                 if (broadcastCard) broadcastCard.style.display = 'none';
                 if (cancelCard) cancelCard.style.display = 'none';
                 if (t.rider && t.rider.name && t.rider.name !== 'Pending Driver Match' && t.rider.name !== 'Assigned Driver') {
                     if (riderCard) riderCard.style.display = 'flex';
-                    if (t.order_status === 'PICKUP' && roleEl) {
-                        roleEl.innerText = `${t.rider?.role || 'Delivery Rider'} • En route to owner for pickup`;
-                    }
+                    if (roleEl) roleEl.innerText = `${t.rider?.role || 'Delivery Rider'} • ${t.rider?.vehicle || 'Motorcycle'}`;
                 } else {
                     if (riderCard) riderCard.style.display = 'none';
                 }
             }
 
-            // Update Stock Owner Preparation Action Card
+            // Update Stock Owner Preparation Action Card (Only shown for Owner)
             const ownerCard = document.getElementById('stockOwnerTrackActionCard');
             const ownerBadge = document.getElementById('stockOwnerCurrentBadge');
             const ownerSub = document.getElementById('stockOwnerActionSub');
             const ownerInst = document.getElementById('stockOwnerActionInstruction');
             const ownerBtnCont = document.getElementById('stockOwnerTrackBtnContainer');
             if (ownerCard) {
+                ownerCard.style.display = isOwner ? 'block' : 'none';
                 if (ownerBadge) ownerBadge.innerText = t.order_status;
                 if (t.order_status === 'CONFIRMED') {
-                    if (ownerSub) ownerSub.innerText = 'Order Confirmed • Awaiting Owner Packaging';
-                    if (ownerInst) ownerInst.innerText = 'Renter booked your equipment. As the stock owner, inspect and package the items now.';
+                    if (ownerSub) ownerSub.innerText = 'Step 1: Order Confirmed • Awaiting Owner Acceptance';
+                    if (ownerInst) ownerInst.innerText = 'Student booked your equipment! Review the rental details and accept the booking to begin equipment preparation.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
                             <button class="btn btn-warning w-100 rounded-pill py-2.5 fw-extrabold fs-8 text-dark shadow-xs" onclick="ownerPrepareEquipment('${actualCode}')">
-                                <i class="fa-solid fa-boxes-packing me-1"></i> Start Packaging Equipment (Processing)
+                                <i class="fa-solid fa-boxes-packing me-1"></i> Accept Rental Request (Order in Process)
                             </button>
                         `;
                     }
                 } else if (t.order_status === 'PREPARING') {
-                    if (ownerSub) ownerSub.innerText = 'Equipment Packaging in Progress';
-                    if (ownerInst) ownerInst.innerText = 'Equipment is currently being inspected and packaged. Once boxed and ready, notify fleet riders for campus pickup.';
+                    if (ownerSub) ownerSub.innerText = 'Step 2: Equipment Packaging in Progress';
+                    if (ownerInst) ownerInst.innerText = 'Equipment is currently being inspected and packaged. Once boxed and ready for handover, notify fleet riders for pickup.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
                             <button class="btn text-white w-100 rounded-pill py-2.5 fw-extrabold fs-8 shadow-xs" style="background:#5B3FA8; border:none;" onclick="ownerFinishPackagingAndNotifyRider('${actualCode}')">
-                                <i class="fa-solid fa-satellite-dish me-1"></i> Packaged & Inspected: Notify Rider to Pick Up
+                                <i class="fa-solid fa-satellite-dish me-1"></i> Packaged & Ready: Notify Rider to Pick Up
                             </button>
                         `;
                     }
                 } else if (t.order_status === 'LOOKING_FOR_RIDER') {
-                    if (ownerSub) ownerSub.innerText = 'Delivery Broadcasted • Awaiting Rider';
+                    if (ownerSub) ownerSub.innerText = 'Step 3: Delivery Broadcasted • Awaiting Rider';
                     if (ownerInst) ownerInst.innerText = 'Equipment is packaged! Delivery request has been broadcasted to nearby fleet riders.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
@@ -2128,7 +2144,7 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                         `;
                     }
                 } else if (t.order_status === 'PICKUP') {
-                    if (ownerSub) ownerSub.innerText = 'Driver Assigned • En Route for Pickup';
+                    if (ownerSub) ownerSub.innerText = 'Step 4: Driver Assigned • En Route for Pickup';
                     if (ownerInst) ownerInst.innerText = `Driver ${t.rider?.name || 'Assigned'} is arriving at your hub to collect the package.`;
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
@@ -2138,7 +2154,7 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                         `;
                     }
                 } else if (t.order_status === 'ON_THE_WAY') {
-                    if (ownerSub) ownerSub.innerText = 'Package Picked Up • En Route to Renter';
+                    if (ownerSub) ownerSub.innerText = 'Step 5: Package Picked Up • En Route to Renter';
                     if (ownerInst) ownerInst.innerText = 'Driver has collected the package from you. Courier GPS live map is active below.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
@@ -2148,8 +2164,11 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                         `;
                     }
                 } else if (t.order_status === 'DELIVERED') {
-                    if (ownerSub) ownerSub.innerText = 'Active Rental with Student';
-                    if (ownerInst) ownerInst.innerText = 'Equipment is currently with renter. Once returned to your hub, verify and restock.';
+                    const confirmedByRenter = (t.renter_received_confirmed == 1);
+                    if (ownerSub) ownerSub.innerText = confirmedByRenter ? 'Step 6: Verified Handover Complete (Active Rental)' : 'Step 6: Handover Complete • Awaiting Renter Receipt Confirmation';
+                    if (ownerInst) ownerInst.innerText = confirmedByRenter 
+                        ? 'Student confirmed package received in good condition. Rental period is underway!'
+                        : 'Driver handed over the package. Awaiting student renter receipt confirmation.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
                             <button class="btn text-white w-100 rounded-pill py-2 fw-extrabold fs-8 shadow-xs" style="background:linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(null, '${actualCode}')">
@@ -2178,12 +2197,19 @@ async function openTrackScreen(orderCode = '#RE-10245') {
             const isReturned = (st === 'RETURNED');
 
             // Synchronize Vertical Timeline Stages Dynamically
-            // Stage 2: Preparing Equipment
+            // Stage 2: Preparing Equipment / Order in Process
             const prepCircle = document.getElementById('stagePreparingCircle');
             const prepLine = document.getElementById('stagePreparingLine');
             const prepTime = document.getElementById('stagePreparingTime');
             if (prepCircle) {
-                if (isPrepDone) {
+                // If renter is looking at PICKUP, renter only sees "Order in Process"!
+                if (isRenter && st === 'PICKUP') {
+                    prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    prepCircle.style.background = '#F59E0B';
+                    prepCircle.innerHTML = '<i class="fa-solid fa-boxes-packing fa-beat"></i>';
+                    if (prepLine) prepLine.style.background = '#E2E8F0';
+                    if (prepTime) prepTime.innerText = 'Order in Process: Stock owner packaging equipment';
+                } else if (isPrepDone) {
                     prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
                     prepCircle.style.background = '#10B981';
                     prepCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
@@ -2193,7 +2219,7 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                     prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
                     prepCircle.style.background = '#F59E0B';
                     prepCircle.innerHTML = '<i class="fa-solid fa-boxes-packing fa-beat"></i>';
-                    if (prepTime) prepTime.innerText = 'Stock owner packaging equipment';
+                    if (prepTime) prepTime.innerText = 'Order in Process: Stock owner packaging equipment';
                 } else {
                     prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
                     prepCircle.style.background = '#fff';
@@ -2214,10 +2240,19 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                     if (pickupLine) pickupLine.style.background = '#10B981';
                     if (pickupTime) pickupTime.innerText = 'Package Picked Up from Owner';
                 } else if (st === 'PICKUP') {
-                    pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
-                    pickupCircle.style.background = '#3B82F6';
-                    pickupCircle.innerHTML = '<i class="fa-solid fa-motorcycle fa-beat"></i>';
-                    if (pickupTime) pickupTime.innerText = 'Driver en route to owner hub for pickup';
+                    if (isRenter) {
+                        // Renter only sees pending pickup until picked up!
+                        pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
+                        pickupCircle.style.background = '#fff';
+                        pickupCircle.innerHTML = '<i class="fa-regular fa-circle"></i>';
+                        if (pickupTime) pickupTime.innerText = 'Awaiting driver pickup from owner';
+                    } else {
+                        // Stock owner sees driver en route to their hub!
+                        pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                        pickupCircle.style.background = '#3B82F6';
+                        pickupCircle.innerHTML = '<i class="fa-solid fa-motorcycle fa-beat"></i>';
+                        if (pickupTime) pickupTime.innerText = `Driver ${t.rider?.name || 'Juan Dela Cruz'} en route to your hub for pickup`;
+                    }
                 } else if (st === 'LOOKING_FOR_RIDER') {
                     pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
                     pickupCircle.style.background = '#F59E0B';
@@ -2256,7 +2291,31 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                 }
             }
 
-            // Handle Shopee-Style Proof of Delivery Card
+            // Handle Proof of Pickup Card (Step 5)
+            const popCard = document.getElementById('proofOfPickupCard');
+            if (popCard) {
+                const pop = t.proof_of_pickup;
+                if (pop && (pop.has_proof || isPickedUp)) {
+                    popCard.style.display = 'block';
+                    const img = document.getElementById('pickupProofPhotoImg');
+                    if (img) {
+                        img.src = pop.photo_url || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80';
+                        img.style.display = 'block';
+                    }
+                    const timeEl = document.getElementById('pickupProofTime');
+                    if (timeEl) timeEl.innerText = pop.picked_up_at ? `Picked Up on ${pop.picked_up_at}` : 'Verified Hub Collection';
+
+                    const riderEl = document.getElementById('pickupProofRiderName');
+                    if (riderEl) riderEl.innerText = pop.rider_name || t.rider?.name || 'Juan Dela Cruz';
+
+                    const noteEl = document.getElementById('pickupProofNote');
+                    if (noteEl) noteEl.innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${pop.note || 'Equipment inspected and collected safely.'}`;
+                } else {
+                    popCard.style.display = 'none';
+                }
+            }
+
+            // Handle Shopee-Style Proof of Delivery Card (Step 6)
             const podCard = document.getElementById('shopeeProofOfDeliveryCard');
             if (podCard) {
                 const pod = t.proof_of_delivery;
@@ -2281,6 +2340,27 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                     if (note) note.innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${pod.note || 'Package handed over and inspected in excellent condition at doorstep.'}`;
                 } else {
                     podCard.style.display = 'none';
+                }
+            }
+
+            // Handle Renter Item Received Action Card (Step 6)
+            const recCard = document.getElementById('renterReceivedActionCard');
+            if (recCard) {
+                if (isDelivered && isRenter) {
+                    recCard.style.display = 'block';
+                    const unconfirmed = document.getElementById('renterUnconfirmedBox');
+                    const confirmed = document.getElementById('renterConfirmedBox');
+                    const stamp = document.getElementById('renterReceivedTimestampText');
+                    if (t.renter_received_confirmed == 1) {
+                        if (unconfirmed) unconfirmed.style.display = 'none';
+                        if (confirmed) confirmed.style.display = 'block';
+                        if (stamp) stamp.innerText = `Confirmed on ${t.renter_received_time || 'Delivery'}. Active rental course in progress.`;
+                    } else {
+                        if (unconfirmed) unconfirmed.style.display = 'block';
+                        if (confirmed) confirmed.style.display = 'none';
+                    }
+                } else {
+                    recCard.style.display = 'none';
                 }
             }
             
@@ -2352,6 +2432,41 @@ async function openTrackScreen(orderCode = '#RE-10245') {
         console.error("Order tracking load error:", e);
     }
 }
+
+window.renterConfirmReceivedPackage = async function(orderCode) {
+    if (!orderCode) orderCode = currentTrackingOrderCode || '#RE-10245';
+    if (!confirm(`Confirm that you have received your rented equipment in good working condition for Order ${orderCode}?`)) {
+        return;
+    }
+
+    const btn = document.getElementById('btnRenterConfirmReceived');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1.5"></i> Confirming...';
+    }
+
+    try {
+        const res = await fetch(getRentEaseApiUrl('renter_confirm_received'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_code: orderCode })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('🎉 Item Received Confirmed!\n\nYour equipment receipt is verified. Enjoy your event rental course!');
+            openTrackScreen(orderCode);
+        } else {
+            alert(data.message || 'Error confirming receipt.');
+        }
+    } catch(e) {
+        alert('Network error confirming receipt.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-circle-check me-1.5"></i> I Have Received the Package';
+        }
+    }
+};
 
 function initRentEaseLeafletMap(warehouse, rider, destination) {
     const mapEl = document.getElementById('renteaseTrackMap');

@@ -98,6 +98,11 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_proof_recipient` VARCHAR(150) DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_vehicle_type` VARCHAR(50) DEFAULT 'Motorcycle'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_plate_number` VARCHAR(50) DEFAULT 'MC-8888-JY'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `pickup_proof_photo` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `pickup_proof_note` TEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `pickup_proof_time` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_confirmed` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_time` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
 
     // Automatically purge all hardcoded dummy/seed items from database
     try {
@@ -111,6 +116,53 @@ if ($db) {
 
 $inputRaw = file_get_contents('php://input');
 $data = json_decode($inputRaw, true) ?: $_REQUEST;
+
+/**
+ * RentEase Email Sender Helper using PHPMailer with Native Mail fallback
+ */
+function send_rentease_email($toEmail, $toName, $subject, $htmlBody) {
+    if (empty($toEmail)) return false;
+    
+    $mailerDir = __DIR__;
+    if (!file_exists($mailerDir . '/class.phpmailer.php')) {
+        $mailerDir = dirname(__DIR__);
+    }
+    
+    if (file_exists($mailerDir . '/class.phpmailer.php') && file_exists($mailerDir . '/class.smtp.php')) {
+        require_once $mailerDir . '/class.phpmailer.php';
+        require_once $mailerDir . '/class.smtp.php';
+        try {
+            $mail = new PHPMailer(true);
+            $mail->CharSet = 'UTF-8';
+            $mail->isSMTP();
+            $mail->Host = $_ENV['SMTP_HOST'] ?? 'smtp.hostinger.com';
+            $mail->Port = (int)($_ENV['SMTP_PORT'] ?? 587);
+            $mail->SMTPAuth = true;
+            $mail->SMTPSecure = $_ENV['SMTP_SECURE'] ?? 'tls';
+            $mail->SMTPAutoTLS = true;
+            $mail->Timeout = 10;
+
+            $mail->Username = $_ENV['SMTP_USER'] ?? 'PASABUY@pasabuy.site';
+            $mail->Password = $_ENV['SMTP_PASS'] ?? 'Vanossgaming@10';
+
+            $mail->setFrom($mail->Username, 'RentEase Fleet Logistics');
+            $mail->addAddress($toEmail, $toName ?: 'Valued Customer');
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body = $htmlBody;
+
+            return $mail->send();
+        } catch (Exception $e) {
+            // continue to fallback
+        }
+    }
+
+    // Native mail() fallback
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: RentEase Fleet Logistics <PASABUY@pasabuy.site>\r\n";
+    return @mail($toEmail, $subject, $htmlBody, $headers);
+}
 
 /**
  * RentEase Posting Fee Tier Calculator:
@@ -364,7 +416,9 @@ if ($action === 'create_order') {
         } catch (Exception $eO) {}
     }
 
-    $initialStatus = ($deliveryOption === 'DELIVERY') ? 'LOOKING_FOR_RIDER' : 'CONFIRMED';
+    // Step 1: Initial status is CONFIRMED (Awaiting Stock Owner acceptance)
+    $initialStatus = 'CONFIRMED';
+    $statusDisplay = 'Order Confirmed - Awaiting Stock Owner Acceptance';
 
     // Generate Order Code
     $randomCode = strtoupper(substr(md5(uniqid(rand(), true)), 0, 5));
@@ -373,13 +427,13 @@ if ($action === 'create_order') {
     $db->beginTransaction();
     try {
         $stmt = $db->prepare("INSERT INTO `rental_orders` 
-            (`order_code`, `customer_name`, `customer_email`, `customer_phone`, `owner_name`, `owner_email`, `pickup_address`, `delivery_option`, `delivery_address`, `rental_start_date`, `rental_end_date`, `rental_days`, `subtotal`, `service_charge`, `delivery_fee`, `discount`, `total_amount`, `payment_method`, `payment_type`, `downpayment_amount`, `balance_amount`, `payment_status`, `order_status`, `estimated_arrival`, `assigned_rider_name`, `assigned_rider_phone`, `rider_current_lat`, `rider_current_lng`) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '4:30 PM', NULL, NULL, 14.65150000, 121.06920000)");
+            (`order_code`, `customer_name`, `customer_email`, `customer_phone`, `owner_name`, `owner_email`, `pickup_address`, `delivery_option`, `delivery_address`, `rental_start_date`, `rental_end_date`, `rental_days`, `subtotal`, `service_charge`, `delivery_fee`, `discount`, `total_amount`, `payment_method`, `payment_type`, `downpayment_amount`, `balance_amount`, `payment_status`, `order_status`, `status_display`, `estimated_arrival`, `assigned_rider_name`, `assigned_rider_phone`, `rider_current_lat`, `rider_current_lng`) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '4:30 PM', NULL, NULL, 14.65150000, 121.06920000)");
         $stmt->execute([
             $orderCode, $customerName, $customerEmail, $customerPhone, $ownerName, $ownerEmail, $ownerLocation,
             $deliveryOption, $deliveryAddress, $rentalStartDate, $rentalEndDate, $rentalDays,
             $subtotal, $serviceCharge, $deliveryFee, $discount, $total,
-            $paymentMethod, $paymentType, $downpayment, $balance, 'PAID', $initialStatus
+            $paymentMethod, $paymentType, $downpayment, $balance, 'PAID', $initialStatus, $statusDisplay
         ]);
         $orderId = $db->lastInsertId();
 
@@ -399,15 +453,34 @@ if ($action === 'create_order') {
             }
         }
 
-        // Automated notification & chat insertion from Renter (User 105) to Owner (User 104)
+        // Automated notification & chat insertion to Stock Owner (User 104)
         try {
             $payInfo = ($paymentType === 'DOWNPAYMENT_COD' || $paymentMethod === 'COD') 
                 ? "COD with ₱" . number_format($downpayment, 2) . " Downpayment (₱" . number_format($balance, 2) . " balance upon delivery)" 
                 : "Full Payment of ₱" . number_format($total, 2);
-            $chatMsg = "Hi {$ownerName}! I rented your '{$firstItemName}' for {$rentalDays} day(s) (Order {$orderCode}). Payment: {$payInfo}. Let's coordinate delivery!";
+            $chatMsg = "🔔 New Rental Booking! Hi {$ownerName}, student {$customerName} ({$customerPhone}) has booked your equipment '{$firstItemName}' for {$rentalDays} day(s) (Order {$orderCode}). Payment: {$payInfo}. Please accept the request in your lender dashboard to start packaging.";
             
             $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())");
             $chatStmt->execute([105, 104, $customerName, $chatMsg, $firstItemName]);
+
+            // Email Notification to Stock Owner
+            $ownerEmailSub = "🔔 New Equipment Rental Request: Order {$orderCode} - Action Required";
+            $ownerEmailBody = "
+            <div style='font-family: Arial, sans-serif; background:#0F172A; padding:25px; color:#F8FAFC;'>
+                <div style='max-width:520px; margin:0 auto; background:#1E293B; border-radius:16px; border:1px solid #334155; padding:24px;'>
+                    <h2 style='color:#5B3FA8; margin-top:0;'>📦 New Rental Request on RentEase</h2>
+                    <p>Hello <strong>" . htmlspecialchars($ownerName) . "</strong>,</p>
+                    <p>Student <strong>" . htmlspecialchars($customerName) . "</strong> wants to rent your equipment: <strong>" . htmlspecialchars($firstItemName) . "</strong> for {$rentalDays} day(s).</p>
+                    <div style='background:#0F172A; padding:14px; border-radius:10px; margin:16px 0; border:1px solid #334155;'>
+                        <div><strong>Order Code:</strong> {$orderCode}</div>
+                        <div><strong>Renter:</strong> " . htmlspecialchars($customerName) . " (" . htmlspecialchars($customerPhone) . ")</div>
+                        <div><strong>Delivery Address:</strong> " . htmlspecialchars($deliveryAddress) . "</div>
+                        <div><strong>Total Amount:</strong> ₱" . number_format($total, 2) . "</div>
+                    </div>
+                    <p>Please log in to your RentEase Stock Owner Dashboard to <strong>Accept Rental Request</strong> and begin equipment inspection & packaging.</p>
+                </div>
+            </div>";
+            send_rentease_email($ownerEmail, $ownerName, $ownerEmailSub, $ownerEmailBody);
         } catch (Exception $eChat) {}
 
         $db->commit();
@@ -566,6 +639,17 @@ if ($action === 'get_order_tracking') {
                 'destination' => $destinationCoords
             ],
             'stages' => $stages,
+            'pickup_address' => $order['pickup_address'] ?? 'Pasabuy Hub, Lipa City',
+            'delivery_address' => $order['delivery_address'] ?? 'San Pablo, Laguna',
+            'renter_received_confirmed' => (int)($order['renter_received_confirmed'] ?? 0),
+            'renter_received_time' => $order['renter_received_time'] ?? null,
+            'proof_of_pickup' => [
+                'has_proof' => !empty($order['pickup_proof_photo']),
+                'photo_url' => $order['pickup_proof_photo'] ?? null,
+                'note' => $order['pickup_proof_note'] ?? 'Package collected from stock owner hub in verified condition.',
+                'picked_up_at' => $order['pickup_proof_time'] ?? null,
+                'rider_name' => $order['assigned_rider_name'] ?? ($order['rider_name'] ?? 'Juan Dela Cruz')
+            ],
             'proof_of_delivery' => [
                 'has_proof' => (!empty($order['delivery_proof_photo']) || in_array($st, ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'])),
                 'photo_url' => !empty($order['delivery_proof_photo']) ? $order['delivery_proof_photo'] : 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80',
@@ -1155,8 +1239,44 @@ if ($action === 'update_owner_order_status') {
         }
 
         $oId = (int)$order['id'];
-        $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ? WHERE `id` = ?");
-        $upd->execute([$newStatus, $oId]);
+        $statusDisplay = 'Order in Process';
+
+        if ($newStatus === 'PREPARING') {
+            $statusDisplay = 'Order in Process - Stock owner packaging equipment';
+            // Step 2: Stock owner accepts rental request
+            try {
+                $acceptMsg = "✅ Rental Request Accepted! Stock owner {$order['owner_name']} has accepted your booking for Order {$order['order_code']}. Order is now in process and being packaged for delivery.";
+                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
+                   ->execute([$acceptMsg, $order['order_code']]);
+
+                // Email notification to Renter
+                $renterSub = "✅ Order in Process: Stock Owner Accepted Rental for Order {$order['order_code']}";
+                $renterBody = "
+                <div style='font-family: Arial, sans-serif; background:#0F172A; padding:25px; color:#F8FAFC;'>
+                    <div style='max-width:520px; margin:0 auto; background:#1E293B; border-radius:16px; border:1px solid #334155; padding:24px;'>
+                        <h2 style='color:#10B981; margin-top:0;'>✅ Order in Process</h2>
+                        <p>Hello <strong>" . htmlspecialchars($order['customer_name'] ?? 'Renter') . "</strong>,</p>
+                        <p>Great news! The stock owner <strong>" . htmlspecialchars($order['owner_name'] ?? 'Equipment Owner') . "</strong> has <strong>ACCEPTED</strong> your equipment rental request for <strong>Order " . htmlspecialchars($order['order_code']) . "</strong>.</p>
+                        <p>Your equipment is now being inspected and packaged. Once ready, the stock owner will dispatch a fleet courier to pick it up.</p>
+                        <p style='color:#94A3B8; font-size:12px; margin-top:20px;'>&copy; " . date('Y') . " RentEase Logistics</p>
+                    </div>
+                </div>";
+                send_rentease_email($order['customer_email'], $order['customer_name'], $renterSub, $renterBody);
+            } catch (Exception $eN1) {}
+        } elseif ($newStatus === 'LOOKING_FOR_RIDER') {
+            $statusDisplay = 'Equipment Packaged - Looking for Fleet Driver';
+            // Step 3: Stock owner finishes packaging and notifies rider
+            try {
+                $pkgMsg = "📦 Package Ready: Stock owner {$order['owner_name']} has finished packaging equipment for Order {$order['order_code']} and broadcasted a pickup dispatch to fleet delivery riders!";
+                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
+                   ->execute([$pkgMsg, $order['order_code']]);
+            } catch (Exception $eN2) {}
+        } elseif ($newStatus === 'RETURNED') {
+            $statusDisplay = 'Returned to Owner Stock';
+        }
+
+        $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ? WHERE `id` = ?");
+        $upd->execute([$newStatus, $statusDisplay, $oId]);
 
         // If returned, automatically restock equipment inventory
         if ($newStatus === 'RETURNED') {
@@ -1180,7 +1300,8 @@ if ($action === 'update_owner_order_status') {
         echo json_encode([
             'success' => true,
             'message' => "Order #{$order['order_code']} status updated to {$newStatus}.",
-            'order_status' => $newStatus
+            'order_status' => $newStatus,
+            'status_display' => $statusDisplay
         ]);
         exit;
     } catch (Exception $e) {
@@ -1611,6 +1732,146 @@ if ($action === 'stock_owner_notify_riders_again' || $action === 'rebroadcast_to
     exit;
 }
 
+// Step 5: Rider Arrives at Hub, collects package, submits Proof of Pickup & notifies Renter
+if ($action === 'rider_confirm_pickup') {
+    $orderCode = trim((string)($data['order_code'] ?? $data['order_number'] ?? ''));
+    $proofPhoto = trim((string)($data['pickup_proof_photo'] ?? $data['proof_photo'] ?? ''));
+    $proofNote = trim((string)($data['pickup_proof_note'] ?? $data['proof_note'] ?? 'Equipment safely collected and secured.'));
+    $riderId = (int)($data['rider_id'] ?? 0);
+    $riderName = trim((string)($data['rider_name'] ?? 'Juan Dela Cruz'));
+    $lat = (float)($data['lat'] ?? 14.1870);
+    $lng = (float)($data['lng'] ?? 121.2650);
+
+    if (!$orderCode) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Order code is required.']);
+        exit;
+    }
+
+    if (empty($proofPhoto)) {
+        $proofPhoto = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80';
+    }
+
+    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmt->execute([$orderCode]);
+    $order = $stmt->fetch();
+    if (!$order) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => "Order {$orderCode} not found."]);
+        exit;
+    }
+
+    $upd = $db->prepare("UPDATE `rental_orders` SET 
+        `order_status` = 'ON_THE_WAY', 
+        `status_display` = 'Out for Delivery',
+        `pickup_proof_photo` = ?, 
+        `pickup_proof_note` = ?, 
+        `pickup_proof_time` = NOW(),
+        `rider_current_lat` = ?,
+        `rider_current_lng` = ?
+        WHERE `order_code` = ?");
+    $upd->execute([$proofPhoto, $proofNote, $lat, $lng, $orderCode]);
+
+    // Send automated email notification to Renter (customer_email)
+    $renterEmail = $order['customer_email'] ?: 'pogilameg@gmail.com';
+    $renterName = $order['customer_name'] ?: 'Valued Student';
+    $rName = $order['assigned_rider_name'] ?: ($order['rider_name'] ?: $riderName);
+    $rPhone = $order['assigned_rider_phone'] ?: ($order['rider_phone'] ?: '09187654321');
+    $rVehicle = $order['rider_vehicle'] ?: 'Honda Click 125i (MC-8888-JY)';
+
+    $subject = "📦 Your Rental Package Has Been Picked Up! Order {$orderCode} is On The Way";
+    $htmlBody = "
+    <div style='font-family: Arial, sans-serif; background-color: #0F172A; padding: 25px; color: #F8FAFC;'>
+        <div style='max-width: 520px; margin: 0 auto; background: #1E293B; border-radius: 16px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);'>
+            <div style='background: linear-gradient(135deg, #5B3FA8, #341F97); padding: 24px 20px; text-align: center;'>
+                <h2 style='color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;'>🚚 RentEase Fleet Logistics</h2>
+                <p style='color: #E2E8F0; font-size: 13px; margin: 6px 0 0 0;'>Live Courier Route Tracking Active</p>
+            </div>
+            <div style='padding: 24px 20px;'>
+                <p style='font-size: 15px; color: #F8FAFC; margin-top: 0;'>Hello <strong>" . htmlspecialchars($renterName) . "</strong>,</p>
+                <p style='font-size: 14px; color: #94A3B8; line-height: 1.5;'>Great news! Fleet driver <strong>" . htmlspecialchars($rName) . "</strong> has safely picked up your equipment package for <strong>Order " . htmlspecialchars($orderCode) . "</strong> from the stock owner and is now heading to your delivery location.</p>
+                
+                <div style='background: #0F172A; border-radius: 12px; border: 1px solid #334155; padding: 14px; margin: 18px 0;'>
+                    <div style='font-size: 12px; font-weight: 700; color: #10B981; text-transform: uppercase; margin-bottom: 8px;'>📋 Driver & Rig Details:</div>
+                    <div style='font-size: 13px; color: #CBD5E1; margin-bottom: 4px;'><strong>Driver:</strong> " . htmlspecialchars($rName) . " (" . htmlspecialchars($rPhone) . ")</div>
+                    <div style='font-size: 13px; color: #CBD5E1; margin-bottom: 4px;'><strong>Vehicle:</strong> " . htmlspecialchars($rVehicle) . "</div>
+                    <div style='font-size: 13px; color: #CBD5E1;'><strong>Delivery Destination:</strong> " . htmlspecialchars($order['delivery_address'] ?? 'San Pablo, Laguna') . "</div>
+                </div>
+
+                <div style='margin: 18px 0;'>
+                    <div style='font-size: 13px; font-weight: 700; color: #CBD5E1; margin-bottom: 8px;'>📸 Verified Proof of Pickup Photo:</div>
+                    <div style='text-align: center; background: #0F172A; border-radius: 12px; overflow: hidden; border: 1px solid #334155; padding: 6px;'>
+                        <img src='" . htmlspecialchars($proofPhoto) . "' alt='Proof of Pickup' style='max-width: 100%; height: auto; border-radius: 8px; max-height: 240px; object-fit: cover;'>
+                    </div>
+                    <p style='font-size: 12px; color: #94A3B8; font-style: italic; margin-top: 6px;'>Note: " . htmlspecialchars($proofNote) . "</p>
+                </div>
+
+                <div style='background: rgba(91, 63, 168, 0.15); border: 1px solid #5B3FA8; border-radius: 12px; padding: 14px; text-align: center; margin: 20px 0;'>
+                    <p style='font-size: 13px; color: #CBD5E1; margin: 0;'>The <strong>Live Courier GPS Map</strong> is now active on your order tracker.</p>
+                </div>
+
+                <hr style='border: 0; border-top: 1px solid #334155; margin: 20px 0;'>
+                <p style='font-size: 11px; color: #64748B; text-align: center; margin: 0;'>&copy; " . date('Y') . " RentEase Logistics &bull; Campus Marketplace</p>
+            </div>
+        </div>
+    </div>
+    ";
+    send_rentease_email($renterEmail, $renterName, $subject, $htmlBody);
+
+    // Chat notifications to Renter (105) and Stock Owner (104)
+    try {
+        $chatMsg = "📦 Package Picked Up: Fleet driver {$rName} has collected the equipment package for Order {$orderCode} from stock owner hub! Email notification sent to {$renterEmail}. Live GPS route tracking is now active for Renter, Stock Owner, and Rider.";
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, 105, 'RentEase Fleet Dispatch', ?, ?, NOW())")
+           ->execute([$chatMsg, $orderCode]);
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, 104, 'RentEase Fleet Dispatch', ?, ?, NOW())")
+           ->execute([$chatMsg, $orderCode]);
+    } catch (Exception $eC) {}
+
+    echo json_encode([
+        'success' => true,
+        'message' => "📦 Package picked up successfully! Email notification dispatched to renter and live GPS tracking enabled.",
+        'order_status' => 'ON_THE_WAY',
+        'pickup_proof_photo' => $proofPhoto
+    ]);
+    exit;
+}
+
+// Step 6: Renter Confirms Package Received in good condition
+if ($action === 'renter_confirm_received') {
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    if (!$orderCode) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Order code is required.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmt->execute([$orderCode]);
+    $order = $stmt->fetch();
+    if (!$order) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => "Order {$orderCode} not found."]);
+        exit;
+    }
+
+    $upd = $db->prepare("UPDATE `rental_orders` SET `renter_received_confirmed` = 1, `renter_received_time` = NOW() WHERE `order_code` = ?");
+    $upd->execute([$orderCode]);
+
+    try {
+        $msg = "🎉 Item Received: Student renter {$order['customer_name']} confirmed that the package for Order {$orderCode} was received safely in good working condition. The active rental course is now underway!";
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (105, 104, 'Student Renter', ?, ?, NOW())")
+           ->execute([$msg, $orderCode]);
+    } catch (Exception $eChat) {}
+
+    echo json_encode([
+        'success' => true,
+        'message' => "🎉 Package Receipt Confirmed! Enjoy your event equipment rental course.",
+        'renter_received_confirmed' => 1,
+        'renter_received_time' => date('Y-m-d H:i:s')
+    ]);
+    exit;
+}
+
 if ($action === 'rider_update_stage') {
     $orderNumber = trim((string)($data['order_number'] ?? $data['order_code'] ?? '#RE-10245'));
     $stage = strtoupper(trim((string)($data['stage'] ?? 'ON_THE_WAY')));
@@ -1683,6 +1944,27 @@ if ($action === 'rider_update_stage') {
                ->execute([100, 105, 'RentEase Fleet Dispatch', $msg, $orderNumber]);
             $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
                ->execute([100, 104, 'RentEase Fleet Dispatch', $msg, $orderNumber]);
+
+            // Email Notification to Renter & Stock Owner upon delivery
+            $stmtDelOrder = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? OR `order_code` = ? LIMIT 1");
+            $stmtDelOrder->execute([$orderNumber, '#' . ltrim($orderNumber, '#')]);
+            $delOrder = $stmtDelOrder->fetch();
+            if ($delOrder) {
+                $delHtml = "
+                <div style='font-family: Arial, sans-serif; background:#0F172A; padding:25px; color:#F8FAFC;'>
+                    <div style='max-width:520px; margin:0 auto; background:#1E293B; border-radius:16px; border:1px solid #334155; padding:24px;'>
+                        <h2 style='color:#10B981; margin-top:0;'>🎉 Package Delivered Safely!</h2>
+                        <p>Order <strong>" . htmlspecialchars($delOrder['order_code']) . "</strong> has been handed over safely by courier.</p>
+                        <div style='text-align:center; margin:16px 0;'>
+                            <img src='" . htmlspecialchars($proofPhoto) . "' style='max-width:100%; border-radius:10px; max-height:220px; object-fit:cover;' alt='Proof of Delivery'>
+                        </div>
+                        <p><strong>Recipient:</strong> " . htmlspecialchars($recipientName) . "<br><strong>Remarks:</strong> " . htmlspecialchars($proofNote) . "</p>
+                        <p>Please check your tracker to confirm receipt of the item.</p>
+                    </div>
+                </div>";
+                send_rentease_email($delOrder['customer_email'], $delOrder['customer_name'], "🎉 Package Delivered: Order {$delOrder['order_code']}", $delHtml);
+                send_rentease_email($delOrder['owner_email'], $delOrder['owner_name'], "🎉 Equipment Delivered to Renter: Order {$delOrder['order_code']}", $delHtml);
+            }
         } catch (Exception $e) {}
     }
 
