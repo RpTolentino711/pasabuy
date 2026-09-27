@@ -1380,6 +1380,21 @@ window.checkOwnerRentalNotifications = async function () {
         if (typeof checkUserOrderUpdatesBadge === 'function') {
             checkUserOrderUpdatesBadge();
         }
+
+        // Live dashboard sync: if requests section or sell tab is visible, update incoming requests live
+        const reqSection = document.getElementById('profileSectionRequests');
+        const tabProfile = document.getElementById('tabProfile');
+        if (tabProfile && tabProfile.style.display !== 'none' && reqSection && reqSection.style.display !== 'none') {
+            if (typeof loadOwnerRentalDashboard === 'function') {
+                loadOwnerRentalDashboard(false);
+            }
+        }
+        const tabSell = document.getElementById('tabSell');
+        if (tabSell && tabSell.style.display !== 'none') {
+            if (typeof loadOwnerRentalDashboard === 'function') {
+                loadOwnerRentalDashboard(false);
+            }
+        }
     } catch (e) {}
 };
 

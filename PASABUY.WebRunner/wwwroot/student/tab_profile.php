@@ -84,9 +84,10 @@
                     <span class="fs-9 text-muted" id="profileRequestsSubtext">Students asking to rent your equipment</span>
                 </div>
             </div>
-            <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold border text-primary" onclick="loadOwnerRentalDashboard(true)">
-                <i class="fa-solid fa-rotate-right me-1"></i> Refresh
-            </button>
+            <div class="d-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill bg-white border border-success-subtle shadow-2xs flex-shrink-0">
+                <span class="rounded-circle bg-success d-inline-block" style="width: 7px; height: 7px; box-shadow: 0 0 6px #10B981;"></span>
+                <span class="fw-bold text-success text-uppercase" style="letter-spacing: 0.5px; font-size: 0.65rem;">LIVE</span>
+            </div>
         </div>
 
         <!-- Dynamic Rental Orders Container -->
