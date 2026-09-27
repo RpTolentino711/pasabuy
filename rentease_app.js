@@ -993,15 +993,39 @@ window.switchProfileSubTab = function(subtab) {
     }
 };
 
+function getLoggedInOwnerInfo() {
+    let u = null;
+    try { u = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+    if (!u) return { email: '', name: '', id: 0, studentNumber: '' };
+    const fullName = u.name || ((u.firstName || '') + ' ' + (u.lastName || '')).trim();
+    return {
+        email: (u.email || '').trim().toLowerCase(),
+        name: fullName,
+        id: u.id || u.userId || 0,
+        studentNumber: u.studentNumber || ''
+    };
+}
+
 window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
-    let storedUser = null;
-    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
-    const ownerEmail = storedUser?.email || 'romeopaolotolentino@gmail.com';
-    const ownerName = storedUser?.name || 'Romeo Paolo Tolentino';
-    const ownerId = storedUser?.id || storedUser?.userId || 104;
+    const owner = getLoggedInOwnerInfo();
+    const profileBadge = document.getElementById('profileRequestsBadge');
+    const tabProfileBadge = document.getElementById('tabProfileBadge');
+    const rentoutPendingBadge = document.getElementById('rentoutPendingBadge');
+
+    if (!owner.email && !owner.name && !owner.id) {
+        if (profileBadge) profileBadge.style.display = 'none';
+        if (tabProfileBadge) tabProfileBadge.style.display = 'none';
+        if (rentoutPendingBadge) rentoutPendingBadge.style.display = 'none';
+        return;
+    }
 
     try {
-        const res = await fetch(`/rentease_api.php?action=get_owner_rental_data&owner_email=${encodeURIComponent(ownerEmail)}&owner_name=${encodeURIComponent(ownerName)}&owner_id=${ownerId}&customer_phone=${encodeURIComponent(storedUser?.studentNumber || '09668257301')}`);
+        const res = await fetch(getRentEaseApiUrl('get_owner_rental_data', {
+            owner_email: owner.email,
+            owner_name: owner.name,
+            owner_id: owner.id,
+            customer_phone: owner.studentNumber
+        }));
         if (!res.ok) return;
         const data = await res.json();
         if (!data || !data.success) return;
@@ -1313,21 +1337,29 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
 };
 
 window.checkOwnerRentalNotifications = async function () {
-    let storedUser = null;
-    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
-    const ownerEmail = storedUser?.email || 'romeopaolotolentino@gmail.com';
-    const ownerName = storedUser?.name || 'Romeo Paolo Tolentino';
-    const ownerId = storedUser?.id || storedUser?.userId || 104;
+    const owner = getLoggedInOwnerInfo();
+    const profileBadge = document.getElementById('profileRequestsBadge');
+    const tabProfileBadge = document.getElementById('tabProfileBadge');
+    const rentoutPendingBadge = document.getElementById('rentoutPendingBadge');
+
+    if (!owner.email && !owner.name && !owner.id) {
+        if (profileBadge) profileBadge.style.display = 'none';
+        if (tabProfileBadge) tabProfileBadge.style.display = 'none';
+        if (rentoutPendingBadge) rentoutPendingBadge.style.display = 'none';
+        return;
+    }
 
     try {
-        const res = await fetch(`/rentease_api.php?action=get_owner_rental_data&owner_email=${encodeURIComponent(ownerEmail)}&owner_name=${encodeURIComponent(ownerName)}&owner_id=${ownerId}`);
+        const res = await fetch(getRentEaseApiUrl('get_owner_rental_data', {
+            owner_email: owner.email,
+            owner_name: owner.name,
+            owner_id: owner.id
+        }));
         if (!res.ok) return;
         const data = await res.json();
         if (!data || !data.success) return;
 
         const count = data.pending_count || (data.incoming_requests || []).length;
-        const profileBadge = document.getElementById('profileRequestsBadge');
-        const tabProfileBadge = document.getElementById('tabProfileBadge');
         if (profileBadge) {
             profileBadge.innerText = count;
             profileBadge.style.display = count > 0 ? 'inline-block' : 'none';
@@ -1335,6 +1367,10 @@ window.checkOwnerRentalNotifications = async function () {
         if (tabProfileBadge) {
             tabProfileBadge.innerText = count;
             tabProfileBadge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+        if (rentoutPendingBadge) {
+            rentoutPendingBadge.innerText = count;
+            rentoutPendingBadge.style.display = count > 0 ? 'inline-block' : 'none';
         }
     } catch (e) {}
 };

@@ -1013,40 +1013,79 @@ if ($action === 'admin_update_stock') {
 // OWNER RENTAL DASHBOARD: ORDERS, REQUESTS, STOCK MONITORING & HISTORY
 // ----------------------------------------------------------
 if ($action === 'get_owner_rental_data') {
-    $ownerEmail = strtolower(trim((string)($data['owner_email'] ?? $_GET['owner_email'] ?? 'romeopaolotolentino@gmail.com')));
-    $ownerName = trim((string)($data['owner_name'] ?? $_GET['owner_name'] ?? 'Romeo Paolo Tolentino'));
-    $ownerId = (int)($data['owner_id'] ?? $_GET['owner_id'] ?? 104);
+    $ownerEmail = strtolower(trim((string)($data['owner_email'] ?? $_GET['owner_email'] ?? '')));
+    $ownerName = trim((string)($data['owner_name'] ?? $_GET['owner_name'] ?? ''));
+    $ownerId = (int)($data['owner_id'] ?? $_GET['owner_id'] ?? 0);
 
-    if (!$db) {
+    if (!$db || (empty($ownerEmail) && empty($ownerName) && empty($ownerId))) {
         echo json_encode([
             'success' => true,
             'incoming_requests' => [],
             'inventory' => [],
             'history' => [],
-            'pending_count' => 0
+            'pending_count' => 0,
+            'total_stock_owned' => 0,
+            'total_rented_out' => 0,
+            'total_available' => 0
         ]);
         exit;
     }
 
     try {
-        // 1. Fetch all equipment owned by this user
-        $invStmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE LOWER(`owner_email`) = ? OR `owner_name` = ? OR `owner_id` = ? ORDER BY `id` DESC");
-        $invStmt->execute([$ownerEmail, $ownerName, $ownerId]);
-        $ownerInventory = $invStmt->fetchAll();
-
-        $ownedProductIds = array_map(fn($x) => (int)$x['id'], $ownerInventory);
-
-        // 2. Fetch all rental orders for this owner
-        $sql = "SELECT * FROM `rental_orders` WHERE LOWER(`owner_email`) = ? OR `owner_name` = ?";
-        $params = [$ownerEmail, $ownerName];
-        if (!empty($ownedProductIds)) {
-            $inClause = implode(',', array_fill(0, count($ownedProductIds), '?'));
-            $sql .= " OR `id` IN (SELECT `order_id` FROM `rental_order_items` WHERE `product_id` IN ($inClause))";
-            foreach ($ownedProductIds as $pid) {
-                $params[] = $pid;
-            }
+        // 1. Fetch all equipment owned by this specific user
+        $invConditions = [];
+        $invParams = [];
+        if (!empty($ownerEmail)) {
+            $invConditions[] = "LOWER(`owner_email`) = ?";
+            $invParams[] = $ownerEmail;
         }
-        $sql .= " ORDER BY `id` DESC LIMIT 60";
+        if (!empty($ownerName)) {
+            $invConditions[] = "`owner_name` = ?";
+            $invParams[] = $ownerName;
+        }
+        if ($ownerId > 0) {
+            $invConditions[] = "`owner_id` = ?";
+            $invParams[] = $ownerId;
+        }
+
+        $ownerInventory = [];
+        if (!empty($invConditions)) {
+            $invSql = "SELECT * FROM `rental_inventory` WHERE (" . implode(' OR ', $invConditions) . ") ORDER BY `id` DESC";
+            $invStmt = $db->prepare($invSql);
+            $invStmt->execute($invParams);
+            $ownerInventory = $invStmt->fetchAll();
+        }
+
+        // If the user owns no equipment, they CANNOT have incoming rental requests!
+        if (empty($ownerInventory)) {
+            echo json_encode([
+                'success' => true,
+                'incoming_requests' => [],
+                'inventory' => [],
+                'history' => [],
+                'pending_count' => 0,
+                'total_stock_owned' => 0,
+                'total_rented_out' => 0,
+                'total_available' => 0
+            ]);
+            exit;
+        }
+
+        $ownedProductIds = array_map(function($x) { return (int)$x['id']; }, $ownerInventory);
+
+        // 2. Fetch rental orders ONLY for items owned by this owner
+        $inClause = implode(',', array_fill(0, count($ownedProductIds), '?'));
+        $sql = "SELECT DISTINCT ro.* FROM `rental_orders` ro 
+                INNER JOIN `rental_order_items` roi ON ro.id = roi.order_id 
+                WHERE roi.product_id IN ($inClause)";
+        $params = $ownedProductIds;
+
+        if (!empty($ownerEmail)) {
+            $sql .= " OR LOWER(ro.owner_email) = ?";
+            $params[] = $ownerEmail;
+        }
+
+        $sql .= " ORDER BY ro.id DESC LIMIT 60";
         $orderStmt = $db->prepare($sql);
         $orderStmt->execute($params);
         $allOrders = $orderStmt->fetchAll();
