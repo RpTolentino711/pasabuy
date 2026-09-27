@@ -210,12 +210,12 @@ session_start();
             <div class="rider-card">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="text-secondary fw-bold fs-8"><i class="fa-solid fa-truck-ramp-box me-1 text-warning"></i> Assigned Delivery Fleet</span>
-                    <span class="badge bg-success bg-opacity-25 text-success fw-bold fs-9" id="riderPlateBadge"><i class="fa-solid fa-motorcycle me-1"></i> MC-8888-JY</span>
+                    <span class="badge bg-success bg-opacity-25 text-success fw-bold fs-9" id="riderPlateBadge"><i class="fa-solid fa-motorcycle me-1"></i> Fleet Motorcycle</span>
                 </div>
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <h6 class="fw-extrabold text-white mb-0" id="riderVehicleModelText">Honda Click 125i (Cargo Rig)</h6>
-                        <span class="text-secondary fs-9" id="riderLicenseText">License: N02-24-123456 • Rating: 4.9 ★</span>
+                        <h6 class="fw-extrabold text-white mb-0" id="riderVehicleModelText">Motorcycle Fleet</h6>
+                        <span class="text-secondary fs-9" id="riderLicenseText">Assigned Delivery Rig • Active Dispatch</span>
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="riderGpsToggle" checked onchange="toggleRiderGps(this)">
@@ -224,24 +224,24 @@ session_start();
                 </div>
             </div>
 
-            <!-- KPI Row -->
+            <!-- KPI Row (Dynamically Populated from Database) -->
             <div class="row g-2 mb-3">
                 <div class="col-4">
                     <div class="p-2.5 rounded-3 text-center" style="background:#1E293B; border:1px solid #334155;">
                         <span class="text-secondary fs-9 fw-bold text-uppercase d-block">Delivered</span>
-                        <strong class="text-success fs-6">4 Events</strong>
+                        <strong class="text-success fs-6" id="riderDeliveredCount">0 Events</strong>
                     </div>
                 </div>
                 <div class="col-4">
                     <div class="p-2.5 rounded-3 text-center" style="background:#1E293B; border:1px solid #334155;">
                         <span class="text-secondary fs-9 fw-bold text-uppercase d-block">Active Trip</span>
-                        <strong class="text-warning fs-6">1 Order</strong>
+                        <strong class="text-warning fs-6" id="riderActiveTripCount">0 Orders</strong>
                     </div>
                 </div>
                 <div class="col-4">
                     <div class="p-2.5 rounded-3 text-center" style="background:#1E293B; border:1px solid #334155;">
                         <span class="text-secondary fs-9 fw-bold text-uppercase d-block">Earnings</span>
-                        <strong class="text-info fs-6">₱1,850</strong>
+                        <strong class="text-info fs-6" id="riderEarningsText">₱0</strong>
                     </div>
                 </div>
             </div>
@@ -509,7 +509,7 @@ async function executeRiderLogin() {
 
             document.getElementById('riderAuthView').style.display = 'none';
             document.getElementById('riderMainDashboardView').style.display = 'flex';
-            document.getElementById('riderNameText').innerText = `Juan Dela Cruz (Joey)`;
+            updateRiderHeaderUI();
 
             initRiderMap();
             fetchRiderJobAlerts();
@@ -527,7 +527,7 @@ async function executeRiderLogin() {
 
             document.getElementById('riderAuthView').style.display = 'none';
             document.getElementById('riderMainDashboardView').style.display = 'flex';
-            document.getElementById('riderNameText').innerText = `Juan Dela Cruz (Joey)`;
+            updateRiderHeaderUI();
 
             initRiderMap();
             fetchRiderJobAlerts();
@@ -536,6 +536,19 @@ async function executeRiderLogin() {
         }
         errMsg.innerText = 'Connection error logging into Fleet Portal.';
         errAlert.style.display = 'block';
+    }
+}
+
+function updateRiderHeaderUI() {
+    if (!currentRiderUser) return;
+    const displayName = currentRiderUser.name 
+        || [currentRiderUser.firstName, currentRiderUser.lastName].filter(Boolean).join(' ') 
+        || currentRiderUser.email 
+        || 'Fleet Driver';
+    const nameEl = document.getElementById('riderNameText');
+    if (nameEl) nameEl.innerText = displayName;
+    if (currentRiderUser.avatar && document.getElementById('riderAvatarImg')) {
+        document.getElementById('riderAvatarImg').src = currentRiderUser.avatar;
     }
 }
 
@@ -548,7 +561,7 @@ function checkRiderSessionOnLoad() {
                 currentRiderUser = sess.user;
                 document.getElementById('riderAuthView').style.display = 'none';
                 document.getElementById('riderMainDashboardView').style.display = 'flex';
-                document.getElementById('riderNameText').innerText = `Juan Dela Cruz (Joey)`;
+                updateRiderHeaderUI();
 
                 setTimeout(initRiderMap, 200);
                 fetchRiderJobAlerts();
@@ -627,12 +640,45 @@ function initRiderMap() {
 
 async function fetchRiderJobAlerts() {
     try {
-        let apiUrl = '../rentease_api.php?action=rider_get_jobs&rider_id=1&rider_name=Juan+Dela+Cruz';
+        const rId = currentRiderUser ? (currentRiderUser.id || 0) : 0;
+        const rName = currentRiderUser ? (currentRiderUser.name || [currentRiderUser.firstName, currentRiderUser.lastName].filter(Boolean).join(' ') || currentRiderUser.email || '') : '';
+        let apiUrl = `../rentease_api.php?action=rider_get_jobs&rider_id=${encodeURIComponent(rId)}&rider_name=${encodeURIComponent(rName)}`;
         let res = await fetch(apiUrl);
         if (!res.ok) {
-            res = await fetch('/rentease_api.php?action=rider_get_jobs&rider_id=1&rider_name=Juan+Dela+Cruz');
+            res = await fetch(`/rentease_api.php?action=rider_get_jobs&rider_id=${encodeURIComponent(rId)}&rider_name=${encodeURIComponent(rName)}`);
         }
         const data = await res.json();
+        
+        // Update KPI Cards Dynamically from real backend stats
+        const delCount = (data.stats && typeof data.stats.delivered !== 'undefined') ? data.stats.delivered : 0;
+        const actCount = (data.stats && typeof data.stats.active_trip !== 'undefined') ? data.stats.active_trip : (data.active_order ? 1 : 0);
+        const earnVal = (data.stats && typeof data.stats.earnings !== 'undefined') ? data.stats.earnings : (delCount * 150);
+
+        const delEl = document.getElementById('riderDeliveredCount');
+        if (delEl) delEl.innerText = `${delCount} Event${delCount === 1 ? '' : 's'}`;
+
+        const actEl = document.getElementById('riderActiveTripCount');
+        if (actEl) actEl.innerText = `${actCount} Order${actCount === 1 ? '' : 's'}`;
+
+        const earnEl = document.getElementById('riderEarningsText');
+        if (earnEl) earnEl.innerText = `₱${parseFloat(earnVal || 0).toLocaleString('en-US', {minimumFractionDigits: 0})}`;
+
+        // Update Vehicle Card if rider info provided
+        if (data.rider_info) {
+            const ri = data.rider_info;
+            if (ri.PlateNumber && document.getElementById('riderPlateBadge')) {
+                document.getElementById('riderPlateBadge').innerHTML = `<i class="fa-solid fa-motorcycle me-1"></i> ${ri.PlateNumber}`;
+            }
+            if (ri.VehicleModel && document.getElementById('riderVehicleModelText')) {
+                document.getElementById('riderVehicleModelText').innerText = ri.VehicleModel;
+            }
+            if (document.getElementById('riderLicenseText')) {
+                document.getElementById('riderLicenseText').innerText = `Rating: ${ri.Rating || '5.0'} ★ • ${ri.Status || 'Active'}`;
+            }
+            if (document.getElementById('podVehicleStamp') && ri.VehicleModel) {
+                document.getElementById('podVehicleStamp').innerText = `${ri.VehicleModel} (${ri.PlateNumber || 'MC'})`;
+            }
+        }
         
         const activeCard = document.getElementById('riderActiveJobCard');
         const noActiveNotice = document.getElementById('riderNoActiveJobNotice');
@@ -740,20 +786,41 @@ async function acceptRiderJob(orderCode) {
     if (!confirm(`Do you want to ACCEPT the delivery job for Order ${orderCode}?`)) return;
 
     try {
+        const rId = currentRiderUser ? (currentRiderUser.id || 0) : 0;
+        const rName = currentRiderUser ? (currentRiderUser.name || [currentRiderUser.firstName, currentRiderUser.lastName].filter(Boolean).join(' ') || currentRiderUser.email || 'Fleet Rider') : 'Fleet Rider';
+        const rPhone = currentRiderUser?.phone || currentRiderUser?.studentNumber || '09187654321';
+        const rVehicle = document.getElementById('riderVehicleModelText')?.innerText || 'Motorcycle Fleet';
+
         let apiUrl = '../rentease_api.php?action=rider_accept_job';
         let res = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 order_code: orderCode,
-                rider_id: 1,
-                rider_name: 'Juan Dela Cruz',
-                rider_phone: '09187654321',
-                rider_vehicle: 'Honda Click 125i (MC-8888-JY)',
+                rider_id: rId,
+                rider_name: rName,
+                rider_phone: rPhone,
+                rider_vehicle: rVehicle,
                 lat: riderCoords[0],
                 lng: riderCoords[1]
             })
         });
+
+        if (!res.ok) {
+            res = await fetch('/rentease_api.php?action=rider_accept_job', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_code: orderCode,
+                    rider_id: rId,
+                    rider_name: rName,
+                    rider_phone: rPhone,
+                    rider_vehicle: rVehicle,
+                    lat: riderCoords[0],
+                    lng: riderCoords[1]
+                })
+            });
+        }
 
         if (!res.ok) {
             res = await fetch('/rentease_api.php?action=rider_accept_job', {
@@ -890,8 +957,8 @@ async function submitProofOfDelivery() {
     const recipient = document.getElementById('podRecipientInput')?.value.trim() || 'Verified Student';
     const remarks = document.getElementById('podRemarksInput')?.value.trim() || 'Handed over safely.';
     const photo = podCurrentPhotoUrl || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
-    const vehicle = 'Motorcycle';
-    const plate = 'MC-8888-JY';
+    const vehicle = document.getElementById('riderVehicleModelText')?.innerText || 'Motorcycle Fleet';
+    const plate = (document.getElementById('riderPlateBadge')?.innerText || 'Fleet Motorcycle').replace(/Live GPS/i, '').trim();
 
     const btn = document.getElementById('btnSubmitProofOfDelivery');
     if (btn) {

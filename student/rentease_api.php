@@ -1134,10 +1134,39 @@ if ($action === 'rider_get_jobs' || $action === 'rider_get_available_jobs') {
         $activeOrder['pickup_address'] = !empty($activeOrder['pickup_address']) ? $activeOrder['pickup_address'] : 'Pasabuy Hub, Lipa City';
     }
 
+    // Compute REAL KPI stats from database
+    $deliveredCount = 0;
+    $earnings = 0.0;
+    try {
+        $stmtDel = $db->prepare("SELECT COUNT(*), SUM(COALESCE(delivery_fee, 150)) FROM `rental_orders` 
+            WHERE (`assigned_rider_id` = ? OR `assigned_rider_name` = ? OR `rider_name` = ?) 
+            AND `order_status` IN ('DELIVERED', 'RETURNED')");
+        $stmtDel->execute([$riderId, $riderName, $riderName]);
+        $rowStats = $stmtDel->fetch();
+        if ($rowStats) {
+            $deliveredCount = (int)($rowStats[0] ?? 0);
+            $earnings = (float)($rowStats[1] ?? 0);
+        }
+    } catch (Exception $se) {}
+
+    // Fetch rider vehicle details from database if registered
+    $riderInfo = null;
+    try {
+        $stmtR = $db->prepare("SELECT r.*, sp.FirstName, sp.LastName, sp.StudentNumber FROM `Riders` r LEFT JOIN `StudentProfiles` sp ON r.UserId = sp.UserId WHERE r.UserId = ? LIMIT 1");
+        $stmtR->execute([$riderId]);
+        $riderInfo = $stmtR->fetch();
+    } catch (Exception $re) {}
+
     echo json_encode([
         'success' => true,
         'active_order' => $activeOrder,
-        'broadcast_jobs' => $broadcastJobs
+        'broadcast_jobs' => $broadcastJobs,
+        'stats' => [
+            'delivered' => $deliveredCount,
+            'active_trip' => $activeOrder ? 1 : 0,
+            'earnings' => $earnings
+        ],
+        'rider_info' => $riderInfo
     ]);
     exit;
 }
