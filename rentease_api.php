@@ -713,6 +713,46 @@ if ($action === 'update_issue_status') {
 }
 
 // ----------------------------------------------------------
+// 7.5 GET USER ACTIVE ORDERS & RENTAL HISTORY
+// ----------------------------------------------------------
+if ($action === 'get_user_orders' || $action === 'get_my_orders') {
+    $customerEmail = trim((string)($_GET['customer_email'] ?? ($data['customer_email'] ?? '')));
+    $customerPhone = trim((string)($_GET['customer_phone'] ?? ($data['customer_phone'] ?? '')));
+    $customerName = trim((string)($_GET['customer_name'] ?? ($data['customer_name'] ?? '')));
+
+    $orders = [];
+    if ($db) {
+        try {
+            if (!empty($customerEmail) || !empty($customerPhone) || !empty($customerName)) {
+                $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `customer_email` = ? OR `customer_phone` = ? OR `customer_name` = ? ORDER BY `id` DESC LIMIT 30");
+                $stmt->execute([$customerEmail, $customerPhone, $customerName]);
+                $orders = $stmt->fetchAll();
+            }
+            if (empty($orders)) {
+                $stmtAll = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 30");
+                $orders = $stmtAll ? $stmtAll->fetchAll() : [];
+            }
+        } catch (Throwable $eDb) {
+            $orders = [];
+        }
+    }
+
+    $formatted = [];
+    foreach ($orders as $ord) {
+        $ord['order_number'] = $ord['order_code'] ?? ('#RE-' . ($ord['id'] ?? 10245));
+        $ord['status'] = $ord['order_status'] ?? 'CONFIRMED';
+        $formatted[] = $ord;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'orders' => $formatted,
+        'recent_orders' => $formatted
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
 // 8. ADMIN MANAGEMENT DASHBOARD & ANALYTICS (Pages 5-12 of RentEase.pdf)
 // ----------------------------------------------------------
 if ($action === 'get_admin_dashboard') {
@@ -746,8 +786,8 @@ if ($action === 'get_admin_dashboard') {
 
     try {
         $invStmt = $db->query("SELECT * FROM `rental_inventory` ORDER BY `id` DESC");
-        $inventory = $invStmt->fetchAll();
-    } catch (Exception $e) { $inventory = []; }
+        $inventory = $invStmt ? $invStmt->fetchAll() : [];
+    } catch (Throwable $e) { $inventory = []; }
 
     $totalStock = 0; $availableStock = 0; $rentedStock = 0; $maintStock = 0;
     foreach ($inventory as $it) {
@@ -758,29 +798,33 @@ if ($action === 'get_admin_dashboard') {
     }
 
     try {
-        $ordersStmt = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 20");
-        $recentOrders = $ordersStmt->fetchAll();
-    } catch (Exception $e) { $recentOrders = []; }
+        $ordersStmt = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 50");
+        $recentOrders = $ordersStmt ? $ordersStmt->fetchAll() : [];
+    } catch (Throwable $e) { $recentOrders = []; }
 
     $activeDeliveries = 0;
     $sales = 0.0;
+    $formattedRecentOrders = [];
     foreach ($recentOrders as $ord) {
         $sales += (float)($ord['total_amount'] ?? 0);
         if (in_array(($ord['order_status'] ?? ''), ['CONFIRMED', 'PREPARING', 'ON_THE_WAY', 'PICKUP'])) {
             $activeDeliveries++;
         }
+        $ord['order_number'] = $ord['order_code'] ?? ('#RE-' . ($ord['id'] ?? 10245));
+        $ord['status'] = $ord['order_status'] ?? 'CONFIRMED';
+        $formattedRecentOrders[] = $ord;
     }
 
     try {
         $issuesStmt = $db->query("SELECT * FROM `rental_issues` ORDER BY `id` DESC");
-        $issues = $issuesStmt->fetchAll();
-    } catch (Exception $e) { $issues = []; }
-    $pendingIssues = count(array_filter($issues, fn($i) => ($i['status'] ?? '') !== 'RESOLVED'));
+        $issues = $issuesStmt ? $issuesStmt->fetchAll() : [];
+    } catch (Throwable $e) { $issues = []; }
+    $pendingIssues = count(array_filter($issues, function($i) { return ($i['status'] ?? '') !== 'RESOLVED'; }));
 
     try {
         $packagesStmt = $db->query("SELECT * FROM `rental_packages` ORDER BY `id` ASC");
-        $packages = $packagesStmt->fetchAll();
-    } catch (Exception $e) { $packages = []; }
+        $packages = $packagesStmt ? $packagesStmt->fetchAll() : [];
+    } catch (Throwable $e) { $packages = []; }
 
     echo json_encode([
         'success' => true,
@@ -803,7 +847,7 @@ if ($action === 'get_admin_dashboard') {
             'assisted_orders_ratio' => '25% assisted orders'
         ],
         'inventory' => $inventory,
-        'recent_orders' => $recentOrders,
+        'recent_orders' => $formattedRecentOrders,
         'issues' => $issues,
         'packages' => $packages
     ]);

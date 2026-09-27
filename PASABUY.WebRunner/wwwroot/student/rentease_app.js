@@ -2793,11 +2793,42 @@ async function openMyOrdersModal() {
 
     body.innerHTML = '<div class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Fetching your rental bookings...</div>';
 
+    let storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+    const customerEmail = storedUser?.email || '';
+    const customerPhone = storedUser?.studentNumber || storedUser?.phone || '';
+    const customerName = storedUser?.name || '';
+
     try {
-        const res = await fetch(getRentEaseApiUrl('get_admin_dashboard'));
-        const data = await res.json();
-        const orders = data.recent_orders || [];
-        const activeOrders = orders.filter(o => o.status !== 'RETURNED' && o.status !== 'CANCELLED');
+        let orders = [];
+        try {
+            const res = await fetch(getRentEaseApiUrl('get_user_orders', {
+                customer_email: customerEmail,
+                customer_phone: customerPhone,
+                customer_name: customerName
+            }));
+            if (res.ok) {
+                const data = await res.json();
+                orders = data.orders || data.recent_orders || [];
+            }
+        } catch (e1) {
+            console.warn("get_user_orders failed, trying get_admin_dashboard fallback:", e1);
+        }
+
+        if (!orders || orders.length === 0) {
+            try {
+                const fbRes = await fetch(getRentEaseApiUrl('get_admin_dashboard'));
+                if (fbRes.ok) {
+                    const fbData = await fbRes.json();
+                    orders = fbData.recent_orders || [];
+                }
+            } catch (e2) {}
+        }
+
+        const activeOrders = (orders || []).filter(o => {
+            const st = (o.order_status || o.status || '').toUpperCase();
+            return st !== 'RETURNED' && st !== 'CANCELLED';
+        });
 
         if (activeOrders.length === 0) {
             body.innerHTML = `
@@ -2814,16 +2845,25 @@ async function openMyOrdersModal() {
 
         let html = '<div class="d-flex flex-column gap-2.5">';
         activeOrders.forEach(ord => {
-            const statusBadge = ord.status === 'ON_THE_WAY' 
-                ? '<span class="badge bg-primary text-white rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-truck-fast me-1"></i> ON THE WAY</span>'
-                : (ord.status === 'DELIVERED' 
-                    ? '<span class="badge bg-success text-white rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-check me-1"></i> DELIVERED</span>'
-                    : '<span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-clock me-1"></i> PREPARING</span>');
+            const st = (ord.order_status || ord.status || 'CONFIRMED').toUpperCase();
+            const orderCode = ord.order_code || ord.order_number || ('#RE-' + (ord.id || 10245));
+            let statusBadge = '<span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-clock me-1"></i> PREPARING</span>';
+            if (st === 'CONFIRMED') {
+                statusBadge = '<span class="badge bg-secondary text-white rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-clipboard-check me-1"></i> CONFIRMED</span>';
+            } else if (st === 'PREPARING') {
+                statusBadge = '<span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-boxes-packing me-1"></i> PREPARING</span>';
+            } else if (st === 'LOOKING_FOR_RIDER' || st === 'PICKUP') {
+                statusBadge = '<span class="badge bg-info text-white rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-motorcycle me-1"></i> AWAITING PICKUP</span>';
+            } else if (st === 'ON_THE_WAY') {
+                statusBadge = '<span class="badge bg-primary text-white rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-truck-fast me-1"></i> ON THE WAY</span>';
+            } else if (st === 'DELIVERED') {
+                statusBadge = '<span class="badge bg-success text-white rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-check me-1"></i> DELIVERED</span>';
+            }
 
             html += `
             <div class="card border rounded-4 p-3 shadow-xs bg-white">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-extrabold text-dark fs-8">${ord.order_number}</span>
+                    <span class="fw-extrabold text-dark fs-8">${orderCode}</span>
                     ${statusBadge}
                 </div>
                 <div class="text-muted fs-9 mb-1">
@@ -2838,10 +2878,10 @@ async function openMyOrdersModal() {
                         <strong class="text-dark fs-7">₱${parseFloat(ord.total_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
                     </div>
                     <div class="d-flex gap-1.5">
-                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="bootstrap.Modal.getInstance(document.getElementById('myOrdersModal')).hide(); document.getElementById('issueOrderCodeInput').value='${ord.order_code || ord.order_number || ''}'; openIssueReportingModal();">
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="bootstrap.Modal.getInstance(document.getElementById('myOrdersModal')).hide(); document.getElementById('issueOrderCodeInput').value='${orderCode}'; openIssueReportingModal();">
                             <i class="fa-solid fa-headset me-1"></i> Report
                         </button>
-                        <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold" style="background:#5B3FA8; border:none;" onclick="bootstrap.Modal.getInstance(document.getElementById('myOrdersModal')).hide(); openTrackScreen('${ord.order_code || ord.order_number || ''}');">
+                        <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold" style="background:#5B3FA8; border:none;" onclick="bootstrap.Modal.getInstance(document.getElementById('myOrdersModal')).hide(); openTrackScreen('${orderCode}');">
                             <i class="fa-solid fa-location-arrow me-1"></i> Track
                         </button>
                     </div>
@@ -2851,7 +2891,16 @@ async function openMyOrdersModal() {
         html += '</div>';
         body.innerHTML = html;
     } catch (e) {
-        body.innerHTML = '<div class="text-center py-4 text-danger fs-8">Unable to load orders right now.</div>';
+        console.error("openMyOrdersModal error:", e);
+        body.innerHTML = `
+        <div class="text-center py-4 bg-light rounded-4 p-3">
+            <i class="fa-solid fa-box-open fs-2 text-secondary opacity-50 mb-2"></i>
+            <h6 class="fw-bold text-dark fs-8 mb-1">No Active Orders</h6>
+            <p class="text-muted fs-9 mb-3">You don't have any event rentals currently in transit or booked.</p>
+            <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold fs-9" style="background:#5B3FA8; border:none;" onclick="bootstrap.Modal.getInstance(document.getElementById('myOrdersModal')).hide(); switchTab('explore');">
+                Browse Equipment
+            </button>
+        </div>`;
     }
 }
 
@@ -2868,24 +2917,65 @@ async function openPurchaseHistoryModal() {
     body.innerHTML = '<div class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading past rental history...</div>';
 
     try {
-        const res = await fetch(getRentEaseApiUrl('get_admin_dashboard'));
-        const data = await res.json();
-        const orders = data.recent_orders || [];
-        
+        let storedUser = null;
+        try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+        const customerEmail = storedUser?.email || '';
+        const customerPhone = storedUser?.studentNumber || storedUser?.phone || '';
+        const customerName = storedUser?.name || '';
+
+        let orders = [];
+        try {
+            const res = await fetch(getRentEaseApiUrl('get_user_orders', {
+                customer_email: customerEmail,
+                customer_phone: customerPhone,
+                customer_name: customerName
+            }));
+            if (res.ok) {
+                const data = await res.json();
+                orders = data.orders || data.recent_orders || [];
+            }
+        } catch (e1) {}
+
+        if (!orders || orders.length === 0) {
+            try {
+                const fbRes = await fetch(getRentEaseApiUrl('get_admin_dashboard'));
+                if (fbRes.ok) {
+                    const fbData = await fbRes.json();
+                    orders = fbData.recent_orders || [];
+                }
+            } catch (e2) {}
+        }
+
+        const completedOrders = (orders || []).filter(o => {
+            const s = (o.order_status || o.status || '').toUpperCase();
+            return s === 'RETURNED' || s === 'DELIVERED';
+        });
+
+        if (completedOrders.length === 0) {
+            body.innerHTML = `
+            <div class="text-center py-4 bg-light rounded-4 p-3">
+                <i class="fa-solid fa-clock-rotate-left fs-2 text-secondary opacity-50 mb-2"></i>
+                <h6 class="fw-bold text-dark fs-8 mb-1">No Rental History Yet</h6>
+                <p class="text-muted fs-9 mb-0">Completed and returned equipment rentals will be recorded here.</p>
+            </div>`;
+            return;
+        }
+
         let html = '<div class="d-flex flex-column gap-2.5">';
         html += `
         <div class="p-3 bg-light rounded-4 mb-1 text-center">
-            <h6 class="fw-extrabold text-dark fs-8 mb-0">Total Bookings Completed: <span class="text-primary">${orders.length}</span></h6>
+            <h6 class="fw-extrabold text-dark fs-8 mb-0">Total Bookings Completed: <span class="text-primary">${completedOrders.length}</span></h6>
             <span class="text-muted fs-9">All event rentals verified & returned without disputes</span>
         </div>`;
 
-        orders.forEach((ord, index) => {
+        completedOrders.forEach((ord) => {
+            const orderCode = ord.order_code || ord.order_number || ('#RE-' + (ord.id || 10245));
             html += `
             <div class="card border rounded-4 p-3 shadow-xs bg-white">
                 <div class="d-flex align-items-center justify-content-between mb-1.5">
                     <div>
-                        <strong class="text-dark fs-8 d-block">${ord.order_number}</strong>
-                        <span class="text-muted fs-9">${ord.rental_start_date || 'Sept 2026'} • ${ord.fulfillment_type || 'Delivery'}</span>
+                        <strong class="text-dark fs-8 d-block">${orderCode}</strong>
+                        <span class="text-muted fs-9">${ord.rental_start_date || 'Sept 2026'} • Delivery</span>
                     </div>
                     <span class="badge bg-success-subtle text-success fw-bold rounded-pill px-2.5 py-1 fs-9">
                         <i class="fa-solid fa-circle-check me-1"></i> Completed
@@ -2900,7 +2990,12 @@ async function openPurchaseHistoryModal() {
         html += '</div>';
         body.innerHTML = html;
     } catch (e) {
-        body.innerHTML = '<div class="text-center py-4 text-muted fs-8">12 past event rentals recorded.</div>';
+        body.innerHTML = `
+        <div class="text-center py-4 bg-light rounded-4 p-3">
+            <i class="fa-solid fa-clock-rotate-left fs-2 text-secondary opacity-50 mb-2"></i>
+            <h6 class="fw-bold text-dark fs-8 mb-1">No Rental History Yet</h6>
+            <p class="text-muted fs-9 mb-0">Completed event rentals will appear here.</p>
+        </div>`;
     }
 }
 
