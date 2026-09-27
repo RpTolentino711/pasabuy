@@ -247,7 +247,7 @@ session_start();
             </div>
 
             <!-- Active Event Rental Delivery Dispatch Card (Screen 7 Sync) -->
-            <div id="riderActiveJobCard" class="rider-card border-primary shadow-lg mb-3" style="background: rgba(30, 41, 59, 0.95);">
+            <div id="riderActiveJobCard" class="rider-card border-primary shadow-lg mb-3" style="display: none; background: rgba(30, 41, 59, 0.95);">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="badge text-white fw-extrabold fs-8 px-2.5 py-1" style="background:#5B3FA8;" id="riderJobStageBadge">
                         <i class="fa-solid fa-truck-fast me-1"></i> STAGE: OUT FOR DELIVERY
