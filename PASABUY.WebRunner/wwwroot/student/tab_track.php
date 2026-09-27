@@ -320,8 +320,12 @@
                     <span class="fs-9 text-muted" id="trackReportStepSub">File a direct report to RentEase Admin Operations</span>
                 </div>
             </div>
-            <button type="button" class="btn btn-sm btn-warning text-dark fw-bold fs-9 rounded-pill px-3 shadow-2xs" onclick="openReportToAdminModal()">
-                <i class="fa-solid fa-flag me-1"></i> Report Step
+            <button type="button" class="btn btn-warning text-dark rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs flex-shrink-0" 
+                    style="width:34px; height:34px;" 
+                    title="Report Step to Admin" 
+                    aria-label="Report Step to Admin" 
+                    onclick="openReportToAdminModal()">
+                <i class="fa-solid fa-flag fs-8"></i>
             </button>
         </div>
         <p class="fs-9 text-dark mb-0">
