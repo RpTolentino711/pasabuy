@@ -23,11 +23,16 @@
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
+            <button type="button" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs position-relative" 
+                    id="btnProfileSettingsGear"
                     style="width:38px; height:38px; background:#F8FAFC; border:1px solid #E2E8F0;" 
                     data-bs-toggle="modal" data-bs-target="#settingsHubModal"
                     onclick="openSettingsHubModal()" title="Account & Settings Hub">
                 <i class="fa-solid fa-gear text-secondary fs-7"></i>
+                <span class="position-absolute top-0 start-100 translate-middle bg-danger border border-2 border-white rounded-circle badge-pulse-glow" 
+                      id="settingsGearBadge" 
+                      style="display:none; width:12px; height:12px; margin-top:3px; margin-left:-3px;"
+                      title="Order Status Updated"></span>
             </button>
         </div>
     </div>
@@ -273,15 +278,21 @@
                 <div class="card border-0 rounded-4 shadow-2xs overflow-hidden bg-white border mb-2">
                     
                     <!-- My Orders -->
-                    <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between p-3 text-decoration-none border-bottom" 
+                    <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between p-3 text-decoration-none border-bottom position-relative" 
+                       id="settingsHubMyOrdersRow"
                        onclick="switchFromSettingsHub(openMyOrdersModal)">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-3 p-2 bg-light d-flex align-items-center justify-content-center" style="width:34px; height:34px; color:#5B3FA8;">
+                            <div class="rounded-3 p-2 bg-light d-flex align-items-center justify-content-center position-relative" style="width:34px; height:34px; color:#5B3FA8;">
                                 <i class="fa-solid fa-receipt fs-8"></i>
                             </div>
                             <span class="fw-bold text-dark fs-8">My Orders</span>
                         </div>
-                        <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill bg-danger text-white fw-bold fs-9 badge-pulse-glow" id="settingsMyOrdersBadge" style="display:none; font-size:0.68rem; padding:3px 8px;">
+                                <i class="fa-solid fa-bell me-1"></i> Update
+                            </span>
+                            <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
+                        </div>
                     </a>
 
                     <!-- Purchase History -->

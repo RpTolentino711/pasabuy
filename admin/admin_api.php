@@ -647,6 +647,34 @@ if ($action === 'update_order_status') {
         $stmt->execute([$status, $id]);
     }
 
+    // Automated workflow step email to Renter & Stock Owner
+    try {
+        $mailerFile = dirname(__DIR__) . '/rentease_mailer.php';
+        if (file_exists($mailerFile)) {
+            require_once $mailerFile;
+            $fullOrderStmt = $db->prepare("SELECT * FROM `rental_orders` WHERE id = ? LIMIT 1");
+            $fullOrderStmt->execute([$id]);
+            $fullOrder = $fullOrderStmt->fetch();
+            if ($fullOrder && function_exists('send_rental_step_emails')) {
+                $stepKeyMap = [
+                    'CONFIRMED' => 'STEP_1_ORDER_CONFIRMED',
+                    'PREPARING' => 'STEP_2_PREPARING',
+                    'PROCESSING' => 'STEP_2_PREPARING',
+                    'LOOKING_FOR_RIDER' => 'STEP_3_LOOKING_FOR_RIDER',
+                    'PICKUP' => 'STEP_4_RIDER_ACCEPTED',
+                    'ON_THE_WAY' => 'STEP_5_PICKUP_COMPLETE',
+                    'DELIVERED' => 'STEP_6_DELIVERED'
+                ];
+                if (isset($stepKeyMap[$status])) {
+                    send_rental_step_emails($fullOrder, $stepKeyMap[$status], [
+                        'rider_name' => $riderName ?: ($fullOrder['assigned_rider_name'] ?: 'Juan Dela Cruz'),
+                        'rider_phone' => $riderPhone ?: ($fullOrder['assigned_rider_phone'] ?: '09187654321')
+                    ]);
+                }
+            }
+        }
+    } catch (Exception $eStepMail) {}
+
     // If order is completed & returned, restore inventory stock to owner
     if ($status === 'RETURNED') {
         try {

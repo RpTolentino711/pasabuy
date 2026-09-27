@@ -172,6 +172,255 @@ function send_rentease_email($toEmail, $toName, $subject, $htmlBody) {
 }
 
 /**
+ * RentEase Workflow Step Email Template Builder
+ */
+function get_step_email_html($stepBadge, $title, $recipientName, $message, $order, $nextStepText, $proofPhoto = '', $proofNote = '') {
+    $orderCode = htmlspecialchars($order['order_code'] ?? 'Order');
+    $customerName = htmlspecialchars($order['customer_name'] ?? 'Renter');
+    $ownerName = htmlspecialchars($order['owner_name'] ?? 'Equipment Owner');
+    $dest = htmlspecialchars($order['delivery_address'] ?? 'San Pablo City, Laguna');
+    $startDate = htmlspecialchars($order['rental_start_date'] ?? 'Upcoming');
+    $days = (int)($order['rental_days'] ?? 1);
+    $total = number_format((float)($order['total_amount'] ?? 0), 2);
+    $year = date('Y');
+
+    $photoHtml = '';
+    if (!empty($proofPhoto)) {
+        $photoHtml = "
+        <div style='margin: 18px 0;'>
+            <div style='font-size: 13px; font-weight: 700; color: #CBD5E1; margin-bottom: 8px;'>📸 Handover Verification Photo:</div>
+            <div style='text-align: center; background: #0F172A; border-radius: 12px; overflow: hidden; border: 1px solid #334155; padding: 6px;'>
+                <img src='" . htmlspecialchars($proofPhoto) . "' alt='Verification Photo' style='max-width: 100%; height: auto; border-radius: 8px; max-height: 240px; object-fit: cover;'>
+            </div>
+            " . (!empty($proofNote) ? "<p style='font-size: 12px; color: #94A3B8; font-style: italic; margin-top: 6px;'>Verification Note: " . htmlspecialchars($proofNote) . "</p>" : "") . "
+        </div>";
+    }
+
+    return "
+    <div style='font-family: Arial, sans-serif; background-color: #0F172A; padding: 25px; color: #F8FAFC;'>
+        <div style='max-width: 540px; margin: 0 auto; background: #1E293B; border-radius: 16px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);'>
+            <div style='background: linear-gradient(135deg, #5B3FA8, #341F97); padding: 22px 20px; text-align: center;'>
+                <h2 style='color: #ffffff; margin: 0; font-size: 21px; font-weight: 800;'>🚚 RentEase Campus Logistics</h2>
+                <p style='color: #E2E8F0; font-size: 13px; margin: 5px 0 0 0;'>Live Order Workflow Notification</p>
+            </div>
+            <div style='padding: 24px 20px;'>
+                <div style='display:inline-block; background:rgba(91,63,168,0.25); border:1px solid #7C3AED; color:#DDD6FE; font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; text-transform:uppercase; margin-bottom:12px;'>
+                    {$stepBadge}
+                </div>
+                <h3 style='color: #F8FAFC; margin-top: 0; font-size: 18px; margin-bottom:12px;'>{$title}</h3>
+                <p style='font-size: 15px; color: #F8FAFC; margin-top: 0;'>Hello <strong>" . htmlspecialchars($recipientName) . "</strong>,</p>
+                <p style='font-size: 14px; color: #CBD5E1; line-height: 1.6;'>{$message}</p>
+
+                <div style='background: #0F172A; border-radius: 12px; border: 1px solid #334155; padding: 14px; margin: 18px 0;'>
+                    <div style='font-size: 12px; font-weight: 700; color: #A78BFA; text-transform: uppercase; margin-bottom: 8px;'>📋 Order Details:</div>
+                    <div style='font-size: 13px; color: #CBD5E1; margin-bottom: 4px;'><strong>Order Number:</strong> {$orderCode}</div>
+                    <div style='font-size: 13px; color: #CBD5E1; margin-bottom: 4px;'><strong>Renter:</strong> {$customerName}</div>
+                    <div style='font-size: 13px; color: #CBD5E1; margin-bottom: 4px;'><strong>Equipment Stock Owner:</strong> {$ownerName}</div>
+                    <div style='font-size: 13px; color: #CBD5E1; margin-bottom: 4px;'><strong>Event Date:</strong> {$startDate} ({$days} day)</div>
+                    <div style='font-size: 13px; color: #CBD5E1; margin-bottom: 4px;'><strong>Delivery Address:</strong> {$dest}</div>
+                    <div style='font-size: 13px; color: #CBD5E1;'><strong>Total Amount:</strong> ₱{$total}</div>
+                </div>
+
+                {$photoHtml}
+
+                <div style='background: rgba(91, 63, 168, 0.15); border: 1px solid #5B3FA8; border-radius: 12px; padding: 12px; margin: 18px 0;'>
+                    <div style='font-size: 12px; color: #E2E8F0;'><strong>Next Step in Workflow:</strong> {$nextStepText}</div>
+                </div>
+
+                <p style='font-size: 12px; color: #94A3B8; line-height: 1.5;'>You can view live status, driver location, and photo evidence on your RentEase tracking screen anytime.</p>
+                <hr style='border: 0; border-top: 1px solid #334155; margin: 20px 0;'>
+                <p style='font-size: 11px; color: #64748B; text-align: center; margin: 0;'>&copy; {$year} RentEase Logistics &bull; Campus Equipment Marketplace</p>
+            </div>
+        </div>
+    </div>";
+}
+
+/**
+ * Dispatch automated step-by-step emails to BOTH Renter and Stock Owner at every step
+ */
+function send_rental_step_emails($order, $stepName, $extraData = []) {
+    if (!$order || empty($order['order_code'])) return;
+
+    $orderCode = $order['order_code'];
+    $renterName = $order['customer_name'] ?: 'Valued Student';
+    $renterEmail = $order['customer_email'] ?: 'pogilameg@gmail.com';
+    $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
+    $ownerEmail = $order['owner_email'] ?: 'romeopaolotolentino@gmail.com';
+    $deliveryAddress = $order['delivery_address'] ?: 'San Pablo City, Laguna';
+    $riderName = $extraData['rider_name'] ?? ($order['assigned_rider_name'] ?: ($order['rider_name'] ?: 'Juan Dela Cruz'));
+    $riderPhone = $extraData['rider_phone'] ?? ($order['assigned_rider_phone'] ?: ($order['rider_phone'] ?: '09187654321'));
+    $riderVehicle = $extraData['rider_vehicle'] ?? ($order['rider_vehicle'] ?: ($order['delivery_vehicle_type'] ?: 'Honda Click 125i (MC-8888-JY)'));
+    $proofPhoto = $extraData['proof_photo'] ?? ($order['pickup_proof_photo'] ?? ($order['delivery_proof_photo'] ?? ''));
+    $proofNote = $extraData['proof_note'] ?? ($order['pickup_proof_note'] ?? ($order['delivery_proof_note'] ?? ''));
+
+    switch ($stepName) {
+        case 'STEP_1_ORDER_CONFIRMED':
+            // Renter Email
+            $subRenter = "🎉 Rental Order Confirmed: {$orderCode} (Step 1/6)";
+            $bodyRenter = get_step_email_html(
+                "Step 1 of 6: Order Confirmed",
+                "Your Rental Booking Has Been Confirmed",
+                $renterName,
+                "Your rental booking for <strong>Order {$orderCode}</strong> has been successfully placed and confirmed! We have alerted stock owner <strong>{$ownerName}</strong> to accept your order and begin preparing the equipment.",
+                $order,
+                "Step 2: Preparing Equipment (Stock owner inspection & packaging)"
+            );
+            send_rentease_email($renterEmail, $renterName, $subRenter, $bodyRenter);
+
+            // Stock Owner Email
+            $subOwner = "🔔 New Rental Order Booking: {$orderCode} (Step 1/6)";
+            $bodyOwner = get_step_email_html(
+                "Step 1 of 6: New Booking Alert",
+                "New Equipment Rental Request Received",
+                $ownerName,
+                "Student renter <strong>{$renterName}</strong> has placed an order (<strong>{$orderCode}</strong>) for your listed equipment. Please log in to your RentEase dashboard to accept the booking and begin equipment inspection & packaging.",
+                $order,
+                "Step 2: Accept Booking in Dashboard & Begin Packaging"
+            );
+            send_rentease_email($ownerEmail, $ownerName, $subOwner, $bodyOwner);
+            break;
+
+        case 'STEP_2_PREPARING':
+            // Renter Email
+            $subRenter = "🛠️ Order in Process: Equipment Being Prepared for Order {$orderCode} (Step 2/6)";
+            $bodyRenter = get_step_email_html(
+                "Step 2 of 6: Preparing Equipment",
+                "Equipment Quality Inspection & Packing Underway",
+                $renterName,
+                "Great news! Stock owner <strong>{$ownerName}</strong> has accepted your rental request. Your equipment is currently undergoing quality inspection, cleaning, testing, and packaging.",
+                $order,
+                "Step 3: Stock owner requests courier dispatch"
+            );
+            send_rentease_email($renterEmail, $renterName, $subRenter, $bodyRenter);
+
+            // Stock Owner Email
+            $subOwner = "✅ Preparation Active: Order {$orderCode} (Step 2/6)";
+            $bodyOwner = get_step_email_html(
+                "Step 2 of 6: Equipment Preparation",
+                "Equipment Packaging in Progress",
+                $ownerName,
+                "You have accepted rental order <strong>{$orderCode}</strong> for <strong>{$renterName}</strong>. Please ensure all accessories and cabling are included and safely packed. Once packed, click 'Notify Delivery Rider'.",
+                $order,
+                "Step 3: Broadcast Delivery Dispatch to Fleet"
+            );
+            send_rentease_email($ownerEmail, $ownerName, $subOwner, $bodyOwner);
+            break;
+
+        case 'STEP_3_LOOKING_FOR_RIDER':
+            // Renter Email
+            $subRenter = "📢 Courier Broadcast: Order {$orderCode} Ready for Pickup (Step 3/6)";
+            $bodyRenter = get_step_email_html(
+                "Step 3 of 6: Looking for Courier",
+                "Equipment Packaged & Dispatching to Drivers",
+                $renterName,
+                "Your equipment for <strong>Order {$orderCode}</strong> has been safely packaged and sealed by stock owner <strong>{$ownerName}</strong>. A pickup dispatch broadcast has been sent to nearby fleet riders.",
+                $order,
+                "Step 4: Driver accepts job and heads to hub"
+            );
+            send_rentease_email($renterEmail, $renterName, $subRenter, $bodyRenter);
+
+            // Stock Owner Email
+            $subOwner = "📡 Driver Broadcast Active: Order {$orderCode} (Step 3/6)";
+            $bodyOwner = get_step_email_html(
+                "Step 3 of 6: Courier Broadcast",
+                "Searching for Nearby Fleet Courier",
+                $ownerName,
+                "You have marked <strong>Order {$orderCode}</strong> ready for pickup. Nearby fleet delivery drivers are receiving the dispatch request to collect from your hub location.",
+                $order,
+                "Step 4: Rider acceptance and transit to your hub"
+            );
+            send_rentease_email($ownerEmail, $ownerName, $subOwner, $bodyOwner);
+            break;
+
+        case 'STEP_4_RIDER_ACCEPTED':
+            // Renter Email
+            $subRenter = "🏍️ Driver Assigned: Rider En Route for Order {$orderCode} (Step 4/6)";
+            $bodyRenter = get_step_email_html(
+                "Step 4 of 6: Driver Assigned",
+                "Courier Heading to Hub for Collection",
+                $renterName,
+                "Fleet courier <strong>{$riderName}</strong> ({$riderPhone} &bull; {$riderVehicle}) has accepted the delivery assignment for <strong>Order {$orderCode}</strong> and is currently en route to the hub for pickup.",
+                $order,
+                "Step 5: Package pickup with photo proof"
+            );
+            send_rentease_email($renterEmail, $renterName, $subRenter, $bodyRenter);
+
+            // Stock Owner Email
+            $subOwner = "🏍️ Courier Arriving for Pickup: Order {$orderCode} (Step 4/6)";
+            $bodyOwner = get_step_email_html(
+                "Step 4 of 6: Driver En Route",
+                "Courier On The Way to Your Hub",
+                $ownerName,
+                "Fleet courier <strong>{$riderName}</strong> ({$riderPhone} &bull; {$riderVehicle}) has accepted order <strong>{$orderCode}</strong> and is driving to your hub location. Please prepare to hand over the package and conduct physical verification.",
+                $order,
+                "Step 5: Driver takes Proof of Pickup photo"
+            );
+            send_rentease_email($ownerEmail, $ownerName, $subOwner, $bodyOwner);
+            break;
+
+        case 'STEP_5_PICKUP_COMPLETE':
+            // Renter Email
+            $subRenter = "🚚 Package Picked Up: Order {$orderCode} Out for Delivery (Step 5/6)";
+            $bodyRenter = get_step_email_html(
+                "Step 5 of 6: Package Picked Up",
+                "Equipment Inspected & En Route to You",
+                $renterName,
+                "Fleet courier <strong>{$riderName}</strong> has completed physical inspection and collected your equipment package from stock owner <strong>{$ownerName}</strong>. Live GPS route tracking is now active!",
+                $order,
+                "Step 6: Handover at destination and Proof of Delivery verification",
+                $proofPhoto,
+                $proofNote
+            );
+            send_rentease_email($renterEmail, $renterName, $subRenter, $bodyRenter);
+
+            // Stock Owner Email
+            $subOwner = "📦 Handover Complete: Package Collected for Order {$orderCode} (Step 5/6)";
+            $bodyOwner = get_step_email_html(
+                "Step 5 of 6: Equipment Collected",
+                "Package Successfully Handed Over to Courier",
+                $ownerName,
+                "Fleet courier <strong>{$riderName}</strong> has safely collected the equipment for order <strong>{$orderCode}</strong> with verified Proof of Pickup photo. The order is now en route to renter <strong>{$renterName}</strong>.",
+                $order,
+                "Step 6: Safe delivery and renter receipt confirmation",
+                $proofPhoto,
+                $proofNote
+            );
+            send_rentease_email($ownerEmail, $ownerName, $subOwner, $bodyOwner);
+            break;
+
+        case 'STEP_6_DELIVERED':
+            // Renter Email
+            $subRenter = "🎉 Equipment Delivered! Order {$orderCode} Complete (Step 6/6)";
+            $bodyRenter = get_step_email_html(
+                "Step 6 of 6: Delivered & Verified",
+                "Rental Equipment Successfully Delivered",
+                $renterName,
+                "Your rental equipment for <strong>Order {$orderCode}</strong> has been successfully delivered by <strong>{$riderName}</strong> to your delivery address: <em>{$deliveryAddress}</em>. Verified Proof of Delivery has been recorded.",
+                $order,
+                "Rental Active &bull; Return scheduled at end of rental period",
+                $proofPhoto,
+                $proofNote
+            );
+            send_rentease_email($renterEmail, $renterName, $subRenter, $bodyRenter);
+
+            // Stock Owner Email
+            $subOwner = "🎉 Equipment Successfully Delivered: Order {$orderCode} (Step 6/6)";
+            $bodyOwner = get_step_email_html(
+                "Step 6 of 6: Delivered & Verified",
+                "Equipment Safely Received by Renter",
+                $ownerName,
+                "Great news! Your rental equipment for <strong>Order {$orderCode}</strong> has been safely delivered to <strong>{$renterName}</strong> by courier <strong>{$riderName}</strong> with verified photo proof.",
+                $order,
+                "Rental Active &bull; Return scheduled at end of rental period",
+                $proofPhoto,
+                $proofNote
+            );
+            send_rentease_email($ownerEmail, $ownerName, $subOwner, $bodyOwner);
+            break;
+    }
+}
+
+/**
  * RentEase Posting Fee Tier Calculator:
  * - ₱1 to ₱99: ₱10
  * - ₱100 to ₱500: ₱15
@@ -470,24 +719,21 @@ if ($action === 'create_order') {
             $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())");
             $chatStmt->execute([105, 104, $customerName, $chatMsg, $firstItemName]);
 
-            // Email Notification to Stock Owner
-            $ownerEmailSub = "🔔 New Equipment Rental Request: Order {$orderCode} - Action Required";
-            $ownerEmailBody = "
-            <div style='font-family: Arial, sans-serif; background:#0F172A; padding:25px; color:#F8FAFC;'>
-                <div style='max-width:520px; margin:0 auto; background:#1E293B; border-radius:16px; border:1px solid #334155; padding:24px;'>
-                    <h2 style='color:#5B3FA8; margin-top:0;'>📦 New Rental Request on RentEase</h2>
-                    <p>Hello <strong>" . htmlspecialchars($ownerName) . "</strong>,</p>
-                    <p>Student <strong>" . htmlspecialchars($customerName) . "</strong> wants to rent your equipment: <strong>" . htmlspecialchars($firstItemName) . "</strong> for {$rentalDays} day(s).</p>
-                    <div style='background:#0F172A; padding:14px; border-radius:10px; margin:16px 0; border:1px solid #334155;'>
-                        <div><strong>Order Code:</strong> {$orderCode}</div>
-                        <div><strong>Renter:</strong> " . htmlspecialchars($customerName) . " (" . htmlspecialchars($customerPhone) . ")</div>
-                        <div><strong>Delivery Address:</strong> " . htmlspecialchars($deliveryAddress) . "</div>
-                        <div><strong>Total Amount:</strong> ₱" . number_format($total, 2) . "</div>
-                    </div>
-                    <p>Please log in to your RentEase Stock Owner Dashboard to <strong>Accept Rental Request</strong> and begin equipment inspection & packaging.</p>
-                </div>
-            </div>";
-            send_rentease_email($ownerEmail, $ownerName, $ownerEmailSub, $ownerEmailBody);
+            // Step 1: Automated Emails to both Renter and Stock Owner
+            $orderRow = [
+                'id' => $orderId,
+                'order_code' => $orderCode,
+                'customer_name' => $customerName,
+                'customer_email' => $customerEmail,
+                'customer_phone' => $customerPhone,
+                'owner_name' => $ownerName,
+                'owner_email' => $ownerEmail,
+                'delivery_address' => $deliveryAddress,
+                'rental_start_date' => $rentalStartDate,
+                'rental_days' => $rentalDays,
+                'total_amount' => $total
+            ];
+            send_rental_step_emails($orderRow, 'STEP_1_ORDER_CONFIRMED');
         } catch (Exception $eChat) {}
 
         $db->commit();
@@ -1267,19 +1513,8 @@ if ($action === 'update_owner_order_status') {
                 $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
                    ->execute([$acceptMsg, $order['order_code']]);
 
-                // Email notification to Renter
-                $renterSub = "✅ Order in Process: Stock Owner Accepted Rental for Order {$order['order_code']}";
-                $renterBody = "
-                <div style='font-family: Arial, sans-serif; background:#0F172A; padding:25px; color:#F8FAFC;'>
-                    <div style='max-width:520px; margin:0 auto; background:#1E293B; border-radius:16px; border:1px solid #334155; padding:24px;'>
-                        <h2 style='color:#10B981; margin-top:0;'>✅ Order in Process</h2>
-                        <p>Hello <strong>" . htmlspecialchars($order['customer_name'] ?? 'Renter') . "</strong>,</p>
-                        <p>Great news! The stock owner <strong>" . htmlspecialchars($order['owner_name'] ?? 'Equipment Owner') . "</strong> has <strong>ACCEPTED</strong> your equipment rental request for <strong>Order " . htmlspecialchars($order['order_code']) . "</strong>.</p>
-                        <p>Your equipment is now being inspected and packaged. Once ready, the stock owner will dispatch a fleet courier to pick it up.</p>
-                        <p style='color:#94A3B8; font-size:12px; margin-top:20px;'>&copy; " . date('Y') . " RentEase Logistics</p>
-                    </div>
-                </div>";
-                send_rentease_email($order['customer_email'], $order['customer_name'], $renterSub, $renterBody);
+                // Email notification to Renter and Stock Owner (Step 2)
+                send_rental_step_emails($order, 'STEP_2_PREPARING');
             } catch (Exception $eN1) {}
         } elseif ($newStatus === 'LOOKING_FOR_RIDER') {
             $statusDisplay = 'Equipment Packaged - Looking for Fleet Driver';
@@ -1288,6 +1523,9 @@ if ($action === 'update_owner_order_status') {
                 $pkgMsg = "📦 Package Ready: Stock owner {$order['owner_name']} has finished packaging equipment for Order {$order['order_code']} and broadcasted a pickup dispatch to fleet delivery riders!";
                 $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
                    ->execute([$pkgMsg, $order['order_code']]);
+
+                // Email notification to Renter and Stock Owner (Step 3)
+                send_rental_step_emails($order, 'STEP_3_LOOKING_FOR_RIDER');
             } catch (Exception $eN2) {}
         } elseif ($newStatus === 'RETURNED') {
             $statusDisplay = 'Returned to Owner Stock';
@@ -1651,6 +1889,15 @@ if ($action === 'rider_accept_job') {
     $stmtRefetch->execute([$orderCode]);
     $updatedOrder = $stmtRefetch->fetch();
 
+    // Step 4: Email notification to Renter and Stock Owner
+    try {
+        send_rental_step_emails($updatedOrder, 'STEP_4_RIDER_ACCEPTED', [
+            'rider_name' => $riderName,
+            'rider_phone' => $riderPhone,
+            'rider_vehicle' => $riderVehicle
+        ]);
+    } catch (Exception $eE4) {}
+
     $itemStmt = $db->prepare("SELECT product_name, quantity, price_per_day FROM `rental_order_items` WHERE order_id = ?");
     $itemStmt->execute([(int)$updatedOrder['id']]);
     $updatedOrder['items'] = $itemStmt->fetchAll() ?: [];
@@ -1790,51 +2037,20 @@ if ($action === 'rider_confirm_pickup') {
         WHERE `order_code` = ?");
     $upd->execute([$proofPhoto, $proofNote, $lat, $lng, $orderCode]);
 
-    // Send automated email notification to Renter (customer_email)
-    $renterEmail = $order['customer_email'] ?: 'pogilameg@gmail.com';
-    $renterName = $order['customer_name'] ?: 'Valued Student';
+    // Step 5: Send automated email notification to both Renter and Stock Owner
     $rName = $order['assigned_rider_name'] ?: ($order['rider_name'] ?: $riderName);
     $rPhone = $order['assigned_rider_phone'] ?: ($order['rider_phone'] ?: '09187654321');
     $rVehicle = $order['rider_vehicle'] ?: 'Honda Click 125i (MC-8888-JY)';
 
-    $subject = "📦 Your Rental Package Has Been Picked Up! Order {$orderCode} is On The Way";
-    $htmlBody = "
-    <div style='font-family: Arial, sans-serif; background-color: #0F172A; padding: 25px; color: #F8FAFC;'>
-        <div style='max-width: 520px; margin: 0 auto; background: #1E293B; border-radius: 16px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);'>
-            <div style='background: linear-gradient(135deg, #5B3FA8, #341F97); padding: 24px 20px; text-align: center;'>
-                <h2 style='color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;'>🚚 RentEase Fleet Logistics</h2>
-                <p style='color: #E2E8F0; font-size: 13px; margin: 6px 0 0 0;'>Live Courier Route Tracking Active</p>
-            </div>
-            <div style='padding: 24px 20px;'>
-                <p style='font-size: 15px; color: #F8FAFC; margin-top: 0;'>Hello <strong>" . htmlspecialchars($renterName) . "</strong>,</p>
-                <p style='font-size: 14px; color: #94A3B8; line-height: 1.5;'>Great news! Fleet driver <strong>" . htmlspecialchars($rName) . "</strong> has safely picked up your equipment package for <strong>Order " . htmlspecialchars($orderCode) . "</strong> from the stock owner and is now heading to your delivery location.</p>
-                
-                <div style='background: #0F172A; border-radius: 12px; border: 1px solid #334155; padding: 14px; margin: 18px 0;'>
-                    <div style='font-size: 12px; font-weight: 700; color: #10B981; text-transform: uppercase; margin-bottom: 8px;'>📋 Driver & Rig Details:</div>
-                    <div style='font-size: 13px; color: #CBD5E1; margin-bottom: 4px;'><strong>Driver:</strong> " . htmlspecialchars($rName) . " (" . htmlspecialchars($rPhone) . ")</div>
-                    <div style='font-size: 13px; color: #CBD5E1; margin-bottom: 4px;'><strong>Vehicle:</strong> " . htmlspecialchars($rVehicle) . "</div>
-                    <div style='font-size: 13px; color: #CBD5E1;'><strong>Delivery Destination:</strong> " . htmlspecialchars($order['delivery_address'] ?? 'San Pablo, Laguna') . "</div>
-                </div>
-
-                <div style='margin: 18px 0;'>
-                    <div style='font-size: 13px; font-weight: 700; color: #CBD5E1; margin-bottom: 8px;'>📸 Verified Proof of Pickup Photo:</div>
-                    <div style='text-align: center; background: #0F172A; border-radius: 12px; overflow: hidden; border: 1px solid #334155; padding: 6px;'>
-                        <img src='" . htmlspecialchars($proofPhoto) . "' alt='Proof of Pickup' style='max-width: 100%; height: auto; border-radius: 8px; max-height: 240px; object-fit: cover;'>
-                    </div>
-                    <p style='font-size: 12px; color: #94A3B8; font-style: italic; margin-top: 6px;'>Note: " . htmlspecialchars($proofNote) . "</p>
-                </div>
-
-                <div style='background: rgba(91, 63, 168, 0.15); border: 1px solid #5B3FA8; border-radius: 12px; padding: 14px; text-align: center; margin: 20px 0;'>
-                    <p style='font-size: 13px; color: #CBD5E1; margin: 0;'>The <strong>Live Courier GPS Map</strong> is now active on your order tracker.</p>
-                </div>
-
-                <hr style='border: 0; border-top: 1px solid #334155; margin: 20px 0;'>
-                <p style='font-size: 11px; color: #64748B; text-align: center; margin: 0;'>&copy; " . date('Y') . " RentEase Logistics &bull; Campus Marketplace</p>
-            </div>
-        </div>
-    </div>
-    ";
-    send_rentease_email($renterEmail, $renterName, $subject, $htmlBody);
+    try {
+        send_rental_step_emails($order, 'STEP_5_PICKUP_COMPLETE', [
+            'proof_photo' => $proofPhoto,
+            'proof_note' => $proofNote,
+            'rider_name' => $rName,
+            'rider_phone' => $rPhone,
+            'rider_vehicle' => $rVehicle
+        ]);
+    } catch (Exception $eE5) {}
 
     // Chat notifications to Renter (105) and Stock Owner (104)
     try {
@@ -1963,25 +2179,16 @@ if ($action === 'rider_update_stage') {
             $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
                ->execute([100, 104, 'RentEase Fleet Dispatch', $msg, $orderNumber]);
 
-            // Email Notification to Renter & Stock Owner upon delivery
+            // Step 6: Email Notification to Renter & Stock Owner upon delivery
             $stmtDelOrder = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? OR `order_code` = ? LIMIT 1");
             $stmtDelOrder->execute([$orderNumber, '#' . ltrim($orderNumber, '#')]);
             $delOrder = $stmtDelOrder->fetch();
             if ($delOrder) {
-                $delHtml = "
-                <div style='font-family: Arial, sans-serif; background:#0F172A; padding:25px; color:#F8FAFC;'>
-                    <div style='max-width:520px; margin:0 auto; background:#1E293B; border-radius:16px; border:1px solid #334155; padding:24px;'>
-                        <h2 style='color:#10B981; margin-top:0;'>🎉 Package Delivered Safely!</h2>
-                        <p>Order <strong>" . htmlspecialchars($delOrder['order_code']) . "</strong> has been handed over safely by courier.</p>
-                        <div style='text-align:center; margin:16px 0;'>
-                            <img src='" . htmlspecialchars($proofPhoto) . "' style='max-width:100%; border-radius:10px; max-height:220px; object-fit:cover;' alt='Proof of Delivery'>
-                        </div>
-                        <p><strong>Recipient:</strong> " . htmlspecialchars($recipientName) . "<br><strong>Remarks:</strong> " . htmlspecialchars($proofNote) . "</p>
-                        <p>Please check your tracker to confirm receipt of the item.</p>
-                    </div>
-                </div>";
-                send_rentease_email($delOrder['customer_email'], $delOrder['customer_name'], "🎉 Package Delivered: Order {$delOrder['order_code']}", $delHtml);
-                send_rentease_email($delOrder['owner_email'], $delOrder['owner_name'], "🎉 Equipment Delivered to Renter: Order {$delOrder['order_code']}", $delHtml);
+                send_rental_step_emails($delOrder, 'STEP_6_DELIVERED', [
+                    'proof_photo' => $proofPhoto,
+                    'proof_note' => $proofNote,
+                    'rider_name' => $delOrder['assigned_rider_name'] ?: 'Juan Dela Cruz'
+                ]);
             }
         } catch (Exception $e) {}
     }

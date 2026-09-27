@@ -79,6 +79,15 @@
             color: var(--accent);
         }
 
+        @keyframes pulseGlowRed {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .badge-pulse-glow {
+            animation: pulseGlowRed 1.8s infinite;
+        }
+
         .badge-verified {
             background: #E3FCEF;
             color: #00875A;
@@ -385,9 +394,10 @@
                 <span>Messages</span>
                 <span class="badge rounded-pill bg-danger position-absolute" id="tabMessagesBadge" style="top:2px; right:10px; font-size:0.6rem; padding:2px 5px; display:none; box-shadow:0 2px 4px rgba(220,53,69,0.5);">0</span>
             </div>
-            <div class="tab-item" onclick="switchTab('profile')" id="tabNavProfile">
+            <div class="tab-item position-relative" onclick="switchTab('profile')" id="tabNavProfile">
                 <i class="fa-solid fa-user"></i>
                 <span>Profile</span>
+                <span class="badge rounded-pill bg-danger position-absolute badge-pulse-glow" id="tabProfileBadge" style="top:2px; right:10px; font-size:0.6rem; padding:2px 5px; display:none; box-shadow:0 2px 4px rgba(220,53,69,0.5);">0</span>
             </div>
         </div>
             </div>

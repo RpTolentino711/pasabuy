@@ -1372,6 +1372,9 @@ window.checkOwnerRentalNotifications = async function () {
             rentoutPendingBadge.innerText = count;
             rentoutPendingBadge.style.display = count > 0 ? 'inline-block' : 'none';
         }
+        if (typeof checkUserOrderUpdatesBadge === 'function') {
+            checkUserOrderUpdatesBadge();
+        }
     } catch (e) {}
 };
 
@@ -2829,6 +2832,9 @@ window.openSettingsHubModal = function () {
         return;
     }
     syncRentEaseProfileUI();
+    if (typeof checkUserOrderUpdatesBadge === 'function') {
+        checkUserOrderUpdatesBadge();
+    }
     if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
         try {
             const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -3122,10 +3128,16 @@ async function openMyOrdersModal() {
             return;
         }
 
+        let seenMap = {};
+        try { seenMap = JSON.parse(localStorage.getItem('rentease_seen_order_steps') || '{}'); } catch (e) { seenMap = {}; }
+        let newSeenMap = { ...seenMap };
+
         let html = '<div class="d-flex flex-column gap-2.5">';
         activeOrders.forEach(ord => {
             const st = (ord.order_status || ord.status || 'CONFIRMED').toUpperCase();
             const orderCode = ord.order_code || ord.order_number || ('#RE-' + (ord.id || 10245));
+            const isUnseenUpdate = (!seenMap[orderCode] || seenMap[orderCode] !== st);
+
             let statusBadge = '<span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-clock me-1"></i> PREPARING</span>';
             if (st === 'CONFIRMED') {
                 statusBadge = '<span class="badge bg-secondary text-white rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-clipboard-check me-1"></i> CONFIRMED</span>';
@@ -3140,9 +3152,12 @@ async function openMyOrdersModal() {
             }
 
             html += `
-            <div class="card border rounded-4 p-3 shadow-xs bg-white">
+            <div class="card border rounded-4 p-3 shadow-xs bg-white ${isUnseenUpdate ? 'border-danger border-opacity-75 shadow-sm' : ''}">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-extrabold text-dark fs-8">${orderCode}</span>
+                    <div class="d-flex align-items-center gap-1.5">
+                        <span class="fw-extrabold text-dark fs-8">${orderCode}</span>
+                        ${isUnseenUpdate ? '<span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold badge-pulse-glow"><i class="fa-solid fa-bell me-1"></i> UPDATED</span>' : ''}
+                    </div>
                     ${statusBadge}
                 </div>
                 <div class="text-muted fs-9 mb-1">
@@ -3166,9 +3181,23 @@ async function openMyOrdersModal() {
                     </div>
                 </div>
             </div>`;
+
+            // Mark this status as viewed by user
+            newSeenMap[orderCode] = st;
         });
         html += '</div>';
         body.innerHTML = html;
+
+        // Persist viewed status signatures and clear notifications
+        try {
+            localStorage.setItem('rentease_seen_order_steps', JSON.stringify(newSeenMap));
+        } catch (e) {}
+
+        const gBadge = document.getElementById('settingsGearBadge');
+        const mBadge = document.getElementById('settingsMyOrdersBadge');
+        if (gBadge) gBadge.style.display = 'none';
+        if (mBadge) mBadge.style.display = 'none';
+
     } catch (e) {
         console.error("openMyOrdersModal error:", e);
         body.innerHTML = `
@@ -3182,6 +3211,89 @@ async function openMyOrdersModal() {
         </div>`;
     }
 }
+
+// Check for live order status updates and display Red Badges on Settings Gear and My Orders
+window.checkUserOrderUpdatesBadge = async function () {
+    const gearBadge = document.getElementById('settingsGearBadge');
+    const myOrdersBadge = document.getElementById('settingsMyOrdersBadge');
+    const tabProfileBadge = document.getElementById('tabProfileBadge');
+
+    let storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+    const customerEmail = storedUser?.email || '';
+    const customerPhone = storedUser?.studentNumber || storedUser?.phone || '';
+    const customerName = storedUser?.name || '';
+
+    try {
+        let orders = [];
+        try {
+            const res = await fetch(getRentEaseApiUrl('get_user_orders', {
+                customer_email: customerEmail,
+                customer_phone: customerPhone,
+                customer_name: customerName
+            }));
+            if (res.ok) {
+                const data = await res.json();
+                orders = data.orders || data.recent_orders || [];
+            }
+        } catch (e1) {}
+
+        if (!orders || orders.length === 0) {
+            try {
+                const fbRes = await fetch(getRentEaseApiUrl('get_admin_dashboard'));
+                if (fbRes.ok) {
+                    const fbData = await fbRes.json();
+                    orders = fbData.recent_orders || [];
+                }
+            } catch (e2) {}
+        }
+
+        const activeOrders = (orders || []).filter(o => {
+            const st = (o.order_status || o.status || '').toUpperCase();
+            return st !== 'RETURNED' && st !== 'CANCELLED';
+        });
+
+        if (activeOrders.length === 0) {
+            if (gearBadge) gearBadge.style.display = 'none';
+            if (myOrdersBadge) myOrdersBadge.style.display = 'none';
+            return;
+        }
+
+        let seenMap = {};
+        try {
+            seenMap = JSON.parse(localStorage.getItem('rentease_seen_order_steps') || '{}');
+        } catch (e) { seenMap = {}; }
+
+        let unseenCount = 0;
+        activeOrders.forEach(ord => {
+            const code = ord.order_code || ord.order_number || ('#RE-' + (ord.id || 10245));
+            const st = (ord.order_status || ord.status || 'CONFIRMED').toUpperCase();
+            if (!seenMap[code] || seenMap[code] !== st) {
+                unseenCount++;
+            }
+        });
+
+        if (unseenCount > 0) {
+            // 1. Red notification dot on gear button (Image 1)
+            if (gearBadge) {
+                gearBadge.style.display = 'block';
+            }
+            // 2. Red notification badge on "My Orders" in Account & Settings modal (Image 2)
+            if (myOrdersBadge) {
+                myOrdersBadge.innerHTML = `<i class="fa-solid fa-bell me-1"></i> ${unseenCount > 1 ? unseenCount + ' Updates' : 'New Update'}`;
+                myOrdersBadge.style.display = 'inline-block';
+            }
+            // 3. Red badge on bottom navbar Profile tab
+            if (tabProfileBadge && (tabProfileBadge.style.display === 'none' || tabProfileBadge.innerText === '0')) {
+                tabProfileBadge.innerText = unseenCount;
+                tabProfileBadge.style.display = 'inline-block';
+            }
+        } else {
+            if (gearBadge) gearBadge.style.display = 'none';
+            if (myOrdersBadge) myOrdersBadge.style.display = 'none';
+        }
+    } catch (e) {}
+};
 
 // Purchase History Modal
 async function openPurchaseHistoryModal() {
@@ -4028,6 +4140,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof checkOwnerRentalNotifications === 'function') {
         checkOwnerRentalNotifications();
         setInterval(checkOwnerRentalNotifications, 6000);
+    }
+    if (typeof checkUserOrderUpdatesBadge === 'function') {
+        checkUserOrderUpdatesBadge();
+        setInterval(checkUserOrderUpdatesBadge, 6000);
     }
     const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in') === 'true';
     if (isLoggedIn) {
