@@ -106,11 +106,18 @@ function renderFeaturedRentals() {
                                    onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Your Equipment">
                                <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.65rem;"></i> Yours
                            </button>`
-                        : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
-                                   style="width:30px; height:30px; background: linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink: 0;"
-                                   onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id})" title="Add to Cart">
-                               <i class="fa-solid fa-cart-plus fs-8"></i>
-                           </button>`
+                        : (rentEaseCart.some(c => c.id == item.id)
+                            ? `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
+                                       style="width:30px; height:30px; background: linear-gradient(135deg, #10B981, #059669); flex-shrink: 0;"
+                                       onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="In Cart">
+                                   <i class="fa-solid fa-check fs-8"></i>
+                               </button>`
+                            : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
+                                       style="width:30px; height:30px; background: linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink: 0;"
+                                       onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="Add to Cart">
+                                   <i class="fa-solid fa-cart-plus fs-8"></i>
+                               </button>`
+                          )
                     }
                 </div>
             </div>
@@ -272,7 +279,7 @@ function renderGridElements(items) {
         let cartBtnClass = 'text-white';
         let cartBtnStyle = 'background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;';
         let cartBtnText = '<i class="fa-solid fa-cart-plus me-1"></i> Add to Cart';
-        let cartOnClick = `event.stopPropagation(); quickAddRentEaseItem(${p.id})`;
+        let cartOnClick = `event.stopPropagation(); quickAddRentEaseItem(${p.id}, this)`;
 
         if (isMine) {
             cartBtnClass = 'text-white';
@@ -804,7 +811,94 @@ Do you want to proceed and take down this listing?`;
     }
 };
 
-function confirmAddDetailToCart() {
+// Parabolic Fly-To-Cart Animation (using native Web Animations API)
+window.animateFlyToCart = function (sourceElement, imageUrl) {
+    try {
+        const cartTarget = document.getElementById('headerCartBtn') || document.getElementById('cartCountBadge') || document.querySelector('.fa-cart-shopping');
+        if (!cartTarget) return;
+
+        let srcRect = null;
+        if (sourceElement && typeof sourceElement.getBoundingClientRect === 'function') {
+            const r = sourceElement.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) {
+                srcRect = r;
+            }
+        }
+        if (!srcRect) {
+            srcRect = { left: window.innerWidth / 2 - 20, top: window.innerHeight / 2 - 20, width: 40, height: 40 };
+        }
+
+        const dstRect = cartTarget.getBoundingClientRect();
+
+        const startX = srcRect.left + (srcRect.width / 2) - 22;
+        const startY = srcRect.top + (srcRect.height / 2) - 22;
+        const endX = dstRect.left + (dstRect.width / 2) - 22;
+        const endY = dstRect.top + (dstRect.height / 2) - 22;
+
+        const deltaX = endX - startX;
+        const deltaY = endY - startY;
+
+        const flyer = document.createElement('div');
+        flyer.className = 'fly-to-cart-element';
+        const img = imageUrl || 'LOGO.png';
+        flyer.style.cssText = `
+            position: fixed !important;
+            left: ${startX}px !important;
+            top: ${startY}px !important;
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 50% !important;
+            background-image: url('${img}') !important;
+            background-size: cover !important;
+            background-position: center !important;
+            border: 2.5px solid #5B3FA8 !important;
+            box-shadow: 0 10px 25px rgba(91, 63, 168, 0.6) !important;
+            z-index: 9999999 !important;
+            pointer-events: none !important;
+            will-change: transform, opacity !important;
+        `;
+
+        document.body.appendChild(flyer);
+
+        // Web Animations API with curved / parabolic arc trajectory
+        const animation = flyer.animate([
+            {
+                transform: 'translate(0px, 0px) scale(1) rotate(0deg)',
+                opacity: 1
+            },
+            {
+                transform: `translate(${deltaX * 0.45}px, ${deltaY * 0.35 - 75}px) scale(0.85) rotate(160deg)`,
+                opacity: 0.95,
+                offset: 0.45
+            },
+            {
+                transform: `translate(${deltaX}px, ${deltaY}px) scale(0.18) rotate(360deg)`,
+                opacity: 0.2
+            }
+        ], {
+            duration: 650,
+            easing: 'cubic-bezier(0.2, 0.85, 0.25, 1)',
+            fill: 'forwards'
+        });
+
+        animation.onfinish = () => {
+            if (flyer && flyer.parentNode) {
+                flyer.parentNode.removeChild(flyer);
+            }
+            cartTarget.classList.add('cart-bounce-pop');
+            const badge = document.getElementById('cartCountBadge') || document.getElementById('headerCartBadge');
+            if (badge) {
+                badge.classList.add('cart-badge-pop');
+                setTimeout(() => badge.classList.remove('cart-badge-pop'), 450);
+            }
+            setTimeout(() => cartTarget.classList.remove('cart-bounce-pop'), 550);
+        };
+    } catch (e) {
+        console.warn("Fly animation error:", e);
+    }
+};
+
+function confirmAddDetailToCart(btnEl) {
     if (!currentDetailProduct) return;
     if (isCurrentUserOwnerOfItem(currentDetailProduct)) {
         alert("ℹ️ You cannot rent or add your own equipment to the cart.");
@@ -815,9 +909,11 @@ function confirmAddDetailToCart() {
         alert("⚠️ Sorry, this equipment is currently out of stock.");
         return;
     }
-    addRentEaseCartItem(currentDetailProduct, currentDetailQty);
+    const alreadyInCart = rentEaseCart.some(i => i.id == currentDetailProduct.id);
+    const qty = currentDetailQty || 1;
+    addRentEaseCartItem(currentDetailProduct, qty);
 
-    const btn = document.getElementById('detailAddToCartBtn');
+    const btn = btnEl || document.getElementById('detailAddToCartBtn');
     if (btn) {
         const origHtml = btn.innerHTML;
         btn.classList.remove('btn-outline-primary');
@@ -832,11 +928,18 @@ function confirmAddDetailToCart() {
         }, 1800);
     }
 
-    showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, currentDetailQty);
-    renderExploreCatalog();
-}
+    if (typeof window.animateFlyToCart === 'function') {
+        window.animateFlyToCart(btn, currentDetailProduct.image_url);
+    }
 
-function quickAddRentEaseItem(id) {
+    showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, qty, alreadyInCart);
+    renderExploreCatalog();
+    renderFeaturedRentals();
+}
+window.confirmAddDetailToCart = confirmAddDetailToCart;
+window.confirmAddToCartDetail = confirmAddDetailToCart;
+
+function quickAddRentEaseItem(id, clickedEl) {
     const item = (rentEaseInventory || []).find(i => i.id == id);
     if (!item) return;
     if (isCurrentUserOwnerOfItem(item)) {
@@ -848,23 +951,384 @@ function quickAddRentEaseItem(id) {
         alert("⚠️ Sorry, this equipment is currently out of stock.");
         return;
     }
-    addRentEaseCartItem(item, 1);
-    showCartToastNotification(item.name || item.title, 1);
-    renderExploreCatalog();
-}
 
-function showCartToastNotification(name, qty) {
+    const alreadyInCart = rentEaseCart.some(i => i.id == item.id);
+
+    addRentEaseCartItem(item, 1);
+
+    const triggerEl = clickedEl || (window.event ? (window.event.currentTarget || window.event.target) : null);
+    if (typeof window.animateFlyToCart === 'function') {
+        window.animateFlyToCart(triggerEl, item.image_url);
+    }
+    showCartToastNotification(item.name || item.title, 1, alreadyInCart);
+    renderExploreCatalog();
+    renderFeaturedRentals();
+}
+window.quickAddRentEaseItem = quickAddRentEaseItem;
+
+// ==========================================================
+// 8. PROFILE 3-SUBTABS: REQUESTS, RENT ITEMS (STOCK MONITOR), HISTORY
+// ==========================================================
+window.switchProfileSubTab = function(subtab) {
+    const tabs = ['requests', 'inventory', 'history'];
+    tabs.forEach(t => {
+        const sec = document.getElementById('profileSection' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('btnProfileTab' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (sec) sec.style.display = (t === subtab) ? 'flex' : 'none';
+        if (btn) {
+            if (t === subtab) {
+                btn.className = 'btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-extrabold fs-9 d-flex align-items-center justify-content-center gap-1.5 profile-subtab-btn active text-white';
+                btn.style.background = 'linear-gradient(135deg, #5B3FA8, #341F97)';
+                btn.style.border = 'none';
+            } else {
+                btn.className = 'btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-bold fs-9 d-flex align-items-center justify-content-center gap-1.5 profile-subtab-btn text-secondary';
+                btn.style.background = 'transparent';
+                btn.style.border = 'none';
+            }
+        }
+    });
+
+    if (subtab === 'requests' || subtab === 'inventory' || subtab === 'history') {
+        loadOwnerRentalDashboard(false);
+    }
+};
+
+window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
+    let storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+    const ownerEmail = storedUser?.email || 'romeopaolotolentino@gmail.com';
+    const ownerName = storedUser?.name || 'Romeo Paolo Tolentino';
+    const ownerId = storedUser?.id || storedUser?.userId || 104;
+
+    try {
+        const res = await fetch(`/rentease_api.php?action=get_owner_rental_data&owner_email=${encodeURIComponent(ownerEmail)}&owner_name=${encodeURIComponent(ownerName)}&owner_id=${ownerId}&customer_phone=${encodeURIComponent(storedUser?.studentNumber || '09668257301')}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.success) return;
+
+        // 1. Update KPI counters
+        const kpiTotal = document.getElementById('kpiTotalStockOwned');
+        const kpiRented = document.getElementById('kpiTotalStockRented');
+        const kpiAvail = document.getElementById('kpiTotalStockAvailable');
+        const invBadge = document.getElementById('myRentalCountBadge');
+        if (kpiTotal) kpiTotal.innerText = data.total_stock_owned ?? 0;
+        if (kpiRented) kpiRented.innerText = data.total_rented_out ?? 0;
+        if (kpiAvail) kpiAvail.innerText = data.total_available ?? 0;
+        if (invBadge) invBadge.innerText = (data.inventory || []).length;
+
+        // 2. Notification Badges
+        const incomingCount = (data.incoming_requests || []).length;
+        const profileBadge = document.getElementById('profileRequestsBadge');
+        const tabProfileBadge = document.getElementById('tabProfileBadge');
+        if (profileBadge) {
+            if (incomingCount > 0) {
+                profileBadge.innerText = incomingCount;
+                profileBadge.style.display = 'inline-block';
+            } else {
+                profileBadge.style.display = 'none';
+            }
+        }
+        if (tabProfileBadge) {
+            if (incomingCount > 0) {
+                tabProfileBadge.innerText = incomingCount;
+                tabProfileBadge.style.display = 'inline-block';
+            } else {
+                tabProfileBadge.style.display = 'none';
+            }
+        }
+
+        // 3. Render Subtab 1: Rental Requests Container
+        const reqContainer = document.getElementById('ownerRequestsListContainer');
+        if (reqContainer) {
+            if (!data.incoming_requests || data.incoming_requests.length === 0) {
+                reqContainer.innerHTML = `
+                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2" style="width:50px; height:50px; color:#5B3FA8;">
+                            <i class="fa-solid fa-inbox fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark fs-8 mb-1">No Active Rental Requests</h6>
+                        <p class="text-muted fs-9 mb-0">When students rent your equipment, their orders and bookings will appear here for you to accept, monitor, and restock.</p>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                data.incoming_requests.forEach(order => {
+                    const status = (order.order_status || 'CONFIRMED').toUpperCase();
+                    let statusBadgeClass = 'bg-primary';
+                    if (status === 'PREPARING') statusBadgeClass = 'bg-warning text-dark';
+                    if (status === 'IN_TRANSIT') statusBadgeClass = 'bg-info text-dark';
+                    if (status === 'RETURNED') statusBadgeClass = 'bg-success';
+
+                    const itemsHtml = (order.items || []).map(it => `
+                        <div class="d-flex align-items-center gap-2 p-1.5 bg-light rounded-3 mb-1">
+                            <img src="${it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" class="rounded-2" style="width:36px; height:36px; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                            <div class="flex-grow-1 text-truncate">
+                                <div class="fw-bold text-dark fs-9 text-truncate">${it.product_name}</div>
+                                <div class="fs-9 text-muted">${it.quantity}x unit(s) • ₱${parseFloat(it.price_per_day).toFixed(0)}/day</div>
+                            </div>
+                            <div class="fw-extrabold text-dark fs-9">₱${parseFloat(it.subtotal).toFixed(0)}</div>
+                        </div>
+                    `).join('');
+
+                    html += `
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-2">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-1.5">
+                                <span class="fw-extrabold text-dark fs-8">${order.order_code}</span>
+                                <span class="badge ${statusBadgeClass} rounded-pill fs-9 fw-bold">${status}</span>
+                            </div>
+                            <span class="text-muted fs-9">${order.rental_days || 1} day(s) duration</span>
+                        </div>
+
+                        <!-- Customer Info -->
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light border mb-2">
+                            <div class="d-flex align-items-center gap-2 text-truncate">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white" style="width:28px; height:28px; font-size:11px; flex-shrink:0;">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <div class="text-truncate">
+                                    <div class="fw-bold text-dark fs-9 text-truncate">${order.customer_name}</div>
+                                    <div class="fs-9 text-muted">${order.customer_phone || 'Verified Student'}</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold border text-primary" onclick="openChatWithRenter('${order.customer_name}', '${order.customer_phone || ''}', '${order.order_code}')">
+                                <i class="fa-solid fa-comment me-1"></i> Chat
+                            </button>
+                        </div>
+
+                        <!-- Items list -->
+                        <div class="mb-2">
+                            ${itemsHtml}
+                        </div>
+
+                        <!-- Financials & Dates -->
+                        <div class="d-flex align-items-center justify-content-between fs-9 text-muted mb-2.5 px-1">
+                            <div>Dates: <strong class="text-dark">${order.rental_start_date || 'Today'}</strong> to <strong class="text-dark">${order.rental_end_date || 'Next Day'}</strong></div>
+                            <div>Total: <strong class="text-primary fs-8">₱${parseFloat(order.total_amount).toFixed(2)}</strong></div>
+                        </div>
+
+                        <!-- Action Bar for Owner -->
+                        <div class="d-flex align-items-center gap-2 pt-2 border-top">
+                            ${status !== 'RETURNED' ? `
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="updateOwnerOrderStatus(${order.id}, '${order.order_code}', 'PREPARING')">
+                                    <i class="fa-solid fa-boxes-packing me-1"></i> Preparing
+                                </button>
+                                <button class="btn btn-sm btn-primary rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1" style="background: linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(${order.id}, '${order.order_code}')">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Mark Returned & Restock
+                                </button>
+                            ` : `
+                                <div class="w-100 text-center py-1 text-success fs-9 fw-bold">
+                                    <i class="fa-solid fa-check-double me-1"></i> Equipment Returned & Restocked in Catalog
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                    `;
+                });
+                reqContainer.innerHTML = html;
+            }
+        }
+
+        // 4. Render Subtab 2: Rent Items / Stock Inventory Monitoring
+        const invContainer = document.getElementById('myRentalListingsContainer');
+        if (invContainer) {
+            if (!data.inventory || data.inventory.length === 0) {
+                invContainer.innerHTML = `
+                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:60px; height:60px; color:#5B3FA8;">
+                            <i class="fa-solid fa-box-open fs-2"></i>
+                        </div>
+                        <h6 class="fw-extrabold text-dark fs-7 mb-1">No Equipment Posted for Rent Yet</h6>
+                        <p class="text-muted fs-8 mb-0">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                data.inventory.forEach(item => {
+                    const total = parseInt(item.qty_total || 1);
+                    const rented = parseInt(item.qty_rented || 0);
+                    const avail = parseInt(item.qty_available ?? (total - rented));
+                    const percentRented = Math.min(100, Math.round((rented / Math.max(1, total)) * 100));
+
+                    html += `
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-2" id="ownerInventoryCard_${item.id}">
+                        <div class="d-flex align-items-start gap-2.5 mb-2.5">
+                            <img src="${item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" class="rounded-3" style="width:64px; height:64px; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                            <div class="flex-grow-1 text-truncate">
+                                <div class="d-flex align-items-center justify-content-between mb-0.5">
+                                    <span class="badge bg-light text-dark border fs-9">${item.category || 'General'}</span>
+                                    <span class="fw-extrabold text-primary fs-8">₱${parseFloat(item.price_per_day).toFixed(0)} <span class="text-muted fs-9 fw-normal">/ day</span></span>
+                                </div>
+                                <h6 class="fw-bold text-dark fs-8 mb-1 text-truncate" title="${item.name}">${item.name}</h6>
+                                <span class="fs-9 text-muted"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${item.location || 'San Pablo Campus'}</span>
+                            </div>
+                        </div>
+
+                        <!-- Live Stock Monitor Progress Bar -->
+                        <div class="p-2.5 rounded-3 bg-light border mb-2.5">
+                            <div class="d-flex align-items-center justify-content-between fs-9 mb-1">
+                                <span class="fw-bold text-dark"><i class="fa-solid fa-chart-simple text-primary me-1"></i> Stock Status</span>
+                                <span><strong>${avail}</strong> available / <strong>${rented}</strong> rented out (${total} total)</span>
+                            </div>
+                            <div class="progress rounded-pill" style="height: 7px; background:#e2e8f0;">
+                                <div class="progress-bar rounded-pill" role="progressbar" style="width: ${percentRented}%; background: linear-gradient(90deg, #F59E0B, #EF4444);" aria-valuenow="${percentRented}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+
+                        <!-- Owner Control Buttons -->
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="openEquipmentDetail(${item.id})">
+                                <i class="fa-solid fa-sliders me-1"></i> Edit Stock & Price
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill py-1.5 px-2.5 fs-9 fw-bold" onclick="confirmTakeDownOwnerItem(${item.id}, '${item.name.replace(/'/g, "\\'")}')">
+                                <i class="fa-solid fa-trash me-1"></i> Take Down
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                });
+                invContainer.innerHTML = html;
+            }
+        }
+
+        // 5. Render Subtab 3: Rental History
+        const histContainer = document.getElementById('ownerRentalHistoryContainer');
+        const histBadge = document.getElementById('historyCountBadge');
+        if (histContainer) {
+            const combinedHistory = [...(data.history || []), ...(data.my_bookings || [])];
+            if (histBadge) histBadge.innerText = `${combinedHistory.length} Records`;
+
+            if (combinedHistory.length === 0) {
+                histContainer.innerHTML = `
+                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2 text-muted" style="width:48px; height:48px;">
+                            <i class="fa-solid fa-receipt fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark fs-8 mb-1">No Rental History Yet</h6>
+                        <p class="text-muted fs-9 mb-0">Completed equipment returns and your rental receipts will be archived here.</p>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                combinedHistory.forEach(rec => {
+                    const isAsOwner = (data.history || []).includes(rec);
+                    const status = (rec.order_status || 'RETURNED').toUpperCase();
+
+                    html += `
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-2">
+                        <div class="d-flex align-items-center justify-content-between mb-1.5">
+                            <div class="d-flex align-items-center gap-1.5">
+                                <span class="badge ${isAsOwner ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'} fw-bold fs-9">
+                                    ${isAsOwner ? 'Lender Booking' : 'Rented from Student'}
+                                </span>
+                                <span class="fw-extrabold text-dark fs-9">${rec.order_code}</span>
+                            </div>
+                            <span class="badge bg-success rounded-pill fs-9 fw-bold">${status}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between fs-9 text-muted mb-1">
+                            <span>Party: <strong class="text-dark">${isAsOwner ? rec.customer_name : (rec.owner_name || 'Verified Owner')}</strong></span>
+                            <span class="fw-bold text-dark">₱${parseFloat(rec.total_amount).toFixed(2)}</span>
+                        </div>
+                        <div class="fs-9 text-muted">
+                            Returned on <strong class="text-dark">${rec.rental_end_date || 'Completed Date'}</strong>
+                        </div>
+                    </div>
+                    `;
+                });
+                histContainer.innerHTML = html;
+            }
+        }
+
+    } catch (e) {
+        console.error("Owner rental dashboard error:", e);
+    }
+};
+
+window.checkOwnerRentalNotifications = async function () {
+    let storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+    const ownerEmail = storedUser?.email || 'romeopaolotolentino@gmail.com';
+    const ownerName = storedUser?.name || 'Romeo Paolo Tolentino';
+    const ownerId = storedUser?.id || storedUser?.userId || 104;
+
+    try {
+        const res = await fetch(`/rentease_api.php?action=get_owner_rental_data&owner_email=${encodeURIComponent(ownerEmail)}&owner_name=${encodeURIComponent(ownerName)}&owner_id=${ownerId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.success) return;
+
+        const count = data.pending_count || (data.incoming_requests || []).length;
+        const profileBadge = document.getElementById('profileRequestsBadge');
+        const tabProfileBadge = document.getElementById('tabProfileBadge');
+        if (profileBadge) {
+            profileBadge.innerText = count;
+            profileBadge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+        if (tabProfileBadge) {
+            tabProfileBadge.innerText = count;
+            tabProfileBadge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+    } catch (e) {}
+};
+
+window.confirmRestockOrder = async function (orderId, orderCode) {
+    if (!confirm(`Confirm that order #${orderCode} has been delivered back and verified in good condition?\n\nThis will mark the rental as RETURNED and restock your equipment inventory automatically.`)) {
+        return;
+    }
+    updateOwnerOrderStatus(orderId, orderCode, 'RETURNED');
+};
+
+window.updateOwnerOrderStatus = async function (orderId, orderCode, newStatus) {
+    try {
+        const res = await fetch(`/rentease_api.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update_owner_order_status',
+                order_id: orderId,
+                order_code: orderCode,
+                new_status: newStatus
+            })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+            alert(data.message || `Order status updated to ${newStatus}.`);
+            loadOwnerRentalDashboard(true);
+            loadRentEaseCatalog();
+        } else {
+            alert(data?.message || 'Failed to update order status.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Server connection error.');
+    }
+};
+
+window.openChatWithRenter = function (customerName, customerPhone, orderCode) {
+    switchTab('messages');
+    setTimeout(() => {
+        const input = document.getElementById('chatMsgInput') || document.querySelector('.chat-input');
+        if (input) {
+            input.value = `Hi ${customerName}, regarding your equipment rental order #${orderCode}: `;
+            input.focus();
+        }
+    }, 400);
+};
+
+function showCartToastNotification(name, qty = 1, alreadyInCart = false) {
     let toast = document.getElementById('renteaseCartToast');
     if (!toast) {
         toast = document.createElement('div');
         toast.id = 'renteaseCartToast';
-        toast.style.cssText = 'position:fixed; bottom:78px; left:50%; transform:translateX(-50%); z-index:99999; min-width:280px; max-width:92%; background:#1E293B; color:#fff; border-radius:30px; padding:10px 16px; box-shadow:0 10px 25px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:between; gap:12px; font-size:12px; font-weight:600; animation:fadeInUp 0.25s ease;';
+        toast.style.cssText = 'position:fixed; bottom:78px; left:50%; transform:translateX(-50%); z-index:99999; min-width:280px; max-width:92%; background:#1E293B; color:#fff; border-radius:30px; padding:10px 16px; box-shadow:0 10px 25px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:between; gap:12px; font-size:12px; font-weight:600;';
         document.body.appendChild(toast);
     }
+    const msg = alreadyInCart ? `Already in cart (${name})` : `Added ${qty}x ${name} to cart`;
+    const icon = alreadyInCart ? 'fa-circle-info text-info' : 'fa-circle-check text-success';
     toast.innerHTML = `
         <div class="d-flex align-items-center gap-2 text-truncate">
-            <i class="fa-solid fa-circle-check text-success fs-6"></i>
-            <span class="text-truncate">Added ${qty}x ${name} to cart</span>
+            <i class="fa-solid ${icon} fs-6"></i>
+            <span class="text-truncate">${msg}</span>
         </div>
         <button class="btn btn-sm btn-light rounded-pill px-2.5 py-0.5 fw-bold fs-9 text-nowrap" style="color:#5B3FA8;" onclick="switchTab('cart')">
             View Cart
@@ -882,73 +1346,84 @@ function addRentEaseCartItem(product, qty = 1) {
         alert("ℹ️ You cannot rent or add your own equipment to the cart.");
         return;
     }
-    const pid = product.id;
+    const pid = product.id || product.listingId;
     const title = product.name || product.title;
     const price = parseFloat(product.price_per_day || product.price || 0);
     const img = product.image_url || product.img || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
 
-    const existing = rentEaseCart.find(i => i.id == pid);
-    if (existing) {
-        existing.quantity += qty;
+    const existingIndex = rentEaseCart.findIndex(i => (i.id && i.id == pid) || (i.listingId && i.listingId == pid) || (title && (i.title === title || i.name === title)));
+    if (existingIndex > -1) {
+        // If already in cart, update to specified quantity (e.g. from detail modal) without blind double-incrementing!
+        rentEaseCart[existingIndex].quantity = Math.max(1, qty);
     } else {
         rentEaseCart.push({
             id: pid,
+            listingId: pid,
             title: title,
+            name: title,
             price_per_day: price,
-            quantity: qty,
+            quantity: Math.max(1, qty),
             image_url: img
         });
     }
     saveRentEaseCart();
-
-    // Sync to pasabuyCart in localStorage so it is available across both models!
-    try {
-        let pCart = JSON.parse(localStorage.getItem('pasabuy_cart_items') || '[]');
-        const pExisting = pCart.find(i => (i.listingId && i.listingId == pid) || i.title === title);
-        if (pExisting) {
-            pExisting.quantity += qty;
-        } else {
-            pCart.push({
-                listingId: pid,
-                title: title,
-                price: price,
-                sellerId: product.owner_id || product.sellerId || 104,
-                img: img,
-                quantity: qty,
-                isSold: false
-            });
-        }
-        localStorage.setItem('pasabuy_cart_items', JSON.stringify(pCart));
-        if (typeof pasabuyCart !== 'undefined') {
-            pasabuyCart = pCart;
-        }
-    } catch(e) {}
-
-    updateCartBadgeCount();
-    if (typeof updateCartBadge === 'function') updateCartBadge();
 }
 
 function saveRentEaseCart() {
+    if (!Array.isArray(rentEaseCart)) rentEaseCart = [];
+    const seen = new Set();
+    rentEaseCart = rentEaseCart.filter(it => {
+        if (!it || (!it.id && !it.listingId) || (!it.title && !it.name)) return false;
+        const key = String(it.id || it.listingId || it.title || it.name);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
     localStorage.setItem('rentease_cart', JSON.stringify(rentEaseCart));
     // ALWAYS sync to pasabuy_cart_items so deletions and changes persist across both apps!
     const pCart = rentEaseCart.map(it => ({
-        listingId: it.id,
-        id: it.id,
-        title: it.title,
-        price: it.price_per_day,
-        quantity: it.quantity,
-        img: it.image_url,
-        image_url: it.image_url
+        listingId: it.id || it.listingId,
+        id: it.id || it.listingId,
+        title: it.title || it.name,
+        price: it.price_per_day || it.price || 0,
+        price_per_day: it.price_per_day || it.price || 0,
+        quantity: parseInt(it.quantity) || 1,
+        img: it.image_url || it.img,
+        image_url: it.image_url || it.img
     }));
     localStorage.setItem('pasabuy_cart_items', JSON.stringify(pCart));
-    if (typeof pasabuyCart !== 'undefined') {
-        pasabuyCart = pCart;
-    }
+    window.pasabuyCart = pCart;
+    try {
+        if (typeof pasabuyCart !== 'undefined') pasabuyCart = pCart;
+    } catch(e) {}
     updateCartBadgeCount();
-    if (typeof updateCartBadge === 'function') updateCartBadge();
 }
 
 function updateCartBadgeCount() {
+    let stored = [];
+    try {
+        const raw = localStorage.getItem('rentease_cart');
+        if (raw !== null) {
+            stored = JSON.parse(raw) || [];
+        } else {
+            stored = JSON.parse(localStorage.getItem('pasabuy_cart_items') || '[]') || [];
+        }
+    } catch(e) {
+        stored = [];
+    }
+    if (!Array.isArray(stored)) stored = [];
+    // Sanitize: filter out ghost or invalid entries and deduplicate
+    const seen = new Set();
+    stored = stored.filter(it => {
+        if (!it || (!it.id && !it.listingId) || (!it.title && !it.name)) return false;
+        const key = String(it.id || it.listingId || it.title || it.name);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+    rentEaseCart = stored;
+
     const count = rentEaseCart.reduce((acc, it) => acc + (parseInt(it.quantity) || 1), 0);
     const badges = [
         document.getElementById('tabCartBadge'), 
@@ -963,6 +1438,8 @@ function updateCartBadgeCount() {
         }
     });
 }
+window.updateCartBadgeCount = updateCartBadgeCount;
+window.updateCartBadge = updateCartBadgeCount;
 
 // ----------------------------------------------------------
 // 3. SCREEN 4: MY CART & COMPUTATION MODULE
@@ -991,6 +1468,31 @@ async function renderCartScreen() {
     } catch(e) {
         rentEaseCart = [];
     }
+    if (!Array.isArray(rentEaseCart)) rentEaseCart = [];
+    const seen = new Set();
+    rentEaseCart = rentEaseCart.filter(it => {
+        if (!it || (!it.id && !it.listingId) || (!it.title && !it.name)) return false;
+        const key = String(it.id || it.listingId || it.title || it.name);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    // Prune invalid/duplicate entries from localStorage immediately
+    localStorage.setItem('rentease_cart', JSON.stringify(rentEaseCart));
+    localStorage.setItem('pasabuy_cart_items', JSON.stringify(rentEaseCart.map(it => ({
+        listingId: it.id || it.listingId,
+        id: it.id || it.listingId,
+        title: it.title || it.name,
+        price: it.price_per_day || it.price || 0,
+        price_per_day: it.price_per_day || it.price || 0,
+        quantity: parseInt(it.quantity) || 1,
+        img: it.image_url || it.img,
+        image_url: it.image_url || it.img
+    }))));
+
+    // Keep badge count strictly synchronized to cart screen items
+    updateCartBadgeCount();
 
     // Sync days display in cart duration card
     const daysVal = document.getElementById('cartRentalDaysVal');
@@ -1455,6 +1957,34 @@ async function openTrackScreen(orderCode = '#RE-10245') {
 
             const isDelivered = ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(t.order_status);
             const isReturned = (t.order_status === 'RETURNED');
+
+            // Handle Shopee-Style Proof of Delivery Card
+            const podCard = document.getElementById('shopeeProofOfDeliveryCard');
+            if (podCard) {
+                const pod = t.proof_of_delivery;
+                if (pod && (pod.has_proof || isDelivered)) {
+                    podCard.style.display = 'block';
+                    const img = document.getElementById('trackPodPhotoImg');
+                    if (img) img.src = pod.photo_url || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
+
+                    const rec = document.getElementById('trackPodRecipient');
+                    if (rec) rec.innerText = pod.recipient_name || 'Verified Student Recipient';
+
+                    const tm = document.getElementById('trackPodTime');
+                    if (tm) tm.innerText = pod.delivered_at || 'Verified on Handover';
+
+                    const vp = document.getElementById('trackPodVehiclePlate');
+                    if (vp) vp.innerText = `${pod.vehicle_type || 'Motorcycle'} • ${pod.plate_number || 'MC-8888-JY'}`;
+
+                    const rn = document.getElementById('trackPodRiderName');
+                    if (rn) rn.innerText = pod.rider_name || t.rider?.name || 'Juan Dela Cruz';
+
+                    const note = document.getElementById('trackPodNote');
+                    if (note) note.innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${pod.note || 'Package handed over and inspected in excellent condition at doorstep.'}`;
+                } else {
+                    podCard.style.display = 'none';
+                }
+            }
             
             const stageDelCircle = document.getElementById('stageDeliveredCircle');
             const stageDelText = document.getElementById('stageDeliveredText');
@@ -2846,6 +3376,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartBadgeCount();
     pollRentEaseUnreadMessages();
     setInterval(pollRentEaseUnreadMessages, 4000);
+    if (typeof checkOwnerRentalNotifications === 'function') {
+        checkOwnerRentalNotifications();
+        setInterval(checkOwnerRentalNotifications, 6000);
+    }
     const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in') === 'true';
     if (isLoggedIn) {
         switchTab('home');

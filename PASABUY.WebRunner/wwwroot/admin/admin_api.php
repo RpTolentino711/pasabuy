@@ -671,8 +671,12 @@ if ($action === 'get_deliveries') {
     $search = trim((string)($req['search'] ?? ''));
 
     $sql = "SELECT id, order_code, customer_name, customer_phone, delivery_address,
-                   'San Pablo Central Warehouse' as pickup_location,
-                   order_status, assigned_rider_name, assigned_rider_phone, estimated_arrival
+                   COALESCE(owner_name, 'San Pablo Central Hub') as pickup_location,
+                   owner_name, owner_email,
+                   order_status, assigned_rider_name, assigned_rider_phone, estimated_arrival,
+                   delivery_proof_photo, delivery_proof_note, delivery_proof_recipient, delivery_proof_time,
+                   delivery_vehicle_type, delivery_plate_number,
+                   rider_current_lat, rider_current_lng, total_amount
             FROM `rental_orders` WHERE 1=1";
     $params = [];
 

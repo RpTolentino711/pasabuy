@@ -119,6 +119,58 @@
         <div id="renteaseTrackMap" style="width:100%; height:190px; z-index:1;"></div>
     </div>
 
+    <!-- Shopee-Style Proof of Delivery (POD) Card -->
+    <div class="card border-0 rounded-4 shadow-sm overflow-hidden mb-3 bg-white" id="shopeeProofOfDeliveryCard" style="display:none; border: 1px solid #E2E8F0 !important;">
+        <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:30px; height:30px; background:linear-gradient(135deg, #10B981, #059669);">
+                    <i class="fa-solid fa-camera fs-8"></i>
+                </div>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Proof of Delivery (POD)</h6>
+                    <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Verified Handover</span>
+                </div>
+            </div>
+            <span class="badge bg-success bg-opacity-10 text-success fw-bold fs-9 px-2 py-1 rounded-pill">
+                <i class="fa-solid fa-motorcycle me-1"></i> Motorcycle Delivery
+            </span>
+        </div>
+        <div class="p-3">
+            <!-- Proof Photo -->
+            <div class="position-relative rounded-3 overflow-hidden border mb-2.5 bg-dark text-center" style="max-height: 220px;">
+                <img id="trackPodPhotoImg" src="" alt="Proof of Delivery Photo" class="w-100 object-fit-cover cursor-pointer" style="max-height: 220px;" onclick="window.open(this.src, '_blank')">
+                <span class="position-absolute bottom-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white fs-9">
+                    <i class="fa-solid fa-magnifying-glass-plus me-1"></i> Tap to Expand
+                </span>
+            </div>
+
+            <!-- Handover Details Grid -->
+            <div class="rounded-3 p-2.5 mb-2" style="background:#F8FAFC; border:1px solid #EDF2F7;">
+                <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom border-light">
+                    <span class="text-muted"><i class="fa-solid fa-user me-1 text-primary"></i> Received By:</span>
+                    <strong class="text-dark" id="trackPodRecipient">Pogilameg Tester</strong>
+                </div>
+                <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom border-light">
+                    <span class="text-muted"><i class="fa-solid fa-clock me-1 text-info"></i> Delivery Time:</span>
+                    <strong class="text-dark" id="trackPodTime">Just now</strong>
+                </div>
+                <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom border-light">
+                    <span class="text-muted"><i class="fa-solid fa-motorcycle me-1 text-warning"></i> Vehicle / Plate:</span>
+                    <strong class="text-dark" id="trackPodVehiclePlate">Motorcycle • MC-8888-JY</strong>
+                </div>
+                <div class="d-flex justify-content-between fs-9">
+                    <span class="text-muted"><i class="fa-solid fa-helmet-safety me-1 text-success"></i> Courier Rider:</span>
+                    <strong class="text-dark" id="trackPodRiderName">Juan Dela Cruz</strong>
+                </div>
+            </div>
+
+            <!-- Courier Remarks / Inspection Note -->
+            <div class="p-2 rounded-3 fs-9 text-secondary" style="background:#F1F5F9;" id="trackPodNote">
+                <i class="fa-solid fa-quote-left text-muted me-1"></i> Package handed over and inspected in excellent condition at doorstep.
+            </div>
+        </div>
+    </div>
+
     <!-- Assigned Driver Card: Juan Dela Cruz (Screen 7) -->
     <div class="card border-0 rounded-4 shadow-sm p-3 bg-white d-flex flex-row align-items-center justify-content-between mb-3">
         <div class="d-flex align-items-center gap-2.5">

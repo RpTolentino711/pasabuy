@@ -1590,6 +1590,67 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         </div>
     </div>
 
+    <!-- Admin Proof of Delivery (POD) Viewer Modal -->
+    <div class="modal fade" id="adminViewPodModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden">
+                <div class="modal-header border-0 pb-0 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:34px; height:34px; background:linear-gradient(135deg, #10B981, #059669);">
+                            <i class="fa-solid fa-camera fs-8"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-extrabold text-dark mb-0 fs-7">Proof of Delivery (POD)</h6>
+                            <span class="fs-9 text-muted" id="adminPodOrderSub">Handover Verification</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <!-- Photo preview -->
+                    <div class="position-relative rounded-3 overflow-hidden border mb-3 bg-dark text-center" style="max-height: 240px;">
+                        <img id="adminPodPhotoImg" src="" alt="Proof Photo" class="w-100 object-fit-cover" style="max-height: 240px; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                        <span class="position-absolute bottom-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white fs-9">
+                            <i class="fa-solid fa-up-right-from-square me-1"></i> Full View
+                        </span>
+                    </div>
+
+                    <!-- Details Table -->
+                    <div class="rounded-3 p-2.5 mb-2.5" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted"><i class="fa-solid fa-user me-1 text-primary"></i> Recipient Student:</span>
+                            <strong class="text-dark" id="adminPodRecipient">Pogilameg Tester</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted"><i class="fa-solid fa-clock me-1 text-info"></i> Timestamp:</span>
+                            <strong class="text-dark" id="adminPodTime">Just now</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted"><i class="fa-solid fa-motorcycle me-1 text-warning"></i> Vehicle / Plate:</span>
+                            <strong class="text-dark" id="adminPodVehiclePlate">Motorcycle • MC-8888-JY</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted"><i class="fa-solid fa-helmet-safety me-1 text-success"></i> Rider:</span>
+                            <strong class="text-dark" id="adminPodRider">Juan Dela Cruz</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9">
+                            <span class="text-muted"><i class="fa-solid fa-location-crosshairs me-1 text-danger"></i> Dropoff GPS:</span>
+                            <strong class="text-dark" id="adminPodGps">14.1950, 121.2720</strong>
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="p-2 rounded-3 fs-9 text-secondary" style="background:#F1F5F9;" id="adminPodNote">
+                        <i class="fa-solid fa-quote-left text-muted me-1"></i> Equipment inspected and received in good working condition.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Create Ticket Modal -->
     <div class="modal fade" id="createTicketModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -2360,12 +2421,28 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <div class="fw-bold text-dark">${d.customer_name}</div>
                                 <div class="fs-9 text-muted">${d.customer_phone || ''}</div>
                             </td>
-                            <td class="fs-9 text-muted">${d.pickup_location}</td>
+                            <td class="fs-9 text-muted">
+                                <span class="d-block fw-semibold text-dark">${d.pickup_location || 'San Pablo Hub'}</span>
+                                ${d.owner_name ? `<span class="badge bg-secondary-subtle text-secondary fs-9">Stock: ${d.owner_name}</span>` : ''}
+                            </td>
                             <td class="fs-8 fw-semibold text-dark">${d.delivery_address}</td>
-                            <td><span class="badge ${getStatusBadge(d.order_status)}">${d.order_status}</span></td>
-                            <td class="fw-bold">${d.assigned_rider_name || 'Unassigned'}</td>
                             <td>
-                                <button class="btn btn-sm btn-light border py-1 px-2 fs-9" onclick="openAssignDeliveryModal(${d.id})"><i class="fa-solid fa-motorcycle me-1"></i> Dispatch</button>
+                                <span class="badge ${getStatusBadge(d.order_status)}">${d.order_status}</span>
+                                ${d.delivery_proof_photo ? `<span class="badge bg-success bg-opacity-25 text-success fs-9 ms-1"><i class="fa-solid fa-camera"></i> POD</span>` : ''}
+                            </td>
+                            <td class="fw-bold">
+                                <div>${d.assigned_rider_name || 'Unassigned'}</div>
+                                ${d.delivery_vehicle_type ? `<div class="fs-9 text-muted fw-normal">${d.delivery_vehicle_type} (${d.delivery_plate_number || 'Motor'})</div>` : ''}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-light border py-1 px-2 fs-9" onclick="openAssignDeliveryModal(${d.id})"><i class="fa-solid fa-motorcycle me-1"></i> Dispatch</button>
+                                    ${d.delivery_proof_photo || d.order_status === 'DELIVERED' ? `
+                                        <button class="btn btn-sm btn-success bg-opacity-10 text-success border-success py-1 px-2 fs-9" onclick="openAdminPodModal('${encodeURIComponent(JSON.stringify(d))}')" title="View Proof of Delivery">
+                                            <i class="fa-solid fa-camera"></i> POD
+                                        </button>
+                                    ` : ''}
+                                </div>
                             </td>
                         </tr>
                     `).join('');
@@ -2373,6 +2450,23 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No deliveries found.</td></tr>';
                 }
             } catch (e) {}
+        }
+
+        function openAdminPodModal(encodedData) {
+            try {
+                const d = JSON.parse(decodeURIComponent(encodedData));
+                document.getElementById('adminPodOrderSub').innerText = `${d.order_code} • Handover Verification`;
+                document.getElementById('adminPodPhotoImg').src = d.delivery_proof_photo || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
+                document.getElementById('adminPodRecipient').innerText = d.delivery_proof_recipient || d.customer_name || 'Verified Student';
+                document.getElementById('adminPodTime').innerText = d.delivery_proof_time || 'Completed on Handover';
+                document.getElementById('adminPodVehiclePlate').innerText = `${d.delivery_vehicle_type || 'Motorcycle'} • ${d.delivery_plate_number || 'MC-8888-JY'}`;
+                document.getElementById('adminPodRider').innerText = d.assigned_rider_name || 'Juan Dela Cruz';
+                document.getElementById('adminPodGps').innerText = `${d.rider_current_lat || '14.1950'}, ${d.rider_current_lng || '121.2720'}`;
+                document.getElementById('adminPodNote').innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${d.delivery_proof_note || 'Equipment inspected and received in good working condition.'}`;
+                new bootstrap.Modal(document.getElementById('adminViewPodModal')).show();
+            } catch (e) {
+                console.error('Error opening POD modal:', e);
+            }
         }
 
         async function loadDrivers() {

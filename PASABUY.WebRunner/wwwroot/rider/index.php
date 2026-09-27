@@ -333,6 +333,114 @@ session_start();
 
 </div>
 
+<!-- SHOPEE-STYLE PROOF OF DELIVERY (POD) MODAL -->
+<div class="modal fade" id="riderProofOfDeliveryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 text-white shadow-2xl" style="background:#1E293B; border: 1px solid #334155;">
+            <div class="modal-header border-bottom border-secondary pb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:38px; height:38px; background:linear-gradient(135deg, #10B981, #059669);">
+                        <i class="fa-solid fa-camera fs-6"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-extrabold text-white mb-0 fs-7">Proof of Delivery (POD)</h6>
+                        <span class="fs-9 text-secondary">Motorcycle Courier Handover Verification</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3">
+                <!-- Order Summary Chip -->
+                <div class="p-2.5 rounded-3 mb-3 d-flex align-items-center justify-content-between" style="background:rgba(15,23,42,0.8); border:1px solid #334155;">
+                    <div>
+                        <span class="text-secondary fs-9 d-block">Delivering Order</span>
+                        <strong class="text-info fs-7" id="podModalOrderCode">#RE-10245</strong>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success bg-opacity-25 text-success fs-9 fw-bold">
+                            <i class="fa-solid fa-motorcycle me-1"></i> Motorcycle Delivery
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Photo Capture & Preview Section -->
+                <div class="mb-3">
+                    <label class="form-label text-white fs-8 fw-bold mb-1.5 d-flex align-items-center justify-content-between">
+                        <span><i class="fa-solid fa-image me-1 text-warning"></i> Handover Photo Proof <span class="text-danger">*</span></span>
+                        <span class="fs-9 text-secondary">Required like Shopee</span>
+                    </label>
+
+                    <div id="podPhotoPreviewContainer" class="rounded-3 border border-secondary p-2 text-center mb-2 position-relative" style="background:#0F172A; min-height:160px; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+                        <img id="podPhotoPreviewImg" src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80" alt="Proof Photo Preview" class="rounded-3 w-100 object-fit-cover shadow-sm" style="max-height: 200px; display: block;">
+                        <div id="podPhotoEmptyPlaceholder" style="display:none;" class="py-4">
+                            <i class="fa-solid fa-camera text-secondary fs-1 mb-2"></i>
+                            <p class="fs-9 text-secondary mb-0">Snap a photo of the package handed to student</p>
+                        </div>
+                    </div>
+
+                    <!-- Hidden file input & Quick Presets -->
+                    <input type="file" id="podPhotoFileInput" accept="image/*" capture="environment" style="display:none;" onchange="handleRiderPhotoFile(this)">
+                    <div class="d-flex gap-2 mb-2">
+                        <button type="button" class="btn btn-outline-info btn-sm flex-fill py-1.5 fs-8 fw-bold rounded-3" onclick="document.getElementById('podPhotoFileInput').click()">
+                            <i class="fa-solid fa-camera me-1"></i> Take / Upload Photo
+                        </button>
+                    </div>
+
+                    <!-- Quick Preset Proofs for Testing -->
+                    <div class="p-2 rounded-3" style="background:rgba(255,255,255,0.03); border:1px dashed #334155;">
+                        <span class="fs-9 text-secondary d-block mb-1.5 fw-semibold"><i class="fa-solid fa-bolt text-warning me-1"></i> Quick 1-Tap Sample Proofs:</span>
+                        <div class="d-flex gap-1.5 flex-wrap">
+                            <button type="button" class="btn btn-dark btn-sm fs-9 py-1 px-2 text-white border border-secondary" onclick="setRiderProofPreset('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80')">
+                                📦 Package Handover
+                            </button>
+                            <button type="button" class="btn btn-dark btn-sm fs-9 py-1 px-2 text-white border border-secondary" onclick="setRiderProofPreset('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80')">
+                                🏍️ Motorcycle at Dorm
+                            </button>
+                            <button type="button" class="btn btn-dark btn-sm fs-9 py-1 px-2 text-white border border-secondary" onclick="setRiderProofPreset('https://images.unsplash.com/photo-1526367790999-0150786686a2?w=800&q=80')">
+                                🚪 Doorstep Delivery
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recipient Confirmation -->
+                <div class="mb-3">
+                    <label class="form-label text-white fs-8 fw-bold mb-1">
+                        <i class="fa-solid fa-user-check me-1 text-success"></i> Received By (Student Name) <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="podRecipientInput" class="form-control form-control-sm text-white border-secondary fs-8 rounded-3" style="background:#0F172A;" placeholder="e.g. Pogilameg Tester / Roommate">
+                </div>
+
+                <!-- Handover Remarks -->
+                <div class="mb-3">
+                    <label class="form-label text-white fs-8 fw-bold mb-1">
+                        <i class="fa-solid fa-clipboard-check me-1 text-info"></i> Inspection & Handover Remarks
+                    </label>
+                    <textarea id="podRemarksInput" class="form-control form-control-sm text-white border-secondary fs-8 rounded-3" rows="2" style="background:#0F172A;" placeholder="Package inspected, complete items with power cords, safe handover."></textarea>
+                </div>
+
+                <!-- Vehicle & GPS Verification Stamp -->
+                <div class="p-2.5 rounded-3" style="background:#0F172A; border:1px solid #334155;">
+                    <div class="d-flex align-items-center justify-content-between fs-9 mb-1">
+                        <span class="text-secondary"><i class="fa-solid fa-motorcycle text-warning me-1"></i> Delivery Rig:</span>
+                        <strong class="text-white" id="podVehicleStamp">Honda Click 125i (MC-8888-JY)</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between fs-9">
+                        <span class="text-secondary"><i class="fa-solid fa-location-crosshairs text-success me-1"></i> GPS Stamp:</span>
+                        <strong class="text-success" id="podGpsStamp">14.1950° N, 121.2720° E (Verified at Dropoff)</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top border-secondary pt-3">
+                <button type="button" class="btn btn-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success btn-sm px-4 fw-bold rounded-3 shadow-lg" id="btnSubmitProofOfDelivery" onclick="submitProofOfDelivery()">
+                    <i class="fa-solid fa-circle-check me-1.5"></i> Confirm &amp; Submit Proof
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let currentRiderUser = null;
 let currentActiveOrder = null;
@@ -700,46 +808,118 @@ async function cancelCurrentRiderJob() {
     }
 }
 
+let podCurrentPhotoUrl = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
+
+function setRiderProofPreset(url) {
+    podCurrentPhotoUrl = url;
+    const img = document.getElementById('podPhotoPreviewImg');
+    const ph = document.getElementById('podPhotoEmptyPlaceholder');
+    if (img) {
+        img.src = url;
+        img.style.display = 'block';
+    }
+    if (ph) ph.style.display = 'none';
+}
+
+function handleRiderPhotoFile(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            setRiderProofPreset(e.target.result);
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function openProofOfDeliveryModal() {
+    if (!currentActiveOrder) {
+        alert('No active delivery order.');
+        return;
+    }
+    const orderCode = currentActiveOrder.order_code;
+    const customer = currentActiveOrder.customer_name || 'Pogilameg Tester';
+    const address = currentActiveOrder.delivery_address || 'Campus Dormitory';
+
+    document.getElementById('podModalOrderCode').innerText = orderCode;
+    const recipientInput = document.getElementById('podRecipientInput');
+    if (recipientInput) recipientInput.value = customer;
+
+    const remarksInput = document.getElementById('podRemarksInput');
+    if (remarksInput) remarksInput.value = `Handed over safely at ${address}. Package inspected with student.`;
+
+    const podModal = new bootstrap.Modal(document.getElementById('riderProofOfDeliveryModal'));
+    podModal.show();
+}
+
 async function advanceRentalDeliveryStage() {
     if (!currentActiveOrder) {
         alert('No active delivery order.');
         return;
     }
+    // When out for delivery, require Proof of Delivery Handover!
+    openProofOfDeliveryModal();
+}
+
+async function submitProofOfDelivery() {
+    if (!currentActiveOrder) return;
 
     const orderCode = currentActiveOrder.order_code;
-    const nextStage = 'DELIVERED';
+    const recipient = document.getElementById('podRecipientInput')?.value.trim() || 'Verified Student';
+    const remarks = document.getElementById('podRemarksInput')?.value.trim() || 'Handed over safely.';
+    const photo = podCurrentPhotoUrl || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
+    const vehicle = 'Motorcycle';
+    const plate = 'MC-8888-JY';
+
+    const btn = document.getElementById('btnSubmitProofOfDelivery');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5"></span> Uploading Proof...`;
+    }
 
     try {
         let apiUrl = '../rentease_api.php?action=rider_update_stage';
+        let payload = {
+            order_code: orderCode,
+            stage: 'DELIVERED',
+            lat: destination[0],
+            lng: destination[1],
+            delivery_proof_photo: photo,
+            delivery_proof_note: remarks,
+            delivery_proof_recipient: recipient,
+            delivery_vehicle_type: vehicle,
+            delivery_plate_number: plate
+        };
+
         let res = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                order_code: orderCode,
-                stage: nextStage,
-                lat: destination[0],
-                lng: destination[1]
-            })
+            body: JSON.stringify(payload)
         });
 
         if (!res.ok) {
             res = await fetch('/rentease_api.php?action=rider_update_stage', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    order_code: orderCode,
-                    stage: nextStage,
-                    lat: destination[0],
-                    lng: destination[1]
-                })
+                body: JSON.stringify(payload)
             });
         }
 
         const data = await res.json();
-        alert(`🎉 Event Delivery Confirmed!\n\nOrder ${orderCode} successfully handed over and inspection completed.`);
+        
+        // Hide modal
+        const modalEl = document.getElementById('riderProofOfDeliveryModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+
+        alert(`🎉 Shopee-Style Delivery Confirmed!\n\nOrder ${orderCode} marked DELIVERED.\nProof of Delivery Photo and Handover details sent to Stock Owner, Renter, and Admin!`);
         fetchRiderJobAlerts();
     } catch (e) {
-        alert('Error updating delivery stage.');
+        alert('Error uploading delivery proof: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-circle-check me-1.5"></i> Confirm &amp; Submit Proof`;
+        }
     }
 }
 

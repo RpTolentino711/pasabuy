@@ -1346,19 +1346,21 @@ function addRentEaseCartItem(product, qty = 1) {
         alert("ℹ️ You cannot rent or add your own equipment to the cart.");
         return;
     }
-    const pid = product.id;
+    const pid = product.id || product.listingId;
     const title = product.name || product.title;
     const price = parseFloat(product.price_per_day || product.price || 0);
     const img = product.image_url || product.img || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
 
-    const existingIndex = rentEaseCart.findIndex(i => i.id == pid);
+    const existingIndex = rentEaseCart.findIndex(i => (i.id && i.id == pid) || (i.listingId && i.listingId == pid) || (title && (i.title === title || i.name === title)));
     if (existingIndex > -1) {
         // If already in cart, update to specified quantity (e.g. from detail modal) without blind double-incrementing!
         rentEaseCart[existingIndex].quantity = Math.max(1, qty);
     } else {
         rentEaseCart.push({
             id: pid,
+            listingId: pid,
             title: title,
+            name: title,
             price_per_day: price,
             quantity: Math.max(1, qty),
             image_url: img
@@ -1369,7 +1371,15 @@ function addRentEaseCartItem(product, qty = 1) {
 
 function saveRentEaseCart() {
     if (!Array.isArray(rentEaseCart)) rentEaseCart = [];
-    rentEaseCart = rentEaseCart.filter(it => it && (it.id || it.listingId) && (it.title || it.name));
+    const seen = new Set();
+    rentEaseCart = rentEaseCart.filter(it => {
+        if (!it || (!it.id && !it.listingId) || (!it.title && !it.name)) return false;
+        const key = String(it.id || it.listingId || it.title || it.name);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
     localStorage.setItem('rentease_cart', JSON.stringify(rentEaseCart));
     // ALWAYS sync to pasabuy_cart_items so deletions and changes persist across both apps!
     const pCart = rentEaseCart.map(it => ({
@@ -1403,8 +1413,15 @@ function updateCartBadgeCount() {
         stored = [];
     }
     if (!Array.isArray(stored)) stored = [];
-    // Sanitize: filter out ghost or invalid entries
-    stored = stored.filter(it => it && (it.id || it.listingId) && (it.title || it.name));
+    // Sanitize: filter out ghost or invalid entries and deduplicate
+    const seen = new Set();
+    stored = stored.filter(it => {
+        if (!it || (!it.id && !it.listingId) || (!it.title && !it.name)) return false;
+        const key = String(it.id || it.listingId || it.title || it.name);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
     rentEaseCart = stored;
 
     const count = rentEaseCart.reduce((acc, it) => acc + (parseInt(it.quantity) || 1), 0);
@@ -1452,7 +1469,27 @@ async function renderCartScreen() {
         rentEaseCart = [];
     }
     if (!Array.isArray(rentEaseCart)) rentEaseCart = [];
-    rentEaseCart = rentEaseCart.filter(it => it && (it.id || it.listingId) && (it.title || it.name));
+    const seen = new Set();
+    rentEaseCart = rentEaseCart.filter(it => {
+        if (!it || (!it.id && !it.listingId) || (!it.title && !it.name)) return false;
+        const key = String(it.id || it.listingId || it.title || it.name);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    // Prune invalid/duplicate entries from localStorage immediately
+    localStorage.setItem('rentease_cart', JSON.stringify(rentEaseCart));
+    localStorage.setItem('pasabuy_cart_items', JSON.stringify(rentEaseCart.map(it => ({
+        listingId: it.id || it.listingId,
+        id: it.id || it.listingId,
+        title: it.title || it.name,
+        price: it.price_per_day || it.price || 0,
+        price_per_day: it.price_per_day || it.price || 0,
+        quantity: parseInt(it.quantity) || 1,
+        img: it.image_url || it.img,
+        image_url: it.image_url || it.img
+    }))));
 
     // Keep badge count strictly synchronized to cart screen items
     updateCartBadgeCount();
