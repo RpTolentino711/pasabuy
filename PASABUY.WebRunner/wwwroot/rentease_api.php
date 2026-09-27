@@ -367,7 +367,7 @@ if ($action === 'create_order') {
     try {
         $stmt = $db->prepare("INSERT INTO `rental_orders` 
             (`order_code`, `customer_name`, `customer_email`, `customer_phone`, `owner_name`, `owner_email`, `pickup_address`, `delivery_option`, `delivery_address`, `rental_start_date`, `rental_end_date`, `rental_days`, `subtotal`, `service_charge`, `delivery_fee`, `discount`, `total_amount`, `payment_method`, `payment_type`, `downpayment_amount`, `balance_amount`, `payment_status`, `order_status`, `estimated_arrival`, `assigned_rider_name`, `assigned_rider_phone`, `rider_current_lat`, `rider_current_lng`) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '4:30 PM', NULL, NULL, 14.65150000, 121.06920000)");
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '4:30 PM', NULL, NULL, 14.65150000, 121.06920000)");
         $stmt->execute([
             $orderCode, $customerName, $customerEmail, $customerPhone, $ownerName, $ownerEmail, $ownerLocation,
             $deliveryOption, $deliveryAddress, $rentalStartDate, $rentalEndDate, $rentalDays,
