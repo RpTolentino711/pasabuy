@@ -31,6 +31,48 @@
             --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
         }
 
+        /* Parabolic Fly to Cart Animation */
+        .fly-to-cart-element {
+            position: fixed;
+            z-index: 100000;
+            pointer-events: none;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 10px 25px rgba(91, 63, 168, 0.45);
+            border: 2.5px solid #5B3FA8;
+            transition: transform 0.65s cubic-bezier(0.2, 0.85, 0.25, 1), opacity 0.65s ease, border-radius 0.65s ease;
+        }
+
+        @keyframes cartBouncePop {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.4) rotate(-12deg); }
+            60% { transform: scale(0.85) rotate(8deg); }
+            80% { transform: scale(1.15) rotate(-3deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        .cart-bounce-pop {
+            animation: cartBouncePop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        }
+
+        @keyframes cartBadgeFlash {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.7); background-color: #22c55e !important; box-shadow: 0 0 12px rgba(34, 197, 94, 0.8); }
+            100% { transform: scale(1); }
+        }
+        .cart-badge-pop {
+            animation: cartBadgeFlash 0.45s ease-out !important;
+        }
+
+        @keyframes pulseGlowRed {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .badge-pulse-glow {
+            animation: pulseGlowRed 1.8s infinite;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: #0F172A;
@@ -385,9 +427,10 @@
                 <span>Messages</span>
                 <span class="badge rounded-pill bg-danger position-absolute" id="tabMessagesBadge" style="top:2px; right:10px; font-size:0.6rem; padding:2px 5px; display:none; box-shadow:0 2px 4px rgba(220,53,69,0.5);">0</span>
             </div>
-            <div class="tab-item" onclick="switchTab('profile')" id="tabNavProfile">
+            <div class="tab-item position-relative" onclick="switchTab('profile')" id="tabNavProfile" title="My Profile & Rental Hub">
                 <i class="fa-solid fa-user"></i>
                 <span>Profile</span>
+                <span class="badge rounded-pill bg-danger position-absolute badge-pulse-glow" id="tabProfileBadge" style="top:2px; right:10px; font-size:0.6rem; padding:2px 5px; display:none; box-shadow:0 2px 4px rgba(220,53,69,0.5);">0</span>
             </div>
         </div>
             </div>
@@ -1789,6 +1832,12 @@
                                 filterProducts();
                             } else if (tabName === 'wanted') {
                                 loadWantedPosts();
+                            } else if (tabName === 'profile') {
+                                if (typeof window.loadOwnerRentalDashboard === 'function') {
+                                    window.loadOwnerRentalDashboard();
+                                } else if (typeof window.loadUserRentedOutItems === 'function') {
+                                    window.loadUserRentedOutItems();
+                                }
                             }
                         }
 
@@ -1796,6 +1845,11 @@
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
                             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            // Check owner incoming rental orders notification badge
+                            if (typeof window.checkOwnerRentalNotifications === 'function') {
+                                window.checkOwnerRentalNotifications();
+                            }
 
                             try {
                                 const res = await fetch(`/pasabuy_api.php?action=get_unread&user_id=${currentUserId}`);

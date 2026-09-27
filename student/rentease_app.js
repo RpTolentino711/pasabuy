@@ -108,7 +108,7 @@ function renderFeaturedRentals() {
                            </button>`
                         : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
                                    style="width:30px; height:30px; background: linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink: 0;"
-                                   onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id})" title="Add to Cart">
+                                   onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="Add to Cart">
                                <i class="fa-solid fa-cart-plus fs-8"></i>
                            </button>`
                     }
@@ -272,7 +272,7 @@ function renderGridElements(items) {
         let cartBtnClass = 'text-white';
         let cartBtnStyle = 'background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;';
         let cartBtnText = '<i class="fa-solid fa-cart-plus me-1"></i> Add to Cart';
-        let cartOnClick = `event.stopPropagation(); quickAddRentEaseItem(${p.id})`;
+        let cartOnClick = `event.stopPropagation(); quickAddRentEaseItem(${p.id}, this)`;
 
         if (isMine) {
             cartBtnClass = 'text-white';
@@ -804,7 +804,60 @@ Do you want to proceed and take down this listing?`;
     }
 };
 
-function confirmAddDetailToCart() {
+// Parabolic Fly-To-Cart Animation
+window.animateFlyToCart = function (sourceElement, imageUrl) {
+    try {
+        const cartTarget = document.getElementById('headerCartBtn') || document.getElementById('headerCartBadge') || document.querySelector('.header-cart-icon') || document.getElementById('tabCartBadge');
+        if (!cartTarget) return;
+
+        let srcRect;
+        if (sourceElement && typeof sourceElement.getBoundingClientRect === 'function') {
+            srcRect = sourceElement.getBoundingClientRect();
+        } else {
+            srcRect = { left: window.innerWidth / 2 - 25, top: window.innerHeight / 2 - 25, width: 50, height: 50 };
+        }
+
+        const dstRect = cartTarget.getBoundingClientRect();
+
+        const flyer = document.createElement('div');
+        flyer.className = 'fly-to-cart-element';
+        const img = imageUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+        flyer.style.backgroundImage = `url('${img}')`;
+        flyer.style.left = `${srcRect.left + (srcRect.width / 2) - 24}px`;
+        flyer.style.top = `${srcRect.top + (srcRect.height / 2) - 24}px`;
+        flyer.style.width = '48px';
+        flyer.style.height = '48px';
+        flyer.style.opacity = '1';
+
+        document.body.appendChild(flyer);
+
+        // Force reflow
+        void flyer.offsetWidth;
+
+        const deltaX = (dstRect.left + dstRect.width / 2) - (srcRect.left + srcRect.width / 2);
+        const deltaY = (dstRect.top + dstRect.height / 2) - (srcRect.top + srcRect.height / 2);
+
+        flyer.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.2) rotate(360deg)`;
+        flyer.style.opacity = '0.3';
+
+        setTimeout(() => {
+            if (flyer && flyer.parentNode) {
+                flyer.parentNode.removeChild(flyer);
+            }
+            cartTarget.classList.add('cart-bounce-pop');
+            const badge = document.getElementById('headerCartBadge') || document.getElementById('cartCountBadge');
+            if (badge) {
+                badge.classList.add('cart-badge-pop');
+                setTimeout(() => badge.classList.remove('cart-badge-pop'), 450);
+            }
+            setTimeout(() => cartTarget.classList.remove('cart-bounce-pop'), 550);
+        }, 650);
+    } catch (e) {
+        console.warn("Fly animation error:", e);
+    }
+};
+
+function confirmAddDetailToCart(btnEl) {
     if (!currentDetailProduct) return;
     if (isCurrentUserOwnerOfItem(currentDetailProduct)) {
         alert("ℹ️ You cannot rent or add your own equipment to the cart.");
@@ -815,9 +868,9 @@ function confirmAddDetailToCart() {
         alert("⚠️ Sorry, this equipment is currently out of stock.");
         return;
     }
-    addRentEaseCartItem(currentDetailProduct, currentDetailQty);
+    addRentEaseCartItem(currentDetailProduct, currentDetailQty || 1);
 
-    const btn = document.getElementById('detailAddToCartBtn');
+    const btn = btnEl || document.getElementById('detailAddToCartBtn');
     if (btn) {
         const origHtml = btn.innerHTML;
         btn.classList.remove('btn-outline-primary');
@@ -832,11 +885,17 @@ function confirmAddDetailToCart() {
         }, 1800);
     }
 
-    showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, currentDetailQty);
+    if (typeof window.animateFlyToCart === 'function') {
+        window.animateFlyToCart(btn, currentDetailProduct.image_url);
+    }
+
+    showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, currentDetailQty || 1);
     renderExploreCatalog();
 }
+window.confirmAddDetailToCart = confirmAddDetailToCart;
+window.confirmAddToCartDetail = confirmAddDetailToCart;
 
-function quickAddRentEaseItem(id) {
+function quickAddRentEaseItem(id, clickedEl) {
     const item = (rentEaseInventory || []).find(i => i.id == id);
     if (!item) return;
     if (isCurrentUserOwnerOfItem(item)) {
@@ -849,9 +908,363 @@ function quickAddRentEaseItem(id) {
         return;
     }
     addRentEaseCartItem(item, 1);
+    const triggerEl = clickedEl || (window.event ? (window.event.currentTarget || window.event.target) : null);
+    if (typeof window.animateFlyToCart === 'function') {
+        window.animateFlyToCart(triggerEl, item.image_url);
+    }
     showCartToastNotification(item.name || item.title, 1);
     renderExploreCatalog();
 }
+window.quickAddRentEaseItem = quickAddRentEaseItem;
+
+// ==========================================================
+// 8. PROFILE 3-SUBTABS: REQUESTS, RENT ITEMS (STOCK MONITOR), HISTORY
+// ==========================================================
+window.switchProfileSubTab = function(subtab) {
+    const tabs = ['requests', 'inventory', 'history'];
+    tabs.forEach(t => {
+        const sec = document.getElementById('profileSection' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('btnProfileTab' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (sec) sec.style.display = (t === subtab) ? 'flex' : 'none';
+        if (btn) {
+            if (t === subtab) {
+                btn.className = 'btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-extrabold fs-9 d-flex align-items-center justify-content-center gap-1.5 profile-subtab-btn active text-white';
+                btn.style.background = 'linear-gradient(135deg, #5B3FA8, #341F97)';
+                btn.style.border = 'none';
+            } else {
+                btn.className = 'btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-bold fs-9 d-flex align-items-center justify-content-center gap-1.5 profile-subtab-btn text-secondary';
+                btn.style.background = 'transparent';
+                btn.style.border = 'none';
+            }
+        }
+    });
+
+    if (subtab === 'requests' || subtab === 'inventory' || subtab === 'history') {
+        loadOwnerRentalDashboard(false);
+    }
+};
+
+window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
+    let storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+    const ownerEmail = storedUser?.email || 'romeopaolotolentino@gmail.com';
+    const ownerName = storedUser?.name || 'Romeo Paolo Tolentino';
+    const ownerId = storedUser?.id || storedUser?.userId || 104;
+
+    try {
+        const res = await fetch(`/rentease_api.php?action=get_owner_rental_data&owner_email=${encodeURIComponent(ownerEmail)}&owner_name=${encodeURIComponent(ownerName)}&owner_id=${ownerId}&customer_phone=${encodeURIComponent(storedUser?.studentNumber || '09668257301')}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.success) return;
+
+        // 1. Update KPI counters
+        const kpiTotal = document.getElementById('kpiTotalStockOwned');
+        const kpiRented = document.getElementById('kpiTotalStockRented');
+        const kpiAvail = document.getElementById('kpiTotalStockAvailable');
+        const invBadge = document.getElementById('myRentalCountBadge');
+        if (kpiTotal) kpiTotal.innerText = data.total_stock_owned ?? 0;
+        if (kpiRented) kpiRented.innerText = data.total_rented_out ?? 0;
+        if (kpiAvail) kpiAvail.innerText = data.total_available ?? 0;
+        if (invBadge) invBadge.innerText = (data.inventory || []).length;
+
+        // 2. Notification Badges
+        const incomingCount = (data.incoming_requests || []).length;
+        const profileBadge = document.getElementById('profileRequestsBadge');
+        const tabProfileBadge = document.getElementById('tabProfileBadge');
+        if (profileBadge) {
+            if (incomingCount > 0) {
+                profileBadge.innerText = incomingCount;
+                profileBadge.style.display = 'inline-block';
+            } else {
+                profileBadge.style.display = 'none';
+            }
+        }
+        if (tabProfileBadge) {
+            if (incomingCount > 0) {
+                tabProfileBadge.innerText = incomingCount;
+                tabProfileBadge.style.display = 'inline-block';
+            } else {
+                tabProfileBadge.style.display = 'none';
+            }
+        }
+
+        // 3. Render Subtab 1: Rental Requests Container
+        const reqContainer = document.getElementById('ownerRequestsListContainer');
+        if (reqContainer) {
+            if (!data.incoming_requests || data.incoming_requests.length === 0) {
+                reqContainer.innerHTML = `
+                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2" style="width:50px; height:50px; color:#5B3FA8;">
+                            <i class="fa-solid fa-inbox fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark fs-8 mb-1">No Active Rental Requests</h6>
+                        <p class="text-muted fs-9 mb-0">When students rent your equipment, their orders and bookings will appear here for you to accept, monitor, and restock.</p>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                data.incoming_requests.forEach(order => {
+                    const status = (order.order_status || 'CONFIRMED').toUpperCase();
+                    let statusBadgeClass = 'bg-primary';
+                    if (status === 'PREPARING') statusBadgeClass = 'bg-warning text-dark';
+                    if (status === 'IN_TRANSIT') statusBadgeClass = 'bg-info text-dark';
+                    if (status === 'RETURNED') statusBadgeClass = 'bg-success';
+
+                    const itemsHtml = (order.items || []).map(it => `
+                        <div class="d-flex align-items-center gap-2 p-1.5 bg-light rounded-3 mb-1">
+                            <img src="${it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" class="rounded-2" style="width:36px; height:36px; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                            <div class="flex-grow-1 text-truncate">
+                                <div class="fw-bold text-dark fs-9 text-truncate">${it.product_name}</div>
+                                <div class="fs-9 text-muted">${it.quantity}x unit(s) • ₱${parseFloat(it.price_per_day).toFixed(0)}/day</div>
+                            </div>
+                            <div class="fw-extrabold text-dark fs-9">₱${parseFloat(it.subtotal).toFixed(0)}</div>
+                        </div>
+                    `).join('');
+
+                    html += `
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-2">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-1.5">
+                                <span class="fw-extrabold text-dark fs-8">${order.order_code}</span>
+                                <span class="badge ${statusBadgeClass} rounded-pill fs-9 fw-bold">${status}</span>
+                            </div>
+                            <span class="text-muted fs-9">${order.rental_days || 1} day(s) duration</span>
+                        </div>
+
+                        <!-- Customer Info -->
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light border mb-2">
+                            <div class="d-flex align-items-center gap-2 text-truncate">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white" style="width:28px; height:28px; font-size:11px; flex-shrink:0;">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <div class="text-truncate">
+                                    <div class="fw-bold text-dark fs-9 text-truncate">${order.customer_name}</div>
+                                    <div class="fs-9 text-muted">${order.customer_phone || 'Verified Student'}</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold border text-primary" onclick="openChatWithRenter('${order.customer_name}', '${order.customer_phone || ''}', '${order.order_code}')">
+                                <i class="fa-solid fa-comment me-1"></i> Chat
+                            </button>
+                        </div>
+
+                        <!-- Items list -->
+                        <div class="mb-2">
+                            ${itemsHtml}
+                        </div>
+
+                        <!-- Financials & Dates -->
+                        <div class="d-flex align-items-center justify-content-between fs-9 text-muted mb-2.5 px-1">
+                            <div>Dates: <strong class="text-dark">${order.rental_start_date || 'Today'}</strong> to <strong class="text-dark">${order.rental_end_date || 'Next Day'}</strong></div>
+                            <div>Total: <strong class="text-primary fs-8">₱${parseFloat(order.total_amount).toFixed(2)}</strong></div>
+                        </div>
+
+                        <!-- Action Bar for Owner -->
+                        <div class="d-flex align-items-center gap-2 pt-2 border-top">
+                            ${status !== 'RETURNED' ? `
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="updateOwnerOrderStatus(${order.id}, '${order.order_code}', 'PREPARING')">
+                                    <i class="fa-solid fa-boxes-packing me-1"></i> Preparing
+                                </button>
+                                <button class="btn btn-sm btn-primary rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1" style="background: linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(${order.id}, '${order.order_code}')">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Mark Returned & Restock
+                                </button>
+                            ` : `
+                                <div class="w-100 text-center py-1 text-success fs-9 fw-bold">
+                                    <i class="fa-solid fa-check-double me-1"></i> Equipment Returned & Restocked in Catalog
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                    `;
+                });
+                reqContainer.innerHTML = html;
+            }
+        }
+
+        // 4. Render Subtab 2: Rent Items / Stock Inventory Monitoring
+        const invContainer = document.getElementById('myRentalListingsContainer');
+        if (invContainer) {
+            if (!data.inventory || data.inventory.length === 0) {
+                invContainer.innerHTML = `
+                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:60px; height:60px; color:#5B3FA8;">
+                            <i class="fa-solid fa-box-open fs-2"></i>
+                        </div>
+                        <h6 class="fw-extrabold text-dark fs-7 mb-1">No Equipment Posted for Rent Yet</h6>
+                        <p class="text-muted fs-8 mb-0">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                data.inventory.forEach(item => {
+                    const total = parseInt(item.qty_total || 1);
+                    const rented = parseInt(item.qty_rented || 0);
+                    const avail = parseInt(item.qty_available ?? (total - rented));
+                    const percentRented = Math.min(100, Math.round((rented / Math.max(1, total)) * 100));
+
+                    html += `
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-2" id="ownerInventoryCard_${item.id}">
+                        <div class="d-flex align-items-start gap-2.5 mb-2.5">
+                            <img src="${item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" class="rounded-3" style="width:64px; height:64px; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                            <div class="flex-grow-1 text-truncate">
+                                <div class="d-flex align-items-center justify-content-between mb-0.5">
+                                    <span class="badge bg-light text-dark border fs-9">${item.category || 'General'}</span>
+                                    <span class="fw-extrabold text-primary fs-8">₱${parseFloat(item.price_per_day).toFixed(0)} <span class="text-muted fs-9 fw-normal">/ day</span></span>
+                                </div>
+                                <h6 class="fw-bold text-dark fs-8 mb-1 text-truncate" title="${item.name}">${item.name}</h6>
+                                <span class="fs-9 text-muted"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${item.location || 'San Pablo Campus'}</span>
+                            </div>
+                        </div>
+
+                        <!-- Live Stock Monitor Progress Bar -->
+                        <div class="p-2.5 rounded-3 bg-light border mb-2.5">
+                            <div class="d-flex align-items-center justify-content-between fs-9 mb-1">
+                                <span class="fw-bold text-dark"><i class="fa-solid fa-chart-simple text-primary me-1"></i> Stock Status</span>
+                                <span><strong>${avail}</strong> available / <strong>${rented}</strong> rented out (${total} total)</span>
+                            </div>
+                            <div class="progress rounded-pill" style="height: 7px; background:#e2e8f0;">
+                                <div class="progress-bar rounded-pill" role="progressbar" style="width: ${percentRented}%; background: linear-gradient(90deg, #F59E0B, #EF4444);" aria-valuenow="${percentRented}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+
+                        <!-- Owner Control Buttons -->
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="openEquipmentDetail(${item.id})">
+                                <i class="fa-solid fa-sliders me-1"></i> Edit Stock & Price
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill py-1.5 px-2.5 fs-9 fw-bold" onclick="confirmTakeDownOwnerItem(${item.id}, '${item.name.replace(/'/g, "\\'")}')">
+                                <i class="fa-solid fa-trash me-1"></i> Take Down
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                });
+                invContainer.innerHTML = html;
+            }
+        }
+
+        // 5. Render Subtab 3: Rental History
+        const histContainer = document.getElementById('ownerRentalHistoryContainer');
+        const histBadge = document.getElementById('historyCountBadge');
+        if (histContainer) {
+            const combinedHistory = [...(data.history || []), ...(data.my_bookings || [])];
+            if (histBadge) histBadge.innerText = `${combinedHistory.length} Records`;
+
+            if (combinedHistory.length === 0) {
+                histContainer.innerHTML = `
+                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2 text-muted" style="width:48px; height:48px;">
+                            <i class="fa-solid fa-receipt fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark fs-8 mb-1">No Rental History Yet</h6>
+                        <p class="text-muted fs-9 mb-0">Completed equipment returns and your rental receipts will be archived here.</p>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                combinedHistory.forEach(rec => {
+                    const isAsOwner = (data.history || []).includes(rec);
+                    const status = (rec.order_status || 'RETURNED').toUpperCase();
+
+                    html += `
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-2">
+                        <div class="d-flex align-items-center justify-content-between mb-1.5">
+                            <div class="d-flex align-items-center gap-1.5">
+                                <span class="badge ${isAsOwner ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'} fw-bold fs-9">
+                                    ${isAsOwner ? 'Lender Booking' : 'Rented from Student'}
+                                </span>
+                                <span class="fw-extrabold text-dark fs-9">${rec.order_code}</span>
+                            </div>
+                            <span class="badge bg-success rounded-pill fs-9 fw-bold">${status}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between fs-9 text-muted mb-1">
+                            <span>Party: <strong class="text-dark">${isAsOwner ? rec.customer_name : (rec.owner_name || 'Verified Owner')}</strong></span>
+                            <span class="fw-bold text-dark">₱${parseFloat(rec.total_amount).toFixed(2)}</span>
+                        </div>
+                        <div class="fs-9 text-muted">
+                            Returned on <strong class="text-dark">${rec.rental_end_date || 'Completed Date'}</strong>
+                        </div>
+                    </div>
+                    `;
+                });
+                histContainer.innerHTML = html;
+            }
+        }
+
+    } catch (e) {
+        console.error("Owner rental dashboard error:", e);
+    }
+};
+
+window.checkOwnerRentalNotifications = async function () {
+    let storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+    const ownerEmail = storedUser?.email || 'romeopaolotolentino@gmail.com';
+    const ownerName = storedUser?.name || 'Romeo Paolo Tolentino';
+    const ownerId = storedUser?.id || storedUser?.userId || 104;
+
+    try {
+        const res = await fetch(`/rentease_api.php?action=get_owner_rental_data&owner_email=${encodeURIComponent(ownerEmail)}&owner_name=${encodeURIComponent(ownerName)}&owner_id=${ownerId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.success) return;
+
+        const count = data.pending_count || (data.incoming_requests || []).length;
+        const profileBadge = document.getElementById('profileRequestsBadge');
+        const tabProfileBadge = document.getElementById('tabProfileBadge');
+        if (profileBadge) {
+            profileBadge.innerText = count;
+            profileBadge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+        if (tabProfileBadge) {
+            tabProfileBadge.innerText = count;
+            tabProfileBadge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+    } catch (e) {}
+};
+
+window.confirmRestockOrder = async function (orderId, orderCode) {
+    if (!confirm(`Confirm that order #${orderCode} has been delivered back and verified in good condition?\n\nThis will mark the rental as RETURNED and restock your equipment inventory automatically.`)) {
+        return;
+    }
+    updateOwnerOrderStatus(orderId, orderCode, 'RETURNED');
+};
+
+window.updateOwnerOrderStatus = async function (orderId, orderCode, newStatus) {
+    try {
+        const res = await fetch(`/rentease_api.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update_owner_order_status',
+                order_id: orderId,
+                order_code: orderCode,
+                new_status: newStatus
+            })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+            alert(data.message || `Order status updated to ${newStatus}.`);
+            loadOwnerRentalDashboard(true);
+            loadRentEaseCatalog();
+        } else {
+            alert(data?.message || 'Failed to update order status.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Server connection error.');
+    }
+};
+
+window.openChatWithRenter = function (customerName, customerPhone, orderCode) {
+    switchTab('messages');
+    setTimeout(() => {
+        const input = document.getElementById('chatMsgInput') || document.querySelector('.chat-input');
+        if (input) {
+            input.value = `Hi ${customerName}, regarding your equipment rental order #${orderCode}: `;
+            input.focus();
+        }
+    }, 400);
+};
 
 function showCartToastNotification(name, qty) {
     let toast = document.getElementById('renteaseCartToast');
@@ -2846,6 +3259,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartBadgeCount();
     pollRentEaseUnreadMessages();
     setInterval(pollRentEaseUnreadMessages, 4000);
+    if (typeof checkOwnerRentalNotifications === 'function') {
+        checkOwnerRentalNotifications();
+        setInterval(checkOwnerRentalNotifications, 6000);
+    }
     const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in') === 'true';
     if (isLoggedIn) {
         switchTab('home');
