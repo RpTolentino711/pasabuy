@@ -284,7 +284,7 @@
     </div>
 
     <!-- Return Equipment to Owner Action Card -->
-    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-4" id="returnActionCard">
+    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3" id="returnActionCard">
         <div class="d-flex align-items-center justify-content-between mb-2">
             <div class="d-flex align-items-center gap-2">
                 <i class="fa-solid fa-rotate-left text-primary fs-7" style="color:#5B3FA8;"></i>
@@ -308,4 +308,87 @@
         </div>
     </div>
 
+    <!-- Step Issue Reporting to Admin Card (Every step can be reported to the admin) -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 mb-4" style="background: linear-gradient(135deg, #FFFDF5 0%, #FEF9C3 100%); border: 1.5px dashed #F59E0B !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-warning shadow-2xs" style="width:34px; height:34px; background:#FEF3C7; flex-shrink:0;">
+                    <i class="fa-solid fa-shield-halved fs-7 text-warning"></i>
+                </div>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0.5">Need Admin Assistance at this Step?</h6>
+                    <span class="fs-9 text-muted" id="trackReportStepSub">File a direct report to RentEase Admin Operations</span>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-warning text-dark fw-bold fs-9 rounded-pill px-3 shadow-2xs" onclick="openReportToAdminModal()">
+                <i class="fa-solid fa-flag me-1"></i> Report Step
+            </button>
+        </div>
+        <p class="fs-9 text-dark mb-0">
+            Every stage of this order is monitored live by Admin Operations. If you notice delayed pickup, damaged gear, or courier problems, report it now to trigger immediate admin intervention.
+        </p>
+    </div>
+
+</div>
+
+<!-- Report Issue to Admin at Current Step Modal -->
+<div class="modal fade" id="reportToAdminModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden">
+            <div class="modal-header border-0 pb-0" style="background:#FFFBEB;">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:36px; height:36px; background:linear-gradient(135deg, #F59E0B, #D97706);">
+                        <i class="fa-solid fa-triangle-exclamation fs-7"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-extrabold text-dark mb-0 fs-7">Report Step to Admin Operations</h6>
+                        <span class="fs-9 text-muted" id="modalReportOrderSub">Order Incident Report</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3 pt-2">
+                <!-- Current Step Indicator -->
+                <div class="p-2 rounded-3 mb-3 d-flex align-items-center justify-content-between" style="background:#F1F5F9; border: 1px solid #E2E8F0;">
+                    <div class="fs-9 text-muted"><i class="fa-solid fa-clock-rotate-left me-1 text-primary"></i> Order Stage:</div>
+                    <span class="badge bg-primary text-white fw-bold fs-9" id="modalReportCurrentStep">Step 1: Confirmed</span>
+                </div>
+
+                <div class="mb-2.5">
+                    <label class="form-label fs-9 fw-bold text-dark mb-1">Issue Category / Reason <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" id="modalReportCategory">
+                        <option value="Damage / Equipment Condition Issue" selected>Equipment Damaged / Defective / Missing Parts</option>
+                        <option value="Pickup Delay / Courier No-Show">Courier Delay / Pickup No-Show</option>
+                        <option value="Stock Owner Unresponsive">Stock Owner Unresponsive / Cancelled Handover</option>
+                        <option value="Wrong Delivery Destination">Delivery Location / Address Issue</option>
+                        <option value="Dispute on Handover">Dispute on Equipment Handover</option>
+                        <option value="Payment / Platform Safety Concern">Payment or Platform Safety Concern</option>
+                        <option value="Other Step Inquiry">Other Step Concern</option>
+                    </select>
+                </div>
+
+                <div class="mb-2.5">
+                    <label class="form-label fs-9 fw-bold text-dark mb-1">Subject Summary <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" id="modalReportSubject" placeholder="e.g. Courier late for pickup, damaged lens mount...">
+                </div>
+
+                <div class="mb-2.5">
+                    <label class="form-label fs-9 fw-bold text-dark mb-1">Details &amp; Explanation <span class="text-danger">*</span></label>
+                    <textarea class="form-control form-control-sm" id="modalReportDetails" rows="3" placeholder="Provide full details of what happened at this stage for the Admin team to investigate..."></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fs-9 fw-bold text-dark mb-1"><i class="fa-solid fa-camera me-1 text-secondary"></i> Attach Photo Evidence (Optional)</label>
+                    <input type="file" class="form-control form-control-sm" id="modalReportPhotoFile" accept="image/*" onchange="previewReportPhoto(this)">
+                    <div id="modalReportPhotoPreviewBox" class="mt-2 text-center rounded-3 overflow-hidden border bg-light" style="display:none; max-height:140px;">
+                        <img id="modalReportPhotoImg" src="" style="max-height:140px; width:100%; object-fit:cover;">
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-warning w-100 py-2.5 rounded-3 fw-extrabold fs-8 shadow-sm text-dark d-flex align-items-center justify-content-center gap-1.5" id="btnSubmitAdminReport" onclick="submitReportToAdmin()">
+                    <i class="fa-solid fa-paper-plane"></i> Send Report to Admin
+                </button>
+            </div>
+        </div>
+    </div>
 </div>

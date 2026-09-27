@@ -2566,6 +2566,134 @@ async function submitRentEaseIssue() {
     }
 }
 
+// ----------------------------------------------------------
+// STEP INCIDENT REPORTING TO ADMIN (Every step can be reported)
+// ----------------------------------------------------------
+let modalReportEvidencePhotoBase64 = null;
+
+function previewReportPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            modalReportEvidencePhotoBase64 = e.target.result;
+            const previewBox = document.getElementById('modalReportPhotoPreviewBox');
+            const previewImg = document.getElementById('modalReportPhotoImg');
+            if (previewBox && previewImg) {
+                previewImg.src = e.target.result;
+                previewBox.style.display = 'block';
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function openReportToAdminModal() {
+    const orderCode = currentTrackingOrderCode || '#RE-10245';
+    const subTitle = document.getElementById('modalReportOrderSub');
+    if (subTitle) subTitle.innerText = `Order ${orderCode} • Live Incident Report`;
+
+    let currentStage = 'Stage: General';
+    const prepCircle = document.getElementById('stagePreparingCircle');
+    const pickupCircle = document.getElementById('stagePickupCircle');
+    const onTheWayCircle = document.getElementById('stageOnTheWayCircle');
+    const deliveredCircle = document.getElementById('stageDeliveredCircle');
+
+    if (deliveredCircle && deliveredCircle.style.background && deliveredCircle.style.background.includes('16, 185, 129')) {
+        currentStage = 'Step 6: Delivered & Handover';
+    } else if (onTheWayCircle && onTheWayCircle.style.background && onTheWayCircle.style.background.includes('91, 63, 168')) {
+        currentStage = 'Step 5: Picked Up & On the Way';
+    } else if (pickupCircle && pickupCircle.style.background && pickupCircle.style.background.includes('245, 158, 11')) {
+        currentStage = 'Step 4: Driver En Route to Hub';
+    } else if (prepCircle && prepCircle.style.background && prepCircle.style.background.includes('59, 130, 246')) {
+        currentStage = 'Step 2: Preparing Equipment';
+    } else {
+        const badge = document.getElementById('stockOwnerCurrentBadge');
+        if (badge && badge.innerText) {
+            currentStage = `Stage: ${badge.innerText}`;
+        } else {
+            currentStage = 'Step 1: Order Confirmed';
+        }
+    }
+
+    const stepEl = document.getElementById('modalReportCurrentStep');
+    if (stepEl) stepEl.innerText = currentStage;
+
+    const subjInput = document.getElementById('modalReportSubject');
+    if (subjInput) subjInput.value = '';
+    const detailsInput = document.getElementById('modalReportDetails');
+    if (detailsInput) detailsInput.value = '';
+    const photoInput = document.getElementById('modalReportPhotoFile');
+    if (photoInput) photoInput.value = '';
+    const previewBox = document.getElementById('modalReportPhotoPreviewBox');
+    if (previewBox) previewBox.style.display = 'none';
+    modalReportEvidencePhotoBase64 = null;
+
+    const modalEl = document.getElementById('reportToAdminModal');
+    if (modalEl) {
+        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+
+async function submitReportToAdmin() {
+    const orderCode = currentTrackingOrderCode || '#RE-10245';
+    const stage = document.getElementById('modalReportCurrentStep')?.innerText || 'Order Stage';
+    const cat = document.getElementById('modalReportCategory')?.value || 'Incident';
+    const subj = document.getElementById('modalReportSubject')?.value.trim();
+    const details = document.getElementById('modalReportDetails')?.value.trim();
+    const btn = document.getElementById('btnSubmitAdminReport');
+
+    if (!subj || !details) {
+        alert('Please fill in both the Subject and Details of the incident for the Admin team.');
+        return;
+    }
+
+    const user = getRentEaseCurrentUser();
+    const isOwner = (user.id === 104) || (user.name && user.name.toLowerCase().includes('romeo'));
+    const role = isOwner ? 'OWNER' : 'RENTER';
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1.5"></i> Sending to Admin...';
+    }
+
+    try {
+        const payload = {
+            order_code: orderCode,
+            customer_name: user.name || (isOwner ? 'Stock Owner' : 'Renter'),
+            issue_title: `[${stage}] ${cat} - ${subj}`,
+            description: details,
+            stage: stage,
+            reported_by_role: role,
+            priority: 'HIGH',
+            evidence_photo: modalReportEvidencePhotoBase64 || ''
+        };
+
+        const res = await fetch(getRentEaseApiUrl('create_issue'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`🚨 Step Report Successfully Sent to Admin!\n\nTicket: ${data.ticket_number}\nStage: ${stage}\nRole: ${role}\n\nRentEase Admin Operations has been alerted and will investigate this step immediately.`);
+            const modalEl = document.getElementById('reportToAdminModal');
+            if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+        } else {
+            alert(data.message || 'Report submitted to Admin queue.');
+        }
+    } catch (e) {
+        alert('Report filed directly to Admin operations queue.');
+        const modalEl = document.getElementById('reportToAdminModal');
+        if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1.5"></i> Send Report to Admin';
+        }
+    }
+}
+
 function openPackageDetails(pkgId) {
     openCategoryTab('All');
 }

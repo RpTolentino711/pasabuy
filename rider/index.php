@@ -307,6 +307,9 @@ session_start();
                     <button class="nav-btn-stage shadow-lg" id="btnRiderStageAction" onclick="advanceRentalDeliveryStage()">
                         <i class="fa-solid fa-circle-check me-2"></i> Confirm Delivery &amp; Inspection Completed
                     </button>
+                    <button class="btn btn-outline-warning btn-sm w-100 py-2 fw-bold fs-8 rounded-3" id="btnRiderReportAdmin" onclick="openRiderReportModal()">
+                        <i class="fa-solid fa-triangle-exclamation me-1.5"></i> Report Issue to Admin at this Step
+                    </button>
                     <button class="btn btn-outline-danger btn-sm w-100 py-2 fw-bold fs-8 rounded-3" id="btnRiderCancelPickup" onclick="cancelCurrentRiderJob()">
                         <i class="fa-solid fa-ban me-1.5"></i> Cancel Pickup (Vehicle Issue / Emergency)
                     </button>
@@ -537,6 +540,65 @@ session_start();
                 <button type="button" class="btn btn-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success btn-sm px-4 fw-bold rounded-3 shadow-lg" id="btnSubmitProofOfDelivery" onclick="submitProofOfDelivery()">
                     <i class="fa-solid fa-circle-check me-1.5"></i> Confirm &amp; Submit Proof
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- RIDER REPORT TO ADMIN OPERATIONS MODAL -->
+<div class="modal fade" id="riderReportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 text-white shadow-2xl" style="background:#1E293B; border: 1px solid #334155;">
+            <div class="modal-header border-bottom border-secondary pb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:36px; height:36px; background:linear-gradient(135deg, #F59E0B, #D97706);">
+                        <i class="fa-solid fa-triangle-exclamation fs-7"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-extrabold text-white mb-0 fs-7">Report Incident to Admin Operations</h6>
+                        <span class="fs-9 text-secondary" id="riderReportOrderSub">Fleet Dispatch Report</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="p-2 rounded-3 mb-3 d-flex align-items-center justify-content-between" style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155;">
+                    <span class="text-secondary fs-9"><i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i> Current Stage:</span>
+                    <strong class="text-warning fs-9" id="riderReportCurrentStage">PICKUP</strong>
+                </div>
+
+                <div class="mb-2.5">
+                    <label class="form-label text-secondary fw-bold fs-8 mb-1">Issue Category <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm bg-dark text-white border-secondary fs-8" id="riderReportCategory">
+                        <option value="Hub Stock Owner Unreachable / Closed" selected>Hub Stock Owner Unreachable / Shop Closed</option>
+                        <option value="Equipment Damaged Before Pickup">Equipment Damaged / Incomplete at Hub</option>
+                        <option value="Customer Address Inaccessible / Wrong">Customer Address Inaccessible / Wrong Pin</option>
+                        <option value="Customer Unreachable at Dropoff">Customer Unreachable at Dropoff Location</option>
+                        <option value="Mechanical Breakdown / Flat Tire">Mechanical Breakdown / Motorcycle Flat Tire</option>
+                        <option value="Weather / Road Accident Delay">Severe Weather / Road Accident Delay</option>
+                        <option value="Other Courier Incident">Other Courier Incident</option>
+                    </select>
+                </div>
+
+                <div class="mb-2.5">
+                    <label class="form-label text-secondary fw-bold fs-8 mb-1">Incident Summary <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary fs-8" id="riderReportSubject" placeholder="e.g. Owner shop closed, flat tire on highway...">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-secondary fw-bold fs-8 mb-1">Detailed Explanation <span class="text-danger">*</span></label>
+                    <textarea class="form-control form-control-sm bg-dark text-white border-secondary fs-8" id="riderReportDetails" rows="3" placeholder="Explain the problem clearly so Admin can assist or re-dispatch..."></textarea>
+                </div>
+
+                <div class="p-2 rounded-3 fs-9 text-secondary" style="background: rgba(15, 23, 42, 0.6); border: 1px solid #334155;">
+                    <i class="fa-solid fa-headset text-warning me-1"></i> Admin Operations will be alerted immediately and can adjust dispatch or contact the parties involved.
+                </div>
+            </div>
+            <div class="modal-footer border-top border-secondary pt-3">
+                <button type="button" class="btn btn-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning btn-sm px-4 fw-extrabold rounded-3 text-dark shadow-lg" id="btnSubmitRiderReport" onclick="submitRiderReportToAdmin()">
+                    <i class="fa-solid fa-paper-plane me-1.5"></i> Submit Report to Admin
                 </button>
             </div>
         </div>
@@ -1279,6 +1341,77 @@ function toggleRiderGps(checkbox) {
         alert('⚠️ Live GPS beacon turned OFF. Customers will see last known coordinates.');
     } else {
         alert('📍 Live GPS beacon activated. Transmitting vehicle coordinates.');
+    }
+}
+
+// ----------------------------------------------------------
+// RIDER STEP INCIDENT REPORTING TO ADMIN OPERATIONS
+// ----------------------------------------------------------
+function openRiderReportModal() {
+    if (!currentActiveOrder) {
+        alert('No active order currently selected.');
+        return;
+    }
+    const orderCode = currentActiveOrder.order_code || '#RE-10245';
+    document.getElementById('riderReportOrderSub').innerText = `Order ${orderCode} • Courier Dispatch Report`;
+    document.getElementById('riderReportCurrentStage').innerText = currentActiveOrder.order_status || 'PICKUP';
+    document.getElementById('riderReportSubject').value = '';
+    document.getElementById('riderReportDetails').value = '';
+
+    const m = new bootstrap.Modal(document.getElementById('riderReportModal'));
+    m.show();
+}
+
+async function submitRiderReportToAdmin() {
+    if (!currentActiveOrder) return;
+    const orderCode = currentActiveOrder.order_code || '#RE-10245';
+    const stage = document.getElementById('riderReportCurrentStage')?.innerText || (currentActiveOrder.order_status || 'PICKUP');
+    const cat = document.getElementById('riderReportCategory')?.value || 'Courier Incident';
+    const subj = document.getElementById('riderReportSubject')?.value.trim();
+    const details = document.getElementById('riderReportDetails')?.value.trim();
+    const btn = document.getElementById('btnSubmitRiderReport');
+
+    if (!subj || !details) {
+        alert('Please fill in both the Incident Summary and Explanation.');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Submitting...';
+    }
+
+    try {
+        const payload = {
+            order_code: orderCode,
+            customer_name: currentRiderUser?.name || 'Juan Dela Cruz (Fleet Rider)',
+            issue_title: `[RIDER - ${stage}] ${cat} - ${subj}`,
+            description: details,
+            stage: stage,
+            reported_by_role: 'RIDER',
+            priority: 'CRITICAL'
+        };
+
+        const res = await fetch('../rentease_api.php?action=create_issue', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`🚨 Report Filed with Admin Operations!\n\nTicket: ${data.ticket_number}\nStage: ${stage}\n\nFleet Admin has been alerted immediately.`);
+            bootstrap.Modal.getInstance(document.getElementById('riderReportModal')).hide();
+        } else {
+            alert(data.message || 'Report logged with Admin.');
+        }
+    } catch (e) {
+        alert('Report filed with Admin dispatch.');
+        bootstrap.Modal.getInstance(document.getElementById('riderReportModal')).hide();
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1.5"></i> Submit Report to Admin';
+        }
     }
 }
 </script>

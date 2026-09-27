@@ -1183,16 +1183,17 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <thead>
                                 <tr>
                                     <th>Ticket #</th>
-                                    <th>Customer</th>
-                                    <th>Subject</th>
+                                    <th>Order #</th>
+                                    <th>Step / Stage</th>
+                                    <th>Reporter</th>
+                                    <th>Subject &amp; Incident Notes</th>
                                     <th>Priority</th>
                                     <th>Status</th>
-                                    <th>Assigned To</th>
-                                    <th width="120">Actions</th>
+                                    <th width="130">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="ticketsTableBody">
-                                <tr><td colspan="7" class="text-center py-4 text-muted">Loading live tickets...</td></tr>
+                                <tr><td colspan="8" class="text-center py-4 text-muted">Loading live tickets...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1518,32 +1519,59 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         </div>
     </div>
 
-    <!-- Order Detail & Status Modal -->
+    <!-- Order Detail & Live 6-Step Workflow Inspector Modal -->
     <div class="modal fade" id="orderDetailModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0 shadow-lg">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="fw-extrabold text-dark mb-0" id="mOrderTitle">Order Details</h5>
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden">
+                <div class="modal-header border-bottom py-3 px-4 bg-light d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:38px; height:38px; background:linear-gradient(135deg, #5B3FA8, #341F97);">
+                            <i class="fa-solid fa-boxes-packing fs-7"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <h5 class="fw-extrabold text-dark mb-0 fs-6" id="mOrderTitle">Order #ORD-1001</h5>
+                                <span class="badge bg-primary text-white fs-9 fw-bold" id="mOrderLiveStageBadge">Step 1: Confirmed</span>
+                            </div>
+                            <span class="fs-9 text-muted" id="mOrderSubtitle">Real-Time Event Rental Lifecycle &amp; Step Verification</span>
+                        </div>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="p-3 bg-light rounded-4 mb-3" id="mOrderDetailsBody">
-                        <!-- Populated dynamically -->
+                <div class="modal-body p-4" style="background:#F8FAFC;">
+                    <div id="mOrderDetailsBody">
+                        <!-- Populated dynamically with 6-step stepper, proof photos, customer/owner/rider cards, item table, and reported issues -->
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fs-9 fw-bold">Update Order Status</label>
-                        <select class="form-select" id="mOrderStatusSelect">
-                            <option value="PENDING">Pending Review</option>
-                            <option value="CONFIRMED">Confirmed</option>
-                            <option value="PROCESSING">Processing</option>
-                            <option value="ON_THE_WAY">On the Way</option>
-                            <option value="DELIVERED">Delivered</option>
-                            <option value="CANCELLED">Cancelled</option>
-                        </select>
+
+                    <!-- Admin Operational Controls -->
+                    <div class="card border-0 rounded-4 shadow-sm p-3 mt-3 bg-white border">
+                        <h6 class="fw-extrabold text-dark fs-8 mb-2.5"><i class="fa-solid fa-sliders me-1 text-primary" style="color:var(--admin-primary) !important;"></i> Admin Workflow Stage Override</h6>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label fs-9 fw-bold text-muted mb-1">Set Live Order Status</label>
+                                <select class="form-select form-select-sm" id="mOrderStatusSelect">
+                                    <option value="CONFIRMED">Step 1: Order Confirmed</option>
+                                    <option value="PREPARING">Step 2: Preparing Equipment (Owner Packing)</option>
+                                    <option value="LOOKING_FOR_RIDER">Step 3: Looking for Rider (Broadcasted)</option>
+                                    <option value="PICKUP">Step 4: Driver En Route to Hub for Pickup</option>
+                                    <option value="ON_THE_WAY">Step 5: Picked Up (In Transit to Renter)</option>
+                                    <option value="DELIVERED">Step 6: Delivered &amp; Handover Verified</option>
+                                    <option value="RETURN_DELIVERY">Step 7: Return Delivery Back to Owner</option>
+                                    <option value="RETURNED">Completed &amp; Restocked into Inventory</option>
+                                    <option value="CANCELLED">Cancelled</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <button type="button" class="btn btn-admin-primary w-100 justify-content-center py-2" onclick="saveUpdatedOrderStatus()">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> Update Order Status
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-admin-primary w-100 justify-content-center py-2" onclick="saveUpdatedOrderStatus()">
-                        <i class="fa-solid fa-floppy-disk"></i> Update Order Status
-                    </button>
+                </div>
+                <div class="modal-footer border-top py-2.5 px-4 bg-white d-flex justify-content-between">
+                    <span class="fs-9 text-muted"><i class="fa-solid fa-shield-check text-success me-1"></i> Fully audited lifecycle monitored by RentEase Operations</span>
+                    <button type="button" class="btn btn-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -1585,6 +1613,60 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     <button type="button" class="btn btn-admin-primary w-100 justify-content-center py-2" onclick="submitAssignDelivery()">
                         <i class="fa-solid fa-truck-fast"></i> Confirm Dispatch
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Proof of Pickup (POP) Viewer Modal -->
+    <div class="modal fade" id="adminViewPopModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden">
+                <div class="modal-header border-0 pb-0 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:34px; height:34px; background:linear-gradient(135deg, #F59E0B, #D97706);">
+                            <i class="fa-solid fa-box-archive fs-8"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-extrabold text-dark mb-0 fs-7">Proof of Pickup (POP)</h6>
+                            <span class="fs-9 text-muted" id="adminPopOrderSub">Hub Collection Verification</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <div class="position-relative rounded-3 overflow-hidden border mb-3 bg-dark text-center" style="max-height: 240px;">
+                        <img id="adminPopPhotoImg" src="" alt="Proof Photo" class="w-100 object-fit-cover" style="max-height: 240px; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                        <span class="position-absolute bottom-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white fs-9">
+                            <i class="fa-solid fa-up-right-from-square me-1"></i> Full View
+                        </span>
+                    </div>
+
+                    <div class="rounded-3 p-2.5 mb-2.5" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted"><i class="fa-solid fa-user-tie me-1 text-primary"></i> Stock Owner / Hub:</span>
+                            <strong class="text-dark" id="adminPopOwner">Romeo Paolo Tolentino</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted"><i class="fa-solid fa-clock me-1 text-info"></i> Pickup Time:</span>
+                            <strong class="text-dark" id="adminPopTime">Completed at Hub</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted"><i class="fa-solid fa-helmet-safety me-1 text-success"></i> Collecting Rider:</span>
+                            <strong class="text-dark" id="adminPopRider">Juan Dela Cruz</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9">
+                            <span class="text-muted"><i class="fa-solid fa-envelope me-1 text-primary"></i> Notification:</span>
+                            <span class="badge bg-success-subtle text-success fs-9">Emailed to Renter with Photo</span>
+                        </div>
+                    </div>
+
+                    <div class="p-2 rounded-3 fs-9 text-secondary" style="background:#F1F5F9;" id="adminPopNote">
+                        <i class="fa-solid fa-quote-left text-muted me-1"></i> Package inspected and collected from owner.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -1646,6 +1728,79 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Step Incident / Support Ticket Detail Modal -->
+    <div class="modal fade" id="adminViewTicketDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden">
+                <div class="modal-header border-0 pb-0 d-flex align-items-center justify-content-between" style="background:#FFFBEB;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:34px; height:34px; background:linear-gradient(135deg, #EF4444, #B91C1C);">
+                            <i class="fa-solid fa-triangle-exclamation fs-8"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-extrabold text-dark mb-0 fs-7" id="adminTktModalTitle">Ticket #TKT-1001</h6>
+                            <span class="fs-9 text-muted" id="adminTktModalSub">Step Dispute &amp; Incident Investigation</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <div class="p-2.5 rounded-3 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted">Order Code:</span>
+                            <strong class="text-primary" id="adminTktOrderCode">#ORD-1002</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted">Stage Reported At:</span>
+                            <span class="badge bg-warning-subtle text-dark border fw-bold" id="adminTktStage">Step 2: Preparing Equipment</span>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
+                            <span class="text-muted">Reported By:</span>
+                            <span class="text-dark fw-bold" id="adminTktReporter">Pogilameg Tester (RENTER)</span>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9">
+                            <span class="text-muted">Current Status:</span>
+                            <span class="badge bg-danger-subtle text-danger" id="adminTktStatus">Under Review</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1">Issue Subject</label>
+                        <div class="fw-bold text-dark fs-8 p-2 rounded-2 bg-light border" id="adminTktSubject">Equipment Lens Scratched</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1">Explanation / User Notes</label>
+                        <div class="fs-9 text-dark p-2 rounded-2 bg-light border" id="adminTktDetails" style="min-height:50px;"></div>
+                    </div>
+
+                    <!-- Photo Evidence if uploaded -->
+                    <div class="mb-3" id="adminTktPhotoSection" style="display:none;">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1">Photo Evidence Attached</label>
+                        <div class="rounded-3 overflow-hidden border bg-dark text-center" style="max-height:180px;">
+                            <img id="adminTktPhotoImg" src="" style="max-height:180px; width:100%; object-fit:cover; cursor:pointer;" onclick="window.open(this.src, '_blank')">
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1">Resolution Action</label>
+                        <select class="form-select form-select-sm" id="adminTktActionSelect">
+                            <option value="RESOLVED">Mark as Resolved (Dispute Settled)</option>
+                            <option value="IN_PROGRESS">Set to In Progress (Contacting Courier / Owner)</option>
+                            <option value="REVIEWING">Keep Under Review</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2 px-3">
+                    <button type="button" class="btn btn-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-admin-primary btn-sm px-3" onclick="submitResolveTicketFromModal()">
+                        <i class="fa-solid fa-check me-1"></i> Update Ticket Status
+                    </button>
                 </div>
             </div>
         </div>
@@ -2206,16 +2361,23 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 if (data.success && data.orders.length > 0) {
                     tbody.innerHTML = data.orders.map(o => `
                         <tr>
-                            <td class="fw-bold text-primary">${o.order_code}</td>
+                            <td class="fw-bold text-primary">
+                                ${o.order_code}
+                                ${o.reported_issues_count > 0 ? `<span class="badge bg-danger-subtle text-danger ms-1" title="${o.reported_issues_count} reported issue(s)"><i class="fa-solid fa-triangle-exclamation"></i> ${o.reported_issues_count}</span>` : ''}
+                            </td>
                             <td>
                                 <div class="fw-bold text-dark">${o.customer_name}</div>
                                 <div class="fs-9 text-muted">${o.customer_phone || ''}</div>
                             </td>
                             <td class="text-muted fs-8">${o.rental_start_date || '2026-09-18'}</td>
                             <td class="fw-extrabold text-dark">₱${Number(o.total_amount).toLocaleString()}</td>
-                            <td><span class="badge ${getStatusBadge(o.order_status)}">${o.order_status}</span></td>
                             <td>
-                                <button class="btn btn-sm btn-light border py-1 px-2 fs-9 fw-bold" onclick="openOrderDetailModal(${o.id})"><i class="fa-solid fa-eye me-1"></i> View</button>
+                                <span class="badge ${getStatusBadge(o.order_status)}">${o.step_name || o.order_status}</span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-light border py-1 px-2.5 fs-9 fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-2xs" onclick="openOrderDetailModal(${o.id})">
+                                    <i class="fa-solid fa-eye text-primary"></i> Inspect Step
+                                </button>
                             </td>
                         </tr>
                     `).join('');
@@ -2235,25 +2397,258 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         async function openOrderDetailModal(id) {
             selectedOrderIdForModal = id;
             try {
-                const res = await fetch(`${API_URL}?action=get_orders&search=&status=All&subtab=all`);
+                const res = await fetch(`${API_URL}?action=get_order_details&id=${id}`);
                 const data = await res.json();
-                const order = (data.orders || []).find(o => parseInt(o.id) === parseInt(id));
-                if (!order) return;
+                if (!data.success || !data.order) {
+                    alert('Order not found or unable to load details.');
+                    return;
+                }
 
-                document.getElementById('mOrderTitle').innerText = `Order ${order.order_code}`;
-                document.getElementById('mOrderDetailsBody').innerHTML = `
-                    <div class="row g-2 fs-8">
-                        <div class="col-6"><span class="text-muted">Customer:</span> <strong class="d-block text-dark">${order.customer_name}</strong></div>
-                        <div class="col-6"><span class="text-muted">Email:</span> <strong class="d-block text-dark">${order.customer_email || 'N/A'}</strong></div>
-                        <div class="col-6"><span class="text-muted">Contact:</span> <strong class="d-block text-dark">${order.customer_phone || 'N/A'}</strong></div>
-                        <div class="col-6"><span class="text-muted">Total Amount:</span> <strong class="d-block text-primary">₱${Number(order.total_amount).toLocaleString()} (${order.payment_method || 'GCash'})</strong></div>
-                        <div class="col-12"><span class="text-muted">Delivery Destination:</span> <div class="text-dark fw-semibold">${order.delivery_address || 'Campus Meetup'}</div></div>
-                        <div class="col-12"><span class="text-muted">Assigned Courier:</span> <div class="text-dark fw-semibold">${order.assigned_rider_name || 'Unassigned'} (${order.estimated_arrival || 'Pending'})</div></div>
+                const o = data.order;
+                const items = data.items || [];
+                const issues = data.issues || [];
+                const st = (o.order_status || 'CONFIRMED').toUpperCase();
+
+                document.getElementById('mOrderTitle').innerText = `Order ${o.order_code}`;
+                const stageBadge = document.getElementById('mOrderLiveStageBadge');
+                if (stageBadge) {
+                    stageBadge.className = `badge fs-9 fw-bold ${getStatusBadge(st)}`;
+                    stageBadge.innerText = `${st}`;
+                }
+                document.getElementById('mOrderSubtitle').innerText = `Placed on ${o.created_at || 'Recently'} • Payment: ${o.payment_method || 'GCash'} (${o.payment_status || 'PAID'})`;
+
+                // Calculate active step index for 6-step workflow
+                let activeIdx = 0;
+                if (st === 'PREPARING' || st === 'PROCESSING') activeIdx = 1;
+                else if (st === 'LOOKING_FOR_RIDER') activeIdx = 2;
+                else if (st === 'PICKUP') activeIdx = 3;
+                else if (st === 'ON_THE_WAY') activeIdx = 4;
+                else if (st === 'DELIVERED' || st === 'RETURN_DELIVERY' || st === 'RETURNED') activeIdx = 5;
+
+                let html = `
+                    <!-- 1. 6-STAGE PROGRESS STEPPER -->
+                    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3 bg-white">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-extrabold text-dark fs-8 mb-0"><i class="fa-solid fa-list-check me-1 text-primary"></i> 6-Stage Rental Order Lifecycle (Live State)</h6>
+                            <span class="badge bg-light text-dark border fs-9 fw-bold">Current: ${st}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between position-relative px-2 pt-2 pb-1 overflow-x-auto gap-2">
+                            ${[
+                                { step: 1, label: 'Confirmed', desc: 'Renter placed order', icon: 'fa-check' },
+                                { step: 2, label: 'Preparing', desc: 'Owner packaging gear', icon: 'fa-boxes-packing' },
+                                { step: 3, label: 'Looking Rider', desc: 'Fleet broadcast', icon: 'fa-satellite-dish' },
+                                { step: 4, label: 'To Hub', desc: 'Driver to pickup hub', icon: 'fa-motorcycle' },
+                                { step: 5, label: 'Picked Up', desc: 'Verified POP photo', icon: 'fa-box-open' },
+                                { step: 6, label: 'Delivered', desc: 'POD & student verified', icon: 'fa-circle-check' }
+                            ].map((stepObj, idx) => {
+                                const isDone = idx <= activeIdx;
+                                const isCurrent = idx === activeIdx;
+                                const colorClass = isDone ? (isCurrent ? 'bg-primary text-white ring-4' : 'bg-success text-white') : 'bg-light text-muted border';
+                                return `
+                                    <div class="d-flex flex-column align-items-center text-center" style="min-width: 90px; flex:1;">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-2xs mb-1.5 ${colorClass}" style="width:32px; height:32px; font-size:0.75rem;">
+                                            <i class="fa-solid ${stepObj.icon}"></i>
+                                        </div>
+                                        <span class="fw-bold fs-9 ${isDone ? 'text-dark' : 'text-muted'}">${stepObj.step}. ${stepObj.label}</span>
+                                        <span class="fs-10 text-muted d-none d-md-block">${stepObj.desc}</span>
+                                    </div>
+                                `;
+                            }).join('<div class="flex-grow-1 border-top" style="border-top-width: 2px !important; margin-bottom: 24px; min-width: 15px;"></div>')}
+                        </div>
+                    </div>
+
+                    <!-- 2. VERIFIED PROOF PHOTOS (SIDE-BY-SIDE) -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white" style="border-left: 4px solid #F59E0B !important;">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <i class="fa-solid fa-box-archive text-warning fs-7"></i>
+                                        <strong class="text-dark fs-8">Proof of Pickup (POP)</strong>
+                                    </div>
+                                    <span class="badge ${o.pickup_proof_photo ? 'bg-warning-subtle text-dark' : 'bg-light text-muted'} fs-9">
+                                        ${o.pickup_proof_photo ? 'VERIFIED AT HUB' : 'AWAITING PICKUP'}
+                                    </span>
+                                </div>
+                                ${o.pickup_proof_photo ? `
+                                    <div class="rounded-3 overflow-hidden border mb-2 text-center bg-dark position-relative" style="max-height: 160px;">
+                                        <img src="${o.pickup_proof_photo}" class="w-100 object-fit-cover" style="max-height: 160px; cursor: pointer;" onclick="window.open(this.src, '_blank')" title="Click to open full photo">
+                                        <span class="position-absolute bottom-0 end-0 m-1.5 badge bg-dark bg-opacity-75 text-white fs-10"><i class="fa-solid fa-up-right-from-square me-1"></i> Zoom</span>
+                                    </div>
+                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-clock text-info me-1"></i> Time: <strong class="text-dark">${o.pickup_proof_time || 'Recorded'}</strong></div>
+                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-motorcycle text-primary me-1"></i> Courier: <strong class="text-dark">${o.assigned_rider_name || 'Juan Dela Cruz'}</strong></div>
+                                    <div class="p-1.5 rounded-2 bg-light border fs-9 text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> ${o.pickup_proof_note || 'Inspected and collected from owner.'}</div>
+                                ` : `
+                                    <div class="p-4 rounded-3 bg-light border text-center text-muted fs-9">
+                                        <i class="fa-solid fa-camera fs-4 d-block mb-1 text-secondary opacity-50"></i>
+                                        Driver has not yet uploaded Proof of Pickup from owner.
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white" style="border-left: 4px solid #10B981 !important;">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <i class="fa-solid fa-circle-check text-success fs-7"></i>
+                                        <strong class="text-dark fs-8">Proof of Delivery (POD)</strong>
+                                    </div>
+                                    <span class="badge ${o.delivery_proof_photo ? 'bg-success-subtle text-success' : 'bg-light text-muted'} fs-9">
+                                        ${o.delivery_proof_photo ? 'HANDOVER VERIFIED' : 'AWAITING DELIVERY'}
+                                    </span>
+                                </div>
+                                ${o.delivery_proof_photo ? `
+                                    <div class="rounded-3 overflow-hidden border mb-2 text-center bg-dark position-relative" style="max-height: 160px;">
+                                        <img src="${o.delivery_proof_photo}" class="w-100 object-fit-cover" style="max-height: 160px; cursor: pointer;" onclick="window.open(this.src, '_blank')" title="Click to open full photo">
+                                        <span class="position-absolute bottom-0 end-0 m-1.5 badge bg-dark bg-opacity-75 text-white fs-10"><i class="fa-solid fa-up-right-from-square me-1"></i> Zoom</span>
+                                    </div>
+                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-clock text-info me-1"></i> Time: <strong class="text-dark">${o.delivery_proof_time || 'Recorded'}</strong></div>
+                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-user-check text-success me-1"></i> Recipient: <strong class="text-dark">${o.delivery_proof_recipient || o.customer_name}</strong></div>
+                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-square-check text-success me-1"></i> Renter Confirmation: ${o.renter_received_confirmed == 1 ? '<span class="badge bg-success text-white">Confirmed by Student</span>' : '<span class="badge bg-warning-subtle text-dark">Pending Student Confirmation</span>'}</div>
+                                    <div class="p-1.5 rounded-2 bg-light border fs-9 text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> ${o.delivery_proof_note || 'Equipment handed over safely.'}</div>
+                                ` : `
+                                    <div class="p-4 rounded-3 bg-light border text-center text-muted fs-9">
+                                        <i class="fa-solid fa-camera fs-4 d-block mb-1 text-secondary opacity-50"></i>
+                                        Courier has not yet completed doorstep delivery handover.
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. RENTER, STOCK OWNER & COURIER TRIAD (3 COLUMNS) -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-4">
+                            <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:28px; height:28px; background:#5B3FA8;">
+                                        <i class="fa-solid fa-user fs-9"></i>
+                                    </div>
+                                    <strong class="text-dark fs-8">Renter / Customer</strong>
+                                </div>
+                                <div class="fs-9 text-dark fw-bold mb-0.5">${o.customer_name}</div>
+                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-envelope me-1"></i> ${o.customer_email || 'N/A'}</div>
+                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-phone me-1"></i> ${o.customer_phone || 'N/A'}</div>
+                                <div class="fs-9 text-dark fw-semibold mt-1 pt-1 border-top"><i class="fa-solid fa-location-dot text-danger me-1"></i> ${o.delivery_address || 'Campus Meetup'}</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:28px; height:28px; background:#F59E0B;">
+                                        <i class="fa-solid fa-warehouse fs-9"></i>
+                                    </div>
+                                    <strong class="text-dark fs-8">Equipment Stock Owner</strong>
+                                </div>
+                                <div class="fs-9 text-dark fw-bold mb-0.5">${o.owner_name || 'Romeo Paolo Tolentino'}</div>
+                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-phone me-1"></i> ${o.owner_contact || '09668257301'}</div>
+                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-envelope me-1"></i> ${o.owner_email || 'romeopaolotolentino@gmail.com'}</div>
+                                <div class="fs-9 text-dark fw-semibold mt-1 pt-1 border-top"><i class="fa-solid fa-store text-warning me-1"></i> Pickup Hub: San Pablo, Laguna</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:28px; height:28px; background:#10B981;">
+                                        <i class="fa-solid fa-motorcycle fs-9"></i>
+                                    </div>
+                                    <strong class="text-dark fs-8">Assigned Delivery Courier</strong>
+                                </div>
+                                <div class="fs-9 text-dark fw-bold mb-0.5">${o.assigned_rider_name || 'Unassigned / Broadcasted'}</div>
+                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-phone me-1"></i> ${o.assigned_rider_phone || '0918 765 4321'}</div>
+                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-clock me-1"></i> ETA: ${o.estimated_arrival || 'Pending'}</div>
+                                <div class="fs-9 text-dark fw-semibold mt-1 pt-1 border-top"><i class="fa-solid fa-location-crosshairs text-success me-1"></i> GPS: ${o.rider_current_lat || '14.1950'}, ${o.rider_current_lng || '121.2720'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. EQUIPMENT RENTED / MANIFEST ITEMS -->
+                    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3 bg-white">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-extrabold text-dark fs-8 mb-0"><i class="fa-solid fa-boxes-stacked me-1 text-primary"></i> Equipment Rental Manifest</h6>
+                            <span class="fs-9 fw-bold text-primary">Total: ₱${Number(o.total_amount).toLocaleString()}</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-custom mb-0">
+                                <thead>
+                                    <tr class="fs-9 text-muted">
+                                        <th>Item Name</th>
+                                        <th>Daily Rate</th>
+                                        <th>Quantity</th>
+                                        <th>Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${items.length > 0 ? items.map(it => `
+                                        <tr class="fs-9">
+                                            <td class="fw-bold text-dark">${it.product_name}</td>
+                                            <td>₱${Number(it.price_per_day || 0).toLocaleString()}</td>
+                                            <td class="fw-bold">${it.quantity} unit(s)</td>
+                                            <td class="fw-bold text-primary">₱${Number(it.subtotal || 0).toLocaleString()}</td>
+                                        </tr>
+                                    `).join('') : `
+                                        <tr class="fs-9"><td colspan="4" class="text-center text-muted py-2">Standard Equipment Rental Package (₱${Number(o.total_amount).toLocaleString()})</td></tr>
+                                    `}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 5. INCIDENT REPORTS & STEP DISPUTES -->
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white" style="${issues.length > 0 ? 'border: 1.5px solid #F59E0B !important;' : ''}">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-1.5">
+                                <i class="fa-solid fa-triangle-exclamation ${issues.length > 0 ? 'text-danger' : 'text-success'} fs-7"></i>
+                                <h6 class="fw-extrabold text-dark fs-8 mb-0">Incident Reports &amp; Step Disputes Filed on this Order</h6>
+                            </div>
+                            <span class="badge ${issues.length > 0 ? 'bg-danger text-white' : 'bg-success-subtle text-success'} fs-9">
+                                ${issues.length} Report(s)
+                            </span>
+                        </div>
+                        ${issues.length > 0 ? `
+                            <div class="d-flex flex-column gap-2">
+                                ${issues.map(iss => `
+                                    <div class="p-2.5 rounded-3 border bg-light">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="fw-bold text-dark fs-8">${iss.ticket_number}: ${iss.issue_title}</span>
+                                            <span class="badge ${iss.status === 'RESOLVED' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-dark'} fs-9">${iss.status_display || iss.status}</span>
+                                        </div>
+                                        <div class="d-flex gap-2 fs-9 text-muted mb-1 flex-wrap">
+                                            <span><i class="fa-solid fa-clock-rotate-left me-1"></i> Stage: <strong class="text-dark">${iss.stage || 'General'}</strong></span>
+                                            <span>•</span>
+                                            <span><i class="fa-solid fa-user me-1"></i> By: <strong class="text-dark">${iss.customer_name} (${iss.reported_by_role || 'RENTER'})</strong></span>
+                                            <span>•</span>
+                                            <span><i class="fa-solid fa-calendar me-1"></i> ${iss.created_at || 'Recently'}</span>
+                                        </div>
+                                        <div class="p-1.5 rounded-2 bg-white border fs-9 text-secondary mb-1.5">
+                                            ${iss.description || 'No description provided.'}
+                                        </div>
+                                        <div class="d-flex justify-content-end gap-1">
+                                            ${iss.status !== 'RESOLVED' ? `
+                                                <button class="btn btn-sm btn-success py-0 px-2 fs-9 fw-bold" onclick="resolveTicket(${iss.id})"><i class="fa-solid fa-check me-1"></i> Mark Resolved</button>
+                                            ` : ''}
+                                            <button class="btn btn-sm btn-outline-secondary py-0 px-2 fs-9" onclick="openAdminTicketModal(${iss.id})"><i class="fa-solid fa-eye me-1"></i> View Full Details</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : `
+                            <div class="p-2 rounded-3 bg-light border text-center text-success fs-9 fw-semibold">
+                                <i class="fa-solid fa-circle-check me-1"></i> Clean Step Execution: No issues or disputes reported by Renter, Stock Owner, or Courier.
+                            </div>
+                        `}
                     </div>
                 `;
-                document.getElementById('mOrderStatusSelect').value = order.order_status || 'PENDING';
+
+                document.getElementById('mOrderDetailsBody').innerHTML = html;
+                document.getElementById('mOrderStatusSelect').value = st;
                 new bootstrap.Modal(document.getElementById('orderDetailModal')).show();
-            } catch (e) {}
+            } catch (e) {
+                console.error('Error opening order details modal:', e);
+            }
         }
 
         async function saveUpdatedOrderStatus() {
@@ -2266,6 +2661,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide();
                     loadOrders();
                     loadDashboardStats();
+                    alert(`✅ Order status updated to: ${newSt}`);
                 }
             } catch (e) {}
         }
@@ -2428,6 +2824,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <td class="fs-8 fw-semibold text-dark">${d.delivery_address}</td>
                             <td>
                                 <span class="badge ${getStatusBadge(d.order_status)}">${d.order_status}</span>
+                                ${d.pickup_proof_photo ? `<span class="badge bg-warning bg-opacity-25 text-warning fs-9 ms-1"><i class="fa-solid fa-box-archive"></i> POP</span>` : ''}
                                 ${d.delivery_proof_photo ? `<span class="badge bg-success bg-opacity-25 text-success fs-9 ms-1"><i class="fa-solid fa-camera"></i> POD</span>` : ''}
                             </td>
                             <td class="fw-bold">
@@ -2437,6 +2834,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <td>
                                 <div class="d-flex gap-1">
                                     <button class="btn btn-sm btn-light border py-1 px-2 fs-9" onclick="openAssignDeliveryModal(${d.id})"><i class="fa-solid fa-motorcycle me-1"></i> Dispatch</button>
+                                    ${d.pickup_proof_photo ? `
+                                        <button class="btn btn-sm btn-warning bg-opacity-10 text-dark border-warning py-1 px-2 fs-9" onclick="openAdminPopModal('${encodeURIComponent(JSON.stringify(d))}')" title="View Proof of Pickup">
+                                            <i class="fa-solid fa-box-archive"></i> POP
+                                        </button>
+                                    ` : ''}
                                     ${d.delivery_proof_photo || d.order_status === 'DELIVERED' ? `
                                         <button class="btn btn-sm btn-success bg-opacity-10 text-success border-success py-1 px-2 fs-9" onclick="openAdminPodModal('${encodeURIComponent(JSON.stringify(d))}')" title="View Proof of Delivery">
                                             <i class="fa-solid fa-camera"></i> POD
@@ -2450,6 +2852,21 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No deliveries found.</td></tr>';
                 }
             } catch (e) {}
+        }
+
+        function openAdminPopModal(encodedData) {
+            try {
+                const d = JSON.parse(decodeURIComponent(encodedData));
+                document.getElementById('adminPopOrderSub').innerText = `${d.order_code} • Hub Collection Verification`;
+                document.getElementById('adminPopPhotoImg').src = d.pickup_proof_photo || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80';
+                document.getElementById('adminPopOwner').innerText = d.owner_name || 'San Pablo Equipment Hub';
+                document.getElementById('adminPopTime').innerText = d.pickup_proof_time || 'Completed at Hub';
+                document.getElementById('adminPopRider').innerText = d.assigned_rider_name || 'Juan Dela Cruz';
+                document.getElementById('adminPopNote').innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${d.pickup_proof_note || 'Package inspected and collected from owner.'}`;
+                new bootstrap.Modal(document.getElementById('adminViewPopModal')).show();
+            } catch (e) {
+                console.error('Error opening POP modal:', e);
+            }
         }
 
         function openAdminPodModal(encodedData) {
@@ -2725,6 +3142,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         // 9. SUPPORT TICKETS MODULE
         // ----------------------------------------------------------
         let currentTicketSubtab = 'All Tickets';
+        let allLoadedTickets = [];
+        let activeInspectingTicketId = null;
+
         async function loadTickets() {
             const search = document.getElementById('ticketSearchInput')?.value || '';
             const priority = document.getElementById('ticketPriorityFilter')?.value || 'All';
@@ -2740,26 +3160,116 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 }
 
                 if (data.success && data.tickets && data.tickets.length > 0) {
+                    allLoadedTickets = data.tickets;
                     tbody.innerHTML = data.tickets.map(t => `
                         <tr>
                             <td class="fw-bold text-muted">${t.ticket_number}</td>
-                            <td class="fw-bold text-dark">${t.customer_name}</td>
                             <td>
-                                <div class="fw-semibold text-dark">${t.issue_title}</div>
-                                <div class="fs-9 text-muted text-truncate" style="max-width:260px;">${t.description || ''}</div>
+                                ${t.order_code ? `
+                                    <a href="javascript:void(0)" class="fw-bold text-primary text-decoration-none" onclick="inspectOrderFromTicket('${t.order_code}')" title="Inspect Order Details">
+                                        ${t.order_code} <i class="fa-solid fa-arrow-up-right-from-square fs-9 ms-1"></i>
+                                    </a>
+                                ` : '<span class="text-muted fs-9">General</span>'}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-dark border fs-9 fw-semibold">
+                                    ${t.stage || 'General Inquiry'}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark fs-8">${t.customer_name}</div>
+                                <span class="badge ${t.reported_by_role === 'RIDER' ? 'bg-info-subtle text-info' : t.reported_by_role === 'OWNER' ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary'} fs-9">
+                                    ${t.reported_by_role || 'RENTER'}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark fs-8">${t.issue_title}</div>
+                                <div class="fs-9 text-muted text-truncate" style="max-width:240px;">${t.description || ''}</div>
+                                ${t.evidence_photo ? `<span class="badge bg-danger-subtle text-danger fs-9 mt-1"><i class="fa-solid fa-camera me-1"></i> Evidence Attached</span>` : ''}
                             </td>
                             <td><span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span></td>
                             <td><span class="badge ${t.status === 'RESOLVED' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">${t.status_display || t.status}</span></td>
-                            <td>${t.assigned_to || 'Support Team'}</td>
                             <td>
-                                <button class="btn btn-sm btn-light border py-1 px-2 fs-9 text-success" onclick="resolveTicket(${t.id})"><i class="fa-solid fa-check"></i> Resolve</button>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-light border py-1 px-2 fs-9 text-primary" onclick="openAdminTicketModal(${t.id})" title="Inspect Incident Report">
+                                        <i class="fa-solid fa-eye"></i> View
+                                    </button>
+                                    ${t.status !== 'RESOLVED' ? `
+                                        <button class="btn btn-sm btn-light border py-1 px-2 fs-9 text-success" onclick="resolveTicket(${t.id})" title="Mark as Resolved">
+                                            <i class="fa-solid fa-check"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No tickets found.</td></tr>';
+                    allLoadedTickets = [];
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No tickets found.</td></tr>';
                 }
             } catch (e) {}
+        }
+
+        function openAdminTicketModal(ticketId) {
+            const t = allLoadedTickets.find(item => parseInt(item.id) === parseInt(ticketId));
+            if (!t) return;
+            activeInspectingTicketId = t.id;
+
+            document.getElementById('adminTktModalTitle').innerText = `${t.ticket_number} • Incident Investigation`;
+            document.getElementById('adminTktOrderCode').innerText = t.order_code || 'N/A';
+            document.getElementById('adminTktStage').innerText = t.stage || 'General Inquiry';
+            document.getElementById('adminTktReporter').innerText = `${t.customer_name} (${t.reported_by_role || 'RENTER'})`;
+            document.getElementById('adminTktStatus').innerText = t.status;
+            document.getElementById('adminTktSubject').innerText = t.issue_title;
+            document.getElementById('adminTktDetails').innerText = t.description || 'No detailed explanation provided.';
+
+            const photoSec = document.getElementById('adminTktPhotoSection');
+            const photoImg = document.getElementById('adminTktPhotoImg');
+            if (t.evidence_photo) {
+                photoImg.src = t.evidence_photo;
+                photoSec.style.display = 'block';
+            } else {
+                photoSec.style.display = 'none';
+                photoImg.src = '';
+            }
+
+            document.getElementById('adminTktActionSelect').value = t.status || 'RESOLVED';
+            new bootstrap.Modal(document.getElementById('adminViewTicketDetailModal')).show();
+        }
+
+        async function submitResolveTicketFromModal() {
+            if (!activeInspectingTicketId) return;
+            const newStatus = document.getElementById('adminTktActionSelect').value;
+
+            try {
+                const res = await fetch(`${API_URL}?action=update_ticket_status&id=${activeInspectingTicketId}&status=${encodeURIComponent(newStatus)}`);
+                const data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('adminViewTicketDetailModal')).hide();
+                    loadTickets();
+                    loadDashboardStats();
+                    pollPendingTicketsCount();
+                } else {
+                    alert(data.message || 'Failed to update ticket.');
+                }
+            } catch (e) {
+                alert('Error updating ticket: ' + e.message);
+            }
+        }
+
+        async function inspectOrderFromTicket(orderCode) {
+            if (!orderCode) return;
+            try {
+                const res = await fetch(`${API_URL}?action=get_orders&search=${encodeURIComponent(orderCode)}&subtab=all`);
+                const data = await res.json();
+                if (data.success && data.orders && data.orders.length > 0) {
+                    openOrderDetailModal(data.orders[0].id);
+                } else {
+                    alert('Order record ' + orderCode + ' not found in active listings.');
+                }
+            } catch (e) {
+                console.error('Error fetching order for ticket:', e);
+            }
         }
 
         function switchTicketSubtab(subtab, btn) {
@@ -2973,8 +3483,12 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         // ----------------------------------------------------------
         function getStatusBadge(st) {
             switch ((st || '').toUpperCase()) {
-                case 'DELIVERED': return 'bg-success-subtle text-success';
+                case 'DELIVERED':
+                case 'RETURNED': return 'bg-success-subtle text-success';
                 case 'ON_THE_WAY': return 'bg-primary-subtle text-primary';
+                case 'PICKUP': return 'bg-warning-subtle text-warning';
+                case 'LOOKING_FOR_RIDER': return 'bg-warning-subtle text-dark border border-warning';
+                case 'PREPARING': return 'bg-info-subtle text-info border border-info';
                 case 'PROCESSING':
                 case 'CONFIRMED': return 'bg-info-subtle text-info';
                 case 'CANCELLED': return 'bg-danger-subtle text-danger';

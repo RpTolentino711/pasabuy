@@ -104,6 +104,13 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_confirmed` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_time` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
 
+    // Support step-by-step reporting to admin across all workflow stages
+    try { $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `stage` VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `reported_by_role` VARCHAR(50) DEFAULT 'RENTER'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `evidence_photo` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `priority` ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `assigned_to` VARCHAR(150) DEFAULT 'Support Team'"); } catch (Exception $e) {}
+
     // Automatically purge all hardcoded dummy/seed items from database
     try {
         $db->exec("DELETE FROM `rental_inventory` WHERE `name` IN ('Monoblock Chair', 'Banquet Chair', 'Folding Chair', 'Cushioned Chair', 'Folding Table', 'Round Banquet Table', 'Event Tent (10x10ft)', 'Large Pavilion Tent (20x20ft)', 'Sound System & Dual Mic', 'LED Stage Par Lights', 'Balloon Arch & Backdrop Frame', 'Modular Stage Platform (4x8ft)')");
@@ -757,19 +764,30 @@ if ($action === 'get_issues') {
 }
 
 if ($action === 'create_issue') {
-    $orderCode = trim((string)($data['order_code'] ?? '#RE-10245'));
-    $customerName = trim((string)($data['customer_name'] ?? 'Customer'));
-    $issueTitle = trim((string)($data['issue_title'] ?? 'Equipment Inquiry'));
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    $customerName = trim((string)($data['customer_name'] ?? 'User'));
+    $issueTitle = trim((string)($data['issue_title'] ?? 'Incident Report'));
     $description = trim((string)($data['description'] ?? ''));
+    $stage = trim((string)($data['stage'] ?? ($data['order_step'] ?? 'GENERAL')));
+    $reportedByRole = strtoupper(trim((string)($data['reported_by_role'] ?? ($data['role'] ?? 'RENTER'))));
+    $priority = strtoupper(trim((string)($data['priority'] ?? 'HIGH')));
+    $evidencePhoto = trim((string)($data['evidence_photo'] ?? ($data['photo'] ?? '')));
 
-    $ticketNumber = "#" . (10000 + rand(200, 999));
-    $stmt = $db->prepare("INSERT INTO `rental_issues` (`ticket_number`, `order_code`, `customer_name`, `issue_title`, `description`, `status`, `status_display`) VALUES (?, ?, ?, ?, ?, 'REPORTED', 'Reported')");
-    $stmt->execute([$ticketNumber, $orderCode, $customerName, $issueTitle, $description]);
+    $ticketNumber = "#TKT-" . (rand(1000, 9999));
+    $stmt = $db->prepare("INSERT INTO `rental_issues` (`ticket_number`, `order_code`, `customer_name`, `issue_title`, `description`, `stage`, `reported_by_role`, `evidence_photo`, `priority`, `status`, `status_display`, `assigned_to`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'REVIEWING', 'Under Review', 'Support Team', NOW())");
+    $stmt->execute([$ticketNumber, $orderCode, $customerName, $issueTitle, $description, $stage, $reportedByRole, $evidencePhoto, $priority]);
+
+    // Send instant admin notification via ChatMessages
+    try {
+        $chatMsg = "🚨 [ADMIN STEP REPORT] {$ticketNumber} filed for Order {$orderCode} during stage [{$stage}] by {$reportedByRole} ({$customerName}): {$issueTitle}. Note: {$description}";
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (105, 100, 'Incident System', ?, 'Step Dispute Report', NOW())")->execute([$chatMsg]);
+    } catch(Exception $eChat) {}
 
     echo json_encode([
         'success' => true,
-        'message' => 'Issue ticket successfully filed and queued for review.',
-        'ticket_number' => $ticketNumber
+        'message' => "Report {$ticketNumber} filed directly with Admin Operations. Our team has received your ticket for stage: {$stage}.",
+        'ticket_number' => $ticketNumber,
+        'stage' => $stage
     ]);
     exit;
 }

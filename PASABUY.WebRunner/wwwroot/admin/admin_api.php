@@ -120,6 +120,24 @@ if ($db) {
         }
     } catch (Exception $e) {}
 
+    // 2c. Order tracking columns & Issue Step reporting migration
+    try {
+        $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_plate_number` VARCHAR(50) DEFAULT 'MC-8888-JY'");
+        $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `pickup_proof_photo` LONGTEXT DEFAULT NULL");
+        $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `pickup_proof_note` TEXT DEFAULT NULL");
+        $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `pickup_proof_time` DATETIME DEFAULT NULL");
+        $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_confirmed` TINYINT(1) DEFAULT 0");
+        $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_time` DATETIME DEFAULT NULL");
+    } catch (Exception $e) {}
+
+    try {
+        $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `stage` VARCHAR(100) DEFAULT NULL");
+        $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `reported_by_role` VARCHAR(50) DEFAULT 'RENTER'");
+        $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `evidence_photo` LONGTEXT DEFAULT NULL");
+        $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `priority` ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM'");
+        $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `assigned_to` VARCHAR(150) DEFAULT 'Support Team'");
+    } catch (Exception $e) {}
+
     // 3. Ensure 3 test users exist in Users and StudentProfiles
     try {
         $hashPogilameg = password_hash('Pogilameg@10', PASSWORD_DEFAULT);
@@ -315,7 +333,7 @@ if ($action === 'get_dashboard') {
 
     $totalRevenue = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID'")->fetchColumn();
     $totalOrders = (int)$db->query("SELECT COUNT(*) FROM `rental_orders`")->fetchColumn();
-    $activeDeliveries = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `order_status` IN ('ON_THE_WAY', 'PICKED_UP', 'PROCESSING')")->fetchColumn();
+    $activeDeliveries = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `order_status` IN ('CONFIRMED', 'PREPARING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'PROCESSING')")->fetchColumn();
     
     $totalStock = (int)$db->query("SELECT COALESCE(SUM(qty_total), 0) FROM `rental_inventory`")->fetchColumn();
     $lowStock = (int)$db->query("SELECT COUNT(*) FROM `rental_inventory` WHERE `qty_available` > 0 AND `qty_available` <= 5")->fetchColumn();
@@ -489,32 +507,116 @@ if ($action === 'get_orders') {
     $search = trim((string)($req['search'] ?? ''));
     $subtab = trim((string)($req['subtab'] ?? 'incoming'));
 
-    $sql = "SELECT * FROM `rental_orders` WHERE 1=1";
+    $sql = "SELECT o.*,
+                   (SELECT COUNT(*) FROM `rental_issues` WHERE `order_code` = o.order_code AND `status` != 'RESOLVED') as reported_issues_count
+            FROM `rental_orders` o WHERE 1=1";
     $params = [];
 
     if ($status !== 'All' && $status !== '') {
-        $sql .= " AND `order_status` = ?";
+        $sql .= " AND o.`order_status` = ?";
         $params[] = strtoupper($status);
     }
     if ($subtab === 'incoming') {
-        $sql .= " AND `order_status` IN ('PENDING', 'CONFIRMED', 'PROCESSING', 'ON_THE_WAY')";
+        $sql .= " AND (o.`order_status` IN ('PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY') OR o.`order_status` IS NULL)";
     } elseif ($subtab === 'history') {
-        $sql .= " AND `order_status` IN ('DELIVERED', 'COMPLETED', 'CANCELLED')";
+        $sql .= " AND o.`order_status` IN ('DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'COMPLETED', 'CANCELLED', 'RIDER_CANCELLED')";
     }
 
     if ($search !== '') {
-        $sql .= " AND (`order_code` LIKE ? OR `customer_name` LIKE ? OR `customer_phone` LIKE ?)";
+        $sql .= " AND (o.`order_code` LIKE ? OR o.`customer_name` LIKE ? OR o.`customer_phone` LIKE ? OR o.`owner_name` LIKE ?)";
+        $params[] = "%{$search}%";
         $params[] = "%{$search}%";
         $params[] = "%{$search}%";
         $params[] = "%{$search}%";
     }
 
-    $sql .= " ORDER BY `id` DESC";
+    $sql .= " ORDER BY o.`id` DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $orders = $stmt->fetchAll();
 
+    foreach ($orders as &$ord) {
+        $st = strtoupper((string)($ord['order_status'] ?? 'CONFIRMED'));
+        switch ($st) {
+            case 'CONFIRMED':
+                $ord['step_number'] = 1;
+                $ord['step_name'] = 'Step 1: Confirmed';
+                break;
+            case 'PREPARING':
+            case 'PROCESSING':
+                $ord['step_number'] = 2;
+                $ord['step_name'] = 'Step 2: Preparing Equipment';
+                break;
+            case 'LOOKING_FOR_RIDER':
+                $ord['step_number'] = 3;
+                $ord['step_name'] = 'Step 3: Looking for Rider';
+                break;
+            case 'PICKUP':
+                $ord['step_number'] = 4;
+                $ord['step_name'] = 'Step 4: Driver En Route to Hub';
+                break;
+            case 'ON_THE_WAY':
+                $ord['step_number'] = 5;
+                $ord['step_name'] = 'Step 5: Picked Up (In Transit)';
+                break;
+            case 'DELIVERED':
+                $ord['step_number'] = 6;
+                $ord['step_name'] = 'Step 6: Delivered & Received';
+                break;
+            case 'RETURN_DELIVERY':
+            case 'RETURNED':
+                $ord['step_number'] = 7;
+                $ord['step_name'] = 'Returned to Owner';
+                break;
+            case 'RIDER_CANCELLED':
+            case 'CANCELLED':
+                $ord['step_number'] = 0;
+                $ord['step_name'] = 'Cancelled';
+                break;
+            default:
+                $ord['step_number'] = 1;
+                $ord['step_name'] = 'Step 1: Confirmed';
+        }
+    }
+
     echo json_encode(['success' => true, 'count' => count($orders), 'orders' => $orders]);
+    exit;
+}
+
+if ($action === 'get_order_details') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $id = (int)($req['id'] ?? 0);
+    $orderCode = trim((string)($req['order_code'] ?? ''));
+
+    if ($id > 0) {
+        $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `id` = ? LIMIT 1");
+        $stmt->execute([$id]);
+    } else {
+        $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+        $stmt->execute([$orderCode]);
+    }
+    $order = $stmt->fetch();
+    if (!$order) {
+        echo json_encode(['success' => false, 'message' => 'Order not found']);
+        exit;
+    }
+
+    // Fetch order items
+    $itemsStmt = $db->prepare("SELECT * FROM `rental_order_items` WHERE `order_id` = ?");
+    $itemsStmt->execute([$order['id']]);
+    $items = $itemsStmt->fetchAll();
+
+    // Fetch all reported issues for this order
+    $issuesStmt = $db->prepare("SELECT * FROM `rental_issues` WHERE `order_code` = ? ORDER BY `id` DESC");
+    $issuesStmt->execute([$order['order_code']]);
+    $issues = $issuesStmt->fetchAll();
+
+    echo json_encode([
+        'success' => true,
+        'order' => $order,
+        'items' => $items,
+        'issues' => $issues
+    ]);
     exit;
 }
 
@@ -531,7 +633,7 @@ if ($action === 'update_order_status') {
     $riderName = trim((string)($req['rider_name'] ?? $req['driver_name'] ?? ''));
     $riderPhone = trim((string)($req['rider_phone'] ?? $req['driver_phone'] ?? ''));
 
-    $valid = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'LOOKING_FOR_RIDER', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'CANCELLED', 'RIDER_CANCELLED'];
+    $valid = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'CANCELLED', 'RIDER_CANCELLED'];
     if (!in_array($status, $valid)) {
         echo json_encode(['success' => false, 'message' => 'Invalid status']);
         exit;
@@ -674,7 +776,9 @@ if ($action === 'get_deliveries') {
                    COALESCE(owner_name, 'San Pablo Central Hub') as pickup_location,
                    owner_name, owner_email,
                    order_status, assigned_rider_name, assigned_rider_phone, estimated_arrival,
+                   pickup_proof_photo, pickup_proof_note, pickup_proof_time,
                    delivery_proof_photo, delivery_proof_note, delivery_proof_recipient, delivery_proof_time,
+                   renter_received_confirmed, renter_received_time,
                    delivery_vehicle_type, delivery_plate_number,
                    rider_current_lat, rider_current_lng, total_amount
             FROM `rental_orders` WHERE 1=1";
@@ -820,7 +924,9 @@ if ($action === 'get_tickets') {
     }
 
     if ($search !== '') {
-        $sql .= " AND (`ticket_number` LIKE ? OR `customer_name` LIKE ? OR `issue_title` LIKE ?)";
+        $sql .= " AND (`ticket_number` LIKE ? OR `customer_name` LIKE ? OR `issue_title` LIKE ? OR `order_code` LIKE ? OR `stage` LIKE ?)";
+        $params[] = "%{$search}%";
+        $params[] = "%{$search}%";
         $params[] = "%{$search}%";
         $params[] = "%{$search}%";
         $params[] = "%{$search}%";
