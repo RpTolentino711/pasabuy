@@ -1798,6 +1798,11 @@
                                         if (inst) inst.hide();
                                     }
                                 });
+                                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                                document.body.classList.remove('modal-open');
+                                document.body.style.removeProperty('overflow');
+                                document.body.style.removeProperty('padding-right');
+
                                 const tabCartEl = document.getElementById('tabCart');
                                 if (tabCartEl) tabCartEl.style.display = 'block';
                                 if (typeof showCartScreen === 'function') showCartScreen();

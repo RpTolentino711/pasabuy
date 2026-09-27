@@ -106,11 +106,18 @@ function renderFeaturedRentals() {
                                    onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Your Equipment">
                                <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.65rem;"></i> Yours
                            </button>`
-                        : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
-                                   style="width:30px; height:30px; background: linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink: 0;"
-                                   onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="Add to Cart">
-                               <i class="fa-solid fa-cart-plus fs-8"></i>
-                           </button>`
+                        : (rentEaseCart.some(c => c.id == item.id)
+                            ? `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
+                                       style="width:30px; height:30px; background: linear-gradient(135deg, #10B981, #059669); flex-shrink: 0;"
+                                       onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="In Cart">
+                                   <i class="fa-solid fa-check fs-8"></i>
+                               </button>`
+                            : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
+                                       style="width:30px; height:30px; background: linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink: 0;"
+                                       onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="Add to Cart">
+                                   <i class="fa-solid fa-cart-plus fs-8"></i>
+                               </button>`
+                          )
                     }
                 </div>
             </div>
@@ -804,54 +811,88 @@ Do you want to proceed and take down this listing?`;
     }
 };
 
-// Parabolic Fly-To-Cart Animation
+// Parabolic Fly-To-Cart Animation (using native Web Animations API)
 window.animateFlyToCart = function (sourceElement, imageUrl) {
     try {
-        const cartTarget = document.getElementById('headerCartBtn') || document.getElementById('headerCartBadge') || document.querySelector('.header-cart-icon') || document.getElementById('tabCartBadge');
+        const cartTarget = document.getElementById('headerCartBtn') || document.getElementById('cartCountBadge') || document.querySelector('.fa-cart-shopping');
         if (!cartTarget) return;
 
-        let srcRect;
+        let srcRect = null;
         if (sourceElement && typeof sourceElement.getBoundingClientRect === 'function') {
-            srcRect = sourceElement.getBoundingClientRect();
-        } else {
-            srcRect = { left: window.innerWidth / 2 - 25, top: window.innerHeight / 2 - 25, width: 50, height: 50 };
+            const r = sourceElement.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) {
+                srcRect = r;
+            }
+        }
+        if (!srcRect) {
+            srcRect = { left: window.innerWidth / 2 - 20, top: window.innerHeight / 2 - 20, width: 40, height: 40 };
         }
 
         const dstRect = cartTarget.getBoundingClientRect();
 
+        const startX = srcRect.left + (srcRect.width / 2) - 22;
+        const startY = srcRect.top + (srcRect.height / 2) - 22;
+        const endX = dstRect.left + (dstRect.width / 2) - 22;
+        const endY = dstRect.top + (dstRect.height / 2) - 22;
+
+        const deltaX = endX - startX;
+        const deltaY = endY - startY;
+
         const flyer = document.createElement('div');
         flyer.className = 'fly-to-cart-element';
-        const img = imageUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
-        flyer.style.backgroundImage = `url('${img}')`;
-        flyer.style.left = `${srcRect.left + (srcRect.width / 2) - 24}px`;
-        flyer.style.top = `${srcRect.top + (srcRect.height / 2) - 24}px`;
-        flyer.style.width = '48px';
-        flyer.style.height = '48px';
-        flyer.style.opacity = '1';
+        const img = imageUrl || 'LOGO.png';
+        flyer.style.cssText = `
+            position: fixed !important;
+            left: ${startX}px !important;
+            top: ${startY}px !important;
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 50% !important;
+            background-image: url('${img}') !important;
+            background-size: cover !important;
+            background-position: center !important;
+            border: 2.5px solid #5B3FA8 !important;
+            box-shadow: 0 10px 25px rgba(91, 63, 168, 0.6) !important;
+            z-index: 9999999 !important;
+            pointer-events: none !important;
+            will-change: transform, opacity !important;
+        `;
 
         document.body.appendChild(flyer);
 
-        // Force reflow
-        void flyer.offsetWidth;
+        // Web Animations API with curved / parabolic arc trajectory
+        const animation = flyer.animate([
+            {
+                transform: 'translate(0px, 0px) scale(1) rotate(0deg)',
+                opacity: 1
+            },
+            {
+                transform: `translate(${deltaX * 0.45}px, ${deltaY * 0.35 - 75}px) scale(0.85) rotate(160deg)`,
+                opacity: 0.95,
+                offset: 0.45
+            },
+            {
+                transform: `translate(${deltaX}px, ${deltaY}px) scale(0.18) rotate(360deg)`,
+                opacity: 0.2
+            }
+        ], {
+            duration: 650,
+            easing: 'cubic-bezier(0.2, 0.85, 0.25, 1)',
+            fill: 'forwards'
+        });
 
-        const deltaX = (dstRect.left + dstRect.width / 2) - (srcRect.left + srcRect.width / 2);
-        const deltaY = (dstRect.top + dstRect.height / 2) - (srcRect.top + srcRect.height / 2);
-
-        flyer.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.2) rotate(360deg)`;
-        flyer.style.opacity = '0.3';
-
-        setTimeout(() => {
+        animation.onfinish = () => {
             if (flyer && flyer.parentNode) {
                 flyer.parentNode.removeChild(flyer);
             }
             cartTarget.classList.add('cart-bounce-pop');
-            const badge = document.getElementById('headerCartBadge') || document.getElementById('cartCountBadge');
+            const badge = document.getElementById('cartCountBadge') || document.getElementById('headerCartBadge');
             if (badge) {
                 badge.classList.add('cart-badge-pop');
                 setTimeout(() => badge.classList.remove('cart-badge-pop'), 450);
             }
             setTimeout(() => cartTarget.classList.remove('cart-bounce-pop'), 550);
-        }, 650);
+        };
     } catch (e) {
         console.warn("Fly animation error:", e);
     }
@@ -868,7 +909,9 @@ function confirmAddDetailToCart(btnEl) {
         alert("⚠️ Sorry, this equipment is currently out of stock.");
         return;
     }
-    addRentEaseCartItem(currentDetailProduct, currentDetailQty || 1);
+    const alreadyInCart = rentEaseCart.some(i => i.id == currentDetailProduct.id);
+    const qty = currentDetailQty || 1;
+    addRentEaseCartItem(currentDetailProduct, qty);
 
     const btn = btnEl || document.getElementById('detailAddToCartBtn');
     if (btn) {
@@ -889,8 +932,9 @@ function confirmAddDetailToCart(btnEl) {
         window.animateFlyToCart(btn, currentDetailProduct.image_url);
     }
 
-    showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, currentDetailQty || 1);
+    showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, qty, alreadyInCart);
     renderExploreCatalog();
+    renderFeaturedRentals();
 }
 window.confirmAddDetailToCart = confirmAddDetailToCart;
 window.confirmAddToCartDetail = confirmAddDetailToCart;
@@ -907,13 +951,18 @@ function quickAddRentEaseItem(id, clickedEl) {
         alert("⚠️ Sorry, this equipment is currently out of stock.");
         return;
     }
+
+    const alreadyInCart = rentEaseCart.some(i => i.id == item.id);
+
     addRentEaseCartItem(item, 1);
+
     const triggerEl = clickedEl || (window.event ? (window.event.currentTarget || window.event.target) : null);
     if (typeof window.animateFlyToCart === 'function') {
         window.animateFlyToCart(triggerEl, item.image_url);
     }
-    showCartToastNotification(item.name || item.title, 1);
+    showCartToastNotification(item.name || item.title, 1, alreadyInCart);
     renderExploreCatalog();
+    renderFeaturedRentals();
 }
 window.quickAddRentEaseItem = quickAddRentEaseItem;
 
@@ -1266,18 +1315,20 @@ window.openChatWithRenter = function (customerName, customerPhone, orderCode) {
     }, 400);
 };
 
-function showCartToastNotification(name, qty) {
+function showCartToastNotification(name, qty = 1, alreadyInCart = false) {
     let toast = document.getElementById('renteaseCartToast');
     if (!toast) {
         toast = document.createElement('div');
         toast.id = 'renteaseCartToast';
-        toast.style.cssText = 'position:fixed; bottom:78px; left:50%; transform:translateX(-50%); z-index:99999; min-width:280px; max-width:92%; background:#1E293B; color:#fff; border-radius:30px; padding:10px 16px; box-shadow:0 10px 25px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:between; gap:12px; font-size:12px; font-weight:600; animation:fadeInUp 0.25s ease;';
+        toast.style.cssText = 'position:fixed; bottom:78px; left:50%; transform:translateX(-50%); z-index:99999; min-width:280px; max-width:92%; background:#1E293B; color:#fff; border-radius:30px; padding:10px 16px; box-shadow:0 10px 25px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:between; gap:12px; font-size:12px; font-weight:600;';
         document.body.appendChild(toast);
     }
+    const msg = alreadyInCart ? `Already in cart (${name})` : `Added ${qty}x ${name} to cart`;
+    const icon = alreadyInCart ? 'fa-circle-info text-info' : 'fa-circle-check text-success';
     toast.innerHTML = `
         <div class="d-flex align-items-center gap-2 text-truncate">
-            <i class="fa-solid fa-circle-check text-success fs-6"></i>
-            <span class="text-truncate">Added ${qty}x ${name} to cart</span>
+            <i class="fa-solid ${icon} fs-6"></i>
+            <span class="text-truncate">${msg}</span>
         </div>
         <button class="btn btn-sm btn-light rounded-pill px-2.5 py-0.5 fw-bold fs-9 text-nowrap" style="color:#5B3FA8;" onclick="switchTab('cart')">
             View Cart
@@ -1300,45 +1351,20 @@ function addRentEaseCartItem(product, qty = 1) {
     const price = parseFloat(product.price_per_day || product.price || 0);
     const img = product.image_url || product.img || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
 
-    const existing = rentEaseCart.find(i => i.id == pid);
-    if (existing) {
-        existing.quantity += qty;
+    const existingIndex = rentEaseCart.findIndex(i => i.id == pid);
+    if (existingIndex > -1) {
+        // If already in cart, update to specified quantity (e.g. from detail modal) without blind double-incrementing!
+        rentEaseCart[existingIndex].quantity = Math.max(1, qty);
     } else {
         rentEaseCart.push({
             id: pid,
             title: title,
             price_per_day: price,
-            quantity: qty,
+            quantity: Math.max(1, qty),
             image_url: img
         });
     }
     saveRentEaseCart();
-
-    // Sync to pasabuyCart in localStorage so it is available across both models!
-    try {
-        let pCart = JSON.parse(localStorage.getItem('pasabuy_cart_items') || '[]');
-        const pExisting = pCart.find(i => (i.listingId && i.listingId == pid) || i.title === title);
-        if (pExisting) {
-            pExisting.quantity += qty;
-        } else {
-            pCart.push({
-                listingId: pid,
-                title: title,
-                price: price,
-                sellerId: product.owner_id || product.sellerId || 104,
-                img: img,
-                quantity: qty,
-                isSold: false
-            });
-        }
-        localStorage.setItem('pasabuy_cart_items', JSON.stringify(pCart));
-        if (typeof pasabuyCart !== 'undefined') {
-            pasabuyCart = pCart;
-        }
-    } catch(e) {}
-
-    updateCartBadgeCount();
-    if (typeof updateCartBadge === 'function') updateCartBadge();
 }
 
 function saveRentEaseCart() {
@@ -1358,10 +1384,14 @@ function saveRentEaseCart() {
         pasabuyCart = pCart;
     }
     updateCartBadgeCount();
-    if (typeof updateCartBadge === 'function') updateCartBadge();
 }
 
 function updateCartBadgeCount() {
+    let stored = [];
+    try {
+        stored = JSON.parse(localStorage.getItem('rentease_cart')) || [];
+    } catch(e) {}
+    rentEaseCart = stored;
     const count = rentEaseCart.reduce((acc, it) => acc + (parseInt(it.quantity) || 1), 0);
     const badges = [
         document.getElementById('tabCartBadge'), 
@@ -1376,6 +1406,8 @@ function updateCartBadgeCount() {
         }
     });
 }
+window.updateCartBadgeCount = updateCartBadgeCount;
+window.updateCartBadge = updateCartBadgeCount;
 
 // ----------------------------------------------------------
 // 3. SCREEN 4: MY CART & COMPUTATION MODULE
