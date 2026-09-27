@@ -121,11 +121,66 @@
             <i class="fa-solid fa-arrow-left text-dark fs-8"></i>
         </button>
         <div class="text-center">
-            <h5 class="fw-extrabold mb-0 text-dark fs-6" style="letter-spacing:-0.3px;">Rent Out Equipment</h5>
-            <span class="fs-9 text-muted fw-bold">Student Lender Studio</span>
+            <h5 class="fw-extrabold mb-0 text-dark fs-6" style="letter-spacing:-0.3px;">Lender Studio</h5>
+            <span class="fs-9 text-muted fw-bold">Equipment Owner Management</span>
         </div>
         <div style="width:36px;"></div>
     </div>
+
+    <!-- Stock Owner Studio Mode Switcher: Prepare Orders vs Post New Equipment -->
+    <div class="bg-light p-1.5 rounded-4 d-flex align-items-center mb-3 border shadow-2xs gap-1">
+        <button type="button" class="btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-extrabold fs-9 d-flex align-items-center justify-content-center gap-1.5 rentout-subtab-btn active text-white" 
+                id="btnRentoutTabPrepare" 
+                style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
+                onclick="switchRentOutSubTab('prepare')">
+            <i class="fa-solid fa-boxes-packing"></i>
+            <span>Orders to Prepare</span>
+            <span class="badge rounded-pill bg-danger text-white fw-bold fs-9 ms-0.5" id="rentoutPendingBadge" style="display:none; font-size:0.65rem;">0</span>
+        </button>
+        <button type="button" class="btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-bold fs-9 d-flex align-items-center justify-content-center gap-1.5 rentout-subtab-btn text-secondary" 
+                id="btnRentoutTabPost" 
+                style="background:transparent; border:none;" 
+                onclick="switchRentOutSubTab('post')">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Post Equipment</span>
+        </button>
+    </div>
+
+    <!-- ==========================================================
+         MODE 1: ORDERS TO PREPARE & FULFILL (STOCK OWNER ACTION)
+         ========================================================== -->
+    <div id="rentoutSectionPrepare" class="d-flex flex-column gap-3 mb-4">
+        <div class="p-3 rounded-4 bg-primary bg-opacity-10 border border-primary-subtle d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2.5">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs" style="width:34px; height:34px; background:linear-gradient(135deg, #5B3FA8, #341F97) !important;">
+                    <i class="fa-solid fa-boxes-packing fs-7"></i>
+                </div>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Stock Owner Fulfillment Hub</h6>
+                    <span class="fs-9 text-muted">Inspect & package equipment, then notify fleet drivers</span>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold border text-primary" onclick="loadOwnerRentalDashboard(true)">
+                <i class="fa-solid fa-rotate-right me-1"></i> Refresh
+            </button>
+        </div>
+
+        <!-- Dynamic Container For Incoming Orders Needing Packaging/Dispatch -->
+        <div id="rentoutPrepareListContainer" class="d-flex flex-column gap-3">
+            <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2" style="width:50px; height:50px; color:#5B3FA8;">
+                    <i class="fa-solid fa-inbox fs-4"></i>
+                </div>
+                <h6 class="fw-bold text-dark fs-8 mb-1">No Orders Awaiting Preparation</h6>
+                <p class="text-muted fs-9 mb-0">When students rent your equipment, their orders will appear here for you to package, inspect, and notify fleet drivers.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================
+         MODE 2: POST NEW EQUIPMENT FOR RENT
+         ========================================================== -->
+    <div id="rentoutSectionPost" style="display:none;">
 
     <!-- Promo Hero Card -->
     <div class="rentout-hero-card p-3.5 text-white mb-3">
@@ -413,4 +468,48 @@
         </p>
     </div>
 
+    </div> <!-- End rentoutSectionPost -->
+
 </div>
+
+<script>
+window.switchRentOutSubTab = function(mode) {
+    const secPrep = document.getElementById('rentoutSectionPrepare');
+    const secPost = document.getElementById('rentoutSectionPost');
+    const btnPrep = document.getElementById('btnRentoutTabPrepare');
+    const btnPost = document.getElementById('btnRentoutTabPost');
+
+    if (mode === 'prepare') {
+        if (secPrep) secPrep.style.display = 'flex';
+        if (secPost) secPost.style.display = 'none';
+
+        if (btnPrep) {
+            btnPrep.classList.add('active', 'text-white');
+            btnPrep.classList.remove('text-secondary');
+            btnPrep.style.background = 'linear-gradient(135deg, #5B3FA8, #341F97)';
+        }
+        if (btnPost) {
+            btnPost.classList.remove('active', 'text-white');
+            btnPost.classList.add('text-secondary');
+            btnPost.style.background = 'transparent';
+        }
+        if (typeof loadOwnerRentalDashboard === 'function') {
+            loadOwnerRentalDashboard(true);
+        }
+    } else {
+        if (secPrep) secPrep.style.display = 'none';
+        if (secPost) secPost.style.display = 'block';
+
+        if (btnPost) {
+            btnPost.classList.add('active', 'text-white');
+            btnPost.classList.remove('text-secondary');
+            btnPost.style.background = 'linear-gradient(135deg, #5B3FA8, #341F97)';
+        }
+        if (btnPrep) {
+            btnPrep.classList.remove('active', 'text-white');
+            btnPrep.classList.add('text-secondary');
+            btnPrep.style.background = 'transparent';
+        }
+    }
+};
+</script>

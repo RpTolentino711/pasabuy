@@ -71,6 +71,7 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT '09668257301'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_id` INT DEFAULT 104"); } catch (Exception $e) {}
 
     // Auto-migrate rental_orders fields for duration, COD downpayment, owner and return status
     try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}
@@ -440,27 +441,78 @@ if ($action === 'create_order') {
 // 6. ORDER TRACKING & LIVE GPS MAP (Screen 7 - Standout Feature)
 // ----------------------------------------------------------
 if ($action === 'get_order_tracking') {
-    $orderCode = trim((string)($data['order_code'] ?? '#RE-10245'));
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    if ($orderCode === 'undefined' || $orderCode === 'null') {
+        $orderCode = '';
+    }
+    $order = null;
+    $items = [];
 
-    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
-    $stmt->execute([$orderCode]);
-    $order = $stmt->fetch();
+    if ($db) {
+        try {
+            if (!empty($orderCode)) {
+                $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+                $stmt->execute([$orderCode]);
+                $order = $stmt->fetch();
+            }
 
-    if (!$order) {
-        // Fallback to latest order
-        $stmt2 = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 1");
-        $order = $stmt2->fetch();
+            if (!$order) {
+                // Fetch the latest active or placed order
+                $stmt2 = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 1");
+                $order = $stmt2->fetch();
+            }
+
+            if ($order) {
+                $orderItemsStmt = $db->prepare("SELECT * FROM `rental_order_items` WHERE `order_id` = ?");
+                $orderItemsStmt->execute([$order['id']]);
+                $items = $orderItemsStmt->fetchAll();
+            }
+        } catch (Exception $eDb) {}
     }
 
     if (!$order) {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'No active order found for tracking.']);
-        exit;
+        // High quality offline fallback with clean initial CONFIRMED state
+        $order = [
+            'id' => 999,
+            'order_code' => !empty($orderCode) ? $orderCode : '#RE-10245',
+            'order_status' => 'CONFIRMED',
+            'created_at' => date('Y-m-d H:i:s', strtotime('-15 minutes')),
+            'estimated_arrival' => 'Pending Dispatch',
+            'rental_days' => 2,
+            'rental_end_date' => date('Y-m-d', strtotime('+2 days')),
+            'owner_name' => 'Romeo Paolo Tolentino',
+            'owner_email' => 'romeopaolotolentino@gmail.com',
+            'rider_name' => null,
+            'rider_phone' => null,
+            'rider_rating' => null,
+            'rider_vehicle' => null,
+            'vehicle_type' => 'Motorcycle',
+            'plate_number' => null,
+            'rider_current_lat' => 14.65150,
+            'rider_current_lng' => 121.07120,
+            'eta_text' => 'Awaiting Owner Preparation',
+            'delivery_address' => 'Student Dormitory, San Pablo City, Laguna',
+            'total_amount' => 850.00,
+            'downpayment_amount' => 300.00,
+            'balance_amount' => 550.00,
+            'payment_type' => 'COD',
+            'payment_method' => 'COD',
+            'delivery_proof_photo' => null,
+            'delivery_proof_recipient' => null,
+            'delivery_proof_time' => null,
+            'delivery_proof_note' => null,
+            'assigned_rider_id' => null
+        ];
+        $items = [
+            [
+                'item_name' => 'Canon EOS R50 Mirrorless Camera',
+                'daily_rate' => 450.00,
+                'rental_days' => 2,
+                'quantity' => 1,
+                'item_image' => 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&q=80'
+            ]
+        ];
     }
-
-    $orderItemsStmt = $db->prepare("SELECT * FROM `rental_order_items` WHERE `order_id` = ?");
-    $orderItemsStmt->execute([$order['id']]);
-    $items = $orderItemsStmt->fetchAll();
 
     $warehouseCoords = [14.64880, 121.06870]; // RentEase / Owner Hub
     $riderCoords = [(float)$order['rider_current_lat'], (float)$order['rider_current_lng']];
@@ -913,6 +965,147 @@ if ($action === 'admin_update_stock') {
     exit;
 }
 
+// ----------------------------------------------------------
+// OWNER RENTAL DASHBOARD: ORDERS, REQUESTS, STOCK MONITORING & HISTORY
+// ----------------------------------------------------------
+if ($action === 'get_owner_rental_data') {
+    $ownerEmail = strtolower(trim((string)($data['owner_email'] ?? $_GET['owner_email'] ?? 'romeopaolotolentino@gmail.com')));
+    $ownerName = trim((string)($data['owner_name'] ?? $_GET['owner_name'] ?? 'Romeo Paolo Tolentino'));
+    $ownerId = (int)($data['owner_id'] ?? $_GET['owner_id'] ?? 104);
+
+    if (!$db) {
+        echo json_encode([
+            'success' => true,
+            'incoming_requests' => [],
+            'inventory' => [],
+            'history' => [],
+            'pending_count' => 0
+        ]);
+        exit;
+    }
+
+    try {
+        // 1. Fetch all equipment owned by this user
+        $invStmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE LOWER(`owner_email`) = ? OR `owner_name` = ? OR `owner_id` = ? ORDER BY `id` DESC");
+        $invStmt->execute([$ownerEmail, $ownerName, $ownerId]);
+        $ownerInventory = $invStmt->fetchAll();
+
+        $ownedProductIds = array_map(fn($x) => (int)$x['id'], $ownerInventory);
+
+        // 2. Fetch all rental orders for this owner
+        $sql = "SELECT * FROM `rental_orders` WHERE LOWER(`owner_email`) = ? OR `owner_name` = ?";
+        $params = [$ownerEmail, $ownerName];
+        if (!empty($ownedProductIds)) {
+            $inClause = implode(',', array_fill(0, count($ownedProductIds), '?'));
+            $sql .= " OR `id` IN (SELECT `order_id` FROM `rental_order_items` WHERE `product_id` IN ($inClause))";
+            foreach ($ownedProductIds as $pid) {
+                $params[] = $pid;
+            }
+        }
+        $sql .= " ORDER BY `id` DESC LIMIT 60";
+        $orderStmt = $db->prepare($sql);
+        $orderStmt->execute($params);
+        $allOrders = $orderStmt->fetchAll();
+
+        // Attach line items to each order
+        $itemFetchStmt = $db->prepare("SELECT roi.*, ri.image_url, ri.category FROM `rental_order_items` roi LEFT JOIN `rental_inventory` ri ON roi.product_id = ri.id WHERE roi.order_id = ?");
+
+        $incoming = [];
+        $history = [];
+
+        foreach ($allOrders as $ord) {
+            $itemFetchStmt->execute([$ord['id']]);
+            $ord['items'] = $itemFetchStmt->fetchAll();
+
+            $status = strtoupper(trim((string)($ord['order_status'] ?? 'CONFIRMED')));
+            if (in_array($status, ['RETURNED', 'COMPLETED', 'CANCELLED'])) {
+                $history[] = $ord;
+            } else {
+                $incoming[] = $ord;
+            }
+        }
+
+        // 3. Fetch bookings where this user rented equipment as a customer
+        $custStmt = $db->prepare("SELECT * FROM `rental_orders` WHERE LOWER(`customer_email`) = ? OR `customer_phone` = ? ORDER BY `id` DESC LIMIT 20");
+        $custStmt->execute([$ownerEmail, $data['customer_phone'] ?? '09668257301']);
+        $custOrders = $custStmt->fetchAll();
+        foreach ($custOrders as &$cOrd) {
+            $itemFetchStmt->execute([$cOrd['id']]);
+            $cOrd['items'] = $itemFetchStmt->fetchAll();
+        }
+
+        echo json_encode([
+            'success' => true,
+            'incoming_requests' => $incoming,
+            'inventory' => $ownerInventory,
+            'history' => $history,
+            'my_bookings' => $custOrders,
+            'pending_count' => count($incoming),
+            'total_stock_owned' => array_sum(array_column($ownerInventory, 'qty_total')),
+            'total_rented_out' => array_sum(array_column($ownerInventory, 'qty_rented')),
+            'total_available' => array_sum(array_column($ownerInventory, 'qty_available'))
+        ]);
+        exit;
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
+}
+
+if ($action === 'update_owner_order_status') {
+    $orderId = (int)($data['order_id'] ?? 0);
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    $newStatus = strtoupper(trim((string)($data['new_status'] ?? 'PREPARING')));
+
+    try {
+        if ($orderId > 0) {
+            $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `id` = ? LIMIT 1");
+            $stmt->execute([$orderId]);
+        } else {
+            $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+            $stmt->execute([$orderCode]);
+        }
+        $order = $stmt->fetch();
+        if (!$order) {
+            echo json_encode(['success' => false, 'message' => 'Order not found.']);
+            exit;
+        }
+
+        $oId = (int)$order['id'];
+        $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ? WHERE `id` = ?");
+        $upd->execute([$newStatus, $oId]);
+
+        // If returned, automatically restock equipment inventory
+        if ($newStatus === 'RETURNED') {
+            $itemsStmt = $db->prepare("SELECT `product_id`, `quantity` FROM `rental_order_items` WHERE `order_id` = ?");
+            $itemsStmt->execute([$oId]);
+            $items = $itemsStmt->fetchAll();
+            $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + ?, `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
+            foreach ($items as $it) {
+                if ((int)$it['product_id'] > 0) {
+                    $updStock->execute([(int)$it['quantity'], (int)$it['quantity'], (int)$it['product_id']]);
+                }
+            }
+
+            // Notification message to customer
+            try {
+                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Equipment Owner', ?, 'Rental Return Complete', NOW())")
+                   ->execute(["Your rental equipment for Order {$order['order_code']} has been verified and returned. Thank you for renting!"]);
+            } catch (Exception $eC) {}
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Order #{$order['order_code']} status updated to {$newStatus}.",
+            'order_status' => $newStatus
+        ]);
+        exit;
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
+}
+
 if ($action === 'post_item' || $action === 'user_post_equipment') {
     $name = trim((string)($data['name'] ?? $data['title'] ?? ''));
     $category = trim((string)($data['category'] ?? 'Others'));
@@ -1106,7 +1299,7 @@ if ($action === 'admin_assign_rider' || $action === 'admin_update_order_status')
 // ----------------------------------------------------------
 if ($action === 'rider_get_jobs' || $action === 'rider_get_available_jobs') {
     $riderId = (int)($data['rider_id'] ?? $_GET['rider_id'] ?? 0);
-    $riderName = trim((string)($data['rider_name'] ?? $_GET['rider_name'] ?? 'Juan Dela Cruz'));
+    $riderName = trim((string)($data['rider_name'] ?? $_GET['rider_name'] ?? ''));
 
     // Available broadcast jobs (only unassigned orders looking for riders)
     $stmtBroadcast = $db->query("SELECT * FROM `rental_orders` 

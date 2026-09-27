@@ -20,6 +20,33 @@
         <a href="javascript:void(0)" class="fs-9 fw-bold text-decoration-none" style="color: #5B3FA8;" onclick="toggleOrderItemsModal()">Details</a>
     </div>
 
+    <!-- Stock Owner Equipment Preparation & Action Hub -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3" id="stockOwnerTrackActionCard" style="background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%); border: 1.5px solid #D8B4FE !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs" style="width:32px; height:32px; background:linear-gradient(135deg, #5B3FA8, #341F97);">
+                    <i class="fa-solid fa-boxes-packing fs-8"></i>
+                </div>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Stock Owner Action Hub</h6>
+                    <span class="fs-9 text-muted" id="stockOwnerActionSub">Equipment Preparation & Handover</span>
+                </div>
+            </div>
+            <span class="badge rounded-pill bg-primary fw-bold fs-9" id="stockOwnerCurrentBadge">CONFIRMED</span>
+        </div>
+        <p class="fs-9 text-dark mb-2.5" id="stockOwnerActionInstruction">
+            As the equipment stock owner, inspect and package the items before calling a rider.
+        </p>
+        <div id="stockOwnerTrackBtnContainer">
+            <!-- Dynamic action buttons rendered via openTrackScreen -->
+        </div>
+        <div class="mt-2 text-center">
+            <a href="javascript:void(0)" onclick="if(typeof switchProfileSubTab==='function') switchProfileSubTab('requests'); switchTab('profile');" class="fs-9 fw-bold text-decoration-none" style="color:#5B3FA8;">
+                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Open Stock Owner Lender Dashboard
+            </a>
+        </div>
+    </div>
+
     <!-- Vertical Timeline Stages (Matching Screen 7) -->
     <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3 position-relative" id="trackTimelineContainer">
         
@@ -119,58 +146,6 @@
         <div id="renteaseTrackMap" style="width:100%; height:190px; z-index:1;"></div>
     </div>
 
-    <!-- Shopee-Style Proof of Delivery (POD) Card -->
-    <div class="card border-0 rounded-4 shadow-sm overflow-hidden mb-3 bg-white" id="shopeeProofOfDeliveryCard" style="display:none; border: 1px solid #E2E8F0 !important;">
-        <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-                <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:30px; height:30px; background:linear-gradient(135deg, #10B981, #059669);">
-                    <i class="fa-solid fa-camera fs-8"></i>
-                </div>
-                <div>
-                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Proof of Delivery (POD)</h6>
-                    <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Verified Handover</span>
-                </div>
-            </div>
-            <span class="badge bg-success bg-opacity-10 text-success fw-bold fs-9 px-2 py-1 rounded-pill">
-                <i class="fa-solid fa-motorcycle me-1"></i> Motorcycle Delivery
-            </span>
-        </div>
-        <div class="p-3">
-            <!-- Proof Photo -->
-            <div class="position-relative rounded-3 overflow-hidden border mb-2.5 bg-dark text-center" style="max-height: 220px;">
-                <img id="trackPodPhotoImg" src="" alt="Proof of Delivery Photo" class="w-100 object-fit-cover cursor-pointer" style="max-height: 220px;" onclick="window.open(this.src, '_blank')">
-                <span class="position-absolute bottom-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white fs-9">
-                    <i class="fa-solid fa-magnifying-glass-plus me-1"></i> Tap to Expand
-                </span>
-            </div>
-
-            <!-- Handover Details Grid -->
-            <div class="rounded-3 p-2.5 mb-2" style="background:#F8FAFC; border:1px solid #EDF2F7;">
-                <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom border-light">
-                    <span class="text-muted"><i class="fa-solid fa-user me-1 text-primary"></i> Received By:</span>
-                    <strong class="text-dark" id="trackPodRecipient">Pogilameg Tester</strong>
-                </div>
-                <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom border-light">
-                    <span class="text-muted"><i class="fa-solid fa-clock me-1 text-info"></i> Delivery Time:</span>
-                    <strong class="text-dark" id="trackPodTime">Just now</strong>
-                </div>
-                <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom border-light">
-                    <span class="text-muted"><i class="fa-solid fa-motorcycle me-1 text-warning"></i> Vehicle / Plate:</span>
-                    <strong class="text-dark" id="trackPodVehiclePlate">Motorcycle • MC-8888-JY</strong>
-                </div>
-                <div class="d-flex justify-content-between fs-9">
-                    <span class="text-muted"><i class="fa-solid fa-helmet-safety me-1 text-success"></i> Courier Rider:</span>
-                    <strong class="text-dark" id="trackPodRiderName">Juan Dela Cruz</strong>
-                </div>
-            </div>
-
-            <!-- Courier Remarks / Inspection Note -->
-            <div class="p-2 rounded-3 fs-9 text-secondary" style="background:#F1F5F9;" id="trackPodNote">
-                <i class="fa-solid fa-quote-left text-muted me-1"></i> Package handed over and inspected in excellent condition at doorstep.
-            </div>
-        </div>
-    </div>
-
     <!-- Assigned Driver Card: Shown when rider is assigned / en route -->
     <div class="card border-0 rounded-4 shadow-sm p-3 bg-white d-flex flex-row align-items-center justify-content-between mb-3" id="trackRiderCard" style="display:none;">
         <div class="d-flex align-items-center gap-2.5">
@@ -180,8 +155,8 @@
                 <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:11px; height:11px;"></span>
             </div>
             <div>
-                <h6 class="fw-extrabold text-dark fs-8 mb-0" id="trackRiderName">Juan Dela Cruz</h6>
-                <span class="fs-9 text-muted" id="trackRiderRole">Delivery Rider • Honda Click</span>
+                <h6 class="fw-extrabold text-dark fs-8 mb-0" id="trackRiderName">Assigned Driver</h6>
+                <span class="fs-9 text-muted" id="trackRiderRole">Delivery Rider • Motorcycle</span>
             </div>
         </div>
         <div class="d-flex gap-2">
@@ -190,7 +165,7 @@
                 <i class="fa-solid fa-phone fs-8"></i>
             </a>
             <button class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
-                    style="width:36px; height:36px; background:#F1F5F9; color:#5B3FA8;" onclick="alert('💬 RentEase Courier Messenger: Driver is active and on the way.')" title="Chat Rider">
+                    style="width:36px; height:36px; background:#F1F5F9; color:#5B3FA8;" onclick="alert('💬 RentEase Courier Messenger: Driver is active.')" title="Chat Rider">
                 <i class="fa-solid fa-comment fs-8"></i>
             </button>
         </div>

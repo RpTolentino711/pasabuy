@@ -32,32 +32,141 @@
         </div>
     </div>
 
-    <!-- My Rental Equipment Section Header -->
-    <div class="d-flex align-items-center justify-content-between mb-3 px-1">
-        <div class="d-flex align-items-center gap-2">
-            <h6 class="fw-extrabold text-dark fs-7 mb-0">
-                <i class="fa-solid fa-boxes-stacked me-1" style="color:#5B3FA8;"></i> My Rental Listings
-            </h6>
-            <span class="badge rounded-pill bg-primary-subtle text-primary fw-bold fs-9" id="myRentalCountBadge">0</span>
-        </div>
-        <!-- Single Header Button -->
-        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-bold fs-8 d-flex align-items-center gap-1 shadow-2xs" 
-                id="headerPostEquipmentBtn"
+    <!-- 3 Profile Section Tabs (Requested by User) -->
+    <div class="bg-light p-1.5 rounded-4 d-flex align-items-center mb-3 border shadow-2xs gap-1">
+        <!-- Subtab 1: Rental Requests / Incoming Orders -->
+        <button type="button" class="btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-extrabold fs-9 d-flex align-items-center justify-content-center gap-1.5 profile-subtab-btn active text-white" 
+                id="btnProfileTabRequests" 
                 style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
-                onclick="switchTab('sell')">
-            <i class="fa-solid fa-plus fs-9"></i> Post Equipment
+                onclick="switchProfileSubTab('requests')">
+            <i class="fa-solid fa-bell"></i>
+            <span>Requests</span>
+            <span class="badge rounded-pill bg-danger text-white fw-bold fs-9 ms-0.5 badge-pulse-glow" id="profileRequestsBadge" style="display:none; font-size:0.65rem;">0</span>
+        </button>
+
+        <!-- Subtab 2: Rent Items / Stock Inventory Monitoring -->
+        <button type="button" class="btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-bold fs-9 d-flex align-items-center justify-content-center gap-1.5 profile-subtab-btn text-secondary" 
+                id="btnProfileTabInventory" 
+                style="background:transparent; border:none;" 
+                onclick="switchProfileSubTab('inventory')">
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <span>Rent Items</span>
+            <span class="badge rounded-pill bg-primary-subtle text-primary fw-bold fs-9 ms-0.5" id="myRentalCountBadge">0</span>
+        </button>
+
+        <!-- Subtab 3: Rental History -->
+        <button type="button" class="btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-bold fs-9 d-flex align-items-center justify-content-center gap-1.5 profile-subtab-btn text-secondary" 
+                id="btnProfileTabHistory" 
+                style="background:transparent; border:none;" 
+                onclick="switchProfileSubTab('history')">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>History</span>
         </button>
     </div>
 
-    <!-- Dynamic Equipment Listings Container (Items posted for rent) -->
-    <div id="myRentalListingsContainer" class="d-flex flex-column gap-3 pb-3">
-        <!-- Populated dynamically via loadUserRentedOutItems() -->
-        <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
-            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:60px; height:60px; color:#5B3FA8;">
-                <i class="fa-solid fa-box-open fs-2"></i>
+    <!-- ==========================================================
+         SUBTAB 1: RENTAL REQUESTS / INCOMING ORDERS FROM RENTERS
+         ========================================================== -->
+    <div id="profileSectionRequests" class="d-flex flex-column gap-3 pb-3">
+        <!-- Live Request Alert Banner -->
+        <div id="profileRequestsAlertBanner" class="p-3 rounded-4 bg-primary bg-opacity-10 border border-primary-subtle d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2.5">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs" style="width:34px; height:34px; background:linear-gradient(135deg, #5B3FA8, #341F97) !important;">
+                    <i class="fa-solid fa-bell fs-7"></i>
+                </div>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Incoming Rental Bookings</h6>
+                    <span class="fs-9 text-muted" id="profileRequestsSubtext">Students asking to rent your equipment</span>
+                </div>
             </div>
-            <h6 class="fw-extrabold text-dark fs-7 mb-1">No Equipment Posted for Rent Yet</h6>
-            <p class="text-muted fs-8 mb-0">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
+            <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold border text-primary" onclick="loadOwnerRentalDashboard(true)">
+                <i class="fa-solid fa-rotate-right me-1"></i> Refresh
+            </button>
+        </div>
+
+        <!-- Dynamic Rental Orders Container -->
+        <div id="ownerRequestsListContainer" class="d-flex flex-column gap-3">
+            <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2" style="width:50px; height:50px; color:#5B3FA8;">
+                    <i class="fa-solid fa-inbox fs-4"></i>
+                </div>
+                <h6 class="fw-bold text-dark fs-8 mb-1">No Active Rental Requests</h6>
+                <p class="text-muted fs-9 mb-0">When students rent your equipment, their orders and bookings will appear here for you to accept, monitor, and restock.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================
+         SUBTAB 2: RENT ITEMS & STOCK INVENTORY MONITOR
+         ========================================================== -->
+    <div id="profileSectionInventory" style="display:none;" class="d-flex flex-column gap-3 pb-3">
+        <!-- Stock Overview KPI Bar -->
+        <div class="card border-0 rounded-4 shadow-sm p-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h6 class="fw-extrabold text-dark fs-8 mb-0">
+                    <i class="fa-solid fa-chart-pie me-1" style="color:#5B3FA8;"></i> Equipment Stock Monitor
+                </h6>
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-bold fs-9 d-flex align-items-center gap-1 shadow-2xs" 
+                        id="headerPostEquipmentBtn"
+                        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
+                        onclick="switchTab('sell')">
+                    <i class="fa-solid fa-plus fs-9"></i> Post Equipment
+                </button>
+            </div>
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <div class="p-2 rounded-3 bg-light border">
+                        <span class="fs-9 text-muted d-block">Total Owned</span>
+                        <span class="fw-extrabold text-dark fs-7" id="kpiTotalStockOwned">0</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded-3 bg-warning-subtle border border-warning-subtle">
+                        <span class="fs-9 text-dark d-block">Rented Out</span>
+                        <span class="fw-extrabold text-warning-emphasis fs-7" id="kpiTotalStockRented">0</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded-3 bg-success-subtle border border-success-subtle">
+                        <span class="fs-9 text-dark d-block">Ready to Rent</span>
+                        <span class="fw-extrabold text-success fs-7" id="kpiTotalStockAvailable">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Equipment Listings Container -->
+        <div id="myRentalListingsContainer" class="d-flex flex-column gap-3">
+            <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:60px; height:60px; color:#5B3FA8;">
+                    <i class="fa-solid fa-box-open fs-2"></i>
+                </div>
+                <h6 class="fw-extrabold text-dark fs-7 mb-1">No Equipment Posted for Rent Yet</h6>
+                <p class="text-muted fs-8 mb-0">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================
+         SUBTAB 3: RENTAL HISTORY & COMPLETED BOOKINGS
+         ========================================================== -->
+    <div id="profileSectionHistory" style="display:none;" class="d-flex flex-column gap-3 pb-3">
+        <div class="d-flex align-items-center justify-content-between px-1">
+            <h6 class="fw-extrabold text-dark fs-8 mb-0">
+                <i class="fa-solid fa-clock-rotate-left me-1" style="color:#5B3FA8;"></i> Completed Returns & Rental Logs
+            </h6>
+            <span class="badge bg-light text-secondary border fs-9" id="historyCountBadge">0 Records</span>
+        </div>
+
+        <!-- Dynamic Rental History Container -->
+        <div id="ownerRentalHistoryContainer" class="d-flex flex-column gap-3">
+            <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2 text-muted" style="width:48px; height:48px;">
+                    <i class="fa-solid fa-receipt fs-4"></i>
+                </div>
+                <h6 class="fw-bold text-dark fs-8 mb-1">No Rental History Yet</h6>
+                <p class="text-muted fs-9 mb-0">Completed equipment returns and your rental receipts will be archived here.</p>
+            </div>
         </div>
     </div>
 

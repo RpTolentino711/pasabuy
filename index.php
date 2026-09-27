@@ -336,7 +336,7 @@
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; padding: 2px 4px; display:none;">0</span>
                 </button>
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="switchTab('track')" title="Live Delivery Tracking" id="headerOrdersBtn" style="width:36px; height:36px; background: #F1F5F9;">
+                    onclick="openTrackScreen()" title="Live Delivery Tracking" id="headerOrdersBtn" style="width:36px; height:36px; background: #F1F5F9;">
                     <i class="fa-solid fa-truck-fast text-secondary fs-7"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" id="headerOrdersBadge" style="font-size:0.6rem; padding: 2px 4px; display:none;">0</span>
                 </button>
@@ -1735,7 +1735,7 @@
                         }
 
                         function switchTab(tabName) {
-                            const tabs = ['home', 'explore', 'cart', 'sell', 'wanted', 'messages', 'profile'];
+                            const tabs = ['home', 'explore', 'cart', 'sell', 'wanted', 'messages', 'profile', 'track'];
                             tabs.forEach(t => {
                                 const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
                                 const nav = document.getElementById('tabNav' + t.charAt(0).toUpperCase() + t.slice(1));

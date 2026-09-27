@@ -441,18 +441,23 @@ if ($action === 'create_order') {
 // 6. ORDER TRACKING & LIVE GPS MAP (Screen 7 - Standout Feature)
 // ----------------------------------------------------------
 if ($action === 'get_order_tracking') {
-    $orderCode = trim((string)($data['order_code'] ?? '#RE-10245'));
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    if ($orderCode === 'undefined' || $orderCode === 'null') {
+        $orderCode = '';
+    }
     $order = null;
     $items = [];
 
     if ($db) {
         try {
-            $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
-            $stmt->execute([$orderCode]);
-            $order = $stmt->fetch();
+            if (!empty($orderCode)) {
+                $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+                $stmt->execute([$orderCode]);
+                $order = $stmt->fetch();
+            }
 
             if (!$order) {
-                // Fallback to latest order
+                // Fetch the latest active or placed order
                 $stmt2 = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 1");
                 $order = $stmt2->fetch();
             }
@@ -466,36 +471,37 @@ if ($action === 'get_order_tracking') {
     }
 
     if (!$order) {
-        // High quality offline / initial tracking fallback
+        // High quality offline fallback with clean initial CONFIRMED state
         $order = [
             'id' => 999,
-            'order_code' => $orderCode,
-            'order_status' => 'DELIVERED',
-            'created_at' => date('Y-m-d H:i:s', strtotime('-2 hours')),
-            'estimated_arrival' => '4:30 PM',
+            'order_code' => !empty($orderCode) ? $orderCode : '#RE-10245',
+            'order_status' => 'CONFIRMED',
+            'created_at' => date('Y-m-d H:i:s', strtotime('-15 minutes')),
+            'estimated_arrival' => 'Pending Dispatch',
             'rental_days' => 2,
             'rental_end_date' => date('Y-m-d', strtotime('+2 days')),
             'owner_name' => 'Romeo Paolo Tolentino',
-            'rider_name' => 'Juan Dela Cruz',
-            'rider_phone' => '+63 917 555 4321',
-            'rider_rating' => 4.9,
-            'rider_vehicle' => 'Motorcycle • MC-8888-JY',
+            'owner_email' => 'romeopaolotolentino@gmail.com',
+            'rider_name' => null,
+            'rider_phone' => null,
+            'rider_rating' => null,
+            'rider_vehicle' => null,
             'vehicle_type' => 'Motorcycle',
-            'plate_number' => 'MC-8888-JY',
+            'plate_number' => null,
             'rider_current_lat' => 14.65150,
             'rider_current_lng' => 121.07120,
-            'eta_text' => 'Delivered to Doorstep',
+            'eta_text' => 'Awaiting Owner Preparation',
             'delivery_address' => 'Student Dormitory, San Pablo City, Laguna',
             'total_amount' => 850.00,
             'downpayment_amount' => 300.00,
             'balance_amount' => 550.00,
             'payment_type' => 'COD',
             'payment_method' => 'COD',
-            'delivery_proof_photo' => 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80',
-            'delivery_proof_recipient' => 'Pogilameg Tester',
-            'delivery_proof_time' => date('M j, Y - g:i A'),
-            'delivery_proof_note' => 'Equipment verified and received in good working condition.',
-            'assigned_rider_id' => 1
+            'delivery_proof_photo' => null,
+            'delivery_proof_recipient' => null,
+            'delivery_proof_time' => null,
+            'delivery_proof_note' => null,
+            'assigned_rider_id' => null
         ];
         $items = [
             [

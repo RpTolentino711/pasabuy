@@ -20,6 +20,33 @@
         <a href="javascript:void(0)" class="fs-9 fw-bold text-decoration-none" style="color: #5B3FA8;" onclick="toggleOrderItemsModal()">Details</a>
     </div>
 
+    <!-- Stock Owner Equipment Preparation & Action Hub -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3" id="stockOwnerTrackActionCard" style="background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%); border: 1.5px solid #D8B4FE !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs" style="width:32px; height:32px; background:linear-gradient(135deg, #5B3FA8, #341F97);">
+                    <i class="fa-solid fa-boxes-packing fs-8"></i>
+                </div>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Stock Owner Action Hub</h6>
+                    <span class="fs-9 text-muted" id="stockOwnerActionSub">Equipment Preparation & Handover</span>
+                </div>
+            </div>
+            <span class="badge rounded-pill bg-primary fw-bold fs-9" id="stockOwnerCurrentBadge">CONFIRMED</span>
+        </div>
+        <p class="fs-9 text-dark mb-2.5" id="stockOwnerActionInstruction">
+            As the equipment stock owner, inspect and package the items before calling a rider.
+        </p>
+        <div id="stockOwnerTrackBtnContainer">
+            <!-- Dynamic action buttons rendered via openTrackScreen -->
+        </div>
+        <div class="mt-2 text-center">
+            <a href="javascript:void(0)" onclick="if(typeof switchProfileSubTab==='function') switchProfileSubTab('requests'); switchTab('profile');" class="fs-9 fw-bold text-decoration-none" style="color:#5B3FA8;">
+                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Open Stock Owner Lender Dashboard
+            </a>
+        </div>
+    </div>
+
     <!-- Vertical Timeline Stages (Matching Screen 7) -->
     <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3 position-relative" id="trackTimelineContainer">
         
