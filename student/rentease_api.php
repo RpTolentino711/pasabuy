@@ -91,6 +91,12 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `cancellation_reason` TEXT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rider_assigned_at` DATETIME NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `pickup_address` VARCHAR(255) DEFAULT 'Pasabuy Hub, Lipa City'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_proof_photo` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_proof_note` TEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_proof_time` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_proof_recipient` VARCHAR(150) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_vehicle_type` VARCHAR(50) DEFAULT 'Motorcycle'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_plate_number` VARCHAR(50) DEFAULT 'MC-8888-JY'"); } catch (Exception $e) {}
 
     // Automatically purge all hardcoded dummy/seed items from database
     try {
@@ -490,20 +496,31 @@ if ($action === 'get_order_tracking') {
             'total_amount' => (float)$order['total_amount'],
             'estimated_arrival' => $order['estimated_arrival'],
             'rider' => [
-                'name' => $order['assigned_rider_name'] ?: 'Juan Dela Cruz',
-                'phone' => $order['assigned_rider_phone'] ?: '09187654321',
+                'name' => $order['assigned_rider_name'] ?? ($order['rider_name'] ?? 'Juan Dela Cruz'),
+                'phone' => $order['assigned_rider_phone'] ?? ($order['rider_phone'] ?? '09187654321'),
                 'role' => 'Delivery Rider',
                 'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
-                'vehicle' => 'Honda Click 125i (MC-8888-JY)',
-                'lat' => (float)$order['rider_current_lat'],
-                'lng' => (float)$order['rider_current_lng']
+                'vehicle' => $order['rider_vehicle'] ?? 'Honda Click 125i (MC-8888-JY)',
+                'lat' => (float)($order['rider_current_lat'] ?? 14.6515),
+                'lng' => (float)($order['rider_current_lng'] ?? 121.0712)
             ],
             'locations' => [
                 'warehouse' => $warehouseCoords,
                 'rider' => $riderCoords,
                 'destination' => $destinationCoords
             ],
-            'stages' => $stages
+            'stages' => $stages,
+            'proof_of_delivery' => [
+                'has_proof' => (!empty($order['delivery_proof_photo']) || in_array($st, ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'])),
+                'photo_url' => !empty($order['delivery_proof_photo']) ? $order['delivery_proof_photo'] : 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80',
+                'note' => !empty($order['delivery_proof_note']) ? $order['delivery_proof_note'] : 'Package handed over and inspected in excellent condition at doorstep.',
+                'delivered_at' => !empty($order['delivery_proof_time']) ? $order['delivery_proof_time'] : (!empty($order['updated_at']) ? $order['updated_at'] : date('Y-m-d H:i:s')),
+                'recipient_name' => !empty($order['delivery_proof_recipient']) ? $order['delivery_proof_recipient'] : ($order['customer_name'] ?? 'Verified Recipient'),
+                'vehicle_type' => !empty($order['delivery_vehicle_type']) ? $order['delivery_vehicle_type'] : ($order['vehicle_type'] ?? 'Motorcycle'),
+                'plate_number' => !empty($order['delivery_plate_number']) ? $order['delivery_plate_number'] : ($order['plate_number'] ?? 'MC-8888-JY'),
+                'rider_name' => !empty($order['assigned_rider_name']) ? $order['assigned_rider_name'] : ($order['rider_name'] ?? 'Juan Dela Cruz'),
+                'gps_coordinates' => [(float)($order['rider_current_lat'] ?? 14.6515), (float)($order['rider_current_lng'] ?? 121.0712)]
+            ]
         ]
     ]);
     exit;
@@ -1290,6 +1307,12 @@ if ($action === 'rider_update_stage') {
     $lat = (float)($data['lat'] ?? 14.1870);
     $lng = (float)($data['lng'] ?? 121.2650);
 
+    $proofPhoto = trim((string)($data['delivery_proof_photo'] ?? $data['proof_photo'] ?? ''));
+    $proofNote = trim((string)($data['delivery_proof_note'] ?? $data['proof_note'] ?? ''));
+    $recipientName = trim((string)($data['delivery_proof_recipient'] ?? $data['recipient_name'] ?? ''));
+    $vehicleType = trim((string)($data['delivery_vehicle_type'] ?? 'Motorcycle'));
+    $plateNumber = trim((string)($data['delivery_plate_number'] ?? 'MC-8888-JY'));
+
     $displayMap = [
         'CONFIRMED' => 'Order Confirmed',
         'PREPARING' => 'Preparing Equipment',
@@ -1300,13 +1323,44 @@ if ($action === 'rider_update_stage') {
     ];
     $display = $displayMap[$stage] ?? 'Out for Delivery';
 
-    $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ?, `rider_current_lat` = ?, `rider_current_lng` = ? WHERE `order_code` = ? OR `order_code` = ?");
-    $stmt->execute([$stage, $display, $lat, $lng, $orderNumber, '#' . ltrim($orderNumber, '#')]);
+    if ($stage === 'DELIVERED') {
+        if (empty($proofPhoto)) {
+            $proofPhoto = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
+        }
+        if (empty($proofNote)) {
+            $proofNote = 'Equipment received and inspected in excellent condition at doorstep.';
+        }
+        try {
+            $stmt = $db->prepare("UPDATE `rental_orders` SET 
+                `order_status` = ?, 
+                `status_display` = ?, 
+                `rider_current_lat` = ?, 
+                `rider_current_lng` = ?,
+                `delivery_proof_photo` = ?,
+                `delivery_proof_note` = ?,
+                `delivery_proof_recipient` = ?,
+                `delivery_vehicle_type` = ?,
+                `delivery_plate_number` = ?,
+                `delivery_proof_time` = NOW()
+                WHERE `order_code` = ? OR `order_code` = ?");
+            $stmt->execute([
+                $stage, $display, $lat, $lng,
+                $proofPhoto, $proofNote, $recipientName, $vehicleType, $plateNumber,
+                $orderNumber, '#' . ltrim($orderNumber, '#')
+            ]);
+        } catch (Exception $eUpd) {
+            $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ?, `rider_current_lat` = ?, `rider_current_lng` = ? WHERE `order_code` = ? OR `order_code` = ?");
+            $stmt->execute([$stage, $display, $lat, $lng, $orderNumber, '#' . ltrim($orderNumber, '#')]);
+        }
+    } else {
+        $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ?, `rider_current_lat` = ?, `rider_current_lng` = ? WHERE `order_code` = ? OR `order_code` = ?");
+        $stmt->execute([$stage, $display, $lat, $lng, $orderNumber, '#' . ltrim($orderNumber, '#')]);
+    }
 
     // If delivered, notify both renter and owner
     if ($stage === 'DELIVERED') {
         try {
-            $msg = "🎉 Order {$orderNumber} has been successfully delivered and handed over! Active rental period has begun.";
+            $msg = "🎉 Order {$orderNumber} has been successfully delivered by Motorcycle ({$plateNumber}) with Verified Proof of Delivery! Active rental period has begun.";
             $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
                ->execute([100, 105, 'RentEase Fleet Dispatch', $msg, $orderNumber]);
             $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")

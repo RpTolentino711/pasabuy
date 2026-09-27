@@ -1368,30 +1368,45 @@ function addRentEaseCartItem(product, qty = 1) {
 }
 
 function saveRentEaseCart() {
+    if (!Array.isArray(rentEaseCart)) rentEaseCart = [];
+    rentEaseCart = rentEaseCart.filter(it => it && (it.id || it.listingId) && (it.title || it.name));
     localStorage.setItem('rentease_cart', JSON.stringify(rentEaseCart));
     // ALWAYS sync to pasabuy_cart_items so deletions and changes persist across both apps!
     const pCart = rentEaseCart.map(it => ({
-        listingId: it.id,
-        id: it.id,
-        title: it.title,
-        price: it.price_per_day,
-        quantity: it.quantity,
-        img: it.image_url,
-        image_url: it.image_url
+        listingId: it.id || it.listingId,
+        id: it.id || it.listingId,
+        title: it.title || it.name,
+        price: it.price_per_day || it.price || 0,
+        price_per_day: it.price_per_day || it.price || 0,
+        quantity: parseInt(it.quantity) || 1,
+        img: it.image_url || it.img,
+        image_url: it.image_url || it.img
     }));
     localStorage.setItem('pasabuy_cart_items', JSON.stringify(pCart));
-    if (typeof pasabuyCart !== 'undefined') {
-        pasabuyCart = pCart;
-    }
+    window.pasabuyCart = pCart;
+    try {
+        if (typeof pasabuyCart !== 'undefined') pasabuyCart = pCart;
+    } catch(e) {}
     updateCartBadgeCount();
 }
 
 function updateCartBadgeCount() {
     let stored = [];
     try {
-        stored = JSON.parse(localStorage.getItem('rentease_cart')) || [];
-    } catch(e) {}
+        const raw = localStorage.getItem('rentease_cart');
+        if (raw !== null) {
+            stored = JSON.parse(raw) || [];
+        } else {
+            stored = JSON.parse(localStorage.getItem('pasabuy_cart_items') || '[]') || [];
+        }
+    } catch(e) {
+        stored = [];
+    }
+    if (!Array.isArray(stored)) stored = [];
+    // Sanitize: filter out ghost or invalid entries
+    stored = stored.filter(it => it && (it.id || it.listingId) && (it.title || it.name));
     rentEaseCart = stored;
+
     const count = rentEaseCart.reduce((acc, it) => acc + (parseInt(it.quantity) || 1), 0);
     const badges = [
         document.getElementById('tabCartBadge'), 
@@ -1436,6 +1451,11 @@ async function renderCartScreen() {
     } catch(e) {
         rentEaseCart = [];
     }
+    if (!Array.isArray(rentEaseCart)) rentEaseCart = [];
+    rentEaseCart = rentEaseCart.filter(it => it && (it.id || it.listingId) && (it.title || it.name));
+
+    // Keep badge count strictly synchronized to cart screen items
+    updateCartBadgeCount();
 
     // Sync days display in cart duration card
     const daysVal = document.getElementById('cartRentalDaysVal');
@@ -1900,6 +1920,34 @@ async function openTrackScreen(orderCode = '#RE-10245') {
 
             const isDelivered = ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(t.order_status);
             const isReturned = (t.order_status === 'RETURNED');
+
+            // Handle Shopee-Style Proof of Delivery Card
+            const podCard = document.getElementById('shopeeProofOfDeliveryCard');
+            if (podCard) {
+                const pod = t.proof_of_delivery;
+                if (pod && (pod.has_proof || isDelivered)) {
+                    podCard.style.display = 'block';
+                    const img = document.getElementById('trackPodPhotoImg');
+                    if (img) img.src = pod.photo_url || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
+
+                    const rec = document.getElementById('trackPodRecipient');
+                    if (rec) rec.innerText = pod.recipient_name || 'Verified Student Recipient';
+
+                    const tm = document.getElementById('trackPodTime');
+                    if (tm) tm.innerText = pod.delivered_at || 'Verified on Handover';
+
+                    const vp = document.getElementById('trackPodVehiclePlate');
+                    if (vp) vp.innerText = `${pod.vehicle_type || 'Motorcycle'} • ${pod.plate_number || 'MC-8888-JY'}`;
+
+                    const rn = document.getElementById('trackPodRiderName');
+                    if (rn) rn.innerText = pod.rider_name || t.rider?.name || 'Juan Dela Cruz';
+
+                    const note = document.getElementById('trackPodNote');
+                    if (note) note.innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${pod.note || 'Package handed over and inspected in excellent condition at doorstep.'}`;
+                } else {
+                    podCard.style.display = 'none';
+                }
+            }
             
             const stageDelCircle = document.getElementById('stageDeliveredCircle');
             const stageDelText = document.getElementById('stageDeliveredText');

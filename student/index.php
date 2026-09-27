@@ -3206,10 +3206,26 @@
 
                         window.toggleCartProduct = function (event, listingId, title, price, sellerId, imgUrl) {
                             event.stopPropagation();
-                            const existingIndex = pasabuyCart.findIndex(i => (i.listingId && i.listingId == listingId) || i.title === title);
+                            let cart = [];
+                            try {
+                                const raw = localStorage.getItem('rentease_cart');
+                                if (raw !== null) cart = JSON.parse(raw) || [];
+                                else cart = JSON.parse(localStorage.getItem('pasabuy_cart_items') || '[]') || [];
+                            } catch(e) {}
+                            const existingIndex = cart.findIndex(i => (i.id && i.id == listingId) || (i.listingId && i.listingId == listingId) || i.title === title || i.name === title);
                             if (existingIndex > -1) {
-                                pasabuyCart.splice(existingIndex, 1);
-                                localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
+                                cart.splice(existingIndex, 1);
+                                localStorage.setItem('rentease_cart', JSON.stringify(cart));
+                                const pCart = cart.map(it => ({
+                                    listingId: it.id || it.listingId,
+                                    id: it.id || it.listingId,
+                                    title: it.title || it.name,
+                                    price: it.price_per_day || it.price,
+                                    quantity: it.quantity,
+                                    img: it.image_url || it.img
+                                }));
+                                localStorage.setItem('pasabuy_cart_items', JSON.stringify(pCart));
+                                pasabuyCart = pCart;
                                 updateCartBadge();
                                 filterProducts();
                             } else {
@@ -3219,49 +3235,63 @@
 
                         function addToCartInternal(listingId, title, price, sellerId, imgUrl) {
                             const numericPrice = parseFloat(String(price).replace(/[^\d.]/g, '')) || 0;
-                            const existing = pasabuyCart.find(i => (i.listingId && i.listingId == listingId) || i.title === title);
-                            if (existing) {
-                                existing.quantity += 1;
-                            } else {
-                                pasabuyCart.push({
-                                    listingId: listingId,
+                            if (typeof window.addRentEaseCartItem === 'function') {
+                                window.addRentEaseCartItem({
+                                    id: listingId,
+                                    name: title,
                                     title: title,
+                                    price_per_day: numericPrice,
                                     price: numericPrice,
-                                    sellerId: sellerId,
+                                    image_url: imgUrl,
                                     img: imgUrl,
-                                    quantity: 1,
-                                    isSold: false
-                                });
+                                    seller_id: sellerId
+                                }, 1);
+                            } else {
+                                let cart = [];
+                                try {
+                                    cart = JSON.parse(localStorage.getItem('rentease_cart')) || [];
+                                } catch(e){}
+                                const existing = cart.find(i => (i.id && i.id == listingId) || i.title === title);
+                                if (existing) {
+                                    existing.quantity = (parseInt(existing.quantity) || 1) + 1;
+                                } else {
+                                    cart.push({
+                                        id: listingId,
+                                        title: title,
+                                        price_per_day: numericPrice,
+                                        image_url: imgUrl,
+                                        quantity: 1
+                                    });
+                                }
+                                localStorage.setItem('rentease_cart', JSON.stringify(cart));
+                                localStorage.setItem('pasabuy_cart_items', JSON.stringify(cart));
                             }
-                            localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
                             updateCartBadge();
                             filterProducts();
                         }
 
                         window.updateCartBadge = function () {
-                            const badge1 = document.getElementById('cartCountBadge');
-                            const badge2 = document.getElementById('homeCartCountBadge');
-                            const allProducts = window.allProductsCache || [];
+                            if (typeof window.updateCartBadgeCount === 'function') {
+                                window.updateCartBadgeCount();
+                                return;
+                            }
+                            let count = 0;
+                            try {
+                                const raw = localStorage.getItem('rentease_cart') || localStorage.getItem('pasabuy_cart_items');
+                                const list = JSON.parse(raw) || [];
+                                count = list.filter(i => i && (i.id || i.listingId)).reduce((sum, i) => sum + (parseInt(i.quantity) || 1), 0);
+                            } catch(e) {}
 
-                            pasabuyCart.forEach(item => {
-                                const liveP = allProducts.find(p => p.id == item.listingId || p.title === item.title);
-                                if (liveP && (liveP.status === 'SOLD' || liveP.status === 'RESERVED')) {
-                                    item.isSold = true;
-                                    item.status = liveP.status;
-                                } else {
-                                    item.isSold = false;
-                                }
-                            });
-
-                            localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
-
-                            const activeItems = pasabuyCart.filter(i => !i.isSold);
-                            const totalQty = activeItems.reduce((sum, i) => sum + i.quantity, 0);
-
-                            [badge1, badge2].forEach(b => {
+                            const badges = [
+                                document.getElementById('cartCountBadge'),
+                                document.getElementById('homeCartCountBadge'),
+                                document.getElementById('headerCartBadge'),
+                                document.getElementById('tabCartBadge')
+                            ];
+                            badges.forEach(b => {
                                 if (b) {
-                                    b.innerText = totalQty;
-                                    b.style.display = totalQty > 0 ? 'inline-block' : 'none';
+                                    b.innerText = count;
+                                    b.style.display = count > 0 ? 'inline-block' : 'none';
                                 }
                             });
                         };
