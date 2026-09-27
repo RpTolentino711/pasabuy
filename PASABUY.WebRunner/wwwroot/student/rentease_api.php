@@ -103,6 +103,7 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `pickup_proof_time` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_confirmed` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_received_time` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rider_broadcast_at` DATETIME NULL"); } catch (Exception $e) {}
 
     // Support step-by-step reporting to admin across all workflow stages
     try { $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `stage` VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
@@ -864,6 +865,10 @@ if ($action === 'get_order_tracking') {
         'tracking' => [
             'order_code' => $order['order_code'],
             'order_status' => $st,
+            'rider_broadcast_at' => $order['rider_broadcast_at'] ?? null,
+            'cooldown_remaining_seconds' => (!empty($order['rider_broadcast_at']) && $st === 'LOOKING_FOR_RIDER')
+                ? max(0, 600 - (time() - strtotime($order['rider_broadcast_at'])))
+                : 0,
             'show_map' => $showMap,
             'is_picked_up' => $isPickedUp,
             'rental_days' => $order['rental_days'] ?? 1,
@@ -1531,8 +1536,13 @@ if ($action === 'update_owner_order_status') {
             $statusDisplay = 'Returned to Owner Stock';
         }
 
-        $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ? WHERE `id` = ?");
-        $upd->execute([$newStatus, $statusDisplay, $oId]);
+        if ($newStatus === 'LOOKING_FOR_RIDER') {
+            $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ?, `rider_broadcast_at` = NOW() WHERE `id` = ?");
+            $upd->execute([$newStatus, $statusDisplay, $oId]);
+        } else {
+            $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ? WHERE `id` = ?");
+            $upd->execute([$newStatus, $statusDisplay, $oId]);
+        }
 
         // If returned, automatically restock equipment inventory
         if ($newStatus === 'RETURNED') {
@@ -1970,8 +1980,29 @@ if ($action === 'stock_owner_notify_riders_again' || $action === 'rebroadcast_to
         exit;
     }
 
+    // Anti-spam 10-minute (600s) cooldown verification
+    $chkStmt = $db->prepare("SELECT `id`, `order_status`, `rider_broadcast_at` FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $chkStmt->execute([$orderCode]);
+    $existingOrder = $chkStmt->fetch();
+
+    if ($existingOrder && !empty($existingOrder['rider_broadcast_at'])) {
+        $secondsSinceBroadcast = time() - strtotime($existingOrder['rider_broadcast_at']);
+        if ($secondsSinceBroadcast < 600) {
+            $remaining = 600 - $secondsSinceBroadcast;
+            $mins = ceil($remaining / 60);
+            echo json_encode([
+                'success' => false,
+                'cooldown_active' => true,
+                'remaining_seconds' => $remaining,
+                'message' => "⏳ Anti-spam protection: Please wait {$mins} minute(s) before re-notifying delivery riders, or cancel the request to start over."
+            ]);
+            exit;
+        }
+    }
+
     $upd = $db->prepare("UPDATE `rental_orders` SET 
         `order_status` = 'LOOKING_FOR_RIDER', 
+        `rider_broadcast_at` = NOW(),
         `cancellation_reason` = NULL, 
         `assigned_rider_id` = NULL, 
         `rider_name` = NULL, 
@@ -1992,7 +2023,60 @@ if ($action === 'stock_owner_notify_riders_again' || $action === 'rebroadcast_to
 
     echo json_encode([
         'success' => true,
+        'remaining_seconds' => 600,
         'message' => "🚀 Delivery broadcast re-sent to all fleet riders for Order {$orderCode}!"
+    ]);
+    exit;
+}
+
+// Stock Owner Cancels Rider Request (Reverts to Step 2 PREPARING and clears cooldown)
+if ($action === 'cancel_rider_request') {
+    $orderCode = trim((string)($data['order_code'] ?? $data['order_number'] ?? ''));
+
+    if (!$orderCode && isset($data['order_id'])) {
+        $sFind = $db->prepare("SELECT `order_code` FROM `rental_orders` WHERE `id` = ?");
+        $sFind->execute([(int)$data['order_id']]);
+        $orderCode = $sFind->fetchColumn();
+    }
+
+    if (!$orderCode) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Order code is required.']);
+        exit;
+    }
+
+    $chkStmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $chkStmt->execute([$orderCode]);
+    $order = $chkStmt->fetch();
+
+    if (!$order) {
+        echo json_encode(['success' => false, 'message' => 'Order not found.']);
+        exit;
+    }
+
+    $upd = $db->prepare("UPDATE `rental_orders` SET 
+        `order_status` = 'PREPARING', 
+        `status_display` = 'Equipment Packaging in Progress',
+        `rider_broadcast_at` = NULL,
+        `assigned_rider_id` = NULL, 
+        `rider_name` = NULL, 
+        `rider_phone` = NULL, 
+        `rider_vehicle` = NULL, 
+        `assigned_rider_name` = NULL, 
+        `assigned_rider_phone` = NULL,
+        `cancellation_reason` = 'Stock owner cancelled rider broadcast' 
+        WHERE `id` = ?");
+    $upd->execute([(int)$order['id']]);
+
+    try {
+        $cancelNotice = "⚠️ Stock owner {$order['owner_name']} cancelled the fleet rider pickup dispatch for Order {$orderCode}. The order has returned to packaging. Stock owner can request again whenever ready.";
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+           ->execute([104, 105, 'Stock Owner', $cancelNotice, $orderCode]);
+    } catch (Exception $eChat) {}
+
+    echo json_encode([
+        'success' => true,
+        'message' => "Delivery rider request cancelled for Order {$orderCode}. The order has reverted to packaging stage so you can request a rider again whenever ready."
     ]);
     exit;
 }

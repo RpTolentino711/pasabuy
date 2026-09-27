@@ -392,3 +392,77 @@
         </div>
     </div>
 </div>
+
+<!-- Messenger-Styled Notify Rider Confirmation Modal -->
+<div class="modal fade" id="notifyRiderConfirmModal" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 360px;">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden text-center position-relative">
+            <!-- Messenger Header Accent Gradient -->
+            <div style="height: 6px; background: linear-gradient(90deg, #00C6FF, #0078FF, #A033FF);"></div>
+            <div class="modal-body p-4 pt-3">
+                <!-- Messenger Icon with Arrow -->
+                <div class="position-relative d-inline-block mb-2.5">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-lg mx-auto" 
+                         style="width: 66px; height: 66px; background: linear-gradient(135deg, #00B2FE 0%, #006AFF 50%, #A033FF 100%);">
+                        <i class="fa-solid fa-paper-plane fs-3" style="transform: rotate(15deg) translate(-2px, 2px);"></i>
+                    </div>
+                    <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle p-1" style="width:14px; height:14px;"></span>
+                </div>
+                
+                <h6 class="fw-extrabold text-dark fs-7 mb-1" id="notifyRiderModalTitle">Notifying Rider</h6>
+                <div class="d-inline-block badge rounded-pill bg-light text-primary border px-2.5 py-1 mb-2.5 fw-bold fs-9" id="notifyRiderModalBadge">
+                    Order <span id="notifyRiderModalOrderCode">#RE-10245</span>
+                </div>
+                
+                <p class="fs-8 text-secondary mb-3 px-1" id="notifyRiderModalPrompt">
+                    Notifying rider: Are you sure you want to broadcast this pickup request to nearby fleet couriers?
+                </p>
+                
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-3 py-2 text-muted fw-bold fs-8 border flex-grow-1" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn text-white rounded-pill px-4 py-2 fw-extrabold fs-8 shadow-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1.5" 
+                            id="btnConfirmNotifyRiderGo"
+                            style="background: linear-gradient(135deg, #0084FF 0%, #006AFF 100%); border: none;"
+                            onclick="confirmNotifyRiderBroadcast()">
+                        <span>Go</span>
+                        <i class="fa-solid fa-paper-plane fs-9"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Rider Request Confirmation Modal -->
+<div class="modal fade" id="cancelRiderRequestModal" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 360px;">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden text-center position-relative">
+            <div style="height: 6px; background: linear-gradient(90deg, #EF4444, #F97316);"></div>
+            <div class="modal-body p-4 pt-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-danger bg-danger-subtle mx-auto mb-2.5" style="width: 58px; height: 58px;">
+                    <i class="fa-solid fa-ban fs-3"></i>
+                </div>
+                <h6 class="fw-extrabold text-dark fs-7 mb-1">Cancel Rider Request?</h6>
+                <div class="d-inline-block badge rounded-pill bg-light text-danger border px-2.5 py-1 mb-2.5 fw-bold fs-9">
+                    Order <span id="cancelRiderModalOrderCode">#RE-10245</span>
+                </div>
+                <p class="fs-8 text-secondary mb-3 px-1">
+                    Are you sure? This will cancel the fleet broadcast and return the order to equipment packaging. You can request a rider again whenever you are ready.
+                </p>
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-3 py-2 text-muted fw-bold fs-8 border flex-grow-1" data-bs-dismiss="modal">
+                        Keep Waiting
+                    </button>
+                    <button type="button" class="btn btn-danger rounded-pill px-3 py-2 fw-extrabold fs-8 shadow-sm flex-grow-1" 
+                            id="btnConfirmCancelRider"
+                            onclick="confirmCancelRiderRequest()">
+                        Yes, Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

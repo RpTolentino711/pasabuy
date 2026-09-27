@@ -1141,19 +1141,24 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                                     <i class="fa-solid fa-eye me-1"></i> Details
                                 </button>
                             ` : status === 'PREPARING' ? `
-                                <button class="btn btn-sm text-white rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background:#5B3FA8; border:none;" onclick="updateOwnerOrderStatus(${order.id}, '${order.order_code}', 'LOOKING_FOR_RIDER')">
+                                <button class="btn btn-sm text-white rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background:#5B3FA8; border:none;" onclick="openNotifyRiderModal('${order.order_code}', false)">
                                     <i class="fa-solid fa-satellite-dish me-1"></i> Packaged & Notify Rider to Pick Up
                                 </button>
                                 <button class="btn btn-sm btn-light rounded-pill py-1.5 px-3 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${order.order_code}')">
                                     <i class="fa-solid fa-eye me-1"></i> Details
                                 </button>
                             ` : status === 'LOOKING_FOR_RIDER' ? `
-                                <div class="d-flex align-items-center justify-content-between w-100 gap-2">
-                                    <span class="badge bg-warning-subtle text-warning-emphasis fs-9 py-1.5 px-2.5 rounded-pill fw-bold">
-                                        <i class="fa-solid fa-satellite-dish fa-beat me-1"></i> Notified Riders • Waiting Acceptance
-                                    </span>
-                                    <button class="btn btn-sm btn-outline-warning rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="stockOwnerNotifyRidersAgain('${order.order_code}')">
-                                        <i class="fa-solid fa-rotate me-1"></i> Re-notify
+                                <div class="d-flex flex-column w-100 gap-1.5">
+                                    <div class="d-flex align-items-center justify-content-between w-100 gap-2">
+                                        <span class="badge bg-warning-subtle text-warning-emphasis fs-9 py-1.5 px-2.5 rounded-pill fw-bold">
+                                            <i class="fa-solid fa-satellite-dish fa-beat me-1"></i> Notified Riders • Waiting Acceptance
+                                        </span>
+                                        <button class="btn btn-sm btn-outline-warning rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="openNotifyRiderModal('${order.order_code}', true)">
+                                            <i class="fa-solid fa-rotate me-1"></i> Re-notify
+                                        </button>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill py-1 px-2.5 fs-9 fw-bold w-100" onclick="promptCancelRiderRequest('${order.order_code}')">
+                                        <i class="fa-solid fa-ban me-1"></i> Cancel Rider Request
                                     </button>
                                 </div>
                             ` : status === 'PICKUP' ? `
@@ -1419,9 +1424,9 @@ window.ownerPrepareEquipment = async function(orderCode) {
     await updateOwnerOrderStatus(0, orderCode, 'PREPARING');
 };
 
-window.ownerFinishPackagingAndNotifyRider = async function(orderCode) {
+window.ownerFinishPackagingAndNotifyRider = function(orderCode) {
     if (!orderCode) orderCode = currentTrackingOrderCode || '#RE-10245';
-    await updateOwnerOrderStatus(0, orderCode, 'LOOKING_FOR_RIDER');
+    openNotifyRiderModal(orderCode, false);
 };
 
 window.openChatWithRenter = function (customerName, customerPhone, orderCode) {
@@ -2008,24 +2013,209 @@ window.updateSellPostingFeeTier = function(price) {
     }
 };
 
-window.stockOwnerNotifyRidersAgain = async function() {
-    const orderCode = currentTrackingOrderCode || '#RE-10245';
+window._cooldownIntervals = window._cooldownIntervals || {};
+window._pendingNotifyOrderCode = null;
+window._isPendingRebroadcast = false;
+window._pendingCancelOrderCode = null;
+
+window.formatMMSS = function(sec) {
+    if (sec <= 0) return '00:00';
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+
+window.startCooldownTicker = function(orderCode, remainingSeconds) {
+    const cleanCode = (orderCode || '').replace(/[^a-zA-Z0-9]/g, '');
+    if (window._cooldownIntervals[cleanCode]) {
+        clearInterval(window._cooldownIntervals[cleanCode]);
+    }
+    let currentSec = remainingSeconds;
+    window._cooldownIntervals[cleanCode] = setInterval(() => {
+        currentSec--;
+        const timerSpan = document.getElementById(`cooldownTimer_${cleanCode}`);
+        if (timerSpan) {
+            timerSpan.innerText = formatMMSS(currentSec);
+        }
+        if (currentSec <= 0) {
+            clearInterval(window._cooldownIntervals[cleanCode]);
+            delete window._cooldownIntervals[cleanCode];
+            const btnContainer = document.getElementById('stockOwnerTrackBtnContainer');
+            if (btnContainer && (currentTrackingOrderCode === orderCode || !currentTrackingOrderCode)) {
+                btnContainer.innerHTML = `
+                    <button class="btn btn-outline-warning w-100 rounded-pill py-2 fw-bold fs-8 shadow-xs" onclick="openNotifyRiderModal('${orderCode}', true)">
+                        <i class="fa-solid fa-rotate me-1"></i> Re-notify Fleet Delivery Riders
+                    </button>
+                    <button class="btn btn-outline-danger w-100 rounded-pill py-2 fw-bold fs-8 mt-2" onclick="promptCancelRiderRequest('${orderCode}')">
+                        <i class="fa-solid fa-ban me-1"></i> Cancel Rider Request
+                    </button>
+                `;
+            }
+        }
+    }, 1000);
+};
+
+window.stopCooldownTicker = function(orderCode) {
+    const cleanCode = (orderCode || '').replace(/[^a-zA-Z0-9]/g, '');
+    if (window._cooldownIntervals && window._cooldownIntervals[cleanCode]) {
+        clearInterval(window._cooldownIntervals[cleanCode]);
+        delete window._cooldownIntervals[cleanCode];
+    }
+};
+
+window.openNotifyRiderModal = function(orderCode, isRebroadcast = false) {
+    const code = orderCode || currentTrackingOrderCode || '#RE-10245';
+    window._pendingNotifyOrderCode = code;
+    window._isPendingRebroadcast = !!isRebroadcast;
+
+    const modalTitle = document.getElementById('notifyRiderModalTitle');
+    const modalPrompt = document.getElementById('notifyRiderModalPrompt');
+    const modalCode = document.getElementById('notifyRiderModalOrderCode');
+    const btnGo = document.getElementById('btnConfirmNotifyRiderGo');
+
+    if (modalCode) modalCode.innerText = code;
+    if (modalTitle) {
+        modalTitle.innerText = isRebroadcast ? 'Re-notifying Rider' : 'Notifying Rider';
+    }
+    if (modalPrompt) {
+        modalPrompt.innerText = isRebroadcast
+            ? 'Notifying rider: Are you sure you want to re-broadcast this pickup request to nearby fleet couriers?'
+            : 'Notifying rider: Are you sure you want to broadcast this pickup request to nearby fleet couriers?';
+    }
+    if (btnGo) {
+        btnGo.disabled = false;
+        btnGo.innerHTML = `<span>Go</span> <i class="fa-solid fa-paper-plane fs-9"></i>`;
+    }
+
+    const modalEl = document.getElementById('notifyRiderConfirmModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+        m.show();
+    } else {
+        if (confirm(`Notifying rider: Are you sure you want to ${isRebroadcast ? 're-broadcast' : 'broadcast'} this pickup request to nearby fleet couriers?`)) {
+            confirmNotifyRiderBroadcast();
+        }
+    }
+};
+
+window.confirmNotifyRiderBroadcast = async function() {
+    const code = window._pendingNotifyOrderCode || currentTrackingOrderCode || '#RE-10245';
+    const isRebroadcast = !!window._isPendingRebroadcast;
+
+    const btnGo = document.getElementById('btnConfirmNotifyRiderGo');
+    if (btnGo) {
+        btnGo.disabled = true;
+        btnGo.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Sending...`;
+    }
+
+    const modalEl = document.getElementById('notifyRiderConfirmModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const m = bootstrap.Modal.getInstance(modalEl);
+        if (m) m.hide();
+    }
+
     try {
-        const res = await fetch(getRentEaseApiUrl('stock_owner_notify_riders_again'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order_code: orderCode })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert(`🚀 Broadcast Re-sent!\n\nDelivery request for Order ${orderCode} has been broadcasted to all active fleet riders.`);
-            openTrackScreen(orderCode);
+        if (isRebroadcast) {
+            const res = await fetch(getRentEaseApiUrl('stock_owner_notify_riders_again'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_code: code })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('rentease_broadcast_time_' + code, Date.now());
+                alert(`🚀 Broadcast Re-sent!\n\nDelivery request for Order ${code} has been broadcasted to all active fleet couriers.`);
+                openTrackScreen(code);
+                if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
+            } else {
+                if (data.remaining_seconds) {
+                    const elapsedEquivalent = 600 - data.remaining_seconds;
+                    localStorage.setItem('rentease_broadcast_time_' + code, Date.now() - (elapsedEquivalent * 1000));
+                }
+                alert(data.message || 'Error re-notifying delivery riders.');
+                openTrackScreen(code);
+            }
         } else {
-            alert(data.message || 'Error notifying delivery riders.');
+            // First time notifying rider (transitions to LOOKING_FOR_RIDER)
+            const res = await fetch(getRentEaseApiUrl('update_owner_order_status'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update_owner_order_status',
+                    order_code: code,
+                    new_status: 'LOOKING_FOR_RIDER'
+                })
+            });
+            const data = await res.json();
+            if (data && data.success) {
+                localStorage.setItem('rentease_broadcast_time_' + code, Date.now());
+                alert(`🚀 Dispatch Broadcasted!\n\nOrder ${code} is packaged. Nearby fleet delivery riders have been notified to accept the pickup.`);
+                if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
+                if (typeof loadRentEaseCatalog === 'function') loadRentEaseCatalog();
+                openTrackScreen(code);
+            } else {
+                alert(data?.message || 'Failed to broadcast rider request.');
+            }
         }
     } catch(e) {
-        alert('Network error notifying delivery riders.');
+        console.error(e);
+        alert('Network connection error while notifying riders.');
     }
+};
+
+window.promptCancelRiderRequest = function(orderCode) {
+    const code = orderCode || currentTrackingOrderCode || '#RE-10245';
+    window._pendingCancelOrderCode = code;
+
+    const modalCode = document.getElementById('cancelRiderModalOrderCode');
+    if (modalCode) modalCode.innerText = code;
+
+    const modalEl = document.getElementById('cancelRiderRequestModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+        m.show();
+    } else {
+        if (confirm(`Cancel Rider Request: Are you sure you want to cancel the rider dispatch for Order ${code} and return to packaging stage?`)) {
+            confirmCancelRiderRequest();
+        }
+    }
+};
+
+window.confirmCancelRiderRequest = async function() {
+    const code = window._pendingCancelOrderCode || currentTrackingOrderCode || '#RE-10245';
+
+    const modalEl = document.getElementById('cancelRiderRequestModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const m = bootstrap.Modal.getInstance(modalEl);
+        if (m) m.hide();
+    }
+
+    stopCooldownTicker(code);
+    localStorage.removeItem('rentease_broadcast_time_' + code);
+
+    try {
+        const res = await fetch(getRentEaseApiUrl('cancel_rider_request'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_code: code })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+            alert(`✅ ${data.message || 'Rider request cancelled.'}`);
+            openTrackScreen(code);
+            if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
+        } else {
+            alert(data?.message || 'Failed to cancel rider request.');
+        }
+    } catch(e) {
+        console.error(e);
+        alert('Network error while cancelling rider request.');
+    }
+};
+
+window.stockOwnerNotifyRidersAgain = function(orderCode) {
+    const code = orderCode || currentTrackingOrderCode || '#RE-10245';
+    openNotifyRiderModal(code, true);
 };
 
 async function openTrackScreen(orderCode = '#RE-10245') {
@@ -2140,11 +2330,40 @@ async function openTrackScreen(orderCode = '#RE-10245') {
                     if (ownerSub) ownerSub.innerText = 'Step 3: Delivery Broadcasted • Awaiting Rider';
                     if (ownerInst) ownerInst.innerText = 'Equipment is packaged! Delivery request has been broadcasted to nearby fleet riders.';
                     if (ownerBtnCont) {
-                        ownerBtnCont.innerHTML = `
-                            <button class="btn btn-outline-warning w-100 rounded-pill py-2 fw-bold fs-8" onclick="stockOwnerNotifyRidersAgain('${actualCode}')">
-                                <i class="fa-solid fa-rotate me-1"></i> Re-notify Fleet Delivery Riders
-                            </button>
-                        `;
+                        let cooldownRemaining = 0;
+                        if (typeof t.cooldown_remaining_seconds === 'number' && t.cooldown_remaining_seconds > 0) {
+                            cooldownRemaining = t.cooldown_remaining_seconds;
+                        } else {
+                            const localSaved = localStorage.getItem('rentease_broadcast_time_' + actualCode);
+                            if (localSaved) {
+                                const elapsed = Math.floor((Date.now() - parseInt(localSaved, 10)) / 1000);
+                                if (elapsed < 600) {
+                                    cooldownRemaining = 600 - elapsed;
+                                }
+                            }
+                        }
+
+                        const cleanCode = actualCode.replace(/[^a-zA-Z0-9]/g, '');
+                        if (cooldownRemaining > 0) {
+                            ownerBtnCont.innerHTML = `
+                                <button class="btn btn-light border text-muted w-100 rounded-pill py-2 fw-bold fs-8" disabled id="stockOwnerReNotifyBtn_${cleanCode}">
+                                    <i class="fa-solid fa-hourglass-half text-warning me-1"></i> Re-notify Available in <span id="cooldownTimer_${cleanCode}" class="text-dark fw-extrabold">${formatMMSS(cooldownRemaining)}</span>
+                                </button>
+                                <button class="btn btn-outline-danger w-100 rounded-pill py-2 fw-bold fs-8 mt-2" onclick="promptCancelRiderRequest('${actualCode}')">
+                                    <i class="fa-solid fa-ban me-1"></i> Cancel Rider Request
+                                </button>
+                            `;
+                            startCooldownTicker(actualCode, cooldownRemaining);
+                        } else {
+                            ownerBtnCont.innerHTML = `
+                                <button class="btn btn-outline-warning w-100 rounded-pill py-2 fw-bold fs-8 shadow-xs" onclick="openNotifyRiderModal('${actualCode}', true)">
+                                    <i class="fa-solid fa-rotate me-1"></i> Re-notify Fleet Delivery Riders
+                                </button>
+                                <button class="btn btn-outline-danger w-100 rounded-pill py-2 fw-bold fs-8 mt-2" onclick="promptCancelRiderRequest('${actualCode}')">
+                                    <i class="fa-solid fa-ban me-1"></i> Cancel Rider Request
+                                </button>
+                            `;
+                        }
                     }
                 } else if (t.order_status === 'PICKUP') {
                     if (ownerSub) ownerSub.innerText = 'Step 4: Driver Assigned • En Route for Pickup';
