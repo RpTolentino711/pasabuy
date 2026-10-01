@@ -1871,6 +1871,14 @@
                             let localConvs = [];
                             try { localConvs = JSON.parse(localStorage.getItem('pasabuy_local_chat_heads')) || []; } catch (e) { }
 
+                            // Purge any fleet dispatch or rider chat heads from browser storage
+                            localConvs = localConvs.filter(lc => {
+                                const pName = (lc.partnerName || '').toLowerCase();
+                                const item = (lc.itemTitle || '').toLowerCase();
+                                return !pName.includes('dispatch') && !pName.includes('rider') && !item.includes('rider');
+                            });
+                            try { localStorage.setItem('pasabuy_local_chat_heads', JSON.stringify(localConvs)); } catch (e) { }
+
                             localConvs.forEach(lc => {
                                 if (lc.myId && lc.myId != currentUserId) return;
                                 if (!convs.some(c => (c.PartnerId && c.PartnerId == lc.partnerId) || c.SenderId == lc.partnerId || c.ReceiverId == lc.partnerId)) {
@@ -1889,7 +1897,13 @@
                             convs = convs.filter(c => {
                                 const pId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
                                 const pName = (c.PartnerName || c.SenderName || '').toLowerCase().trim();
-                                return pId != currentUserId && (myName === '' || pName !== myName);
+                                const item = (c.ItemTitle || '').toLowerCase();
+                                return pId != currentUserId 
+                                    && (myName === '' || pName !== myName)
+                                    && !pName.includes('dispatch')
+                                    && !pName.includes('rider')
+                                    && !item.includes('dispatch')
+                                    && !item.includes('rider');
                             });
 
                             if (!Array.isArray(convs) || convs.length === 0) {

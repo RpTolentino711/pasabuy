@@ -562,15 +562,26 @@ if ($action === 'chat_conversations') {
       PRIMARY KEY (`Id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // Auto-clean any obsolete fleet dispatch or rider messages from database
+    try {
+        $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100");
+    } catch (Exception $eClean) {}
+
     $stmt = $db->prepare("SELECT c1.*, 
         spSender.FirstName as SenderFirstName, spSender.LastName as SenderLastName, spSender.ProfileImage as SenderProfileImage,
         spReceiver.FirstName as ReceiverFirstName, spReceiver.LastName as ReceiverLastName, spReceiver.ProfileImage as ReceiverProfileImage
         FROM ChatMessages c1 
         INNER JOIN (
-            SELECT MAX(Id) as max_id FROM ChatMessages WHERE SenderId IN (1, ?) OR ReceiverId IN (1, ?) GROUP BY LEAST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId)), GREATEST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId))
+            SELECT MAX(Id) as max_id FROM ChatMessages 
+            WHERE (SenderId IN (1, ?) OR ReceiverId IN (1, ?)) 
+              AND SenderName NOT LIKE '%Fleet Dispatch%' 
+              AND SenderName NOT LIKE '%Rider%' 
+              AND SenderId != 100 
+            GROUP BY LEAST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId)), GREATEST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId))
         ) c2 ON c1.Id = c2.max_id 
         LEFT JOIN StudentProfiles spSender ON c1.SenderId = spSender.UserId
         LEFT JOIN StudentProfiles spReceiver ON c1.ReceiverId = spReceiver.UserId
+        WHERE c1.SenderName NOT LIKE '%Fleet Dispatch%' AND c1.SenderName NOT LIKE '%Rider%' AND c1.SenderId != 100
         ORDER BY c1.CreatedAt DESC");
     $stmt->execute([$userId, $userId]);
     $convs = $stmt->fetchAll();
@@ -588,6 +599,18 @@ if ($action === 'chat_conversations') {
             $c['PartnerAvatar'] = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
         }
     }
+
+    // Strictly filter out any rider or fleet dispatch conversations
+    $convs = array_values(array_filter($convs, function($c) {
+        $pName = strtolower($c['PartnerName'] ?? '');
+        $sName = strtolower($c['SenderName'] ?? '');
+        $item = strtolower($c['ItemTitle'] ?? '');
+        return !str_contains($pName, 'dispatch') 
+            && !str_contains($pName, 'rider') 
+            && !str_contains($sName, 'dispatch') 
+            && !str_contains($sName, 'rider')
+            && !str_contains($item, 'dispatch');
+    }));
 
     echo json_encode($convs);
     exit;

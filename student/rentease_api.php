@@ -72,6 +72,7 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_id` INT DEFAULT 104"); } catch (Exception $e) {}
+    try { $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100"); } catch (Exception $e) {}
 
     // Auto-migrate rental_orders fields for duration, COD downpayment, owner and return status
     try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}

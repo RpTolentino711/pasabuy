@@ -31,48 +31,6 @@
             --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
         }
 
-        /* Parabolic Fly to Cart Animation */
-        .fly-to-cart-element {
-            position: fixed;
-            z-index: 100000;
-            pointer-events: none;
-            border-radius: 50%;
-            background-size: cover;
-            background-position: center;
-            box-shadow: 0 10px 25px rgba(91, 63, 168, 0.45);
-            border: 2.5px solid #5B3FA8;
-            transition: transform 0.65s cubic-bezier(0.2, 0.85, 0.25, 1), opacity 0.65s ease, border-radius 0.65s ease;
-        }
-
-        @keyframes cartBouncePop {
-            0% { transform: scale(1); }
-            30% { transform: scale(1.4) rotate(-12deg); }
-            60% { transform: scale(0.85) rotate(8deg); }
-            80% { transform: scale(1.15) rotate(-3deg); }
-            100% { transform: scale(1) rotate(0deg); }
-        }
-        .cart-bounce-pop {
-            animation: cartBouncePop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-        }
-
-        @keyframes cartBadgeFlash {
-            0% { transform: scale(1); }
-            40% { transform: scale(1.7); background-color: #22c55e !important; box-shadow: 0 0 12px rgba(34, 197, 94, 0.8); }
-            100% { transform: scale(1); }
-        }
-        .cart-badge-pop {
-            animation: cartBadgeFlash 0.45s ease-out !important;
-        }
-
-        @keyframes pulseGlowRed {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-        .badge-pulse-glow {
-            animation: pulseGlowRed 1.8s infinite;
-        }
-
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: #0F172A;
@@ -119,6 +77,15 @@
 
         .app-logo i {
             color: var(--accent);
+        }
+
+        @keyframes pulseGlowRed {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .badge-pulse-glow {
+            animation: pulseGlowRed 1.8s infinite;
         }
 
         .badge-verified {
@@ -427,7 +394,7 @@
                 <span>Messages</span>
                 <span class="badge rounded-pill bg-danger position-absolute" id="tabMessagesBadge" style="top:2px; right:10px; font-size:0.6rem; padding:2px 5px; display:none; box-shadow:0 2px 4px rgba(220,53,69,0.5);">0</span>
             </div>
-            <div class="tab-item position-relative" onclick="switchTab('profile')" id="tabNavProfile" title="My Profile & Rental Hub">
+            <div class="tab-item position-relative" onclick="switchTab('profile')" id="tabNavProfile">
                 <i class="fa-solid fa-user"></i>
                 <span>Profile</span>
                 <span class="badge rounded-pill bg-danger position-absolute badge-pulse-glow" id="tabProfileBadge" style="top:2px; right:10px; font-size:0.6rem; padding:2px 5px; display:none; box-shadow:0 2px 4px rgba(220,53,69,0.5);">0</span>
@@ -1798,11 +1765,6 @@
                                         if (inst) inst.hide();
                                     }
                                 });
-                                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                                document.body.classList.remove('modal-open');
-                                document.body.style.removeProperty('overflow');
-                                document.body.style.removeProperty('padding-right');
-
                                 const tabCartEl = document.getElementById('tabCart');
                                 if (tabCartEl) tabCartEl.style.display = 'block';
                                 if (typeof showCartScreen === 'function') showCartScreen();
@@ -1837,12 +1799,6 @@
                                 filterProducts();
                             } else if (tabName === 'wanted') {
                                 loadWantedPosts();
-                            } else if (tabName === 'profile') {
-                                if (typeof window.loadOwnerRentalDashboard === 'function') {
-                                    window.loadOwnerRentalDashboard();
-                                } else if (typeof window.loadUserRentedOutItems === 'function') {
-                                    window.loadUserRentedOutItems();
-                                }
                             }
                         }
 
@@ -1850,11 +1806,6 @@
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
                             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
-
-                            // Check owner incoming rental orders notification badge
-                            if (typeof window.checkOwnerRentalNotifications === 'function') {
-                                window.checkOwnerRentalNotifications();
-                            }
 
                             try {
                                 const res = await fetch(`/pasabuy_api.php?action=get_unread&user_id=${currentUserId}`);
@@ -1920,6 +1871,14 @@
                             let localConvs = [];
                             try { localConvs = JSON.parse(localStorage.getItem('pasabuy_local_chat_heads')) || []; } catch (e) { }
 
+                            // Purge any fleet dispatch or rider chat heads from browser storage
+                            localConvs = localConvs.filter(lc => {
+                                const pName = (lc.partnerName || '').toLowerCase();
+                                const item = (lc.itemTitle || '').toLowerCase();
+                                return !pName.includes('dispatch') && !pName.includes('rider') && !item.includes('rider');
+                            });
+                            try { localStorage.setItem('pasabuy_local_chat_heads', JSON.stringify(localConvs)); } catch (e) { }
+
                             localConvs.forEach(lc => {
                                 if (lc.myId && lc.myId != currentUserId) return;
                                 if (!convs.some(c => (c.PartnerId && c.PartnerId == lc.partnerId) || c.SenderId == lc.partnerId || c.ReceiverId == lc.partnerId)) {
@@ -1938,7 +1897,13 @@
                             convs = convs.filter(c => {
                                 const pId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
                                 const pName = (c.PartnerName || c.SenderName || '').toLowerCase().trim();
-                                return pId != currentUserId && (myName === '' || pName !== myName);
+                                const item = (c.ItemTitle || '').toLowerCase();
+                                return pId != currentUserId 
+                                    && (myName === '' || pName !== myName)
+                                    && !pName.includes('dispatch')
+                                    && !pName.includes('rider')
+                                    && !item.includes('dispatch')
+                                    && !item.includes('rider');
                             });
 
                             if (!Array.isArray(convs) || convs.length === 0) {
@@ -3206,26 +3171,10 @@
 
                         window.toggleCartProduct = function (event, listingId, title, price, sellerId, imgUrl) {
                             event.stopPropagation();
-                            let cart = [];
-                            try {
-                                const raw = localStorage.getItem('rentease_cart');
-                                if (raw !== null) cart = JSON.parse(raw) || [];
-                                else cart = JSON.parse(localStorage.getItem('pasabuy_cart_items') || '[]') || [];
-                            } catch(e) {}
-                            const existingIndex = cart.findIndex(i => (i.id && i.id == listingId) || (i.listingId && i.listingId == listingId) || i.title === title || i.name === title);
+                            const existingIndex = pasabuyCart.findIndex(i => (i.listingId && i.listingId == listingId) || i.title === title);
                             if (existingIndex > -1) {
-                                cart.splice(existingIndex, 1);
-                                localStorage.setItem('rentease_cart', JSON.stringify(cart));
-                                const pCart = cart.map(it => ({
-                                    listingId: it.id || it.listingId,
-                                    id: it.id || it.listingId,
-                                    title: it.title || it.name,
-                                    price: it.price_per_day || it.price,
-                                    quantity: it.quantity,
-                                    img: it.image_url || it.img
-                                }));
-                                localStorage.setItem('pasabuy_cart_items', JSON.stringify(pCart));
-                                pasabuyCart = pCart;
+                                pasabuyCart.splice(existingIndex, 1);
+                                localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
                                 updateCartBadge();
                                 filterProducts();
                             } else {
@@ -3235,63 +3184,49 @@
 
                         function addToCartInternal(listingId, title, price, sellerId, imgUrl) {
                             const numericPrice = parseFloat(String(price).replace(/[^\d.]/g, '')) || 0;
-                            if (typeof window.addRentEaseCartItem === 'function') {
-                                window.addRentEaseCartItem({
-                                    id: listingId,
-                                    name: title,
-                                    title: title,
-                                    price_per_day: numericPrice,
-                                    price: numericPrice,
-                                    image_url: imgUrl,
-                                    img: imgUrl,
-                                    seller_id: sellerId
-                                }, 1);
+                            const existing = pasabuyCart.find(i => (i.listingId && i.listingId == listingId) || i.title === title);
+                            if (existing) {
+                                existing.quantity += 1;
                             } else {
-                                let cart = [];
-                                try {
-                                    cart = JSON.parse(localStorage.getItem('rentease_cart')) || [];
-                                } catch(e){}
-                                const existing = cart.find(i => (i.id && i.id == listingId) || i.title === title);
-                                if (existing) {
-                                    existing.quantity = (parseInt(existing.quantity) || 1) + 1;
-                                } else {
-                                    cart.push({
-                                        id: listingId,
-                                        title: title,
-                                        price_per_day: numericPrice,
-                                        image_url: imgUrl,
-                                        quantity: 1
-                                    });
-                                }
-                                localStorage.setItem('rentease_cart', JSON.stringify(cart));
-                                localStorage.setItem('pasabuy_cart_items', JSON.stringify(cart));
+                                pasabuyCart.push({
+                                    listingId: listingId,
+                                    title: title,
+                                    price: numericPrice,
+                                    sellerId: sellerId,
+                                    img: imgUrl,
+                                    quantity: 1,
+                                    isSold: false
+                                });
                             }
+                            localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
                             updateCartBadge();
                             filterProducts();
                         }
 
                         window.updateCartBadge = function () {
-                            if (typeof window.updateCartBadgeCount === 'function') {
-                                window.updateCartBadgeCount();
-                                return;
-                            }
-                            let count = 0;
-                            try {
-                                const raw = localStorage.getItem('rentease_cart') || localStorage.getItem('pasabuy_cart_items');
-                                const list = JSON.parse(raw) || [];
-                                count = list.filter(i => i && (i.id || i.listingId)).reduce((sum, i) => sum + (parseInt(i.quantity) || 1), 0);
-                            } catch(e) {}
+                            const badge1 = document.getElementById('cartCountBadge');
+                            const badge2 = document.getElementById('homeCartCountBadge');
+                            const allProducts = window.allProductsCache || [];
 
-                            const badges = [
-                                document.getElementById('cartCountBadge'),
-                                document.getElementById('homeCartCountBadge'),
-                                document.getElementById('headerCartBadge'),
-                                document.getElementById('tabCartBadge')
-                            ];
-                            badges.forEach(b => {
+                            pasabuyCart.forEach(item => {
+                                const liveP = allProducts.find(p => p.id == item.listingId || p.title === item.title);
+                                if (liveP && (liveP.status === 'SOLD' || liveP.status === 'RESERVED')) {
+                                    item.isSold = true;
+                                    item.status = liveP.status;
+                                } else {
+                                    item.isSold = false;
+                                }
+                            });
+
+                            localStorage.setItem('pasabuy_cart_items', JSON.stringify(pasabuyCart));
+
+                            const activeItems = pasabuyCart.filter(i => !i.isSold);
+                            const totalQty = activeItems.reduce((sum, i) => sum + i.quantity, 0);
+
+                            [badge1, badge2].forEach(b => {
                                 if (b) {
-                                    b.innerText = count;
-                                    b.style.display = count > 0 ? 'inline-block' : 'none';
+                                    b.innerText = totalQty;
+                                    b.style.display = totalQty > 0 ? 'inline-block' : 'none';
                                 }
                             });
                         };
