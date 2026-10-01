@@ -562,9 +562,9 @@ if ($action === 'chat_conversations') {
       PRIMARY KEY (`Id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    // Auto-clean any obsolete fleet dispatch or rider messages from database
+    // Auto-clean any obsolete fleet dispatch, rider, or self-messages from database
     try {
-        $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100");
+        $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100 OR `SenderId` = `ReceiverId` OR (`SenderId` IN (1, 104) AND `ReceiverId` IN (1, 104)) OR (`SenderId` = 105 AND `ReceiverId` = 105)");
     } catch (Exception $eClean) {}
 
     $stmt = $db->prepare("SELECT c1.*, 
@@ -574,6 +574,8 @@ if ($action === 'chat_conversations') {
         INNER JOIN (
             SELECT MAX(Id) as max_id FROM ChatMessages 
             WHERE (SenderId IN (1, ?) OR ReceiverId IN (1, ?)) 
+              AND SenderId != ReceiverId
+              AND NOT (SenderId IN (1, 104) AND ReceiverId IN (1, 104))
               AND SenderName NOT LIKE '%Fleet Dispatch%' 
               AND SenderName NOT LIKE '%Rider%' 
               AND SenderId != 100 
@@ -581,7 +583,11 @@ if ($action === 'chat_conversations') {
         ) c2 ON c1.Id = c2.max_id 
         LEFT JOIN StudentProfiles spSender ON c1.SenderId = spSender.UserId
         LEFT JOIN StudentProfiles spReceiver ON c1.ReceiverId = spReceiver.UserId
-        WHERE c1.SenderName NOT LIKE '%Fleet Dispatch%' AND c1.SenderName NOT LIKE '%Rider%' AND c1.SenderId != 100
+        WHERE c1.SenderId != c1.ReceiverId 
+          AND NOT (c1.SenderId IN (1, 104) AND c1.ReceiverId IN (1, 104))
+          AND c1.SenderName NOT LIKE '%Fleet Dispatch%' 
+          AND c1.SenderName NOT LIKE '%Rider%' 
+          AND c1.SenderId != 100
         ORDER BY c1.CreatedAt DESC");
     $stmt->execute([$userId, $userId]);
     $convs = $stmt->fetchAll();
@@ -600,11 +606,23 @@ if ($action === 'chat_conversations') {
         }
     }
 
-    // Strictly filter out any rider or fleet dispatch conversations
-    $convs = array_values(array_filter($convs, function($c) {
+    // Strictly filter out self-conversations and rider/fleet dispatch conversations
+    $convs = array_values(array_filter($convs, function($c) use ($userId) {
+        $pId = (int)($c['PartnerId'] ?? 0);
+        $sId = (int)($c['SenderId'] ?? 0);
+        $rId = (int)($c['ReceiverId'] ?? 0);
+        if ($sId === $rId || $pId === $userId) return false;
+        if ($userId === 104 && ($pId === 1 || $pId === 104)) return false;
+
         $pName = strtolower($c['PartnerName'] ?? '');
         $sName = strtolower($c['SenderName'] ?? '');
         $item = strtolower($c['ItemTitle'] ?? '');
+
+        // If user is Romeo (104), never show Romeo as partner
+        if ($userId === 104 && (str_contains($pName, 'romeo') || str_contains($pName, 'tolentino'))) return false;
+        // If user is Pogilameg (105), never show Pogilameg as partner
+        if ($userId === 105 && str_contains($pName, 'pogilameg')) return false;
+
         return !str_contains($pName, 'dispatch') 
             && !str_contains($pName, 'rider') 
             && !str_contains($sName, 'dispatch') 
@@ -628,7 +646,14 @@ if ($action === 'chat_messages' || $action === 'get_messages') {
     $sPlaceholders = implode(',', array_fill(0, count($sList), '?'));
     $rPlaceholders = implode(',', array_fill(0, count($rList), '?'));
 
-    $sql = "SELECT * FROM ChatMessages WHERE (SenderId IN ($sPlaceholders) AND ReceiverId IN ($rPlaceholders)) OR (SenderId IN ($rPlaceholders) AND ReceiverId IN ($sPlaceholders)) ORDER BY CreatedAt ASC";
+    $sql = "SELECT * FROM ChatMessages 
+            WHERE ((SenderId IN ($sPlaceholders) AND ReceiverId IN ($rPlaceholders)) 
+               OR (SenderId IN ($rPlaceholders) AND ReceiverId IN ($sPlaceholders))) 
+              AND SenderId != ReceiverId
+              AND NOT (SenderId IN (1, 104) AND ReceiverId IN (1, 104))
+              AND SenderName NOT LIKE '%Fleet Dispatch%' 
+              AND SenderName NOT LIKE '%Rider%' 
+            ORDER BY CreatedAt ASC";
     $stmt = $db->prepare($sql);
     $params = array_merge($sList, $rList, $rList, $sList);
     $stmt->execute($params);
@@ -642,6 +667,11 @@ if ($action === 'send_message' && $method === 'POST') {
     $receiverId = (int)($body['receiverId'] ?? 104);
     if ($senderId <= 1) $senderId = 104;
     if ($receiverId <= 1) $receiverId = 104;
+
+    if ($senderId === $receiverId || ($senderId === 104 && $receiverId === 1) || ($senderId === 1 && $receiverId === 104)) {
+        echo json_encode(['success' => false, 'message' => 'Cannot send messages to yourself.']);
+        exit;
+    }
 
     $senderName = trim((string)($body['senderName'] ?? 'Verified Student'));
     $msgText = trim((string)($body['messageText'] ?? ''));

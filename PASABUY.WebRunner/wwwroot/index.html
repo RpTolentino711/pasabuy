@@ -2750,20 +2750,8 @@
                             }
                         }
 
-                        function checkAndOpenChat(sellerId, sellerName, title, price) {
-                            try {
-                                const storedUser = localStorage.getItem('pasabuy_student_user');
-                                if (storedUser) {
-                                    const user = JSON.parse(storedUser);
-                                    const currentUserId = user.id || user.userId || user.UserId || 0;
-                                    console.log("Checking chat - Current:", currentUserId, "Seller:", sellerId);
-                                    if (currentUserId > 0 && parseInt(currentUserId) === parseInt(sellerId)) {
-                                        alert('❌ You cannot message yourself. This is your own listing!');
-                                        return;
-                                    }
-                                }
-                            } catch (e) { console.error("Chat check error:", e); }
-                            openChat(sellerName, title, price);
+                        function checkAndOpenChat(sellerId, sellerName, title, price, avatar) {
+                            openDirectChat(sellerId, sellerName, title, price, avatar);
                         }
 
                         function checkAndReserve(listingId, sellerId) {
@@ -2830,8 +2818,15 @@
 
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 1) : 1;
-                            const myName = storedUser ? (storedUser.firstName + ' ' + (storedUser.lastName || '')).trim().toLowerCase() : '';
+                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            if (currentUserId <= 1) currentUserId = 104;
+
+                            const myEmail = (storedUser && storedUser.email ? storedUser.email : '').toLowerCase();
+                            const myFirstName = (storedUser && storedUser.firstName ? storedUser.firstName : '').toLowerCase();
+                            const myLastName = (storedUser && storedUser.lastName ? storedUser.lastName : '').toLowerCase();
+                            const myFullName = (myFirstName + ' ' + myLastName).trim();
+                            const isRomeo = myEmail.includes('romeo') || myFirstName.includes('romeo') || myLastName.includes('tolentino') || currentUserId === 104;
+                            const isPogilameg = myEmail.includes('pogilameg') || currentUserId === 105;
 
                             let convs = [];
                             try {
@@ -2844,21 +2839,36 @@
                             let localConvs = [];
                             try { localConvs = JSON.parse(localStorage.getItem('pasabuy_local_chat_heads')) || []; } catch (e) { }
 
-                            // Purge any fleet dispatch or rider chat heads from browser storage
+                            // Purge any fleet dispatch, rider, or self chat heads from browser storage
                             localConvs = localConvs.filter(lc => {
-                                const pName = (lc.partnerName || '').toLowerCase();
+                                const pId = parseInt(lc.partnerId) || 0;
+                                const pName = (lc.partnerName || '').toLowerCase().trim();
                                 const item = (lc.itemTitle || '').toLowerCase();
-                                return !pName.includes('dispatch') && !pName.includes('rider') && !item.includes('rider');
+
+                                if (pId === currentUserId || (currentUserId === 104 && (pId === 1 || pId === 104))) return false;
+                                if (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) return false;
+                                if (isPogilameg && pName.includes('pogilameg')) return false;
+                                if (myFullName && pName === myFullName) return false;
+                                return !pName.includes('dispatch') && !pName.includes('rider') && !item.includes('rider') && !item.includes('dispatch');
                             });
                             try { localStorage.setItem('pasabuy_local_chat_heads', JSON.stringify(localConvs)); } catch (e) { }
 
                             localConvs.forEach(lc => {
-                                if (lc.myId && lc.myId != currentUserId) return;
-                                if (!convs.some(c => (c.PartnerId && c.PartnerId == lc.partnerId) || c.SenderId == lc.partnerId || c.ReceiverId == lc.partnerId)) {
+                                const pId = parseInt(lc.partnerId) || 0;
+                                if (pId === currentUserId || (currentUserId === 104 && (pId === 1 || pId === 104))) return;
+                                const pName = (lc.partnerName || '').toLowerCase().trim();
+                                if (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) return;
+                                if (isPogilameg && pName.includes('pogilameg')) return;
+                                if (myFullName && pName === myFullName) return;
+
+                                if (lc.myId && (lc.myId == currentUserId || (currentUserId === 104 && lc.myId == 1))) {
+                                    if (pId === currentUserId) return;
+                                }
+                                if (!convs.some(c => (c.PartnerId && c.PartnerId == pId) || c.SenderId == pId || c.ReceiverId == pId)) {
                                     convs.push({
-                                        PartnerId: lc.partnerId,
+                                        PartnerId: pId,
                                         PartnerName: lc.partnerName,
-                                        SenderId: lc.partnerId,
+                                        SenderId: pId,
                                         ReceiverId: currentUserId,
                                         ItemTitle: lc.itemTitle,
                                         MessageText: lc.lastMessage || 'Click to view conversation',
@@ -2868,15 +2878,21 @@
                             });
 
                             convs = convs.filter(c => {
-                                const pId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
+                                const pId = parseInt(c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId)) || 0;
                                 const pName = (c.PartnerName || c.SenderName || '').toLowerCase().trim();
                                 const item = (c.ItemTitle || '').toLowerCase();
-                                return pId != currentUserId 
-                                    && (myName === '' || pName !== myName)
-                                    && !pName.includes('dispatch')
-                                    && !pName.includes('rider')
-                                    && !item.includes('dispatch')
-                                    && !item.includes('rider');
+                                const sId = parseInt(c.SenderId) || 0;
+                                const rId = parseInt(c.ReceiverId) || 0;
+
+                                if (sId === rId && sId > 0) return false;
+                                if (pId === currentUserId) return false;
+                                if (currentUserId === 104 && (pId === 1 || pId === 104)) return false;
+                                if (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) return false;
+                                if (isPogilameg && pName.includes('pogilameg')) return false;
+                                if (myFullName && pName === myFullName) return false;
+                                if (pName.includes('dispatch') || pName.includes('rider') || item.includes('dispatch') || item.includes('rider')) return false;
+
+                                return true;
                             });
 
                             if (!Array.isArray(convs) || convs.length === 0) {
@@ -3474,21 +3490,34 @@
                         }
 
                         function openChat(partnerId, partnerName, itemTitle, itemPrice) {
-                            const pId = parseInt(partnerId) || 104;
+                            const pId = parseInt(partnerId) || 0;
                             checkAndOpenChat(pId, partnerName || 'Verified Student', itemTitle || 'Campus Request', itemPrice || '₱0.00', '');
                         }
 
                         async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar) {
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            if (currentUserId <= 1) currentUserId = 104;
 
-                            if (currentUserId === sellerId) {
+                            const sId = parseInt(sellerId) || 0;
+                            const pName = (sellerName || '').toLowerCase().trim();
+                            const myEmail = (storedUser && storedUser.email ? storedUser.email : '').toLowerCase();
+                            const myFirstName = (storedUser && storedUser.firstName ? storedUser.firstName : '').toLowerCase();
+                            const myLastName = (storedUser && storedUser.lastName ? storedUser.lastName : '').toLowerCase();
+                            const myFullName = (myFirstName + ' ' + myLastName).trim();
+                            const isRomeo = myEmail.includes('romeo') || myFirstName.includes('romeo') || myLastName.includes('tolentino') || currentUserId === 104;
+                            const isPogilameg = myEmail.includes('pogilameg') || currentUserId === 105;
+
+                            if (sId === currentUserId || (currentUserId === 104 && (sId === 1 || sId === 104)) ||
+                                (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) ||
+                                (isPogilameg && pName.includes('pogilameg')) ||
+                                (myFullName && pName === myFullName)) {
                                 alert("ℹ️ You cannot send a chat message to your own item listing.");
                                 return;
                             }
 
-                            currentActiveChatSellerId = sellerId;
+                            currentActiveChatSellerId = sId;
 
                             const partnerNameEl = document.getElementById('chatPartnerName') || document.getElementById('chatRecipientName');
                             if (partnerNameEl) partnerNameEl.innerText = sellerName;
