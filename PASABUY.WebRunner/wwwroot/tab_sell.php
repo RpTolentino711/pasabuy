@@ -98,6 +98,16 @@
         .rentout-publish-btn:active {
             transform: translateY(0);
         }
+        .rentout-publish-btn.disabled,
+        .rentout-publish-btn:disabled {
+            background: #94A3B8 !important;
+            border-color: #94A3B8 !important;
+            color: #FFFFFF !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+            opacity: 0.75 !important;
+            transform: none !important;
+        }
         .rentout-nav-pills {
             background: #F1F5F9;
             border-radius: 999px;
@@ -209,7 +219,7 @@
                         <div class="text-muted" style="font-size:0.68rem;">Verify student ID to list equipment safely</div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-warning btn-sm rounded-pill px-2.5 py-0.5 fw-bold text-dark flex-shrink-0" style="font-size:0.72rem;" onclick="switchTab('profile')">
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-2.5 py-0.5 fw-bold text-dark flex-shrink-0" style="font-size:0.72rem;" onclick="openVerificationModal()">
                     Verify Profile
                 </button>
             </div>
@@ -438,6 +448,22 @@
                         <video id="sellVideoPreview" controls class="w-100 rounded-3 shadow-sm" style="max-height:160px; background:#000; object-fit:contain;"></video>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Verification Locked Alert Box (Above Publish CTA) -->
+        <div id="sellPublishVerificationWarning" class="p-2.5 px-3 rounded-3 shadow-2xs mb-2 border border-warning-subtle text-dark" style="display:none; background:#FFFBEB;">
+            <div class="d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-lock text-warning fs-7 flex-shrink-0"></i>
+                    <div>
+                        <div class="fw-bold fs-9 text-dark leading-tight">Verification Required to Publish</div>
+                        <div class="text-muted" style="font-size:0.68rem;">Only admin-verified student accounts can list equipment for rent.</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-2.5 py-1 fw-bold text-dark flex-shrink-0 fs-9 shadow-xs" onclick="openVerificationModal()">
+                    Verify Now
+                </button>
             </div>
         </div>
 

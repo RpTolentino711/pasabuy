@@ -3867,12 +3867,32 @@ window.switchTab = function (tabName) {
         renderExploreCatalog();
     } else if (tabName === 'sell') {
         const currentUser = getRentEaseCurrentUser();
-        const isRomeo = (currentUser.email === 'romeopaolotolentino@gmail.com' || currentUser.id === 104);
-        const isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.verification_status === 'VERIFIED');
-        const vBanner = document.getElementById('sellVerificationBanner');
-        if (vBanner) {
-            vBanner.style.display = isVerified ? 'none' : 'block';
+        const isRomeo = (currentUser.email === 'romeopaolotolentino@gmail.com');
+        let isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.verification_status === 'VERIFIED');
+        updateSellVerificationState(isVerified);
+
+        // Real-time server verification check if user has a registered ID and not yet confirmed verified
+        if (currentUser.id > 0 && !isRomeo) {
+            fetch(`/pasabuy_api.php?action=get_verification_status&userId=${currentUser.id}`)
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (!data) return;
+                    const st = (data.VerificationStatus || data.Status || '').toUpperCase();
+                    const liveVerified = (st === 'VERIFIED' || st === 'APPROVED');
+                    updateSellVerificationState(liveVerified);
+                    try {
+                        const studentUserStr = localStorage.getItem('pasabuy_student_user');
+                        if (studentUserStr) {
+                            const parsed = JSON.parse(studentUserStr);
+                            parsed.is_verified = liveVerified ? 1 : 0;
+                            parsed.verification_status = liveVerified ? 'VERIFIED' : (st || 'PENDING');
+                            localStorage.setItem('pasabuy_student_user', JSON.stringify(parsed));
+                        }
+                    } catch(e) {}
+                })
+                .catch(() => {});
         }
+
         if (typeof updateSellPostingFeeTier === 'function') {
             const curPrice = document.getElementById('sellPrice')?.value || 100;
             updateSellPostingFeeTier(curPrice);
@@ -3892,9 +3912,53 @@ window.switchTab = function (tabName) {
 };
 
 // ----------------------------------------------------------
+// LENDER VERIFICATION UI HELPER
+// ----------------------------------------------------------
+window.updateSellVerificationState = function (isVerified) {
+    const vBanner = document.getElementById('sellVerificationBanner');
+    const warnBox = document.getElementById('sellPublishVerificationWarning');
+    const btn = document.getElementById('btnPublishRentalItem');
+
+    if (isVerified) {
+        if (vBanner) vBanner.style.display = 'none';
+        if (warnBox) warnBox.style.display = 'none';
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+            btn.removeAttribute('title');
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane fs-8"></i> <span>Publish Equipment for Rent</span>';
+        }
+    } else {
+        if (vBanner) vBanner.style.display = 'block';
+        if (warnBox) warnBox.style.display = 'block';
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+            btn.setAttribute('title', 'Only admin-verified student accounts can list equipment for rent');
+            btn.innerHTML = '<i class="fa-solid fa-lock fs-8"></i> <span>Verification Required to Post Equipment</span>';
+        }
+    }
+};
+
+// ----------------------------------------------------------
 // POST RENTAL ITEM HANDLER (Live Video & Photo Rental Posting)
 // ----------------------------------------------------------
 window.postRentalItemLive = async function () {
+    // Strict Guard: Only admin-verified student accounts can post equipment for rent
+    const currentUser = getRentEaseCurrentUser();
+    const isRomeo = (currentUser.email === 'romeopaolotolentino@gmail.com');
+    const isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.verification_status === 'VERIFIED');
+
+    if (!isVerified) {
+        alert('🔒 Account Verification Required\n\nOnly admin-verified student accounts can publish equipment for rent.\n\nPlease submit your student ID verification under your Profile to get verified by Admin.');
+        if (typeof openVerificationModal === 'function') {
+            openVerificationModal();
+        } else {
+            switchTab('profile');
+        }
+        return;
+    }
+
     const title = document.getElementById('sellTitle')?.value.trim();
     const category = document.getElementById('sellCategory')?.value || 'Others';
     const materialTag = document.getElementById('sellMaterialTag')?.value || 'Plastic';
@@ -4251,8 +4315,42 @@ window.previewRiderLicense = function (e) {
 // Open verification modal from banner or anywhere
 window.openVerificationModal = function () {
     const modalEl = document.getElementById('verificationRequestModal');
-    if (modalEl) {
-        new bootstrap.Modal(modalEl).show();
+    let storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+    const userId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+    const banner = document.getElementById('verificationStatusBanner');
+    if (banner) {
+        fetch(`/pasabuy_api.php?action=get_verification_status&userId=${userId}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return;
+                const status = (data.VerificationStatus || data.Status || 'UNVERIFIED').toUpperCase();
+                const reqStatus = (data.RequestStatus || '').toUpperCase();
+                if (status === 'PENDING' || reqStatus === 'PENDING') {
+                    banner.className = 'p-3 rounded-3 mb-3 fs-8 fw-semibold bg-warning bg-opacity-10 text-warning-emphasis border border-warning-subtle';
+                    banner.innerHTML = '<i class="fa-solid fa-clock me-1"></i> <strong>Verification Pending:</strong> Your student verification request is currently under review by campus Admin. You will be able to post items once approved.';
+                    banner.style.display = 'block';
+                } else if (status === 'REJECTED' || reqStatus === 'REJECTED') {
+                    const reason = data.RejectionReason || 'Uploaded documents were incomplete or invalid.';
+                    banner.className = 'p-3 rounded-3 mb-3 fs-8 fw-semibold bg-danger bg-opacity-10 text-danger border border-danger-subtle';
+                    banner.innerHTML = `<i class="fa-solid fa-circle-xmark me-1"></i> <strong>Verification Rejected by Admin:</strong> ${reason}<br><span class="text-muted fw-normal fs-9">Please update your details below and resubmit for approval.</span>`;
+                    banner.style.display = 'block';
+                } else if (status === 'VERIFIED' || status === 'APPROVED') {
+                    banner.className = 'p-3 rounded-3 mb-3 fs-8 fw-semibold bg-success bg-opacity-10 text-success border border-success-subtle';
+                    banner.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> <strong>Account Verified:</strong> Your account is fully verified. You can post equipment for rent.';
+                    banner.style.display = 'block';
+                } else {
+                    banner.className = 'p-3 rounded-3 mb-3 fs-8 fw-semibold bg-info bg-opacity-10 text-info-emphasis border border-info-subtle';
+                    banner.innerHTML = '<i class="fa-solid fa-shield-halved me-1"></i> <strong>Student Verification Required:</strong> Submit your student ID for Admin approval to list equipment.';
+                    banner.style.display = 'block';
+                }
+            })
+            .catch(() => {});
+    }
+
+    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
     } else {
         switchTab('profile');
     }
@@ -4418,6 +4516,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loadRentEaseCatalog();
     syncRentEaseProfileUI();
     updateCartBadgeCount();
+    try {
+        const curUser = getRentEaseCurrentUser();
+        const isRomeo = (curUser.email === 'romeopaolotolentino@gmail.com');
+        const isVer = isRomeo || (curUser.is_verified === 1 || curUser.verification_status === 'VERIFIED');
+        if (typeof updateSellVerificationState === 'function') {
+            updateSellVerificationState(isVer);
+        }
+    } catch(e) {}
     pollRentEaseUnreadMessages();
     setInterval(pollRentEaseUnreadMessages, 4000);
     if (typeof checkOwnerRentalNotifications === 'function') {
