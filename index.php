@@ -1863,51 +1863,16 @@
                                 }
                             } catch (e) { }
 
-                            let localConvs = [];
-                            try { localConvs = JSON.parse(localStorage.getItem('pasabuy_local_chat_heads')) || []; } catch (e) { }
+                            // Permanently wipe any local mock chat heads from browser storage
+                            try { localStorage.removeItem('pasabuy_local_chat_heads'); } catch (e) { }
 
-                            // Purge any fleet dispatch, rider, or self chat heads from browser storage
-                            localConvs = localConvs.filter(lc => {
-                                const pId = parseInt(lc.partnerId) || 0;
-                                const pName = (lc.partnerName || '').toLowerCase().trim();
-                                const item = (lc.itemTitle || '').toLowerCase();
-
-                                if (pId === currentUserId || (currentUserId === 104 && (pId === 1 || pId === 104))) return false;
-                                if (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) return false;
-                                if (isPogilameg && pName.includes('pogilameg')) return false;
-                                if (myFullName && pName === myFullName) return false;
-                                return !pName.includes('dispatch') && !pName.includes('rider') && !item.includes('rider') && !item.includes('dispatch');
-                            });
-                            try { localStorage.setItem('pasabuy_local_chat_heads', JSON.stringify(localConvs)); } catch (e) { }
-
-                            localConvs.forEach(lc => {
-                                const pId = parseInt(lc.partnerId) || 0;
-                                if (pId === currentUserId || (currentUserId === 104 && (pId === 1 || pId === 104))) return;
-                                const pName = (lc.partnerName || '').toLowerCase().trim();
-                                if (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) return;
-                                if (isPogilameg && pName.includes('pogilameg')) return;
-                                if (myFullName && pName === myFullName) return;
-
-                                if (lc.myId && (lc.myId == currentUserId || (currentUserId === 104 && lc.myId == 1))) {
-                                    if (pId === currentUserId) return;
-                                }
-                                if (!convs.some(c => (c.PartnerId && c.PartnerId == pId) || c.SenderId == pId || c.ReceiverId == pId)) {
-                                    convs.push({
-                                        PartnerId: pId,
-                                        PartnerName: lc.partnerName,
-                                        SenderId: pId,
-                                        ReceiverId: currentUserId,
-                                        ItemTitle: lc.itemTitle,
-                                        MessageText: lc.lastMessage || 'Click to view conversation',
-                                        CreatedAt: lc.time || 'Just now'
-                                    });
-                                }
-                            });
+                            if (!Array.isArray(convs)) convs = [];
 
                             convs = convs.filter(c => {
                                 const pId = parseInt(c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId)) || 0;
                                 const pName = (c.PartnerName || c.SenderName || '').toLowerCase().trim();
                                 const item = (c.ItemTitle || '').toLowerCase();
+                                const msg = (c.MessageText || '').toLowerCase();
                                 const sId = parseInt(c.SenderId) || 0;
                                 const rId = parseInt(c.ReceiverId) || 0;
 
@@ -1917,6 +1882,7 @@
                                 if (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) return false;
                                 if (isPogilameg && pName.includes('pogilameg')) return false;
                                 if (myFullName && pName === myFullName) return false;
+                                if (item === 'roem' || msg.includes('hi romeo')) return false;
                                 if (pName.includes('dispatch') || pName.includes('rider') || item.includes('dispatch') || item.includes('rider')) return false;
 
                                 return true;

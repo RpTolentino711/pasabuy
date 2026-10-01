@@ -562,9 +562,9 @@ if ($action === 'chat_conversations') {
       PRIMARY KEY (`Id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    // Auto-clean any obsolete fleet dispatch, rider, or self-messages from database
+    // Auto-clean any obsolete fleet dispatch, rider, self-messages, or old test messages from database
     try {
-        $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100 OR `SenderId` = `ReceiverId` OR (`SenderId` IN (1, 104) AND `ReceiverId` IN (1, 104)) OR (`SenderId` = 105 AND `ReceiverId` = 105)");
+        $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100 OR `ReceiverId` = 100 OR `SenderId` = `ReceiverId` OR (`SenderId` IN (1, 104) AND `ReceiverId` IN (1, 104)) OR (`SenderId` = 105 AND `ReceiverId` = 105) OR `ItemTitle` = 'Roem' OR `MessageText` LIKE '%Hi Romeo%'");
     } catch (Exception $eClean) {}
 
     $stmt = $db->prepare("SELECT c1.*, 
