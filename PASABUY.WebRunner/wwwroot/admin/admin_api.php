@@ -333,7 +333,7 @@ if ($action === 'get_dashboard') {
 
     $totalRevenue = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID'")->fetchColumn();
     $totalOrders = (int)$db->query("SELECT COUNT(*) FROM `rental_orders`")->fetchColumn();
-    $activeDeliveries = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `order_status` IN ('CONFIRMED', 'PREPARING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'PROCESSING')")->fetchColumn();
+    $activeDeliveries = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `order_status` IN ('CONFIRMED', 'PREPARING', 'MEETUP', 'PROCESSING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY')")->fetchColumn();
     
     $totalStock = (int)$db->query("SELECT COALESCE(SUM(qty_total), 0) FROM `rental_inventory`")->fetchColumn();
     $lowStock = (int)$db->query("SELECT COUNT(*) FROM `rental_inventory` WHERE `qty_available` > 0 AND `qty_available` <= 5")->fetchColumn();
@@ -517,7 +517,7 @@ if ($action === 'get_orders') {
         $params[] = strtoupper($status);
     }
     if ($subtab === 'incoming') {
-        $sql .= " AND (o.`order_status` IN ('PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY') OR o.`order_status` IS NULL)";
+        $sql .= " AND (o.`order_status` IN ('PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'MEETUP', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY') OR o.`order_status` IS NULL)";
     } elseif ($subtab === 'history') {
         $sql .= " AND o.`order_status` IN ('DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'COMPLETED', 'CANCELLED', 'RIDER_CANCELLED')";
     }
@@ -545,28 +545,23 @@ if ($action === 'get_orders') {
             case 'PREPARING':
             case 'PROCESSING':
                 $ord['step_number'] = 2;
-                $ord['step_name'] = 'Step 2: Preparing Equipment';
+                $ord['step_name'] = 'Step 2: Equipment Prepared';
                 break;
+            case 'MEETUP':
             case 'LOOKING_FOR_RIDER':
-                $ord['step_number'] = 3;
-                $ord['step_name'] = 'Step 3: Looking for Rider';
-                break;
             case 'PICKUP':
-                $ord['step_number'] = 4;
-                $ord['step_name'] = 'Step 4: Driver En Route to Hub';
-                break;
             case 'ON_THE_WAY':
-                $ord['step_number'] = 5;
-                $ord['step_name'] = 'Step 5: Picked Up (In Transit)';
+                $ord['step_number'] = 3;
+                $ord['step_name'] = 'Step 3: Campus Meetup & Coordination';
                 break;
             case 'DELIVERED':
-                $ord['step_number'] = 6;
-                $ord['step_name'] = 'Step 6: Delivered & Received';
+                $ord['step_number'] = 4;
+                $ord['step_name'] = 'Step 4: Handed Over & Active';
                 break;
             case 'RETURN_DELIVERY':
             case 'RETURNED':
-                $ord['step_number'] = 7;
-                $ord['step_name'] = 'Returned to Owner';
+                $ord['step_number'] = 5;
+                $ord['step_name'] = 'Step 5: Returned & Restocked';
                 break;
             case 'RIDER_CANCELLED':
             case 'CANCELLED':
@@ -633,7 +628,7 @@ if ($action === 'update_order_status') {
     $riderName = trim((string)($req['rider_name'] ?? $req['driver_name'] ?? ''));
     $riderPhone = trim((string)($req['rider_phone'] ?? $req['driver_phone'] ?? ''));
 
-    $valid = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'CANCELLED', 'RIDER_CANCELLED'];
+    $valid = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'MEETUP', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'CANCELLED', 'RIDER_CANCELLED'];
     if (!in_array($status, $valid)) {
         echo json_encode(['success' => false, 'message' => 'Invalid status']);
         exit;

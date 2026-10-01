@@ -452,7 +452,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 </li>
                 <li class="nav-item">
                     <a href="javascript:void(0)" class="nav-link" onclick="switchAdminTab('delivery', this)">
-                        <i class="fa-solid fa-truck-fast"></i> <span>Delivery</span>
+                        <i class="fa-solid fa-handshake"></i> <span>Campus Meetups</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -921,17 +921,17 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             </section>
 
             <!-- ==========================================================
-                 TAB 6: DELIVERY MANAGEMENT (Matches Screen 5 in ADMIN UI.png)
+                 TAB 6: CAMPUS MEETUPS & EQUIPMENT HANDOVERS (100% Face-to-Face)
                  ========================================================== -->
             <section id="section_delivery" class="admin-section">
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
-                        <h4 class="fw-extrabold mb-1 text-dark">Delivery Management</h4>
-                        <p class="text-muted fs-8 mb-0">Monitor live dispatches and manage your delivery driver fleet.</p>
+                        <h4 class="fw-extrabold mb-1 text-dark">Campus Meetups & Handovers</h4>
+                        <p class="text-muted fs-8 mb-0">Monitor direct face-to-face meetups and equipment handovers between stock owners and renters on campus.</p>
                     </div>
-                    <button type="button" class="btn-admin-primary" onclick="openAddDriverModal()">
-                        <i class="fa-solid fa-motorcycle"></i> Add Driver
-                    </button>
+                    <span class="badge bg-success-subtle text-success fs-8 py-2 px-3 rounded-pill fw-bold">
+                        <i class="fa-solid fa-handshake me-1.5"></i> 100% Face-to-Face Campus Meetups (Free)
+                    </span>
                 </div>
 
                 <div class="admin-table-card p-3">
@@ -939,10 +939,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <div class="col-6 col-md-3">
                             <select class="form-select form-select-sm" id="deliveryStatusFilter" onchange="loadDeliveries()">
                                 <option value="All">All Status</option>
-                                <option value="ON_THE_WAY">On the way</option>
-                                <option value="PICKED_UP">Picked up</option>
-                                <option value="DELIVERED">Delivered</option>
-                                <option value="PENDING">Pending</option>
+                                <option value="CONFIRMED">Booking Confirmed</option>
+                                <option value="PREPARING">Equipment Prepared</option>
+                                <option value="MEETUP">Meetup Coordination</option>
+                                <option value="DELIVERED">Handed Over / Active</option>
+                                <option value="RETURNED">Returned & Restocked</option>
                             </select>
                         </div>
                         <div class="col-6 col-md-4">
@@ -951,7 +952,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <div class="col-12 col-md-5">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-white"><i class="fa-solid fa-search text-muted"></i></span>
-                                <input type="text" class="form-control" id="deliverySearchInput" placeholder="Search by order or customer..." oninput="loadDeliveries()">
+                                <input type="text" class="form-control" id="deliverySearchInput" placeholder="Search by order, buyer, or lender..." oninput="loadDeliveries()">
                             </div>
                         </div>
                     </div>
@@ -961,48 +962,31 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <thead>
                                 <tr>
                                     <th>Order #</th>
-                                    <th>Customer</th>
-                                    <th>Pickup Location</th>
-                                    <th>Delivery Location</th>
+                                    <th>Buyer (Renter)</th>
+                                    <th>Stock Owner (Lender)</th>
+                                    <th>Campus Meetup Spot</th>
                                     <th>Status</th>
-                                    <th>Driver</th>
+                                    <th>Total Amount</th>
                                     <th width="120">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="deliveriesTableBody">
-                                <tr><td colspan="7" class="text-center py-4 text-muted">Loading live deliveries...</td></tr>
+                                <tr><td colspan="7" class="text-center py-4 text-muted">Loading campus meetups...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Registered Delivery Drivers / Fleet Section -->
+                <!-- Campus Meetup Guidelines Card -->
                 <div class="admin-table-card p-3 mt-4">
-                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                        <div>
-                            <h6 class="fw-extrabold mb-0 text-dark"><i class="fa-solid fa-motorcycle me-1.5" style="color: var(--admin-primary);"></i> Registered Delivery Drivers</h6>
-                            <p class="text-muted fs-9 mb-0">Fleet riders available to fulfill equipment deliveries.</p>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width:48px; height:48px; flex-shrink:0;">
+                            <i class="fa-solid fa-school fs-5"></i>
                         </div>
-                        <button type="button" class="btn btn-sm btn-admin-primary py-1 px-2.5 fs-9" onclick="openAddDriverModal()">
-                            <i class="fa-solid fa-plus me-1"></i> Add Driver
-                        </button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-custom mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Driver</th>
-                                    <th>Phone</th>
-                                    <th>Vehicle & Plate</th>
-                                    <th>License #</th>
-                                    <th>Status</th>
-                                    <th width="90">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="driversTableBody">
-                                <tr><td colspan="6" class="text-center py-3 text-muted">Loading drivers...</td></tr>
-                            </tbody>
-                        </table>
+                        <div class="flex-grow-1">
+                            <h6 class="fw-bold text-dark mb-1">Campus Safe Meetup Protocol</h6>
+                            <p class="text-muted fs-9 mb-0">All equipment rentals are conducted directly between students on university grounds (e.g. Student Center, Library, Engineering Hall). Both parties inspect equipment face-to-face before handover and upon return with zero courier charges.</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -2076,7 +2060,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 case 'inventory': loadInventory(); break;
                 case 'orders': loadOrders(); break;
                 case 'customers': loadCustomers(); break;
-                case 'delivery': loadDeliveries(); loadDrivers(); break;
+                case 'delivery': loadDeliveries(); break;
                 case 'serviceCharges': loadServiceCharges(); break;
                 case 'support': loadTickets(); break;
                 case 'transactions': loadTransactions(); break;
@@ -2417,29 +2401,27 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 }
                 document.getElementById('mOrderSubtitle').innerText = `Placed on ${o.created_at || 'Recently'} • Payment: ${o.payment_method || 'GCash'} (${o.payment_status || 'PAID'})`;
 
-                // Calculate active step index for 6-step workflow
+                // Calculate active step index for 5-step face-to-face workflow
                 let activeIdx = 0;
                 if (st === 'PREPARING' || st === 'PROCESSING') activeIdx = 1;
-                else if (st === 'LOOKING_FOR_RIDER') activeIdx = 2;
-                else if (st === 'PICKUP') activeIdx = 3;
-                else if (st === 'ON_THE_WAY') activeIdx = 4;
-                else if (st === 'DELIVERED' || st === 'RETURN_DELIVERY' || st === 'RETURNED') activeIdx = 5;
+                else if (st === 'MEETUP' || st === 'LOOKING_FOR_RIDER' || st === 'PICKUP' || st === 'ON_THE_WAY') activeIdx = 2;
+                else if (st === 'DELIVERED') activeIdx = 3;
+                else if (st === 'RETURN_DELIVERY' || st === 'RETURNED') activeIdx = 4;
 
                 let html = `
-                    <!-- 1. 6-STAGE PROGRESS STEPPER -->
+                    <!-- 1. 5-STAGE PROGRESS STEPPER (Face-to-Face Handover) -->
                     <div class="card border-0 rounded-4 shadow-sm p-3 mb-3 bg-white">
                         <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="fw-extrabold text-dark fs-8 mb-0"><i class="fa-solid fa-list-check me-1 text-primary"></i> 6-Stage Rental Order Lifecycle (Live State)</h6>
+                            <h6 class="fw-extrabold text-dark fs-8 mb-0"><i class="fa-solid fa-handshake me-1 text-primary"></i> Face-to-Face Rental Lifecycle</h6>
                             <span class="badge bg-light text-dark border fs-9 fw-bold">Current: ${st}</span>
                         </div>
                         <div class="d-flex align-items-center justify-content-between position-relative px-2 pt-2 pb-1 overflow-x-auto gap-2">
                             ${[
                                 { step: 1, label: 'Confirmed', desc: 'Renter placed order', icon: 'fa-check' },
-                                { step: 2, label: 'Preparing', desc: 'Owner packaging gear', icon: 'fa-boxes-packing' },
-                                { step: 3, label: 'Looking Rider', desc: 'Fleet broadcast', icon: 'fa-satellite-dish' },
-                                { step: 4, label: 'To Hub', desc: 'Driver to pickup hub', icon: 'fa-motorcycle' },
-                                { step: 5, label: 'Picked Up', desc: 'Verified POP photo', icon: 'fa-box-open' },
-                                { step: 6, label: 'Delivered', desc: 'POD & student verified', icon: 'fa-circle-check' }
+                                { step: 2, label: 'Prepared', desc: 'Owner inspected gear', icon: 'fa-boxes-packing' },
+                                { step: 3, label: 'Campus Meetup', desc: 'Coordinating location', icon: 'fa-handshake' },
+                                { step: 4, label: 'Handed Over', desc: 'Active rental course', icon: 'fa-circle-check' },
+                                { step: 5, label: 'Returned', desc: 'Restocked in catalog', icon: 'fa-boxes-stacked' }
                             ].map((stepObj, idx) => {
                                 const isDone = idx <= activeIdx;
                                 const isCurrent = idx === activeIdx;
@@ -2464,10 +2446,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <div class="d-flex align-items-center justify-content-between mb-2">
                                     <div class="d-flex align-items-center gap-1.5">
                                         <i class="fa-solid fa-box-archive text-warning fs-7"></i>
-                                        <strong class="text-dark fs-8">Proof of Pickup (POP)</strong>
+                                        <strong class="text-dark fs-8">Equipment Inspection Photo</strong>
                                     </div>
                                     <span class="badge ${o.pickup_proof_photo ? 'bg-warning-subtle text-dark' : 'bg-light text-muted'} fs-9">
-                                        ${o.pickup_proof_photo ? 'VERIFIED AT HUB' : 'AWAITING PICKUP'}
+                                        ${o.pickup_proof_photo ? 'INSPECTED' : 'PENDING INSPECTION'}
                                     </span>
                                 </div>
                                 ${o.pickup_proof_photo ? `
@@ -2476,12 +2458,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                         <span class="position-absolute bottom-0 end-0 m-1.5 badge bg-dark bg-opacity-75 text-white fs-10"><i class="fa-solid fa-up-right-from-square me-1"></i> Zoom</span>
                                     </div>
                                     <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-clock text-info me-1"></i> Time: <strong class="text-dark">${o.pickup_proof_time || 'Recorded'}</strong></div>
-                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-motorcycle text-primary me-1"></i> Courier: <strong class="text-dark">${o.assigned_rider_name || 'Juan Dela Cruz'}</strong></div>
-                                    <div class="p-1.5 rounded-2 bg-light border fs-9 text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> ${o.pickup_proof_note || 'Inspected and collected from owner.'}</div>
+                                    <div class="p-1.5 rounded-2 bg-light border fs-9 text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> ${o.pickup_proof_note || 'Inspected and prepared for campus handover.'}</div>
                                 ` : `
                                     <div class="p-4 rounded-3 bg-light border text-center text-muted fs-9">
                                         <i class="fa-solid fa-camera fs-4 d-block mb-1 text-secondary opacity-50"></i>
-                                        Driver has not yet uploaded Proof of Pickup from owner.
+                                        Awaiting owner equipment inspection upload.
                                     </div>
                                 `}
                             </div>
@@ -2492,75 +2473,60 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <div class="d-flex align-items-center justify-content-between mb-2">
                                     <div class="d-flex align-items-center gap-1.5">
                                         <i class="fa-solid fa-circle-check text-success fs-7"></i>
-                                        <strong class="text-dark fs-8">Proof of Delivery (POD)</strong>
+                                        <strong class="text-dark fs-8">Face-to-Face Handover Verification</strong>
                                     </div>
-                                    <span class="badge ${o.delivery_proof_photo ? 'bg-success-subtle text-success' : 'bg-light text-muted'} fs-9">
-                                        ${o.delivery_proof_photo ? 'HANDOVER VERIFIED' : 'AWAITING DELIVERY'}
+                                    <span class="badge ${o.delivery_proof_photo || o.order_status === 'DELIVERED' ? 'bg-success-subtle text-success' : 'bg-light text-muted'} fs-9">
+                                        ${o.delivery_proof_photo || o.order_status === 'DELIVERED' ? 'HANDOVER VERIFIED' : 'AWAITING HANDOVER'}
                                     </span>
                                 </div>
-                                ${o.delivery_proof_photo ? `
+                                ${o.delivery_proof_photo || o.order_status === 'DELIVERED' ? `
                                     <div class="rounded-3 overflow-hidden border mb-2 text-center bg-dark position-relative" style="max-height: 160px;">
-                                        <img src="${o.delivery_proof_photo}" class="w-100 object-fit-cover" style="max-height: 160px; cursor: pointer;" onclick="window.open(this.src, '_blank')" title="Click to open full photo">
+                                        <img src="${o.delivery_proof_photo || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80'}" class="w-100 object-fit-cover" style="max-height: 160px; cursor: pointer;" onclick="window.open(this.src, '_blank')" title="Click to open full photo">
                                         <span class="position-absolute bottom-0 end-0 m-1.5 badge bg-dark bg-opacity-75 text-white fs-10"><i class="fa-solid fa-up-right-from-square me-1"></i> Zoom</span>
                                     </div>
-                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-clock text-info me-1"></i> Time: <strong class="text-dark">${o.delivery_proof_time || 'Recorded'}</strong></div>
+                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-clock text-info me-1"></i> Time: <strong class="text-dark">${o.delivery_proof_time || 'Recorded on Handover'}</strong></div>
                                     <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-user-check text-success me-1"></i> Recipient: <strong class="text-dark">${o.delivery_proof_recipient || o.customer_name}</strong></div>
-                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-square-check text-success me-1"></i> Renter Confirmation: ${o.renter_received_confirmed == 1 ? '<span class="badge bg-success text-white">Confirmed by Student</span>' : '<span class="badge bg-warning-subtle text-dark">Pending Student Confirmation</span>'}</div>
-                                    <div class="p-1.5 rounded-2 bg-light border fs-9 text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> ${o.delivery_proof_note || 'Equipment handed over safely.'}</div>
+                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-square-check text-success me-1"></i> Student Verification: ${o.renter_received_confirmed == 1 ? '<span class="badge bg-success text-white">Confirmed by Student</span>' : '<span class="badge bg-success-subtle text-success">Direct Handover Verified</span>'}</div>
+                                    <div class="p-1.5 rounded-2 bg-light border fs-9 text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> ${o.delivery_proof_note || 'Equipment inspected face-to-face and received in good condition.'}</div>
                                 ` : `
                                     <div class="p-4 rounded-3 bg-light border text-center text-muted fs-9">
-                                        <i class="fa-solid fa-camera fs-4 d-block mb-1 text-secondary opacity-50"></i>
-                                        Courier has not yet completed doorstep delivery handover.
+                                        <i class="fa-solid fa-handshake fs-4 d-block mb-1 text-secondary opacity-50"></i>
+                                        Parties will meet face-to-face on campus for equipment handover.
                                     </div>
                                 `}
                             </div>
                         </div>
                     </div>
 
-                    <!-- 3. RENTER, STOCK OWNER & COURIER TRIAD (3 COLUMNS) -->
+                    <!-- 3. RENTER & STOCK OWNER DIRECT CONTACT (2 COLUMNS) -->
                     <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-6">
                             <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white">
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:28px; height:28px; background:#5B3FA8;">
                                         <i class="fa-solid fa-user fs-9"></i>
                                     </div>
-                                    <strong class="text-dark fs-8">Renter / Customer</strong>
+                                    <strong class="text-dark fs-8">Renter / Buyer</strong>
                                 </div>
                                 <div class="fs-9 text-dark fw-bold mb-0.5">${o.customer_name}</div>
                                 <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-envelope me-1"></i> ${o.customer_email || 'N/A'}</div>
                                 <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-phone me-1"></i> ${o.customer_phone || 'N/A'}</div>
-                                <div class="fs-9 text-dark fw-semibold mt-1 pt-1 border-top"><i class="fa-solid fa-location-dot text-danger me-1"></i> ${o.delivery_address || 'Campus Meetup'}</div>
+                                <div class="fs-9 text-dark fw-semibold mt-1 pt-1 border-top"><i class="fa-solid fa-location-dot text-danger me-1"></i> Preferred Meetup: ${o.delivery_address || 'Campus Meetup Spot'}</div>
                             </div>
                         </div>
 
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-6">
                             <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white">
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:28px; height:28px; background:#F59E0B;">
                                         <i class="fa-solid fa-warehouse fs-9"></i>
                                     </div>
-                                    <strong class="text-dark fs-8">Equipment Stock Owner</strong>
+                                    <strong class="text-dark fs-8">Stock Owner / Lender</strong>
                                 </div>
                                 <div class="fs-9 text-dark fw-bold mb-0.5">${o.owner_name || 'Romeo Paolo Tolentino'}</div>
                                 <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-phone me-1"></i> ${o.owner_contact || '09668257301'}</div>
                                 <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-envelope me-1"></i> ${o.owner_email || 'romeopaolotolentino@gmail.com'}</div>
-                                <div class="fs-9 text-dark fw-semibold mt-1 pt-1 border-top"><i class="fa-solid fa-store text-warning me-1"></i> Pickup Hub: San Pablo, Laguna</div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-4">
-                            <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white">
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:28px; height:28px; background:#10B981;">
-                                        <i class="fa-solid fa-motorcycle fs-9"></i>
-                                    </div>
-                                    <strong class="text-dark fs-8">Assigned Delivery Courier</strong>
-                                </div>
-                                <div class="fs-9 text-dark fw-bold mb-0.5">${o.assigned_rider_name || 'Unassigned / Broadcasted'}</div>
-                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-phone me-1"></i> ${o.assigned_rider_phone || '0918 765 4321'}</div>
-                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-clock me-1"></i> ETA: ${o.estimated_arrival || 'Pending'}</div>
-                                <div class="fs-9 text-dark fw-semibold mt-1 pt-1 border-top"><i class="fa-solid fa-location-crosshairs text-success me-1"></i> GPS: ${o.rider_current_lat || '14.1950'}, ${o.rider_current_lng || '121.2720'}</div>
+                                <div class="fs-9 text-dark fw-semibold mt-1 pt-1 border-top"><i class="fa-solid fa-store text-warning me-1"></i> Hub / Campus: San Pablo, Laguna</div>
                             </div>
                         </div>
                     </div>
@@ -2817,39 +2783,28 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <div class="fw-bold text-dark">${d.customer_name}</div>
                                 <div class="fs-9 text-muted">${d.customer_phone || ''}</div>
                             </td>
-                            <td class="fs-9 text-muted">
-                                <span class="d-block fw-semibold text-dark">${d.pickup_location || 'San Pablo Hub'}</span>
-                                ${d.owner_name ? `<span class="badge bg-secondary-subtle text-secondary fs-9">Stock: ${d.owner_name}</span>` : ''}
+                            <td>
+                                <div class="fw-bold text-dark">${d.owner_name || 'Equipment Owner'}</div>
+                                <div class="fs-9 text-muted">${d.owner_email || ''}</div>
                             </td>
-                            <td class="fs-8 fw-semibold text-dark">${d.delivery_address}</td>
+                            <td class="fs-8 fw-semibold text-dark">
+                                <i class="fa-solid fa-location-dot text-danger me-1"></i>${d.delivery_address || 'Campus Meetup Spot'}
+                            </td>
                             <td>
                                 <span class="badge ${getStatusBadge(d.order_status)}">${d.order_status}</span>
-                                ${d.pickup_proof_photo ? `<span class="badge bg-warning bg-opacity-25 text-warning fs-9 ms-1"><i class="fa-solid fa-box-archive"></i> POP</span>` : ''}
-                                ${d.delivery_proof_photo ? `<span class="badge bg-success bg-opacity-25 text-success fs-9 ms-1"><i class="fa-solid fa-camera"></i> POD</span>` : ''}
                             </td>
-                            <td class="fw-bold">
-                                <div>${d.assigned_rider_name || 'Unassigned'}</div>
-                                ${d.delivery_vehicle_type ? `<div class="fs-9 text-muted fw-normal">${d.delivery_vehicle_type} (${d.delivery_plate_number || 'Motor'})</div>` : ''}
+                            <td class="fw-bold text-dark fs-8">
+                                ₱${parseFloat(d.total_amount || 0).toLocaleString()}
                             </td>
                             <td>
-                                <div class="d-flex gap-1">
-                                    <button class="btn btn-sm btn-light border py-1 px-2 fs-9" onclick="openAssignDeliveryModal(${d.id})"><i class="fa-solid fa-motorcycle me-1"></i> Dispatch</button>
-                                    ${d.pickup_proof_photo ? `
-                                        <button class="btn btn-sm btn-warning bg-opacity-10 text-dark border-warning py-1 px-2 fs-9" onclick="openAdminPopModal('${encodeURIComponent(JSON.stringify(d))}')" title="View Proof of Pickup">
-                                            <i class="fa-solid fa-box-archive"></i> POP
-                                        </button>
-                                    ` : ''}
-                                    ${d.delivery_proof_photo || d.order_status === 'DELIVERED' ? `
-                                        <button class="btn btn-sm btn-success bg-opacity-10 text-success border-success py-1 px-2 fs-9" onclick="openAdminPodModal('${encodeURIComponent(JSON.stringify(d))}')" title="View Proof of Delivery">
-                                            <i class="fa-solid fa-camera"></i> POD
-                                        </button>
-                                    ` : ''}
-                                </div>
+                                <button class="btn btn-sm btn-outline-primary py-1 px-2.5 fs-9" onclick="openAdminOrderModal(${d.id})">
+                                    <i class="fa-solid fa-eye me-1"></i> View
+                                </button>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No deliveries found.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No campus meetups found.</td></tr>';
                 }
             } catch (e) {}
         }
