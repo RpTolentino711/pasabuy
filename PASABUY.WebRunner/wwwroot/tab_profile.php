@@ -30,18 +30,18 @@
     <div class="card border-0 rounded-4 shadow-2xs p-2.5 px-3 bg-white mb-2 d-flex flex-row align-items-center justify-content-between border">
         <div class="d-flex align-items-center gap-2.5">
             <div class="position-relative">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" 
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80" 
                      class="rounded-circle border border-2 border-white shadow-2xs" width="42" height="42" style="object-fit:cover;" id="profileAvatar" alt="Profile">
                 <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:10px; height:10px;"></span>
             </div>
             <div>
-                <h6 class="fw-bold text-dark fs-8 mb-0" id="profileName">Romeo Paolo Tolentino</h6>
+                <h6 class="fw-bold text-dark fs-8 mb-0" id="profileName">Campus Student</h6>
                 <div class="text-muted d-flex align-items-center gap-1.5 flex-wrap" style="font-size:0.7rem;">
-                    <span id="profileSub">BSIT • 4th Yr</span>
+                    <span id="profileSub">College Student</span>
                     <span>•</span>
-                    <span id="profileStudentNumber">ID: 09668257301</span>
+                    <span id="profileStudentNumber">ID: Loading...</span>
                 </div>
-                <div class="text-muted d-none" id="profileEmail">09668257301</div>
+                <div class="text-muted d-none" id="profileEmail"></div>
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">

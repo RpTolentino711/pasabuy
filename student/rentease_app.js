@@ -2571,24 +2571,30 @@ function getRentEaseCurrentUser() {
             const fullName = `${first} ${last}`.trim() || u.name || '';
             const uId = parseInt(u.id || u.Id || u.userId || u.UserId || 0);
             const uEmail = (u.email || u.SchoolEmail || '').trim();
-            const isVer = (u.is_verified === 1 || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || u.VerificationStatus === 'VERIFIED' || uId === 104 || uEmail === 'romeopaolotolentino@gmail.com') ? 1 : 0;
+            const isPogilameg = (uEmail.toLowerCase().includes('pogilameg') || uId === 105);
+            const isRomeo = (uEmail.toLowerCase().includes('romeo') || uId === 104);
+            const isVer = (u.is_verified === 1 || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || u.VerificationStatus === 'VERIFIED' || isRomeo || isPogilameg) ? 1 : 0;
             
             if (fullName || uEmail) {
-                const courseInfo = u.course ? `${u.course} • ${u.yearLevel || '4th Yr'}` : 'BSIT • 4th Yr';
+                const courseInfo = u.course ? `${u.course} • ${u.yearLevel || 'Student'}` : (u.sub || 'Verified Student');
+                const defaultAvatar = isPogilameg 
+                    ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80'
+                    : (isRomeo ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80');
+
                 return {
                     id: uId,
-                    firstName: first || 'User',
-                    lastName: last || '',
-                    name: fullName || 'User',
+                    firstName: first || (isPogilameg ? 'Pogilameg' : (isRomeo ? 'Romeo Paolo' : 'Student')),
+                    lastName: last || (isPogilameg ? 'Tester' : (isRomeo ? 'Tolentino' : '')),
+                    name: fullName || (isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : 'Verified Student')),
                     sub: courseInfo,
-                    email: uEmail || (u.studentNumber ? `${u.studentNumber}@campus.edu.ph` : 'user@campus.edu.ph'),
-                    phone: u.phone || u.phoneNumber || u.PhoneNumber || u.studentNumber || '09668257301',
-                    studentNumber: u.studentNumber || '09668257301',
+                    email: uEmail || (isPogilameg ? 'pogilameg@gmail.com' : (isRomeo ? 'romeopaolotolentino@gmail.com' : 'user@campus.edu.ph')),
+                    phone: u.phone || u.phoneNumber || u.PhoneNumber || u.studentNumber || (isPogilameg ? '09171234567' : '09668257301'),
+                    studentNumber: u.studentNumber || (isPogilameg ? '09171234567' : '09668257301'),
                     is_verified: isVer,
                     verification_status: isVer ? 'VERIFIED' : (u.verification_status || u.VerificationStatus || 'PENDING'),
-                    course: u.course || 'BSIT',
-                    yearLevel: u.yearLevel || '4th Yr',
-                    avatar: u.profileImage || u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'
+                    course: u.course || (isPogilameg ? 'BSCS' : 'BSIT'),
+                    yearLevel: u.yearLevel || (isPogilameg ? '3rd Yr' : '4th Yr'),
+                    avatar: u.profileImage || u.avatar || defaultAvatar
                 };
             }
         }
@@ -2601,23 +2607,28 @@ function getRentEaseCurrentUser() {
             const fullName = `${first} ${last}`.trim() || u.name || '';
             const uId = parseInt(u.Id || u.id || u.UserId || u.userId || 0);
             const uEmail = (u.SchoolEmail || u.email || '').trim();
-            const isVer = (u.is_verified === 1 || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || uId === 104 || uEmail === 'romeopaolotolentino@gmail.com') ? 1 : 0;
+            const isPogilameg = (uEmail.toLowerCase().includes('pogilameg') || uId === 105);
+            const isRomeo = (uEmail.toLowerCase().includes('romeo') || uId === 104);
+            const isVer = (u.is_verified === 1 || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || isRomeo || isPogilameg) ? 1 : 0;
             
             if (fullName || uEmail) {
+                const defaultAvatar = isPogilameg 
+                    ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80'
+                    : (isRomeo ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80');
                 return {
                     id: uId,
                     firstName: first || 'User',
                     lastName: last || '',
                     name: fullName || 'User',
-                    sub: u.Course ? `${u.Course} • ${u.YearLevel || '4th Yr'}` : 'BSIT • 4th Yr',
+                    sub: u.Course ? `${u.Course} • ${u.YearLevel || 'Student'}` : 'BSIT • Student',
                     email: uEmail || 'user@campus.edu.ph',
-                    phone: u.PhoneNumber || u.phone || '09668257301',
-                    studentNumber: u.StudentNumber || '09668257301',
+                    phone: u.PhoneNumber || u.phone || (isPogilameg ? '09171234567' : '09668257301'),
+                    studentNumber: u.StudentNumber || (isPogilameg ? '09171234567' : '09668257301'),
                     is_verified: isVer,
                     verification_status: isVer ? 'VERIFIED' : 'PENDING',
-                    course: u.Course || 'BSIT',
-                    yearLevel: u.YearLevel || '4th Yr',
-                    avatar: u.avatar || u.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'
+                    course: u.Course || (isPogilameg ? 'BSCS' : 'BSIT'),
+                    yearLevel: u.YearLevel || (isPogilameg ? '3rd Yr' : '4th Yr'),
+                    avatar: u.avatar || u.profileImage || defaultAvatar
                 };
             }
         }
@@ -2632,16 +2643,16 @@ function getRentEaseCurrentUser() {
     } catch (e) {}
 
     return {
-        firstName: 'Romeo Paolo',
-        lastName: 'Tolentino',
-        name: 'Romeo Paolo Tolentino',
-        sub: 'BSIT • 4th Yr',
-        email: 'romeopaolo.tolentino@campus.edu.ph',
-        phone: '09668257301',
-        studentNumber: '09668257301',
+        firstName: 'Campus',
+        lastName: 'Student',
+        name: 'Campus Student',
+        sub: 'BSIT • Student',
+        email: 'student@campus.edu.ph',
+        phone: '09123456789',
+        studentNumber: '2024-00001',
         course: 'BSIT',
-        yearLevel: '4th Yr',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'
+        yearLevel: 'Student',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80'
     };
 }
 

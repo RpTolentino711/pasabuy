@@ -124,20 +124,43 @@ if (typeof window.loginStudentWithPassword !== 'function') {
                 const pObj = data.profile || {};
                 const realUserId = uObj.id || uObj.userId || data.userId || 104;
 
+                const defaultAvatar = (emailInput.toLowerCase().includes('pogilameg') || realUserId === 105)
+                    ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80'
+                    : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80';
+
                 const studentUser = {
                     id: realUserId,
                     userId: realUserId,
                     email: uObj.email || emailInput,
                     firstName: pObj.firstName || uObj.firstName || emailInput.split('@')[0],
                     lastName: pObj.lastName || uObj.lastName || '',
-                    studentNumber: pObj.studentNumber || '2024-00123',
-                    course: pObj.course || 'BS Computer Science',
-                    yearLevel: pObj.yearLevel || '3rd Yr',
+                    studentNumber: pObj.studentNumber || (realUserId === 105 ? '09171234567' : '09668257301'),
+                    course: pObj.course || (realUserId === 105 ? 'BSCS' : 'BSIT'),
+                    yearLevel: pObj.yearLevel || (realUserId === 105 ? '3rd Yr' : '4th Yr'),
+                    profileImage: pObj.profileImage || pObj.ProfileImage || defaultAvatar,
+                    avatar: pObj.profileImage || pObj.ProfileImage || defaultAvatar,
                     verificationStatus: 'VERIFIED'
+                };
+
+                const renteaseProfile = {
+                    id: realUserId,
+                    name: `${studentUser.firstName} ${studentUser.lastName}`.trim(),
+                    firstName: studentUser.firstName,
+                    lastName: studentUser.lastName,
+                    sub: `${studentUser.course} • ${studentUser.yearLevel}`,
+                    email: studentUser.email,
+                    phone: studentUser.studentNumber,
+                    studentNumber: studentUser.studentNumber,
+                    course: studentUser.course,
+                    yearLevel: studentUser.yearLevel,
+                    avatar: studentUser.profileImage,
+                    is_verified: true,
+                    verification_status: 'VERIFIED'
                 };
 
                 localStorage.setItem('pasabuy_student_logged_in', 'true');
                 localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
+                localStorage.setItem('rentease_user_profile', JSON.stringify(renteaseProfile));
 
                 window.location.href = 'index.php';
             } else {

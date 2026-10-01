@@ -1267,15 +1267,26 @@
                                         const fullName = `${firstName} ${lastName}`.trim();
                                         const email = studentUser.email || studentUser.schoolEmail || '';
 
-                                        document.getElementById('profileName').innerText = fullName;
-                                        document.getElementById('homeWelcomeName').innerText = `Good day, ${firstName}!`;
-                                        document.getElementById('profileSub').innerText = `${email} • Verified Student`;
-                                        document.getElementById('profileRating').innerText = studentUser.rating || '0.0';
-                                        document.getElementById('profileDeals').innerText = studentUser.completedTransactions || 0;
-                                        if (studentUser.profileImage) {
-                                            document.getElementById('profileAvatar').src = studentUser.profileImage;
-                                            document.getElementById('homeAvatar').src = studentUser.profileImage;
-                                        }
+                                        const isPogilameg = email.toLowerCase().includes('pogilameg') || studentUser.id === 105;
+                                        const finalAvatar = studentUser.profileImage || studentUser.avatar || (isPogilameg ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80');
+
+                                        const profNameEl = document.getElementById('profileName');
+                                        if (profNameEl) profNameEl.innerText = fullName;
+                                        const welcomeEl = document.getElementById('homeWelcomeName');
+                                        if (welcomeEl) welcomeEl.innerText = `Good day, ${firstName}!`;
+                                        const profSubEl = document.getElementById('profileSub');
+                                        if (profSubEl) profSubEl.innerText = studentUser.course ? `${studentUser.course} • ${studentUser.yearLevel || 'Student'}` : `${email} • Verified Student`;
+                                        const stuNoEl = document.getElementById('profileStudentNumber');
+                                        if (stuNoEl) stuNoEl.innerText = `ID: ${studentUser.studentNumber || (isPogilameg ? '09171234567' : '09668257301')}`;
+                                        const rateEl = document.getElementById('profileRating');
+                                        if (rateEl) rateEl.innerText = studentUser.rating || '5.0';
+                                        const dealsEl = document.getElementById('profileDeals');
+                                        if (dealsEl) dealsEl.innerText = studentUser.completedTransactions || 0;
+
+                                        const profAv = document.getElementById('profileAvatar');
+                                        if (profAv) profAv.src = finalAvatar;
+                                        const homeAv = document.getElementById('homeAvatar');
+                                        if (homeAv) homeAv.src = finalAvatar;
 
                                         if (appHeader) appHeader.style.display = 'flex';
                                         if (appTabbar) appTabbar.style.display = 'flex';
@@ -1285,7 +1296,6 @@
                                         if (badgeEl) badgeEl.style.display = 'inline-flex';
                                         const userActions = document.getElementById('headerUserActions');
                                         if (userActions) userActions.style.setProperty('display', 'flex', 'important');
-                                        switchTab('home');
                                         return;
                                     }
                                 }
@@ -1787,6 +1797,9 @@
                                 filterProducts();
                             } else if (tabName === 'wanted') {
                                 loadWantedPosts();
+                            } else if (tabName === 'profile') {
+                                if (typeof syncRentEaseProfileUI === 'function') syncRentEaseProfileUI();
+                                if (typeof checkStudentSessionOnLoad === 'function') checkStudentSessionOnLoad();
                             }
                         }
 

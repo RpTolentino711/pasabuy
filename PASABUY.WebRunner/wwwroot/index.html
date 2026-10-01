@@ -2809,6 +2809,9 @@
                                 loadChatConversationsList();
                             } else if (tabName === 'wanted') {
                                 loadWantedPosts();
+                            } else if (tabName === 'profile') {
+                                if (typeof syncRentEaseProfileUI === 'function') syncRentEaseProfileUI();
+                                if (typeof checkStudentSessionOnLoad === 'function') checkStudentSessionOnLoad();
                             }
                         }
 
