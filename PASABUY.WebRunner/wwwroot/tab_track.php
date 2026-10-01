@@ -16,7 +16,7 @@
 
     <!-- Order Code & Details Header Banner -->
     <div class="d-flex align-items-center justify-content-between px-1 mb-3">
-        <span class="fw-extrabold text-dark fs-7" id="trackOrderCodeTitle">Order #RE-10245</span>
+        <span class="fw-extrabold text-dark fs-7" id="trackOrderCodeTitle">Order Tracking</span>
         <a href="javascript:void(0)" class="fs-9 fw-bold text-decoration-none" style="color: #5B3FA8;" onclick="toggleOrderItemsModal()">Details</a>
     </div>
 
@@ -230,7 +230,7 @@
     </div>
 
     <!-- Assigned Driver Card: Shown when rider is assigned / en route -->
-    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white d-flex flex-row align-items-center justify-content-between mb-3" id="trackRiderCard" style="display:none;">
+    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white flex-row align-items-center justify-content-between mb-3 d-none" id="trackRiderCard" style="display:none !important;">
         <div class="d-flex align-items-center gap-2.5">
             <div class="position-relative">
                 <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" 

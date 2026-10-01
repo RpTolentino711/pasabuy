@@ -2020,7 +2020,9 @@ async function executeRentEasePayment() {
 // ----------------------------------------------------------
 // 6. SCREEN 7: LIVE ORDER & DELIVERY TRACKING WITH MAP
 // ----------------------------------------------------------
-let currentTrackingOrderCode = '#RE-10245';
+let currentTrackingOrderCode = (function() {
+    try { return localStorage.getItem('rentease_current_order_code') || ''; } catch(e) { return ''; }
+})();
 
 window.updateSellPostingFeeTier = function(price) {
     price = parseFloat(price) || 0;
@@ -2244,22 +2246,40 @@ window.stockOwnerNotifyRidersAgain = function(orderCode) {
     openNotifyRiderModal(code, true);
 };
 
-async function openTrackScreen(orderCode = '#RE-10245') {
-    if (!orderCode || orderCode === 'undefined' || orderCode === 'null') {
-        orderCode = currentTrackingOrderCode || '';
-    }
-    switchTab('track');
-    const titleEl = document.getElementById('trackOrderCodeTitle');
-    if (titleEl) titleEl.innerText = orderCode ? `Order ${orderCode}` : 'Order Tracking';
+let _isOpeningTrackScreen = false;
+async function openTrackScreen(orderCode) {
+    if (_isOpeningTrackScreen) return;
+    _isOpeningTrackScreen = true;
 
     try {
+        if (!orderCode || orderCode === 'undefined' || orderCode === 'null') {
+            orderCode = currentTrackingOrderCode || localStorage.getItem('rentease_current_order_code') || '';
+        }
+
+        // Switch to track tab directly without calling openTrackScreen recursively
+        const validTabs = ['home', 'explore', 'cart', 'track', 'profile', 'sell', 'wanted', 'messages'];
+        validTabs.forEach(t => {
+            const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+            const nav = document.getElementById('tabNav' + t.charAt(0).toUpperCase() + t.slice(1));
+            if (el) el.style.display = (t === 'track') ? 'block' : 'none';
+            if (nav) nav.classList.toggle('active', t === 'track');
+        });
+        const tabbar = document.querySelector('.app-tabbar');
+        if (tabbar) tabbar.style.display = 'flex';
+
+        const titleEl = document.getElementById('trackOrderCodeTitle');
+        if (titleEl && orderCode) titleEl.innerText = `Order ${orderCode}`;
+
         const res = await fetch(getRentEaseApiUrl('get_order_tracking', { order_code: orderCode }));
         if (res.ok) {
             const data = await res.json();
             const t = data.tracking;
-            const actualCode = data.order?.order_code || t?.order_code || orderCode || '#RE-10245';
-            currentTrackingOrderCode = actualCode;
-            if (titleEl) titleEl.innerText = `Order ${actualCode}`;
+            const actualCode = data.order?.order_code || t?.order_code || orderCode || '';
+            if (actualCode) {
+                currentTrackingOrderCode = actualCode;
+                try { localStorage.setItem('rentease_current_order_code', actualCode); } catch(e) {}
+            }
+            if (titleEl && actualCode) titleEl.innerText = `Order ${actualCode}`;
 
             const arrEl = document.getElementById('trackEstimatedArrivalText');
             if (arrEl) arrEl.innerText = `Estimated Arrival: ${t.estimated_arrival}`;
@@ -2287,42 +2307,50 @@ async function openTrackScreen(orderCode = '#RE-10245') {
             const cancelCard = document.getElementById('riderCancelledAlertCard');
             const cancelReasonText = document.getElementById('riderCancelledReasonText');
             const riderCard = document.getElementById('trackRiderCard') || document.getElementById('trackRiderName')?.closest('.card');
+            const toggleRiderCard = function(visible, roleText) {
+                if (!riderCard) return;
+                if (visible) {
+                    riderCard.classList.remove('d-none');
+                    riderCard.style.setProperty('display', 'flex', 'important');
+                    if (roleText && roleEl) roleEl.innerText = roleText;
+                } else {
+                    riderCard.classList.add('d-none');
+                    riderCard.style.setProperty('display', 'none', 'important');
+                }
+            };
 
             if (t.order_status === 'LOOKING_FOR_RIDER') {
                 if (broadcastCard) broadcastCard.style.display = 'block';
                 if (cancelCard) cancelCard.style.display = 'none';
-                if (riderCard) riderCard.style.display = 'none';
+                toggleRiderCard(false);
             } else if (t.order_status === 'RIDER_CANCELLED') {
                 if (broadcastCard) broadcastCard.style.display = 'none';
                 if (cancelCard) cancelCard.style.display = 'block';
                 if (cancelReasonText && data.order?.cancellation_reason) {
                     cancelReasonText.innerText = `The assigned driver cancelled pickup (Reason: "${data.order.cancellation_reason}"). The equipment remains safe at the stock owner's inventory.`;
                 }
-                if (riderCard) riderCard.style.display = 'none';
+                toggleRiderCard(false);
             } else if (['CONFIRMED', 'PREPARING'].includes(t.order_status)) {
                 if (broadcastCard) broadcastCard.style.display = 'none';
                 if (cancelCard) cancelCard.style.display = 'none';
-                if (riderCard) riderCard.style.display = 'none';
+                toggleRiderCard(false);
             } else if (t.order_status === 'PICKUP') {
                 // Step 4: Rider accepted. Stock owner sees driver en route, Renter only sees "Order in Process"!
                 if (broadcastCard) broadcastCard.style.display = 'none';
                 if (cancelCard) cancelCard.style.display = 'none';
                 if (isOwner && t.rider && t.rider.name && t.rider.name !== 'Pending Driver Match') {
-                    if (riderCard) riderCard.style.display = 'flex';
-                    if (roleEl) roleEl.innerText = `${t.rider?.role || 'Delivery Rider'} • Heading to Hub for Package Pickup`;
+                    toggleRiderCard(true, `${t.rider?.role || 'Delivery Rider'} • Heading to Hub for Package Pickup`);
                 } else {
-                    // Hidden for renter! Renter only sees Order in Process
-                    if (riderCard) riderCard.style.display = 'none';
+                    toggleRiderCard(false);
                 }
             } else {
                 // ON_THE_WAY, DELIVERED, RETURNED
                 if (broadcastCard) broadcastCard.style.display = 'none';
                 if (cancelCard) cancelCard.style.display = 'none';
                 if (t.rider && t.rider.name && t.rider.name !== 'Pending Driver Match' && t.rider.name !== 'Assigned Driver') {
-                    if (riderCard) riderCard.style.display = 'flex';
-                    if (roleEl) roleEl.innerText = `${t.rider?.role || 'Delivery Rider'} • ${t.rider?.vehicle || 'Motorcycle'}`;
+                    toggleRiderCard(true, `${t.rider?.role || 'Delivery Rider'} • ${t.rider?.vehicle || 'Motorcycle'}`);
                 } else {
-                    if (riderCard) riderCard.style.display = 'none';
+                    toggleRiderCard(false);
                 }
             }
 
@@ -2681,6 +2709,8 @@ async function openTrackScreen(orderCode = '#RE-10245') {
         }
     } catch (e) {
         console.error("Order tracking load error:", e);
+    } finally {
+        _isOpeningTrackScreen = false;
     }
 }
 
@@ -3848,7 +3878,12 @@ window.switchTab = function (tabName) {
             updateSellPostingFeeTier(curPrice);
         }
     } else if (tabName === 'track') {
-        openTrackScreen('#RE-10245');
+        if (!_isOpeningTrackScreen && typeof openTrackScreen === 'function') {
+            const activeCode = currentTrackingOrderCode || (function() {
+                try { return localStorage.getItem('rentease_current_order_code') || ''; } catch(e) { return ''; }
+            })();
+            openTrackScreen(activeCode);
+        }
     } else if (tabName === 'profile') {
         syncRentEaseProfileUI();
         loadUserRentedOutItems();
