@@ -974,15 +974,26 @@ window.switchProfileSubTab = function(subtab) {
     tabs.forEach(t => {
         const sec = document.getElementById('profileSection' + t.charAt(0).toUpperCase() + t.slice(1));
         const btn = document.getElementById('btnProfileTab' + t.charAt(0).toUpperCase() + t.slice(1));
-        if (sec) sec.style.display = (t === subtab) ? 'flex' : 'none';
+        const isActive = (t === subtab);
+        if (sec) {
+            if (isActive) {
+                sec.classList.remove('d-none');
+                sec.style.setProperty('display', 'flex', 'important');
+            } else {
+                sec.classList.add('d-none');
+                sec.style.setProperty('display', 'none', 'important');
+            }
+        }
         if (btn) {
-            if (t === subtab) {
-                btn.className = 'btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-extrabold fs-9 d-flex align-items-center justify-content-center gap-1.5 profile-subtab-btn active text-white';
+            if (isActive) {
+                btn.className = 'btn btn-sm rounded-pill flex-grow-1 profile-subtab-btn active text-white d-flex align-items-center justify-content-center gap-1.5';
                 btn.style.background = 'linear-gradient(135deg, #5B3FA8, #341F97)';
+                btn.style.boxShadow = '0 2px 8px rgba(91, 63, 168, 0.25)';
                 btn.style.border = 'none';
             } else {
-                btn.className = 'btn btn-sm rounded-pill flex-grow-1 py-2 px-2 fw-bold fs-9 d-flex align-items-center justify-content-center gap-1.5 profile-subtab-btn text-secondary';
+                btn.className = 'btn btn-sm rounded-pill flex-grow-1 profile-subtab-btn text-secondary d-flex align-items-center justify-content-center gap-1.5';
                 btn.style.background = 'transparent';
+                btn.style.boxShadow = 'none';
                 btn.style.border = 'none';
             }
         }
@@ -1231,12 +1242,12 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
         if (invContainer) {
             if (!data.inventory || data.inventory.length === 0) {
                 invContainer.innerHTML = `
-                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
-                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:60px; height:60px; color:#5B3FA8;">
-                            <i class="fa-solid fa-box-open fs-2"></i>
+                    <div class="card border-0 rounded-4 shadow-2xs p-3.5 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-1.5" style="width:40px; height:40px; color:#5B3FA8;">
+                            <i class="fa-solid fa-box-open fs-5"></i>
                         </div>
-                        <h6 class="fw-extrabold text-dark fs-7 mb-1">No Equipment Posted for Rent Yet</h6>
-                        <p class="text-muted fs-8 mb-0">You haven't listed any equipment. Rent out your sound systems, party chairs, tables, cameras, or lights to fellow students.</p>
+                        <h6 class="fw-bold text-dark fs-8 mb-0.5">No Equipment Posted for Rent Yet</h6>
+                        <p class="text-muted mb-0" style="font-size:0.72rem;">Rent out sound systems, chairs, tables, or cameras to earn daily rental income.</p>
                     </div>
                 `;
             } else {
@@ -1297,12 +1308,12 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
 
             if (combinedHistory.length === 0) {
                 histContainer.innerHTML = `
-                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
-                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2 text-muted" style="width:48px; height:48px;">
-                            <i class="fa-solid fa-receipt fs-4"></i>
+                    <div class="card border-0 rounded-4 shadow-2xs p-3.5 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-1.5 text-muted" style="width:40px; height:40px;">
+                            <i class="fa-solid fa-receipt fs-5"></i>
                         </div>
-                        <h6 class="fw-bold text-dark fs-8 mb-1">No Rental History Yet</h6>
-                        <p class="text-muted fs-9 mb-0">Completed equipment returns and your rental receipts will be archived here.</p>
+                        <h6 class="fw-bold text-dark fs-8 mb-0.5">No Rental History Yet</h6>
+                        <p class="text-muted mb-0" style="font-size:0.72rem;">Completed equipment returns and rental receipts will be archived here.</p>
                     </div>
                 `;
             } else {
