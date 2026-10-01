@@ -1066,12 +1066,12 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
         if (reqContainer) {
             if (!data.incoming_requests || data.incoming_requests.length === 0) {
                 reqContainer.innerHTML = `
-                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
-                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2" style="width:50px; height:50px; color:#5B3FA8;">
-                            <i class="fa-solid fa-inbox fs-4"></i>
+                    <div class="card border-0 rounded-4 shadow-2xs p-3.5 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-1.5" style="width:40px; height:40px; color:#5B3FA8;">
+                            <i class="fa-solid fa-inbox fs-5"></i>
                         </div>
-                        <h6 class="fw-bold text-dark fs-8 mb-1">No Active Rental Requests</h6>
-                        <p class="text-muted fs-9 mb-0">When students rent your equipment, their orders and bookings will appear here for you to accept, monitor, and restock.</p>
+                        <h6 class="fw-bold text-dark fs-8 mb-0.5">No Active Rental Requests</h6>
+                        <p class="text-muted mb-0" style="font-size:0.72rem;">When students rent your equipment, orders will appear here for you to accept and dispatch.</p>
                     </div>
                 `;
             } else {
@@ -1213,12 +1213,12 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
         if (rentoutContainer) {
             if (!data.incoming_requests || data.incoming_requests.length === 0) {
                 rentoutContainer.innerHTML = `
-                    <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
-                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2" style="width:50px; height:50px; color:#5B3FA8;">
-                            <i class="fa-solid fa-inbox fs-4"></i>
+                    <div class="card border-0 rounded-4 shadow-2xs p-3.5 bg-white text-center">
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-1.5" style="width:40px; height:40px; color:#5B3FA8;">
+                            <i class="fa-solid fa-inbox fs-5"></i>
                         </div>
-                        <h6 class="fw-bold text-dark fs-8 mb-1">No Orders Awaiting Preparation</h6>
-                        <p class="text-muted fs-9 mb-0">When students rent your equipment, their orders will appear here for you to package, inspect, and notify fleet drivers.</p>
+                        <h6 class="fw-bold text-dark fs-8 mb-0.5">No Orders Awaiting Preparation</h6>
+                        <p class="text-muted mb-0" style="font-size:0.72rem;">When students rent your equipment, bookings appear here to inspect and hand off to fleet drivers.</p>
                     </div>
                 `;
             } else if (reqContainer) {
