@@ -284,9 +284,9 @@
                             <div class="text-muted" style="font-size:0.68rem;" id="settingsHubSub">College Student</div>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill py-0.5 px-2.5 fw-bold" style="font-size:0.72rem;" 
-                            onclick="switchFromSettingsHub(openProfileSettingsModal)">
-                        <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:32px; height:32px; border-color:#5B3FA8; color:#5B3FA8;" 
+                            onclick="switchFromSettingsHub(openProfileSettingsModal)" title="Edit Profile">
+                        <i class="fa-solid fa-pen-to-square fs-8"></i>
                     </button>
                 </div>
 
