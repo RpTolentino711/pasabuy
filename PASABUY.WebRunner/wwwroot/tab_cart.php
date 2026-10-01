@@ -55,8 +55,8 @@
                 <span class="fw-bold text-dark" id="cartServiceCharge">₱0</span>
             </div>
             <div class="d-flex justify-content-between fs-8 text-secondary mb-1.5">
-                <span>Delivery Fee</span>
-                <span class="fw-bold text-dark" id="cartDeliveryFee">₱0</span>
+                <span>Campus Handover</span>
+                <span class="fw-bold text-success" id="cartDeliveryFee">Free (Face-to-Face)</span>
             </div>
             <div class="d-flex justify-content-between fs-8 text-success mb-2">
                 <span>Discount</span>
@@ -86,35 +86,29 @@
             <div style="width:34px;"></div>
         </div>
 
-        <!-- Delivery Option Selector (Pickup vs Delivery) -->
-        <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3">
-            <h6 class="fw-extrabold text-dark fs-8 mb-2.5">Delivery Option</h6>
-            
-            <div class="form-check p-2.5 rounded-3 mb-2 border d-flex align-items-center" style="cursor:pointer;" onclick="selectDeliveryOption('PICKUP')">
-                <input class="form-check-input ms-0 me-3" type="radio" name="deliveryOptionRadio" id="optPickup">
-                <label class="form-check-label w-100" for="optPickup" style="cursor:pointer;">
-                    <div class="fw-bold text-dark fs-8"><i class="fa-solid fa-warehouse text-secondary me-1.5"></i> Pickup (Free)</div>
-                    <div class="text-muted fs-9">Pick up at our warehouse</div>
-                </label>
+        <!-- Campus Meetup & Handover (Face-to-Face) -->
+        <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3" style="border-left: 4px solid #5B3FA8 !important;">
+            <div class="d-flex align-items-center gap-2 mb-1.5">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:28px; height:28px; background:linear-gradient(135deg, #5B3FA8, #341F97);">
+                    <i class="fa-solid fa-handshake fs-9"></i>
+                </div>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Face-to-Face Campus Handover</h6>
+                    <span class="fs-9 text-muted">Direct meetup with stock owner • No courier fee</span>
+                </div>
             </div>
-
-            <div class="form-check p-2.5 rounded-3 border d-flex align-items-center border-primary bg-primary-subtle bg-opacity-25" style="cursor:pointer;" onclick="selectDeliveryOption('DELIVERY')">
-                <input class="form-check-input ms-0 me-3" type="radio" name="deliveryOptionRadio" id="optDelivery" checked>
-                <label class="form-check-label w-100" for="optDelivery" style="cursor:pointer;">
-                    <div class="fw-bold text-dark fs-8"><i class="fa-solid fa-truck text-primary me-1.5"></i> Delivery</div>
-                    <div class="text-muted fs-9">We'll deliver to your location</div>
-                </label>
-            </div>
+            <p class="fs-9 text-muted mb-0">
+                You and the equipment owner will coordinate in chat to meet in person on campus, inspect the items together, and confirm handover.
+            </p>
         </div>
 
-        <!-- Delivery Address -->
+        <!-- Preferred Campus Meetup Location -->
         <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3">
             <div class="d-flex align-items-center justify-content-between mb-1">
-                <span class="fw-extrabold text-dark fs-8">Delivery Address</span>
+                <span class="fw-extrabold text-dark fs-8"><i class="fa-solid fa-location-dot text-primary me-1" style="color:#5B3FA8;"></i> Preferred Campus Meetup Spot</span>
                 <a href="javascript:void(0)" class="fs-9 fw-bold text-decoration-none" style="color:#5B3FA8;" onclick="changeDeliveryAddress()">Change</a>
             </div>
             <div class="d-flex align-items-center gap-2 pt-1">
-                <i class="fa-solid fa-location-dot fs-6" style="color: #5B3FA8;"></i>
                 <span class="fs-8 text-dark fw-semibold" id="checkoutAddressText">San Pablo, Laguna</span>
             </div>
         </div>
@@ -190,7 +184,7 @@
                         <span class="fw-bold text-dark fs-8"><i class="fa-solid fa-circle-check text-primary me-1.5" style="color:#5B3FA8;"></i> Full Payment (Entire Course)</span>
                         <span class="badge bg-primary text-white fs-9">100% Upfront</span>
                     </div>
-                    <div class="text-muted fs-9">Pay the entire rental course upfront. Zero cash needed on delivery.</div>
+                    <div class="text-muted fs-9">Pay the entire rental course upfront. Zero cash needed upon handover.</div>
                 </label>
             </div>
 
@@ -200,10 +194,10 @@
                 <input class="form-check-input ms-0 me-3" type="radio" name="paymentPlanRadio" id="planCod">
                 <label class="form-check-label w-100" for="planCod" style="cursor:pointer;">
                     <div class="d-flex align-items-center justify-content-between">
-                        <span class="fw-bold text-dark fs-8"><i class="fa-solid fa-hand-holding-dollar text-success me-1.5"></i> COD (Cash on Delivery)</span>
+                        <span class="fw-bold text-dark fs-8"><i class="fa-solid fa-hand-holding-dollar text-success me-1.5"></i> Cash upon Handover (Meetup)</span>
                         <span class="badge bg-warning-subtle text-warning-emphasis fs-9">30% Downpayment</span>
                     </div>
-                    <div class="text-muted fs-9">Requires 30% downpayment now to secure equipment. Pay remaining 70% cash on arrival.</div>
+                    <div class="text-muted fs-9">Requires 30% downpayment now to secure equipment. Pay remaining 70% cash when meeting owner face-to-face.</div>
                 </label>
             </div>
         </div>
@@ -250,8 +244,8 @@
                 <span class="fw-bold text-dark" id="payServiceCharge">₱100</span>
             </div>
             <div class="d-flex justify-content-between fs-8 text-secondary mb-1.5">
-                <span>Delivery Fee</span>
-                <span class="fw-bold text-dark" id="payDeliveryFee">₱150</span>
+                <span>Campus Handover</span>
+                <span class="fw-bold text-success" id="payDeliveryFee">Free (Face-to-Face)</span>
             </div>
             <div class="d-flex justify-content-between fs-8 text-success mb-2">
                 <span>Discount</span>

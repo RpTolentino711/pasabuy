@@ -583,7 +583,7 @@ if ($action === 'calculate_charges') {
     }
 
     $serviceCharge = $subtotal > 0 ? 100.00 : 0.00;
-    $deliveryFee = ($deliveryOption === 'DELIVERY' && $subtotal > 0) ? 150.00 : 0.00;
+    $deliveryFee = 0.00; // Free Face-to-Face Campus Handover
     
     // Auto discount threshold or promo code
     $discount = 0.00;
@@ -606,13 +606,13 @@ if ($action === 'calculate_charges') {
             'rental_days' => $rentalDays,
             'subtotal' => round($subtotal, 2),
             'service_charge' => round($serviceCharge, 2),
-            'delivery_fee' => round($deliveryFee, 2),
+            'delivery_fee' => 0.00,
             'discount' => round($discount, 2),
             'total' => round($total, 2),
             'downpayment' => $downpayment,
             'balance' => $balance,
-            'delivery_option' => $deliveryOption,
-            'breakdown_label' => "Rental Subtotal ({$rentalDays} days: ₱" . number_format($subtotal, 2) . ") + Service Charge (₱" . number_format($serviceCharge, 2) . ") + Delivery Fee (₱" . number_format($deliveryFee, 2) . ") - Discount (₱" . number_format($discount, 2) . ") = ₱" . number_format($total, 2)
+            'delivery_option' => 'MEETUP',
+            'breakdown_label' => "Rental Subtotal ({$rentalDays} days: ₱" . number_format($subtotal, 2) . ") + Service Charge (₱" . number_format($serviceCharge, 2) . ") + Campus Handover (Free) - Discount (₱" . number_format($discount, 2) . ") = ₱" . number_format($total, 2)
         ]
     ]);
     exit;
@@ -625,7 +625,7 @@ if ($action === 'create_order') {
     $customerName = trim((string)($data['customer_name'] ?? 'Pogilameg Tester'));
     $customerEmail = trim((string)($data['customer_email'] ?? 'pogilameg@gmail.com'));
     $customerPhone = trim((string)($data['customer_phone'] ?? '0917-123-4567'));
-    $deliveryOption = strtoupper(trim((string)($data['delivery_option'] ?? 'DELIVERY')));
+    $deliveryOption = 'MEETUP';
     $deliveryAddress = trim((string)($data['delivery_address'] ?? 'San Pablo, Laguna'));
     $rentalDays = max(1, (int)($data['rental_days'] ?? 1));
     $rentalStartDate = trim((string)($data['rental_start_date'] ?? date('Y-m-d')));
@@ -648,7 +648,7 @@ if ($action === 'create_order') {
         $subtotal += ($price * $qty * $rentalDays);
     }
     $serviceCharge = 100.00;
-    $deliveryFee = ($deliveryOption === 'DELIVERY') ? 150.00 : 0.00;
+    $deliveryFee = 0.00; // Face-to-Face Campus Handover is free
     $discount = $subtotal >= 1500 ? 200.00 : ($subtotal >= 1000 ? 50.00 : 0.00);
     $total = max(0.00, $subtotal + $serviceCharge + $deliveryFee - $discount);
 
@@ -843,35 +843,19 @@ if ($action === 'get_order_tracking') {
         ];
     }
 
-    $warehouseCoords = [14.64880, 121.06870]; // RentEase / Owner Hub
-    $riderCoords = [(float)$order['rider_current_lat'], (float)$order['rider_current_lng']];
-    $destinationCoords = [14.65400, 121.07450]; // Renter location
-
     $st = $order['order_status'];
-    $isPickedUp = in_array($st, ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']);
-    $showMap = in_array($st, ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY']);
+    $isMeetupReady = in_array($st, ['MEETUP', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']);
+    $isActive = in_array($st, ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED']);
 
     $stages = [
-        ['key' => 'CONFIRMED', 'title' => 'Order Confirmed', 'time' => date('M j, g:i A', strtotime($order['created_at'])), 'completed' => true],
-        ['key' => 'PREPARING', 'title' => 'Preparing Equipment', 'time' => 'Equipment inspection & packaging', 'completed' => in_array($st, ['PREPARING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'PREPARING')],
-        ['key' => 'PICKUP', 'title' => 'Package Picked Up', 'time' => $isPickedUp ? 'Package picked up from stock owner' : ($st === 'PICKUP' ? 'Driver assigned & en route to pick up' : ($st === 'LOOKING_FOR_RIDER' ? 'Awaiting driver pickup' : 'Scheduled')), 'completed' => $isPickedUp, 'current' => ($st === 'PICKUP' || $st === 'LOOKING_FOR_RIDER')],
-        ['key' => 'ON_THE_WAY', 'title' => 'Out for Delivery (To Renter)', 'time' => 'Estimated Arrival: ' . ($order['estimated_arrival'] ?: '4:30 PM'), 'completed' => in_array($st, ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'ON_THE_WAY')],
-        ['key' => 'DELIVERED', 'title' => 'Delivered & Active Rental', 'time' => 'Rental Active (' . ($order['rental_days'] ?? 1) . ' days, Due: ' . ($order['rental_end_date'] ?: 'Tomorrow') . ')', 'completed' => in_array($st, ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'DELIVERED')],
-        ['key' => 'RETURNED', 'title' => 'Returned & Stock Restored', 'time' => 'Equipment back in inventory stock', 'completed' => ($st === 'RETURNED'), 'current' => ($st === 'RETURNED')]
+        ['key' => 'CONFIRMED', 'title' => 'Booking Confirmed', 'time' => date('M j, g:i A', strtotime($order['created_at'])), 'completed' => true],
+        ['key' => 'PREPARING', 'title' => 'Equipment Prepared', 'time' => 'Equipment inspected & tested by owner', 'completed' => in_array($st, ['PREPARING', 'MEETUP', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']), 'current' => ($st === 'PREPARING')],
+        ['key' => 'MEETUP', 'title' => 'Campus Meetup & Handover', 'time' => $isMeetupReady ? 'Meetup spot coordinated on campus' : 'Stock owner & renter coordinate meetup', 'completed' => $isMeetupReady, 'current' => in_array($st, ['MEETUP', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY'])],
+        ['key' => 'DELIVERED', 'title' => 'Handed Over & Active Rental', 'time' => 'Active Rental (' . ($order['rental_days'] ?? 1) . ' days, Due: ' . ($order['rental_end_date'] ?: 'Tomorrow') . ')', 'completed' => $isActive, 'current' => ($st === 'DELIVERED')],
+        ['key' => 'RETURNED', 'title' => 'Returned & Restocked', 'time' => 'Equipment returned face-to-face and restocked', 'completed' => ($st === 'RETURNED'), 'current' => ($st === 'RETURNED')]
     ];
 
-    $isRiderAssigned = !empty($order['assigned_rider_id']) && in_array($st, ['PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED']);
-    $assignedName = $isRiderAssigned ? (!empty($order['assigned_rider_name']) ? $order['assigned_rider_name'] : ($order['rider_name'] ?? null)) : null;
-
-        $riderObj = ($isRiderAssigned && !empty($assignedName)) ? [
-            'name' => $assignedName,
-            'phone' => !empty($order['assigned_rider_phone']) ? $order['assigned_rider_phone'] : ($order['rider_phone'] ?? ''),
-            'role' => 'Delivery Rider',
-            'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
-            'vehicle' => !empty($order['rider_vehicle']) ? $order['rider_vehicle'] : 'Motorcycle',
-            'lat' => (float)($order['rider_current_lat'] ?? 14.6515),
-            'lng' => (float)($order['rider_current_lng'] ?? 121.0712)
-        ] : null;
+    $riderObj = null;
 
         echo json_encode([
             'success' => true,
@@ -1518,38 +1502,36 @@ if ($action === 'update_owner_order_status') {
         $statusDisplay = 'Order in Process';
 
         if ($newStatus === 'PREPARING') {
-            $statusDisplay = 'Order in Process - Stock owner packaging equipment';
-            // Step 2: Stock owner accepts rental request
+            $statusDisplay = 'Equipment Prepared - Coordinating Campus Meetup';
+            // Stock owner accepts and prepares equipment
             try {
-                $acceptMsg = "✅ Rental Request Accepted! Stock owner {$order['owner_name']} has accepted your booking for Order {$order['order_code']}. Order is now in process and being packaged for delivery.";
+                $acceptMsg = "✅ Equipment Prepared! Stock owner {$order['owner_name']} has inspected and prepared your gear for Order {$order['order_code']}. Please message each other to agree on a campus meetup location and time!";
                 $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
                    ->execute([$acceptMsg, $order['order_code']]);
 
                 // Email notification to Renter and Stock Owner (Step 2)
                 send_rental_step_emails($order, 'STEP_2_PREPARING');
             } catch (Exception $eN1) {}
-        } elseif ($newStatus === 'LOOKING_FOR_RIDER') {
-            $statusDisplay = 'Equipment Packaged - Looking for Fleet Driver';
-            // Step 3: Stock owner finishes packaging and notifies rider
+        } elseif ($newStatus === 'MEETUP') {
+            $statusDisplay = 'Campus Meetup in Progress';
             try {
-                $pkgMsg = "📦 Package Ready: Stock owner {$order['owner_name']} has finished packaging equipment for Order {$order['order_code']} and broadcasted a pickup dispatch to fleet delivery riders!";
+                $meetMsg = "🤝 Campus Meetup: Owner and Renter are meeting face-to-face for equipment inspection and handover (Order {$order['order_code']}).";
                 $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
-                   ->execute([$pkgMsg, $order['order_code']]);
-
-                // Email notification to Renter and Stock Owner (Step 3)
-                send_rental_step_emails($order, 'STEP_3_LOOKING_FOR_RIDER');
+                   ->execute([$meetMsg, $order['order_code']]);
             } catch (Exception $eN2) {}
+        } elseif ($newStatus === 'DELIVERED') {
+            $statusDisplay = 'Handover Complete - Rental Active';
+            try {
+                $deliveredMsg = "🎉 Face-to-Face Handover Complete! Equipment for Order {$order['order_code']} has been verified and handed over. Rental period is now active!";
+                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
+                   ->execute([$deliveredMsg, $order['order_code']]);
+            } catch (Exception $eN3) {}
         } elseif ($newStatus === 'RETURNED') {
             $statusDisplay = 'Returned to Owner Stock';
         }
 
-        if ($newStatus === 'LOOKING_FOR_RIDER') {
-            $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ?, `rider_broadcast_at` = NOW() WHERE `id` = ?");
-            $upd->execute([$newStatus, $statusDisplay, $oId]);
-        } else {
-            $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ? WHERE `id` = ?");
-            $upd->execute([$newStatus, $statusDisplay, $oId]);
-        }
+        $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ? WHERE `id` = ?");
+        $upd->execute([$newStatus, $statusDisplay, $oId]);
 
         // If returned, automatically restock equipment inventory
         if ($newStatus === 'RETURNED') {

@@ -182,7 +182,7 @@
                     <i class="fa-solid fa-inbox fs-5"></i>
                 </div>
                 <h6 class="fw-bold text-dark fs-8 mb-0.5">No Orders Awaiting Preparation</h6>
-                <p class="text-muted mb-0" style="font-size:0.72rem;">When students rent your equipment, bookings appear here to inspect and hand off to fleet drivers.</p>
+                <p class="text-muted mb-0" style="font-size:0.72rem;">When students rent your equipment, bookings appear here to inspect and coordinate face-to-face campus handover.</p>
             </div>
         </div>
     </div>

@@ -1142,54 +1142,25 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                             <div>Total: <strong class="text-primary fs-8">₱${parseFloat(order.total_amount).toFixed(2)}</strong></div>
                         </div>
 
-                        <!-- Action Bar for Owner -->
+                        <!-- Action Bar for Owner (Face-to-Face Handover) -->
                         <div class="d-flex align-items-center gap-2 pt-2 border-top">
                             ${status === 'CONFIRMED' ? `
                                 <button class="btn btn-sm btn-outline-warning rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="updateOwnerOrderStatus(${order.id}, '${order.order_code}', 'PREPARING')">
-                                    <i class="fa-solid fa-boxes-packing me-1"></i> Package Equipment (Processing)
+                                    <i class="fa-solid fa-boxes-packing me-1"></i> Prepare Equipment
                                 </button>
                                 <button class="btn btn-sm btn-light rounded-pill py-1.5 px-3 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${order.order_code}')">
                                     <i class="fa-solid fa-eye me-1"></i> Details
                                 </button>
-                            ` : status === 'PREPARING' ? `
-                                <button class="btn btn-sm text-white rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background:#5B3FA8; border:none;" onclick="openNotifyRiderModal('${order.order_code}', false)">
-                                    <i class="fa-solid fa-satellite-dish me-1"></i> Packaged & Notify Rider to Pick Up
+                            ` : (status === 'PREPARING' || status === 'MEETUP' || status === 'LOOKING_FOR_RIDER' || status === 'PICKUP' || status === 'ON_THE_WAY') ? `
+                                <button class="btn btn-sm text-white rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background:#10B981; border:none;" onclick="ownerConfirmHandover('${order.order_code}')">
+                                    <i class="fa-solid fa-handshake me-1"></i> Confirm Handover
                                 </button>
-                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-3 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${order.order_code}')">
-                                    <i class="fa-solid fa-eye me-1"></i> Details
+                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-primary" onclick="chatWithOwnerFromTracking('${order.customer_name || 'Renter'}', '${order.order_code}')">
+                                    <i class="fa-solid fa-comment-dots me-1"></i> Coordinate Meetup
                                 </button>
-                            ` : status === 'LOOKING_FOR_RIDER' ? `
-                                <div class="d-flex flex-column w-100 gap-1.5">
-                                    <div class="d-flex align-items-center justify-content-between w-100 gap-2">
-                                        <span class="badge bg-warning-subtle text-warning-emphasis fs-9 py-1.5 px-2.5 rounded-pill fw-bold">
-                                            <i class="fa-solid fa-satellite-dish fa-beat me-1"></i> Notified Riders • Waiting Acceptance
-                                        </span>
-                                        <button class="btn btn-sm btn-outline-warning rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="openNotifyRiderModal('${order.order_code}', true)">
-                                            <i class="fa-solid fa-rotate me-1"></i> Re-notify
-                                        </button>
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-danger rounded-pill py-1 px-2.5 fs-9 fw-bold w-100" onclick="promptCancelRiderRequest('${order.order_code}')">
-                                        <i class="fa-solid fa-ban me-1"></i> Cancel Rider Request
-                                    </button>
-                                </div>
-                            ` : status === 'PICKUP' ? `
-                                <div class="d-flex align-items-center justify-content-between w-100 gap-2">
-                                    <span class="badge bg-info-subtle text-info-emphasis fs-9 py-1.5 px-2.5 rounded-pill fw-bold">
-                                        <i class="fa-solid fa-motorcycle me-1"></i> ${order.assigned_rider_name || order.rider_name ? `Driver ${order.assigned_rider_name || order.rider_name} Assigned` : 'Driver Assigned — En Route for Pickup'}
-                                    </span>
-                                    <button class="btn btn-sm btn-outline-primary rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="openTrackScreen('${order.order_code}')">
-                                        <i class="fa-solid fa-eye me-1"></i> Order
-                                    </button>
-                                </div>
-                            ` : status === 'ON_THE_WAY' ? `
-                                <div class="d-flex align-items-center justify-content-between w-100 gap-2">
-                                    <span class="badge bg-primary-subtle text-primary fs-9 py-1.5 px-2.5 rounded-pill fw-bold">
-                                        <i class="fa-solid fa-truck-fast me-1"></i> Package Picked Up • Out for Delivery
-                                    </span>
-                                    <button class="btn btn-sm btn-outline-primary rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="openTrackScreen('${order.order_code}')">
-                                        <i class="fa-solid fa-map-location-dot me-1"></i> Track Live Map
-                                    </button>
-                                </div>
+                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${order.order_code}')">
+                                    <i class="fa-solid fa-eye me-1"></i> Track
+                                </button>
                             ` : status === 'DELIVERED' || status === 'RETURN_DELIVERY' ? `
                                 <button class="btn btn-sm btn-primary rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1" style="background: linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(${order.id}, '${order.order_code}')">
                                     <i class="fa-solid fa-circle-check me-1"></i> Mark Returned & Restock
@@ -1229,7 +1200,7 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                             <i class="fa-solid fa-inbox fs-5"></i>
                         </div>
                         <h6 class="fw-bold text-dark fs-8 mb-0.5">No Orders Awaiting Preparation</h6>
-                        <p class="text-muted mb-0" style="font-size:0.72rem;">When students rent your equipment, bookings appear here to inspect and hand off to fleet drivers.</p>
+                        <p class="text-muted mb-0" style="font-size:0.72rem;">When students rent your equipment, bookings appear here to coordinate face-to-face campus handover.</p>
                     </div>
                 `;
             } else if (reqContainer) {
@@ -1450,9 +1421,12 @@ window.ownerPrepareEquipment = async function(orderCode) {
     await updateOwnerOrderStatus(0, orderCode, 'PREPARING');
 };
 
-window.ownerFinishPackagingAndNotifyRider = function(orderCode) {
+window.ownerConfirmHandover = async function(orderCode) {
     if (!orderCode) orderCode = currentTrackingOrderCode || '#RE-10245';
-    openNotifyRiderModal(orderCode, false);
+    if (!confirm(`Confirm face-to-face equipment handover for order ${orderCode}? This will mark the rental as actively received.`)) {
+        return;
+    }
+    await updateOwnerOrderStatus(0, orderCode, 'DELIVERED');
 };
 
 window.openChatWithRenter = function (customerName, customerPhone, orderCode) {
@@ -2041,209 +2015,64 @@ window.updateSellPostingFeeTier = function(price) {
     }
 };
 
-window._cooldownIntervals = window._cooldownIntervals || {};
-window._pendingNotifyOrderCode = null;
-window._isPendingRebroadcast = false;
-window._pendingCancelOrderCode = null;
+// ----------------------------------------------------------
+// 6. SCREEN 7: LIVE FACE-TO-FACE RENTAL TRACKING & CAMPUS MEETUP
+// ----------------------------------------------------------
+let currentTrackingOrderCode = (function() {
+    try { return localStorage.getItem('rentease_current_order_code') || ''; } catch(e) { return ''; }
+})();
 
-window.formatMMSS = function(sec) {
-    if (sec <= 0) return '00:00';
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-};
-
-window.startCooldownTicker = function(orderCode, remainingSeconds) {
-    const cleanCode = (orderCode || '').replace(/[^a-zA-Z0-9]/g, '');
-    if (window._cooldownIntervals[cleanCode]) {
-        clearInterval(window._cooldownIntervals[cleanCode]);
-    }
-    let currentSec = remainingSeconds;
-    window._cooldownIntervals[cleanCode] = setInterval(() => {
-        currentSec--;
-        const timerSpan = document.getElementById(`cooldownTimer_${cleanCode}`);
-        if (timerSpan) {
-            timerSpan.innerText = formatMMSS(currentSec);
-        }
-        if (currentSec <= 0) {
-            clearInterval(window._cooldownIntervals[cleanCode]);
-            delete window._cooldownIntervals[cleanCode];
-            const btnContainer = document.getElementById('stockOwnerTrackBtnContainer');
-            if (btnContainer && (currentTrackingOrderCode === orderCode || !currentTrackingOrderCode)) {
-                btnContainer.innerHTML = `
-                    <button class="btn btn-outline-warning w-100 rounded-pill py-2 fw-bold fs-8 shadow-xs" onclick="openNotifyRiderModal('${orderCode}', true)">
-                        <i class="fa-solid fa-rotate me-1"></i> Re-notify Fleet Delivery Riders
-                    </button>
-                    <button class="btn btn-outline-danger w-100 rounded-pill py-2 fw-bold fs-8 mt-2" onclick="promptCancelRiderRequest('${orderCode}')">
-                        <i class="fa-solid fa-ban me-1"></i> Cancel Rider Request
-                    </button>
-                `;
-            }
-        }
-    }, 1000);
-};
-
-window.stopCooldownTicker = function(orderCode) {
-    const cleanCode = (orderCode || '').replace(/[^a-zA-Z0-9]/g, '');
-    if (window._cooldownIntervals && window._cooldownIntervals[cleanCode]) {
-        clearInterval(window._cooldownIntervals[cleanCode]);
-        delete window._cooldownIntervals[cleanCode];
-    }
-};
-
-window.openNotifyRiderModal = function(orderCode, isRebroadcast = false) {
-    const code = orderCode || currentTrackingOrderCode || '#RE-10245';
-    window._pendingNotifyOrderCode = code;
-    window._isPendingRebroadcast = !!isRebroadcast;
-
-    const modalTitle = document.getElementById('notifyRiderModalTitle');
-    const modalPrompt = document.getElementById('notifyRiderModalPrompt');
-    const modalCode = document.getElementById('notifyRiderModalOrderCode');
-    const btnGo = document.getElementById('btnConfirmNotifyRiderGo');
-
-    if (modalCode) modalCode.innerText = code;
-    if (modalTitle) {
-        modalTitle.innerText = isRebroadcast ? 'Re-notifying Rider' : 'Notifying Rider';
-    }
-    if (modalPrompt) {
-        modalPrompt.innerText = isRebroadcast
-            ? 'Notifying rider: Are you sure you want to re-broadcast this pickup request to nearby fleet couriers?'
-            : 'Notifying rider: Are you sure you want to broadcast this pickup request to nearby fleet couriers?';
-    }
-    if (btnGo) {
-        btnGo.disabled = false;
-        btnGo.innerHTML = `<span>Go</span> <i class="fa-solid fa-paper-plane fs-9"></i>`;
-    }
-
-    const modalEl = document.getElementById('notifyRiderConfirmModal');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-        const m = bootstrap.Modal.getOrCreateInstance(modalEl);
-        m.show();
-    } else {
-        if (confirm(`Notifying rider: Are you sure you want to ${isRebroadcast ? 're-broadcast' : 'broadcast'} this pickup request to nearby fleet couriers?`)) {
-            confirmNotifyRiderBroadcast();
-        }
-    }
-};
-
-window.confirmNotifyRiderBroadcast = async function() {
-    const code = window._pendingNotifyOrderCode || currentTrackingOrderCode || '#RE-10245';
-    const isRebroadcast = !!window._isPendingRebroadcast;
-
-    const btnGo = document.getElementById('btnConfirmNotifyRiderGo');
-    if (btnGo) {
-        btnGo.disabled = true;
-        btnGo.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Sending...`;
-    }
-
-    const modalEl = document.getElementById('notifyRiderConfirmModal');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-        const m = bootstrap.Modal.getInstance(modalEl);
-        if (m) m.hide();
-    }
-
+window.ownerPrepareEquipment = async function(orderCode) {
+    if (!orderCode) orderCode = currentTrackingOrderCode || '#RE-10245';
     try {
-        if (isRebroadcast) {
-            const res = await fetch(getRentEaseApiUrl('stock_owner_notify_riders_again'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_code: code })
-            });
-            const data = await res.json();
-            if (data.success) {
-                localStorage.setItem('rentease_broadcast_time_' + code, Date.now());
-                alert(`🚀 Broadcast Re-sent!\n\nDelivery request for Order ${code} has been broadcasted to all active fleet couriers.`);
-                openTrackScreen(code);
-                if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
-            } else {
-                if (data.remaining_seconds) {
-                    const elapsedEquivalent = 600 - data.remaining_seconds;
-                    localStorage.setItem('rentease_broadcast_time_' + code, Date.now() - (elapsedEquivalent * 1000));
-                }
-                alert(data.message || 'Error re-notifying delivery riders.');
-                openTrackScreen(code);
-            }
-        } else {
-            // First time notifying rider (transitions to LOOKING_FOR_RIDER)
-            const res = await fetch(getRentEaseApiUrl('update_owner_order_status'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'update_owner_order_status',
-                    order_code: code,
-                    new_status: 'LOOKING_FOR_RIDER'
-                })
-            });
-            const data = await res.json();
-            if (data && data.success) {
-                localStorage.setItem('rentease_broadcast_time_' + code, Date.now());
-                alert(`🚀 Dispatch Broadcasted!\n\nOrder ${code} is packaged. Nearby fleet delivery riders have been notified to accept the pickup.`);
-                if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
-                if (typeof loadRentEaseCatalog === 'function') loadRentEaseCatalog();
-                openTrackScreen(code);
-            } else {
-                alert(data?.message || 'Failed to broadcast rider request.');
-            }
-        }
-    } catch(e) {
-        console.error(e);
-        alert('Network connection error while notifying riders.');
-    }
-};
-
-window.promptCancelRiderRequest = function(orderCode) {
-    const code = orderCode || currentTrackingOrderCode || '#RE-10245';
-    window._pendingCancelOrderCode = code;
-
-    const modalCode = document.getElementById('cancelRiderModalOrderCode');
-    if (modalCode) modalCode.innerText = code;
-
-    const modalEl = document.getElementById('cancelRiderRequestModal');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-        const m = bootstrap.Modal.getOrCreateInstance(modalEl);
-        m.show();
-    } else {
-        if (confirm(`Cancel Rider Request: Are you sure you want to cancel the rider dispatch for Order ${code} and return to packaging stage?`)) {
-            confirmCancelRiderRequest();
-        }
-    }
-};
-
-window.confirmCancelRiderRequest = async function() {
-    const code = window._pendingCancelOrderCode || currentTrackingOrderCode || '#RE-10245';
-
-    const modalEl = document.getElementById('cancelRiderRequestModal');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-        const m = bootstrap.Modal.getInstance(modalEl);
-        if (m) m.hide();
-    }
-
-    stopCooldownTicker(code);
-    localStorage.removeItem('rentease_broadcast_time_' + code);
-
-    try {
-        const res = await fetch(getRentEaseApiUrl('cancel_rider_request'), {
+        const res = await fetch(getRentEaseApiUrl('update_owner_order_status'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order_code: code })
+            body: JSON.stringify({
+                action: 'update_owner_order_status',
+                order_code: orderCode,
+                new_status: 'PREPARING'
+            })
         });
         const data = await res.json();
         if (data && data.success) {
-            alert(`✅ ${data.message || 'Rider request cancelled.'}`);
-            openTrackScreen(code);
+            alert(`✅ Order ${orderCode} Accepted!\n\nEquipment packaging is now underway. Message the renter to agree on a campus meetup location.`);
+            openTrackScreen(orderCode);
             if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
         } else {
-            alert(data?.message || 'Failed to cancel rider request.');
+            alert(data?.message || 'Could not update order status.');
         }
     } catch(e) {
-        console.error(e);
-        alert('Network error while cancelling rider request.');
+        alert('Network error updating order status.');
     }
 };
 
-window.stockOwnerNotifyRidersAgain = function(orderCode) {
-    const code = orderCode || currentTrackingOrderCode || '#RE-10245';
-    openNotifyRiderModal(code, true);
+window.ownerConfirmHandover = async function(orderCode) {
+    if (!orderCode) orderCode = currentTrackingOrderCode || '#RE-10245';
+    if (!confirm(`Confirm that you have met the student renter face-to-face and successfully handed over the equipment for Order ${orderCode}?`)) {
+        return;
+    }
+    try {
+        const res = await fetch(getRentEaseApiUrl('update_owner_order_status'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update_owner_order_status',
+                order_code: orderCode,
+                new_status: 'DELIVERED'
+            })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+            alert(`🤝 Face-to-Face Handover Confirmed!\n\nEquipment is now officially in the renter's care for the rental duration.`);
+            openTrackScreen(orderCode);
+            if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
+        } else {
+            alert(data?.message || 'Could not confirm handover.');
+        }
+    } catch(e) {
+        alert('Network error confirming handover.');
+    }
 };
 
 let _isOpeningTrackScreen = false;
@@ -2256,7 +2085,7 @@ async function openTrackScreen(orderCode) {
             orderCode = currentTrackingOrderCode || localStorage.getItem('rentease_current_order_code') || '';
         }
 
-        // Switch to track tab directly without calling openTrackScreen recursively
+        // Switch to track tab directly
         const validTabs = ['home', 'explore', 'cart', 'track', 'profile', 'sell', 'wanted', 'messages'];
         validTabs.forEach(t => {
             const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -2273,7 +2102,7 @@ async function openTrackScreen(orderCode) {
         const res = await fetch(getRentEaseApiUrl('get_order_tracking', { order_code: orderCode }));
         if (res.ok) {
             const data = await res.json();
-            const t = data.tracking;
+            const t = data.tracking || {};
             const actualCode = data.order?.order_code || t?.order_code || orderCode || '';
             if (actualCode) {
                 currentTrackingOrderCode = actualCode;
@@ -2281,77 +2110,33 @@ async function openTrackScreen(orderCode) {
             }
             if (titleEl && actualCode) titleEl.innerText = `Order ${actualCode}`;
 
-            const arrEl = document.getElementById('trackEstimatedArrivalText');
-            if (arrEl) arrEl.innerText = `Estimated Arrival: ${t.estimated_arrival}`;
-
-            const nameEl = document.getElementById('trackRiderName');
-            if (nameEl) nameEl.innerText = (t.rider && t.rider.name) ? t.rider.name : 'Awaiting Driver Match';
-
-            const roleEl = document.getElementById('trackRiderRole');
-            if (roleEl) roleEl.innerText = (t.rider && t.rider.name) ? `${t.rider?.role || 'Delivery Rider'} • ${t.rider?.vehicle || 'Motorcycle'}` : 'Delivery Courier Match Pending';
-
-            const phoneBtn = document.getElementById('trackCallRiderBtn');
-            if (phoneBtn) {
-                phoneBtn.href = t.rider?.phone ? `tel:${t.rider.phone}` : 'javascript:void(0)';
-                phoneBtn.style.display = t.rider?.phone ? 'flex' : 'none';
-            }
-
             const currentUser = getRentEaseCurrentUser();
             const isOwner = (currentUser.email && t.owner_email && currentUser.email.toLowerCase() === t.owner_email.toLowerCase())
                 || (currentUser.name && t.owner_name && currentUser.name.toLowerCase() === t.owner_name.toLowerCase())
                 || (currentUser.id && currentUser.id === 104);
             const isRenter = !isOwner;
 
-            // Handle Rider Broadcast, Cancellation Alert, and Rider Cards
-            const broadcastCard = document.getElementById('riderBroadcastWaitingCard');
-            const cancelCard = document.getElementById('riderCancelledAlertCard');
-            const cancelReasonText = document.getElementById('riderCancelledReasonText');
-            const riderCard = document.getElementById('trackRiderCard') || document.getElementById('trackRiderName')?.closest('.card');
-            const toggleRiderCard = function(visible, roleText) {
-                if (!riderCard) return;
-                if (visible) {
-                    riderCard.classList.remove('d-none');
-                    riderCard.style.setProperty('display', 'flex', 'important');
-                    if (roleText && roleEl) roleEl.innerText = roleText;
-                } else {
-                    riderCard.classList.add('d-none');
-                    riderCard.style.setProperty('display', 'none', 'important');
-                }
-            };
+            // Direct Contact Partner Card (Renter sees Owner, Owner sees Renter)
+            const partnerName = document.getElementById('trackPartnerName');
+            const partnerRole = document.getElementById('trackPartnerRole');
+            const partnerPhone = document.getElementById('trackCallPartnerBtn');
+            const partnerAvatar = document.getElementById('trackPartnerAvatar');
+            const meetupLoc = document.getElementById('trackMeetupLocation');
 
-            if (t.order_status === 'LOOKING_FOR_RIDER') {
-                if (broadcastCard) broadcastCard.style.display = 'block';
-                if (cancelCard) cancelCard.style.display = 'none';
-                toggleRiderCard(false);
-            } else if (t.order_status === 'RIDER_CANCELLED') {
-                if (broadcastCard) broadcastCard.style.display = 'none';
-                if (cancelCard) cancelCard.style.display = 'block';
-                if (cancelReasonText && data.order?.cancellation_reason) {
-                    cancelReasonText.innerText = `The assigned driver cancelled pickup (Reason: "${data.order.cancellation_reason}"). The equipment remains safe at the stock owner's inventory.`;
-                }
-                toggleRiderCard(false);
-            } else if (['CONFIRMED', 'PREPARING'].includes(t.order_status)) {
-                if (broadcastCard) broadcastCard.style.display = 'none';
-                if (cancelCard) cancelCard.style.display = 'none';
-                toggleRiderCard(false);
-            } else if (t.order_status === 'PICKUP') {
-                // Step 4: Rider accepted. Stock owner sees driver en route, Renter only sees "Order in Process"!
-                if (broadcastCard) broadcastCard.style.display = 'none';
-                if (cancelCard) cancelCard.style.display = 'none';
-                if (isOwner && t.rider && t.rider.name && t.rider.name !== 'Pending Driver Match') {
-                    toggleRiderCard(true, `${t.rider?.role || 'Delivery Rider'} • Heading to Hub for Package Pickup`);
-                } else {
-                    toggleRiderCard(false);
-                }
+            if (meetupLoc) {
+                meetupLoc.innerText = t.delivery_address || t.pickup_address || 'Campus CS Building / San Pablo Hub';
+            }
+
+            if (isOwner) {
+                if (partnerName) partnerName.innerText = t.customer_name || 'Student Renter';
+                if (partnerRole) partnerRole.innerText = 'Student Renter • Campus Meetup Partner';
+                if (partnerPhone) partnerPhone.href = t.customer_phone ? `tel:${t.customer_phone}` : 'tel:09668257301';
+                if (partnerAvatar) partnerAvatar.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80';
             } else {
-                // ON_THE_WAY, DELIVERED, RETURNED
-                if (broadcastCard) broadcastCard.style.display = 'none';
-                if (cancelCard) cancelCard.style.display = 'none';
-                if (t.rider && t.rider.name && t.rider.name !== 'Pending Driver Match' && t.rider.name !== 'Assigned Driver') {
-                    toggleRiderCard(true, `${t.rider?.role || 'Delivery Rider'} • ${t.rider?.vehicle || 'Motorcycle'}`);
-                } else {
-                    toggleRiderCard(false);
-                }
+                if (partnerName) partnerName.innerText = t.owner_name || 'Romeo Paolo Tolentino';
+                if (partnerRole) partnerRole.innerText = 'Equipment Stock Owner • Verified Campus Lender';
+                if (partnerPhone) partnerPhone.href = t.owner_phone ? `tel:${t.owner_phone}` : 'tel:09668257301';
+                if (partnerAvatar) partnerAvatar.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80';
             }
 
             // Update Stock Owner Preparation Action Card (Only shown for Owner)
@@ -2364,100 +2149,46 @@ async function openTrackScreen(orderCode) {
                 ownerCard.style.display = isOwner ? 'block' : 'none';
                 if (ownerBadge) ownerBadge.innerText = t.order_status;
                 if (t.order_status === 'CONFIRMED') {
-                    if (ownerSub) ownerSub.innerText = 'Step 1: Order Confirmed • Awaiting Owner Acceptance';
-                    if (ownerInst) ownerInst.innerText = 'Student booked your equipment! Review the rental details and accept the booking to begin equipment preparation.';
+                    if (ownerSub) ownerSub.innerText = 'Step 1: Booking Confirmed • Inspect & Ready Equipment';
+                    if (ownerInst) ownerInst.innerText = 'Student booked your equipment! Inspect the gear and click below when it is ready for on-campus meetup.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
                             <button class="btn btn-warning w-100 rounded-pill py-2.5 fw-extrabold fs-8 text-dark shadow-xs" onclick="ownerPrepareEquipment('${actualCode}')">
-                                <i class="fa-solid fa-boxes-packing me-1"></i> Accept Rental Request (Order in Process)
+                                <i class="fa-solid fa-boxes-packing me-1"></i> Gear Inspected & Ready for Meetup
                             </button>
                         `;
                     }
-                } else if (t.order_status === 'PREPARING') {
-                    if (ownerSub) ownerSub.innerText = 'Step 2: Equipment Packaging in Progress';
-                    if (ownerInst) ownerInst.innerText = 'Equipment is currently being inspected and packaged. Once boxed and ready for handover, notify fleet riders for pickup.';
+                } else if (['PREPARING', 'MEETUP', 'PICKUP', 'LOOKING_FOR_RIDER', 'ON_THE_WAY'].includes(t.order_status)) {
+                    if (ownerSub) ownerSub.innerText = 'Step 2: Campus Meetup & Handover';
+                    if (ownerInst) ownerInst.innerText = 'Equipment is ready! Message the student renter to agree on the campus meetup spot and time, then inspect and hand over the equipment in person.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
-                            <button class="btn text-white w-100 rounded-pill py-2.5 fw-extrabold fs-8 shadow-xs" style="background:#5B3FA8; border:none;" onclick="ownerFinishPackagingAndNotifyRider('${actualCode}')">
-                                <i class="fa-solid fa-satellite-dish me-1"></i> Packaged & Ready: Notify Rider to Pick Up
-                            </button>
-                        `;
-                    }
-                } else if (t.order_status === 'LOOKING_FOR_RIDER') {
-                    if (ownerSub) ownerSub.innerText = 'Step 3: Delivery Broadcasted • Awaiting Rider';
-                    if (ownerInst) ownerInst.innerText = 'Equipment is packaged! Delivery request has been broadcasted to nearby fleet riders.';
-                    if (ownerBtnCont) {
-                        let cooldownRemaining = 0;
-                        if (typeof t.cooldown_remaining_seconds === 'number' && t.cooldown_remaining_seconds > 0) {
-                            cooldownRemaining = t.cooldown_remaining_seconds;
-                        } else {
-                            const localSaved = localStorage.getItem('rentease_broadcast_time_' + actualCode);
-                            if (localSaved) {
-                                const elapsed = Math.floor((Date.now() - parseInt(localSaved, 10)) / 1000);
-                                if (elapsed < 600) {
-                                    cooldownRemaining = 600 - elapsed;
-                                }
-                            }
-                        }
-
-                        const cleanCode = actualCode.replace(/[^a-zA-Z0-9]/g, '');
-                        if (cooldownRemaining > 0) {
-                            ownerBtnCont.innerHTML = `
-                                <button class="btn btn-light border text-muted w-100 rounded-pill py-2 fw-bold fs-8" disabled id="stockOwnerReNotifyBtn_${cleanCode}">
-                                    <i class="fa-solid fa-hourglass-half text-warning me-1"></i> Re-notify Available in <span id="cooldownTimer_${cleanCode}" class="text-dark fw-extrabold">${formatMMSS(cooldownRemaining)}</span>
+                            <div class="d-flex flex-column gap-2">
+                                <button class="btn btn-outline-primary w-100 rounded-pill py-2 fw-bold fs-8" style="border-color:#5B3FA8; color:#5B3FA8;" onclick="chatWithOwnerFromTracking()">
+                                    <i class="fa-regular fa-comment-dots me-1"></i> Message Renter to Agree on Meetup
                                 </button>
-                                <button class="btn btn-outline-danger w-100 rounded-pill py-2 fw-bold fs-8 mt-2" onclick="promptCancelRiderRequest('${actualCode}')">
-                                    <i class="fa-solid fa-ban me-1"></i> Cancel Rider Request
+                                <button class="btn text-white w-100 rounded-pill py-2.5 fw-extrabold fs-8 shadow-xs" style="background:linear-gradient(135deg, #10B981, #059669); border:none;" onclick="ownerConfirmHandover('${actualCode}')">
+                                    <i class="fa-solid fa-handshake me-1"></i> Confirm Face-to-Face Handover
                                 </button>
-                            `;
-                            startCooldownTicker(actualCode, cooldownRemaining);
-                        } else {
-                            ownerBtnCont.innerHTML = `
-                                <button class="btn btn-outline-warning w-100 rounded-pill py-2 fw-bold fs-8 shadow-xs" onclick="openNotifyRiderModal('${actualCode}', true)">
-                                    <i class="fa-solid fa-rotate me-1"></i> Re-notify Fleet Delivery Riders
-                                </button>
-                                <button class="btn btn-outline-danger w-100 rounded-pill py-2 fw-bold fs-8 mt-2" onclick="promptCancelRiderRequest('${actualCode}')">
-                                    <i class="fa-solid fa-ban me-1"></i> Cancel Rider Request
-                                </button>
-                            `;
-                        }
-                    }
-                } else if (t.order_status === 'PICKUP') {
-                    if (ownerSub) ownerSub.innerText = 'Step 4: Driver Assigned • En Route for Pickup';
-                    if (ownerInst) ownerInst.innerText = t.rider?.name ? `Driver ${t.rider.name} is arriving at your hub to collect the package.` : 'A delivery driver has accepted the job and is arriving at your hub to collect the package.';
-                    if (ownerBtnCont) {
-                        ownerBtnCont.innerHTML = `
-                            <div class="p-2 rounded-3 bg-white border text-center fs-9 fw-bold text-primary">
-                                <i class="fa-solid fa-motorcycle me-1"></i> Hand over packaged equipment to driver upon arrival
-                            </div>
-                        `;
-                    }
-                } else if (t.order_status === 'ON_THE_WAY') {
-                    if (ownerSub) ownerSub.innerText = 'Step 5: Package Picked Up • En Route to Renter';
-                    if (ownerInst) ownerInst.innerText = 'Driver has collected the package from you. Courier GPS live map is active below.';
-                    if (ownerBtnCont) {
-                        ownerBtnCont.innerHTML = `
-                            <div class="p-2 rounded-3 bg-white border text-center fs-9 fw-bold text-success">
-                                <i class="fa-solid fa-truck-fast me-1"></i> In transit to student renter
                             </div>
                         `;
                     }
                 } else if (t.order_status === 'DELIVERED') {
                     const confirmedByRenter = (t.renter_received_confirmed == 1);
-                    if (ownerSub) ownerSub.innerText = confirmedByRenter ? 'Step 6: Verified Handover Complete (Active Rental)' : 'Step 6: Handover Complete • Awaiting Renter Receipt Confirmation';
+                    if (ownerSub) ownerSub.innerText = 'Step 3: Handover Complete • Active Rental';
                     if (ownerInst) ownerInst.innerText = confirmedByRenter 
-                        ? 'Student confirmed package received in good condition. Rental period is underway!'
-                        : 'Driver handed over the package. Awaiting student renter receipt confirmation.';
+                        ? 'Student confirmed receipt of equipment. The event rental period is running.'
+                        : 'Equipment handed over face-to-face. When rental ends, meet to inspect and restock.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
                             <button class="btn text-white w-100 rounded-pill py-2 fw-extrabold fs-8 shadow-xs" style="background:linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(null, '${actualCode}')">
-                                <i class="fa-solid fa-circle-check me-1"></i> Confirm Return & Restock Inventory
+                                <i class="fa-solid fa-circle-check me-1"></i> Confirm Returned Face-to-Face & Restock
                             </button>
                         `;
                     }
                 } else if (t.order_status === 'RETURNED') {
                     if (ownerSub) ownerSub.innerText = 'Rental Complete & Restocked';
-                    if (ownerInst) ownerInst.innerText = 'Equipment safely returned and inventory replenished in campus catalog.';
+                    if (ownerInst) ownerInst.innerText = 'Equipment safely returned in person and inventory replenished in campus catalog.';
                     if (ownerBtnCont) {
                         ownerBtnCont.innerHTML = `
                             <div class="p-2 rounded-3 bg-white border text-center fs-9 fw-bold text-success">
@@ -2469,26 +2200,18 @@ async function openTrackScreen(orderCode) {
             }
 
             const st = t.order_status;
-            const isPrepDone = ['LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
-            const isPickedUp = ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
-            const showMap = ['ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY'].includes(st);
+            const isPrepDone = ['PREPARING', 'MEETUP', 'PICKUP', 'LOOKING_FOR_RIDER', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
+            const isHandoverReady = ['PREPARING', 'MEETUP', 'PICKUP', 'LOOKING_FOR_RIDER', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
             const isDelivered = ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
             const isReturned = (st === 'RETURNED');
 
             // Synchronize Vertical Timeline Stages Dynamically
-            // Stage 2: Preparing Equipment / Order in Process
+            // Stage 2: Preparing Equipment
             const prepCircle = document.getElementById('stagePreparingCircle');
             const prepLine = document.getElementById('stagePreparingLine');
             const prepTime = document.getElementById('stagePreparingTime');
             if (prepCircle) {
-                // If renter is looking at PICKUP, renter only sees "Order in Process"!
-                if (isRenter && st === 'PICKUP') {
-                    prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
-                    prepCircle.style.background = '#F59E0B';
-                    prepCircle.innerHTML = '<i class="fa-solid fa-boxes-packing fa-beat"></i>';
-                    if (prepLine) prepLine.style.background = '#E2E8F0';
-                    if (prepTime) prepTime.innerText = 'Order in Process: Stock owner packaging equipment';
-                } else if (isPrepDone) {
+                if (isPrepDone) {
                     prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
                     prepCircle.style.background = '#10B981';
                     prepCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
@@ -2498,7 +2221,7 @@ async function openTrackScreen(orderCode) {
                     prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
                     prepCircle.style.background = '#F59E0B';
                     prepCircle.innerHTML = '<i class="fa-solid fa-boxes-packing fa-beat"></i>';
-                    if (prepTime) prepTime.innerText = 'Order in Process: Stock owner packaging equipment';
+                    if (prepTime) prepTime.innerText = 'Stock owner packaging equipment';
                 } else {
                     prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
                     prepCircle.style.background = '#fff';
@@ -2507,142 +2230,32 @@ async function openTrackScreen(orderCode) {
                 }
             }
 
-            // Stage 3: Pickup from Owner
+            // Stage 3: Campus Meetup & Handover
             const pickupCircle = document.getElementById('stagePickupCircle');
             const pickupLine = document.getElementById('stagePickupLine');
             const pickupTime = document.getElementById('stagePickupTime');
             if (pickupCircle) {
-                if (isPickedUp) {
+                if (isDelivered) {
                     pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
                     pickupCircle.style.background = '#10B981';
                     pickupCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
                     if (pickupLine) pickupLine.style.background = '#10B981';
-                    if (pickupTime) pickupTime.innerText = 'Package Picked Up from Owner';
-                } else if (st === 'PICKUP') {
-                    if (isRenter) {
-                        // Renter only sees pending pickup until picked up!
-                        pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
-                        pickupCircle.style.background = '#fff';
-                        pickupCircle.innerHTML = '<i class="fa-regular fa-circle"></i>';
-                        if (pickupTime) pickupTime.innerText = 'Awaiting driver pickup from owner';
-                    } else {
-                        // Stock owner sees driver en route to their hub!
-                        pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
-                        pickupCircle.style.background = '#3B82F6';
-                        pickupCircle.innerHTML = '<i class="fa-solid fa-motorcycle fa-beat"></i>';
-                        if (pickupTime) pickupTime.innerText = t.rider?.name ? `Driver ${t.rider.name} en route to your hub for pickup` : 'Driver assigned and en route for pickup';
-                    }
-                } else if (st === 'LOOKING_FOR_RIDER') {
+                    if (pickupTime) pickupTime.innerText = 'Face-to-Face Handover Verified';
+                } else if (isPrepDone) {
                     pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
-                    pickupCircle.style.background = '#F59E0B';
-                    pickupCircle.innerHTML = '<i class="fa-solid fa-satellite-dish fa-beat"></i>';
-                    if (pickupTime) pickupTime.innerText = 'Awaiting driver to accept delivery';
+                    pickupCircle.style.background = '#5B3FA8';
+                    pickupCircle.innerHTML = '<i class="fa-solid fa-handshake fa-beat"></i>';
+                    if (pickupLine) pickupLine.style.background = '#E2E8F0';
+                    if (pickupTime) pickupTime.innerText = 'Ready for campus meetup • Chat to agree on spot';
                 } else {
                     pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
                     pickupCircle.style.background = '#fff';
                     pickupCircle.innerHTML = '<i class="fa-regular fa-circle"></i>';
-                    if (pickupTime) pickupTime.innerText = 'Scheduled after packaging';
+                    if (pickupTime) pickupTime.innerText = 'Scheduled after equipment preparation';
                 }
             }
 
-            // Stage 4: On the Way (Out for Delivery)
-            const otwCircle = document.getElementById('stageOnTheWayCircle');
-            const otwLine = document.getElementById('stageOnTheWayLine');
-            const otwTitle = document.getElementById('stageOnTheWayTitle');
-            if (otwCircle) {
-                if (isDelivered) {
-                    otwCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
-                    otwCircle.style.background = '#10B981';
-                    otwCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
-                    if (otwLine) otwLine.style.background = '#10B981';
-                } else if (st === 'ON_THE_WAY') {
-                    otwCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm';
-                    otwCircle.style.background = '#5B3FA8';
-                    otwCircle.innerHTML = '<i class="fa-solid fa-truck-fast"></i>';
-                    if (otwLine) otwLine.style.background = '#E2E8F0';
-                    if (otwTitle) otwTitle.style.color = '#5B3FA8';
-                } else {
-                    otwCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
-                    otwCircle.style.background = '#fff';
-                    otwCircle.innerHTML = '<i class="fa-regular fa-circle"></i>';
-                    if (otwLine) otwLine.style.background = '#E2E8F0';
-                    if (otwTitle) otwTitle.style.color = '';
-                }
-            }
-
-            // Handle Proof of Pickup Card (Step 5)
-            const popCard = document.getElementById('proofOfPickupCard');
-            if (popCard) {
-                const pop = t.proof_of_pickup;
-                if (pop && (pop.has_proof || isPickedUp)) {
-                    popCard.style.display = 'block';
-                    const img = document.getElementById('pickupProofPhotoImg');
-                    if (img) {
-                        img.src = pop.photo_url || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80';
-                        img.style.display = 'block';
-                    }
-                    const timeEl = document.getElementById('pickupProofTime');
-                    if (timeEl) timeEl.innerText = pop.picked_up_at ? `Picked Up on ${pop.picked_up_at}` : 'Verified Hub Collection';
-
-                    const riderEl = document.getElementById('pickupProofRiderName');
-                    if (riderEl) riderEl.innerText = pop.rider_name || t.rider?.name || '—';
-
-                    const noteEl = document.getElementById('pickupProofNote');
-                    if (noteEl) noteEl.innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${pop.note || 'Equipment inspected and collected safely.'}`;
-                } else {
-                    popCard.style.display = 'none';
-                }
-            }
-
-            // Handle Shopee-Style Proof of Delivery Card (Step 6)
-            const podCard = document.getElementById('shopeeProofOfDeliveryCard');
-            if (podCard) {
-                const pod = t.proof_of_delivery;
-                if (pod && (pod.has_proof || isDelivered)) {
-                    podCard.style.display = 'block';
-                    const img = document.getElementById('trackPodPhotoImg');
-                    if (img) img.src = pod.photo_url || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
-
-                    const rec = document.getElementById('trackPodRecipient');
-                    if (rec) rec.innerText = pod.recipient_name || 'Verified Student Recipient';
-
-                    const tm = document.getElementById('trackPodTime');
-                    if (tm) tm.innerText = pod.delivered_at || 'Verified on Handover';
-
-                    const vp = document.getElementById('trackPodVehiclePlate');
-                    if (vp) vp.innerText = `${pod.vehicle_type || 'Motorcycle'} • ${pod.plate_number || 'MC-8888-JY'}`;
-
-                    const rn = document.getElementById('trackPodRiderName');
-                    if (rn) rn.innerText = pod.rider_name || t.rider?.name || '—';
-
-                    const note = document.getElementById('trackPodNote');
-                    if (note) note.innerHTML = `<i class="fa-solid fa-quote-left text-muted me-1"></i> ${pod.note || 'Package handed over and inspected in excellent condition at doorstep.'}`;
-                } else {
-                    podCard.style.display = 'none';
-                }
-            }
-
-            // Handle Renter Item Received Action Card (Step 6)
-            const recCard = document.getElementById('renterReceivedActionCard');
-            if (recCard) {
-                if (isDelivered && isRenter) {
-                    recCard.style.display = 'block';
-                    const unconfirmed = document.getElementById('renterUnconfirmedBox');
-                    const confirmed = document.getElementById('renterConfirmedBox');
-                    const stamp = document.getElementById('renterReceivedTimestampText');
-                    if (t.renter_received_confirmed == 1) {
-                        if (unconfirmed) unconfirmed.style.display = 'none';
-                        if (confirmed) confirmed.style.display = 'block';
-                        if (stamp) stamp.innerText = `Confirmed on ${t.renter_received_time || 'Delivery'}. Active rental course in progress.`;
-                    } else {
-                        if (unconfirmed) unconfirmed.style.display = 'block';
-                        if (confirmed) confirmed.style.display = 'none';
-                    }
-                } else {
-                    recCard.style.display = 'none';
-                }
-            }
-            
+            // Stage 4: Delivered & Active Rental
             const stageDelCircle = document.getElementById('stageDeliveredCircle');
             const stageDelText = document.getElementById('stageDeliveredText');
             if (stageDelCircle) {
@@ -2659,6 +2272,7 @@ async function openTrackScreen(orderCode) {
                 }
             }
 
+            // Stage 5: Returned & Restocked
             const stageRetCircle = document.getElementById('stageReturnedCircle');
             const stageRetText = document.getElementById('stageReturnedText');
             if (stageRetCircle) {
@@ -2675,6 +2289,28 @@ async function openTrackScreen(orderCode) {
                 }
             }
 
+            // Handle Renter Item Received Action Card
+            const recCard = document.getElementById('renterReceivedActionCard');
+            if (recCard) {
+                if (isRenter && (isPrepDone || isDelivered)) {
+                    recCard.style.display = 'block';
+                    const unconfirmed = document.getElementById('renterUnconfirmedBox');
+                    const confirmed = document.getElementById('renterConfirmedBox');
+                    const stamp = document.getElementById('renterReceivedTimestampText');
+                    if (isDelivered || t.renter_received_confirmed == 1) {
+                        if (unconfirmed) unconfirmed.style.display = 'none';
+                        if (confirmed) confirmed.style.display = 'block';
+                        if (stamp) stamp.innerText = `Confirmed face-to-face handover on ${t.renter_received_time || 'Meetup'}. Active rental course in progress.`;
+                    } else {
+                        if (unconfirmed) unconfirmed.style.display = 'block';
+                        if (confirmed) confirmed.style.display = 'none';
+                    }
+                } else {
+                    recCard.style.display = 'none';
+                }
+            }
+
+            // Handle Return Action Card
             const retBadge = document.getElementById('returnStatusBadge');
             const btnDispatch = document.getElementById('btnDispatchReturn');
             if (retBadge) {
@@ -2685,25 +2321,10 @@ async function openTrackScreen(orderCode) {
                         btnDispatch.disabled = true;
                         btnDispatch.innerHTML = '<i class="fa-solid fa-check-double me-1"></i> Stock Restored';
                     }
-                } else if (t.order_status === 'RETURN_DELIVERY') {
-                    retBadge.className = 'badge bg-warning-subtle text-warning-emphasis fs-9';
-                    retBadge.innerText = 'Return Trip in Progress';
                 } else if (isDelivered) {
                     retBadge.className = 'badge bg-primary-subtle text-primary fs-9';
                     retBadge.innerText = 'Rental Course Active';
                 }
-            }
-
-            // Map ONLY displays if package has been picked up (ON_THE_WAY, DELIVERED, RETURN_DELIVERY)
-            const mapCard = document.getElementById('renteaseTrackMapCard');
-            if (mapCard) {
-                mapCard.style.display = showMap ? 'block' : 'none';
-            }
-
-            if (showMap) {
-                setTimeout(() => {
-                    initRentEaseLeafletMap(t.locations?.warehouse || [14.6488, 121.0687], t.locations?.rider || [14.6515, 121.0692], t.locations?.destination || [14.6540, 121.0745]);
-                }, 250);
             }
             return;
         }
@@ -2716,14 +2337,14 @@ async function openTrackScreen(orderCode) {
 
 window.renterConfirmReceivedPackage = async function(orderCode) {
     if (!orderCode) orderCode = currentTrackingOrderCode || '#RE-10245';
-    if (!confirm(`Confirm that you have received your rented equipment in good working condition for Order ${orderCode}?`)) {
+    if (!confirm(`Confirm that you have met the stock owner face-to-face and received your rented equipment in good working condition for Order ${orderCode}?`)) {
         return;
     }
 
     const btn = document.getElementById('btnRenterConfirmReceived');
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1.5"></i> Confirming...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1.5"></i> Confirming Handover...';
     }
 
     try {
@@ -2734,7 +2355,7 @@ window.renterConfirmReceivedPackage = async function(orderCode) {
         });
         const data = await res.json();
         if (data.success) {
-            alert('🎉 Item Received Confirmed!\n\nYour equipment receipt is verified. Enjoy your event rental course!');
+            alert('🎉 Face-to-Face Handover Verified!\n\nYour equipment receipt is confirmed. Enjoy your event rental course!');
             openTrackScreen(orderCode);
         } else {
             alert(data.message || 'Error confirming receipt.');
@@ -2744,59 +2365,10 @@ window.renterConfirmReceivedPackage = async function(orderCode) {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-circle-check me-1.5"></i> I Have Received the Package';
+            btn.innerHTML = '<i class="fa-solid fa-handshake me-1.5"></i> Confirm Face-to-Face Handover';
         }
     }
 };
-
-function initRentEaseLeafletMap(warehouse, rider, destination) {
-    const mapEl = document.getElementById('renteaseTrackMap');
-    if (!mapEl) return;
-
-    if (rentEaseMapInstance) {
-        rentEaseMapInstance.remove();
-        rentEaseMapInstance = null;
-    }
-
-    try {
-        const map = L.map('renteaseTrackMap', { zoomControl: false }).setView(rider, 15);
-        rentEaseMapInstance = map;
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19
-        }).addTo(map);
-
-        // Warehouse Pin
-        const warehouseIcon = L.divIcon({
-            html: `<div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" style="width:28px; height:28px; background:#10B981; font-size:13px; border:2px solid #fff;"><i class="fa-solid fa-warehouse"></i></div>`,
-            className: '',
-            iconSize: [28, 28]
-        });
-        L.marker(warehouse, { icon: warehouseIcon }).addTo(map).bindPopup('RentEase Hub (Warehouse)');
-
-        // Rider Motorcycle Pin
-        const riderIcon = L.divIcon({
-            html: `<div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-lg" style="width:34px; height:34px; background:linear-gradient(135deg, #5B3FA8, #341F97); font-size:15px; border:2px solid #fff;"><i class="fa-solid fa-motorcycle"></i></div>`,
-            className: '',
-            iconSize: [34, 34]
-        });
-        L.marker(rider, { icon: riderIcon }).addTo(map).bindPopup((t.rider?.name || 'Assigned Courier') + ' (Delivery Rider)');
-
-        // Destination Pin
-        const destIcon = L.divIcon({
-            html: `<div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" style="width:28px; height:28px; background:#EF4444; font-size:13px; border:2px solid #fff;"><i class="fa-solid fa-location-dot"></i></div>`,
-            className: '',
-            iconSize: [28, 28]
-        });
-        L.marker(destination, { icon: destIcon }).addTo(map).bindPopup('Delivery Address: San Pablo, Laguna');
-
-        // Route Polyline
-        L.polyline([warehouse, rider, destination], {
-            color: '#5B3FA8',
-            weight: 4,
-            dashArray: '8, 8',
-            opacity: 0.9
-        }).addTo(map);
 
     } catch (err) {
         console.error("Leaflet init error:", err);
@@ -4392,17 +3964,17 @@ window.chatWithOwnerFromDetail = function () {
     }, 400);
 };
 
-// Chat with item owner from Live Tracking screen
+// Chat with partner from Live Tracking screen (Face-to-Face Meetup Coordination)
 window.chatWithOwnerFromTracking = function () {
-    const orderCode = currentTrackedOrderCode || (document.getElementById('trackOrderCodeTitle')?.innerText || '').replace(/^Order\s*/i, '').trim() || '#RE-RENTAL';
-    const ownerName = 'Romeo Paolo Tolentino';
-    const ownerId = 104;
+    const orderCode = currentTrackingOrderCode || (document.getElementById('trackOrderCodeTitle')?.innerText || '').replace(/^Order\s*/i, '').trim() || '#RE-RENTAL';
+    const partnerName = document.getElementById('trackPartnerName')?.innerText || 'Partner';
+    const partnerId = 104;
     const title = `Rental Order ${orderCode}`;
 
     if (typeof openChat === 'function') {
-        openChat(ownerId, ownerName, title, '₱0.00');
+        openChat(partnerId, partnerName, title, '₱0.00');
     } else if (typeof checkAndOpenChat === 'function') {
-        checkAndOpenChat(ownerId, ownerName, title, '₱0.00', '');
+        checkAndOpenChat(partnerId, partnerName, title, '₱0.00', '');
     } else {
         switchTab('messages');
     }
@@ -4410,7 +3982,7 @@ window.chatWithOwnerFromTracking = function () {
     setTimeout(() => {
         const chatInput = document.getElementById('chatInput');
         if (chatInput) {
-            chatInput.value = `Hi ${ownerName}, inquiring about the equipment delivery/return status for order ${orderCode}.`;
+            chatInput.value = `Hi ${partnerName}, regarding rental order ${orderCode}: let's agree on an on-campus meetup location and time for the face-to-face equipment handover.`;
             chatInput.focus();
         }
     }, 400);
@@ -4428,9 +4000,9 @@ window.toggleOrderItemsModal = function () {
     }
 };
 
-// Deliver equipment back to owner and restore stock
+// Deliver equipment back to owner face-to-face and restore stock
 window.dispatchReturnDelivery = async function () {
-    const orderCode = currentTrackedOrderCode || (document.getElementById('trackOrderCodeTitle')?.innerText || '').replace(/^Order\s*/i, '').trim();
+    const orderCode = currentTrackingOrderCode || (document.getElementById('trackOrderCodeTitle')?.innerText || '').replace(/^Order\s*/i, '').trim();
     if (!orderCode) {
         alert("Please track or select an active order first.");
         return;
@@ -4438,7 +4010,7 @@ window.dispatchReturnDelivery = async function () {
     const btn = document.getElementById('btnDispatchReturn');
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Dispatching Return...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Processing Return...';
     }
     try {
         const res = await fetch(getRentEaseApiUrl('return_equipment'), {
@@ -4448,7 +4020,7 @@ window.dispatchReturnDelivery = async function () {
         });
         const data = await res.json();
         if (data.success) {
-            alert("✅ Rental Return Completed!\n\nThe equipment has been delivered back to the owner and stock inventory is now replenished.");
+            alert("✅ Rental Return Completed!\n\nThe equipment has been returned face-to-face and stock inventory is now replenished.");
             const badge = document.getElementById('returnStatusBadge');
             if (badge) {
                 badge.className = 'badge bg-success-subtle text-success fs-9';
@@ -4465,7 +4037,7 @@ window.dispatchReturnDelivery = async function () {
             alert('❌ ' + (data.message || 'Could not process return.'));
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-truck-ramp-box me-1"></i> Deliver Back to Owner';
+                btn.innerHTML = '<i class="fa-solid fa-handshake me-1"></i> Meet & Return to Owner';
             }
         }
     } catch (e) {
@@ -4473,7 +4045,7 @@ window.dispatchReturnDelivery = async function () {
         alert('❌ Error connecting to server to process return.');
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-truck-ramp-box me-1"></i> Deliver Back to Owner';
+            btn.innerHTML = '<i class="fa-solid fa-handshake me-1"></i> Meet & Return to Owner';
         }
     }
 };

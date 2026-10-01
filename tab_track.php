@@ -1,6 +1,6 @@
 <!-- ==========================================================
-     RentEase Screen 7: Live Delivery & Order Tracking
-     UIDESIFNAPP.png Screen 7 (Standout Feature)
+     RentEase Screen 7: Live Face-to-Face Rental Tracking
+     Direct Stock Owner & Renter Campus Meetup (No Riders)
      ========================================================== -->
 <div id="tabTrack" style="display:none;">
 
@@ -10,7 +10,7 @@
                 style="width:34px; height:34px; background:#fff;" onclick="switchTab('home')">
             <i class="fa-solid fa-arrow-left text-dark fs-8"></i>
         </button>
-        <h5 class="fw-extrabold mb-0 text-dark fs-6">Track Order</h5>
+        <h5 class="fw-extrabold mb-0 text-dark fs-6">Track Rental</h5>
         <div style="width:34px;"></div>
     </div>
 
@@ -20,7 +20,7 @@
         <a href="javascript:void(0)" class="fs-9 fw-bold text-decoration-none" style="color: #5B3FA8;" onclick="toggleOrderItemsModal()">Details</a>
     </div>
 
-    <!-- Stock Owner Equipment Preparation & Action Hub -->
+    <!-- Stock Owner Action Hub (Only shown when viewer is Stock Owner) -->
     <div class="card border-0 rounded-4 shadow-sm p-3 mb-3" id="stockOwnerTrackActionCard" style="background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%); border: 1.5px solid #D8B4FE !important;">
         <div class="d-flex align-items-center justify-content-between mb-2">
             <div class="d-flex align-items-center gap-2">
@@ -35,7 +35,7 @@
             <span class="badge rounded-pill bg-primary fw-bold fs-9" id="stockOwnerCurrentBadge">CONFIRMED</span>
         </div>
         <p class="fs-9 text-dark mb-2.5" id="stockOwnerActionInstruction">
-            As the equipment stock owner, inspect and package the items before calling a rider.
+            Inspect your equipment and chat with the student renter to agree on an on-campus meetup location and time.
         </p>
         <div id="stockOwnerTrackBtnContainer">
             <!-- Dynamic action buttons rendered via openTrackScreen -->
@@ -47,10 +47,61 @@
         </div>
     </div>
 
-    <!-- Vertical Timeline Stages (Matching Screen 7) -->
+    <!-- Direct Contact Partner Card (Renter sees Owner, Owner sees Renter) -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3" id="trackPartnerCard">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2.5">
+                <div class="position-relative">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" 
+                         class="rounded-circle border border-2 border-white shadow-2xs" width="44" height="44" style="object-fit:cover;" id="trackPartnerAvatar">
+                    <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:11px; height:11px;"></span>
+                </div>
+                <div>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0" id="trackPartnerName">Romeo Paolo Tolentino</h6>
+                    <span class="fs-9 text-muted" id="trackPartnerRole">Equipment Owner • Verified Student</span>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="tel:09668257301" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
+                   style="width:36px; height:36px; background:#F1F5F9; color:#5B3FA8;" id="trackCallPartnerBtn" title="Call">
+                    <i class="fa-solid fa-phone fs-8"></i>
+                </a>
+                <button type="button" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
+                        style="width:36px; height:36px; background:#F1F5F9; color:#5B3FA8;" onclick="chatWithOwnerFromTracking()" id="trackChatPartnerBtn" title="Chat Directly">
+                    <i class="fa-solid fa-comment-dots fs-8"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campus Meetup Location & Coordination Card -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3 bg-white" style="border-left: 4px solid #5B3FA8 !important;">
+        <div class="d-flex align-items-start gap-2.5">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs mt-0.5" 
+                 style="width:32px; height:32px; background:linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink:0;">
+                <i class="fa-solid fa-location-dot fs-8"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Campus Meetup Location</h6>
+                    <span class="badge bg-purple bg-opacity-10 fw-bold fs-9" style="color:#5B3FA8;">FACE-TO-FACE</span>
+                </div>
+                <div class="fw-bold text-dark fs-8 mb-1" id="trackMeetupLocation">Campus CS Building / San Pablo Hub</div>
+                <p class="fs-9 text-muted mb-2">
+                    Both parties meet directly in person. Chat to agree on the exact meetup spot and time, then inspect the equipment together before handover.
+                </p>
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill py-1 px-3 fw-bold fs-9" 
+                        style="border-color:#5B3FA8; color:#5B3FA8;" onclick="chatWithOwnerFromTracking()">
+                    <i class="fa-regular fa-comment-dots me-1"></i> Message to Coordinate Meetup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vertical Timeline Stages (Direct Face-to-Face Flow) -->
     <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3 position-relative" id="trackTimelineContainer">
         
-        <!-- Stage 1: Order Confirmed -->
+        <!-- Stage 1: Booking Confirmed -->
         <div class="d-flex gap-3 position-relative mb-3">
             <div class="d-flex flex-column align-items-center">
                 <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs" 
@@ -60,8 +111,8 @@
                 <div class="flex-grow-1" id="stageConfirmedLine" style="width:2px; background:#10B981; min-height:26px; margin:2px 0;"></div>
             </div>
             <div class="pt-0.5">
-                <h6 class="fw-extrabold text-dark fs-8 mb-0" id="stageConfirmedTitle">Order Confirmed</h6>
-                <div class="fs-9 text-muted" id="stageConfirmedTime">Order Verified</div>
+                <h6 class="fw-extrabold text-dark fs-8 mb-0" id="stageConfirmedTitle">Booking Confirmed</h6>
+                <div class="fs-9 text-muted" id="stageConfirmedTime">Order Verified &amp; Reserved</div>
             </div>
         </div>
 
@@ -75,12 +126,12 @@
                 <div class="flex-grow-1" id="stagePreparingLine" style="width:2px; background:#E2E8F0; min-height:26px; margin:2px 0;"></div>
             </div>
             <div class="pt-0.5">
-                <h6 class="fw-bold text-dark fs-8 mb-0" id="stagePreparingTitle">Preparing Equipment</h6>
-                <div class="fs-9 text-muted" id="stagePreparingTime">Stock owner packaging equipment</div>
+                <h6 class="fw-bold text-dark fs-8 mb-0" id="stagePreparingTitle">Equipment Prepared</h6>
+                <div class="fs-9 text-muted" id="stagePreparingTime">Stock owner packaging &amp; inspecting gear</div>
             </div>
         </div>
 
-        <!-- Stage 3: Pickup from Owner -->
+        <!-- Stage 3: Meetup & Handover Coordination -->
         <div class="d-flex gap-3 position-relative mb-3">
             <div class="d-flex flex-column align-items-center">
                 <div class="rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary" 
@@ -90,27 +141,12 @@
                 <div class="flex-grow-1" id="stagePickupLine" style="width:2px; background:#E2E8F0; min-height:26px; margin:2px 0;"></div>
             </div>
             <div class="pt-0.5">
-                <h6 class="fw-bold text-dark fs-8 mb-0" id="stagePickupTitle">Package Pickup</h6>
-                <div class="fs-9 text-muted" id="stagePickupTime">Awaiting driver pickup from owner</div>
+                <h6 class="fw-bold text-dark fs-8 mb-0" id="stagePickupTitle">Campus Meetup &amp; Handover</h6>
+                <div class="fs-9 text-muted" id="stagePickupTime">Coordinating face-to-face meeting on campus</div>
             </div>
         </div>
 
-        <!-- Stage 4: On the Way (Out for Delivery) -->
-        <div class="d-flex gap-3 position-relative mb-3">
-            <div class="d-flex flex-column align-items-center">
-                <div class="rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary" 
-                     id="stageOnTheWayCircle" style="width:28px; height:28px; background:#fff; font-size:0.8rem; z-index:2;">
-                    <i class="fa-solid fa-truck-fast"></i>
-                </div>
-                <div class="flex-grow-1" id="stageOnTheWayLine" style="width:2px; background:#E2E8F0; min-height:26px; margin:2px 0;"></div>
-            </div>
-            <div class="pt-0.5">
-                <h6 class="fw-bold text-dark fs-8 mb-0" id="stageOnTheWayTitle">On the Way (Out for Delivery)</h6>
-                <div class="fs-9 text-muted" id="trackEstimatedArrivalText">Estimated Arrival: Pending Pickup</div>
-            </div>
-        </div>
-
-        <!-- Stage 5: Delivered & Active Rental -->
+        <!-- Stage 4: Handed Over & Active Rental -->
         <div class="d-flex gap-3 position-relative mb-3">
             <div class="d-flex flex-column align-items-center">
                 <div class="rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary" 
@@ -120,12 +156,12 @@
                 <div class="flex-grow-1" style="width:2px; background:#E2E8F0; min-height:26px; margin:2px 0;"></div>
             </div>
             <div class="pt-0.5">
-                <h6 class="fw-bold text-muted fs-8 mb-0" id="stageDeliveredText">Delivered & Active Rental</h6>
-                <div class="fs-9 text-muted" id="stageDeliveredSub">Equipment with renter for rental course</div>
+                <h6 class="fw-bold text-muted fs-8 mb-0" id="stageDeliveredText">Handed Over &amp; Active Rental</h6>
+                <div class="fs-9 text-muted" id="stageDeliveredSub">Equipment in renter care for rental course</div>
             </div>
         </div>
 
-        <!-- Stage 6: Return Delivery & Stock Restored -->
+        <!-- Stage 5: Returned to Owner Stock -->
         <div class="d-flex gap-3 position-relative">
             <div class="d-flex flex-column align-items-center">
                 <div class="rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary" 
@@ -134,153 +170,38 @@
                 </div>
             </div>
             <div class="pt-0.5">
-                <h6 class="fw-bold text-muted fs-8 mb-0" id="stageReturnedText">Returned to Owner Stock</h6>
-                <div class="fs-9 text-muted" id="stageReturnedSub">Delivered back to owner & inventory replenished</div>
+                <h6 class="fw-bold text-muted fs-8 mb-0" id="stageReturnedText">Returned &amp; Restocked</h6>
+                <div class="fs-9 text-muted" id="stageReturnedSub">Face-to-face return completed &amp; gear restocked</div>
             </div>
         </div>
 
     </div>
 
-    <!-- Live Interactive Leaflet Delivery Route Map (Shown ONLY when package has been picked up by rider) -->
-    <div class="card border-0 rounded-4 shadow-sm overflow-hidden mb-3 bg-white" id="renteaseTrackMapCard" style="display:none;">
-        <div id="renteaseTrackMap" style="width:100%; height:190px; z-index:1;"></div>
-    </div>
-
-    <!-- Verified Proof of Pickup Card (Shown on ON_THE_WAY, DELIVERED, RETURNED) -->
-    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3" id="proofOfPickupCard" style="display:none; border-left: 4px solid #F59E0B !important;">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="d-flex align-items-center gap-2">
-                <i class="fa-solid fa-box-archive text-warning fs-6"></i>
-                <div>
-                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Proof of Package Pickup</h6>
-                    <span class="fs-9 text-muted" id="pickupProofTime">Verified Hub Collection</span>
-                </div>
-            </div>
-            <span class="badge bg-warning bg-opacity-10 text-dark fw-bold fs-9">PICKED UP</span>
-        </div>
-        <div class="rounded-3 overflow-hidden mb-2 text-center bg-light border" style="max-height: 180px;">
-            <img id="pickupProofPhotoImg" src="" alt="Proof of Pickup" class="w-100 object-fit-cover" style="max-height: 180px; display:none;">
-        </div>
-        <div class="p-2 rounded-3 bg-light border fs-9 text-dark mb-2">
-            <div class="mb-1"><i class="fa-solid fa-motorcycle text-primary me-1"></i> Courier: <strong id="pickupProofRiderName">—</strong></div>
-            <div id="pickupProofNote" class="text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> Equipment inspected and collected safely.</div>
-        </div>
-        <div class="p-1.5 rounded-2 bg-success bg-opacity-10 text-success fs-9 text-center">
-            <i class="fa-solid fa-envelope-circle-check me-1"></i> Pickup confirmation with photo has been emailed to the renter.
-        </div>
-    </div>
-
-    <!-- Verified Shopee-Style Proof of Delivery Card (Shown on DELIVERED) -->
-    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3" id="shopeeProofOfDeliveryCard" style="display:none; border-left: 4px solid #10B981 !important;">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="d-flex align-items-center gap-2">
-                <i class="fa-solid fa-circle-check text-success fs-6"></i>
-                <div>
-                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Proof of Delivery (Handover)</h6>
-                    <span class="fs-9 text-muted" id="trackPodTime">Doorstep Handover Verified</span>
-                </div>
-            </div>
-            <span class="badge bg-success bg-opacity-10 text-success fw-bold fs-9">HANDOVER VERIFIED</span>
-        </div>
-        <div class="rounded-3 overflow-hidden mb-2 text-center bg-light border" style="max-height: 180px;">
-            <img id="trackPodPhotoImg" src="" alt="Proof of Delivery" class="w-100 object-fit-cover" style="max-height: 180px;">
-        </div>
-        <div class="p-2 rounded-3 bg-light border fs-9 text-dark mb-1.5">
-            <div class="d-flex justify-content-between mb-1">
-                <span><i class="fa-solid fa-user-check text-success me-1"></i> Recipient:</span>
-                <strong id="trackPodRecipient">Verified Student</strong>
-            </div>
-            <div class="d-flex justify-content-between mb-1">
-                <span><i class="fa-solid fa-motorcycle text-info me-1"></i> Delivery Rig:</span>
-                <span id="trackPodVehiclePlate">Motorcycle • MC-8888-JY</span>
-            </div>
-            <div class="d-flex justify-content-between mb-1">
-                <span><i class="fa-solid fa-id-badge text-primary me-1"></i> Courier:</span>
-                <span id="trackPodRiderName">—</span>
-            </div>
-            <div id="trackPodNote" class="text-secondary mt-1 pt-1 border-top"><i class="fa-solid fa-quote-left text-muted me-1"></i> Package handed over safely.</div>
-        </div>
-    </div>
-
-    <!-- Step 6: Renter "Item Received / Received Package" Action Card -->
+    <!-- Renter Handover Receipt Confirmation Card -->
     <div class="card border-0 rounded-4 shadow-sm p-3 mb-3" id="renterReceivedActionCard" style="display:none; background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); border: 1.5px solid #6EE7B7 !important;">
         <div id="renterUnconfirmedBox">
             <div class="d-flex align-items-center gap-2.5 mb-2.5">
                 <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs" style="width:36px; height:36px; background:linear-gradient(135deg, #10B981, #059669); flex-shrink:0;">
-                    <i class="fa-solid fa-box-open fs-7"></i>
+                    <i class="fa-solid fa-handshake fs-7"></i>
                 </div>
                 <div>
-                    <h6 class="fw-extrabold text-dark fs-8 mb-0.5">Did you receive your equipment?</h6>
-                    <span class="fs-9 text-muted">Confirm that the courier has handed over the package.</span>
+                    <h6 class="fw-extrabold text-dark fs-8 mb-0.5">Did you meet and receive your equipment?</h6>
+                    <span class="fs-9 text-muted">Confirm that you have met face-to-face and inspected the gear.</span>
                 </div>
             </div>
             <button type="button" class="btn btn-success w-100 rounded-pill py-2.5 fw-extrabold fs-8 shadow-sm text-white" id="btnRenterConfirmReceived" onclick="renterConfirmReceivedPackage()">
-                <i class="fa-solid fa-circle-check me-1.5"></i> I Have Received the Package
+                <i class="fa-solid fa-handshake me-1.5"></i> Confirm Face-to-Face Handover
             </button>
         </div>
         <div id="renterConfirmedBox" style="display:none;">
             <div class="d-flex align-items-center gap-2.5 p-2 rounded-3 bg-white border border-success shadow-2xs">
                 <i class="fa-solid fa-circle-check text-success fs-5"></i>
                 <div>
-                    <h6 class="fw-extrabold text-success fs-8 mb-0">Item Received &amp; Verified by Renter</h6>
+                    <h6 class="fw-extrabold text-success fs-8 mb-0">Equipment Handover Verified</h6>
                     <span class="fs-9 text-muted" id="renterReceivedTimestampText">Active rental course is running.</span>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Assigned Driver Card: Shown when rider is assigned / en route -->
-    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white flex-row align-items-center justify-content-between mb-3 d-none" id="trackRiderCard" style="display:none !important;">
-        <div class="d-flex align-items-center gap-2.5">
-            <div class="position-relative">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" 
-                     class="rounded-circle border border-2 border-white shadow-2xs" width="44" height="44" style="object-fit:cover;" id="trackRiderAvatar">
-                <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:11px; height:11px;"></span>
-            </div>
-            <div>
-                <h6 class="fw-extrabold text-dark fs-8 mb-0" id="trackRiderName">Assigned Driver</h6>
-                <span class="fs-9 text-muted" id="trackRiderRole">Delivery Rider • Motorcycle</span>
-            </div>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="tel:09187654321" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
-               style="width:36px; height:36px; background:#F1F5F9; color:#5B3FA8;" id="trackCallRiderBtn" title="Call Rider">
-                <i class="fa-solid fa-phone fs-8"></i>
-            </a>
-            <button class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
-                    style="width:36px; height:36px; background:#F1F5F9; color:#5B3FA8;" onclick="alert('💬 RentEase Courier Messenger: Driver is active.')" title="Chat Rider">
-                <i class="fa-solid fa-comment fs-8"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Rider Broadcast Status Card (When searching for nearby drivers) -->
-    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3" id="riderBroadcastWaitingCard" style="display:none; background: #EFF6FF; border: 1px solid #BFDBFE !important;">
-        <div class="d-flex align-items-center gap-2.5">
-            <div class="rounded-circle d-flex align-items-center justify-content-center p-2 text-primary shadow-2xs" style="background:#DBEAFE; width:40px; height:40px; flex-shrink:0;">
-                <i class="fa-solid fa-satellite-dish fa-beat text-primary fs-6"></i>
-            </div>
-            <div class="flex-grow-1">
-                <h6 class="fw-extrabold text-dark fs-8 mb-0.5">Looking for Fleet Driver...</h6>
-                <p class="fs-9 text-muted mb-0">Delivery request broadcasted across active motor riders. Nearby riders can review and accept this trip.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Rider Cancelled Alert Card (Allows Stock Owner to Notify Riders Again) -->
-    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3" id="riderCancelledAlertCard" style="display:none; background: #FFF1F2; border: 1px solid #FECDD3 !important;">
-        <div class="d-flex align-items-start gap-2.5 mb-2.5">
-            <div class="rounded-circle d-flex align-items-center justify-content-center p-2 text-danger shadow-2xs" style="background:#FFE4E6; width:38px; height:38px; flex-shrink:0;">
-                <i class="fa-solid fa-triangle-exclamation text-danger fs-6"></i>
-            </div>
-            <div class="flex-grow-1">
-                <h6 class="fw-extrabold text-danger fs-8 mb-0.5">Delivery Cancelled by Driver</h6>
-                <p class="fs-9 text-dark mb-0" id="riderCancelledReasonText">The assigned driver cancelled pickup due to emergency / vehicle conflict. Package is safe at stock owner's inventory.</p>
-            </div>
-        </div>
-        <button type="button" class="btn btn-warning w-100 rounded-3 py-2 fw-extrabold fs-8 text-dark shadow-sm" onclick="stockOwnerNotifyRidersAgain()">
-            <i class="fa-solid fa-satellite-dish me-1"></i> Notify Delivery Riders Again
-        </button>
     </div>
 
     <!-- Return Equipment to Owner Action Card -->
@@ -293,22 +214,22 @@
             <span class="badge bg-secondary-subtle text-secondary fs-9" id="returnStatusBadge">Rental Active</span>
         </div>
         <p class="fs-9 text-muted mb-2.5">
-            When your rental course is finished, dispatch the return delivery. The courier will collect the equipment and deliver it back to the owner's stock inventory.
+            When your rental course is finished, meet the stock owner face-to-face on campus to return the equipment in good working condition.
         </p>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-primary rounded-3 py-2 px-3 fw-bold fs-8 flex-grow-1" 
                     style="border-color:#5B3FA8; color:#5B3FA8;" onclick="chatWithOwnerFromTracking()">
-                <i class="fa-regular fa-comment-dots me-1"></i> Chat Owner
+                <i class="fa-regular fa-comment-dots me-1"></i> Chat Owner for Return
             </button>
             <button type="button" class="btn btn-primary rounded-3 py-2 px-3 fw-bold fs-8 flex-grow-1" 
                     style="background: linear-gradient(135deg, #10B981, #059669); border:none;" 
                     id="btnDispatchReturn" onclick="dispatchReturnDelivery()">
-                <i class="fa-solid fa-truck-ramp-box me-1"></i> Deliver Back to Owner
+                <i class="fa-solid fa-handshake me-1"></i> Meet &amp; Return to Owner
             </button>
         </div>
     </div>
 
-    <!-- Step Issue Reporting to Admin Card (Every step can be reported to the admin) -->
+    <!-- Step Issue Reporting to Admin Card -->
     <div class="card border-0 rounded-4 shadow-sm p-3 mb-4" style="background: linear-gradient(135deg, #FFFDF5 0%, #FEF9C3 100%); border: 1.5px dashed #F59E0B !important;">
         <div class="d-flex align-items-center justify-content-between mb-2">
             <div class="d-flex align-items-center gap-2">
@@ -329,7 +250,7 @@
             </button>
         </div>
         <p class="fs-9 text-dark mb-0">
-            Every stage of this order is monitored live by Admin Operations. If you notice delayed pickup, damaged gear, or courier problems, report it now to trigger immediate admin intervention.
+            Every stage of this order is monitored live by Admin Operations. If you notice damaged gear, missing accessories, or no-show at meetup, report it now for admin assistance.
         </p>
     </div>
 
@@ -362,9 +283,8 @@
                     <label class="form-label fs-9 fw-bold text-dark mb-1">Issue Category / Reason <span class="text-danger">*</span></label>
                     <select class="form-select form-select-sm" id="modalReportCategory">
                         <option value="Damage / Equipment Condition Issue" selected>Equipment Damaged / Defective / Missing Parts</option>
-                        <option value="Pickup Delay / Courier No-Show">Courier Delay / Pickup No-Show</option>
+                        <option value="Meetup Delay / No-Show">Meetup Delay / No-Show</option>
                         <option value="Stock Owner Unresponsive">Stock Owner Unresponsive / Cancelled Handover</option>
-                        <option value="Wrong Delivery Destination">Delivery Location / Address Issue</option>
                         <option value="Dispute on Handover">Dispute on Equipment Handover</option>
                         <option value="Payment / Platform Safety Concern">Payment or Platform Safety Concern</option>
                         <option value="Other Step Inquiry">Other Step Concern</option>
@@ -373,7 +293,7 @@
 
                 <div class="mb-2.5">
                     <label class="form-label fs-9 fw-bold text-dark mb-1">Subject Summary <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control form-control-sm" id="modalReportSubject" placeholder="e.g. Courier late for pickup, damaged lens mount...">
+                    <input type="text" class="form-control form-control-sm" id="modalReportSubject" placeholder="e.g. Owner late for meetup, damaged lens mount...">
                 </div>
 
                 <div class="mb-2.5">
@@ -396,77 +316,3 @@
         </div>
     </div>
 </div>
-
-<!-- Messenger-Styled Notify Rider Confirmation Modal -->
-<div class="modal fade" id="notifyRiderConfirmModal" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
-    <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 360px;">
-        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden text-center position-relative">
-            <!-- Messenger Header Accent Gradient -->
-            <div style="height: 6px; background: linear-gradient(90deg, #00C6FF, #0078FF, #A033FF);"></div>
-            <div class="modal-body p-4 pt-3">
-                <!-- Messenger Icon with Arrow -->
-                <div class="position-relative d-inline-block mb-2.5">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-lg mx-auto" 
-                         style="width: 66px; height: 66px; background: linear-gradient(135deg, #00B2FE 0%, #006AFF 50%, #A033FF 100%);">
-                        <i class="fa-solid fa-paper-plane fs-3" style="transform: rotate(15deg) translate(-2px, 2px);"></i>
-                    </div>
-                    <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle p-1" style="width:14px; height:14px;"></span>
-                </div>
-                
-                <h6 class="fw-extrabold text-dark fs-7 mb-1" id="notifyRiderModalTitle">Notifying Rider</h6>
-                <div class="d-inline-block badge rounded-pill bg-light text-primary border px-2.5 py-1 mb-2.5 fw-bold fs-9" id="notifyRiderModalBadge">
-                    Order <span id="notifyRiderModalOrderCode">#RE-10245</span>
-                </div>
-                
-                <p class="fs-8 text-secondary mb-3 px-1" id="notifyRiderModalPrompt">
-                    Notifying rider: Are you sure you want to broadcast this pickup request to nearby fleet couriers?
-                </p>
-                
-                <div class="d-flex align-items-center justify-content-center gap-2">
-                    <button type="button" class="btn btn-light rounded-pill px-3 py-2 text-muted fw-bold fs-8 border flex-grow-1" data-bs-dismiss="modal">
-                        Cancel
-                    </button>
-                    <button type="button" class="btn text-white rounded-pill px-4 py-2 fw-extrabold fs-8 shadow-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1.5" 
-                            id="btnConfirmNotifyRiderGo"
-                            style="background: linear-gradient(135deg, #0084FF 0%, #006AFF 100%); border: none;"
-                            onclick="confirmNotifyRiderBroadcast()">
-                        <span>Go</span>
-                        <i class="fa-solid fa-paper-plane fs-9"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Cancel Rider Request Confirmation Modal -->
-<div class="modal fade" id="cancelRiderRequestModal" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
-    <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 360px;">
-        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden text-center position-relative">
-            <div style="height: 6px; background: linear-gradient(90deg, #EF4444, #F97316);"></div>
-            <div class="modal-body p-4 pt-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center text-danger bg-danger-subtle mx-auto mb-2.5" style="width: 58px; height: 58px;">
-                    <i class="fa-solid fa-ban fs-3"></i>
-                </div>
-                <h6 class="fw-extrabold text-dark fs-7 mb-1">Cancel Rider Request?</h6>
-                <div class="d-inline-block badge rounded-pill bg-light text-danger border px-2.5 py-1 mb-2.5 fw-bold fs-9">
-                    Order <span id="cancelRiderModalOrderCode">#RE-10245</span>
-                </div>
-                <p class="fs-8 text-secondary mb-3 px-1">
-                    Are you sure? This will cancel the fleet broadcast and return the order to equipment packaging. You can request a rider again whenever you are ready.
-                </p>
-                <div class="d-flex align-items-center justify-content-center gap-2">
-                    <button type="button" class="btn btn-light rounded-pill px-3 py-2 text-muted fw-bold fs-8 border flex-grow-1" data-bs-dismiss="modal">
-                        Keep Waiting
-                    </button>
-                    <button type="button" class="btn btn-danger rounded-pill px-3 py-2 fw-extrabold fs-8 shadow-sm flex-grow-1" 
-                            id="btnConfirmCancelRider"
-                            onclick="confirmCancelRiderRequest()">
-                        Yes, Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
