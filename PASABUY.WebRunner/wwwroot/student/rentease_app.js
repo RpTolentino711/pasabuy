@@ -2656,7 +2656,7 @@ function getRentEaseCurrentUser() {
     };
 }
 
-function syncRentEaseProfileUI() {
+window.syncRentEaseProfileUI = function syncRentEaseProfileUI() {
     const user = getRentEaseCurrentUser();
     const nameEl = document.getElementById('profileName');
     const subEl = document.getElementById('profileSub');
@@ -3488,8 +3488,15 @@ window.switchTab = function (tabName) {
             openTrackScreen(activeCode);
         }
     } else if (tabName === 'profile') {
-        syncRentEaseProfileUI();
-        loadUserRentedOutItems();
+        try {
+            if (typeof syncRentEaseProfileUI === 'function') syncRentEaseProfileUI();
+        } catch (e) { console.error("syncRentEaseProfileUI error:", e); }
+        try {
+            if (typeof switchProfileSubTab === 'function') switchProfileSubTab('requests');
+        } catch (e) { console.error("switchProfileSubTab error:", e); }
+        try {
+            if (typeof loadUserRentedOutItems === 'function') loadUserRentedOutItems();
+        } catch (e) { console.error("loadUserRentedOutItems error:", e); }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };

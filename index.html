@@ -2326,7 +2326,6 @@
                                         document.getElementById('headerBadge').style.display = 'inline-flex';
                                         const userActions = document.getElementById('headerUserActions');
                                         if (userActions) userActions.style.setProperty('display', 'flex', 'important');
-                                        switchTab('home');
                                         return;
                                     }
                                 }
@@ -2810,8 +2809,12 @@
                             } else if (tabName === 'wanted') {
                                 loadWantedPosts();
                             } else if (tabName === 'profile') {
-                                if (typeof syncRentEaseProfileUI === 'function') syncRentEaseProfileUI();
-                                if (typeof checkStudentSessionOnLoad === 'function') checkStudentSessionOnLoad();
+                                if (typeof syncRentEaseProfileUI === 'function') {
+                                    try { syncRentEaseProfileUI(); } catch (e) { console.error(e); }
+                                }
+                                if (typeof switchProfileSubTab === 'function') {
+                                    try { switchProfileSubTab('requests'); } catch (e) { console.error(e); }
+                                }
                             }
                         }
 

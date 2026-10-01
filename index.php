@@ -1291,12 +1291,16 @@
                                         if (appHeader) appHeader.style.display = 'flex';
                                         if (appTabbar) appTabbar.style.display = 'flex';
                                         if (authScreen) authScreen.style.display = 'none';
+                                        const splashScreen = document.getElementById('splashScreen');
+                                        if (splashScreen) splashScreen.style.display = 'none';
+                                        const registerScreen = document.getElementById('registerScreen');
+                                        if (registerScreen) registerScreen.style.display = 'none';
 
                                         const badgeEl = document.getElementById('headerBadge');
                                         if (badgeEl) badgeEl.style.display = 'inline-flex';
                                         const userActions = document.getElementById('headerUserActions');
                                         if (userActions) userActions.style.setProperty('display', 'flex', 'important');
-                                        return;
+                                        return true;
                                     }
                                 }
                             } catch (e) { }
@@ -1798,8 +1802,12 @@
                             } else if (tabName === 'wanted') {
                                 loadWantedPosts();
                             } else if (tabName === 'profile') {
-                                if (typeof syncRentEaseProfileUI === 'function') syncRentEaseProfileUI();
-                                if (typeof checkStudentSessionOnLoad === 'function') checkStudentSessionOnLoad();
+                                if (typeof syncRentEaseProfileUI === 'function') {
+                                    try { syncRentEaseProfileUI(); } catch (e) { console.error(e); }
+                                }
+                                if (typeof switchProfileSubTab === 'function') {
+                                    try { switchProfileSubTab('requests'); } catch (e) { console.error(e); }
+                                }
                             }
                         }
 
@@ -3901,22 +3909,6 @@
                         let splashTimer = null;
                         let splashProgressInterval = null;
 
-                        window.checkStudentSessionOnLoad = function () {
-                            const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in');
-                            const splash = document.getElementById('splashScreen');
-                            const auth = document.getElementById('authScreen');
-                            const reg = document.getElementById('registerScreen');
-                            const userActions = document.getElementById('headerUserActions');
-                            if (isLoggedIn === 'true') {
-                                if (splash) splash.style.display = 'none';
-                                if (auth) auth.style.display = 'none';
-                                if (reg) reg.style.display = 'none';
-                                if (userActions) userActions.style.setProperty('display', 'flex', 'important');
-                                switchTab('home');
-                            } else {
-                                if (userActions) userActions.style.setProperty('display', 'none', 'important');
-                            }
-                        };
 
                         window.initSplashScreen = function () {
 
@@ -4087,6 +4079,7 @@
                                 initSplashScreen();
                             } else {
                                 checkStudentSessionOnLoad();
+                                switchTab('home');
                             }
 
                             await filterProducts();

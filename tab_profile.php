@@ -277,11 +277,11 @@
                 <!-- User mini profile header with Edit button -->
                 <div class="p-2.5 rounded-3 bg-light bg-opacity-75 mb-2.5 d-flex align-items-center justify-content-between border">
                     <div class="d-flex align-items-center gap-2">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" 
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80" 
                              class="rounded-circle border border-2 border-white shadow-2xs" width="38" height="38" style="object-fit:cover;" id="settingsHubAvatar" alt="Profile">
                         <div>
-                            <h6 class="fw-bold text-dark fs-8 mb-0" id="settingsHubName">Romeo Paolo Tolentino</h6>
-                            <div class="text-muted" style="font-size:0.68rem;" id="settingsHubSub">BSIT • 4th Yr</div>
+                            <h6 class="fw-bold text-dark fs-8 mb-0" id="settingsHubName">Campus Student</h6>
+                            <div class="text-muted" style="font-size:0.68rem;" id="settingsHubSub">College Student</div>
                         </div>
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-primary rounded-pill py-0.5 px-2.5 fw-bold" style="font-size:0.72rem;" 
