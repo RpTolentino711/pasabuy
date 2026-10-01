@@ -226,11 +226,12 @@ CREATE TABLE IF NOT EXISTS `StudentProfiles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 --
--- Dumping data for table `StudentProfiles` (Romeo Only)
+-- Dumping data for table `StudentProfiles` (Romeo & Pogilameg Only)
 --
 
 INSERT INTO `StudentProfiles` (`Id`, `UserId`, `FirstName`, `LastName`, `StudentNumber`, `SchoolEmail`, `Course`, `YearLevel`, `ProfileImage`, `VerificationStatus`, `Rating`, `CompletedTransactions`, `CreatedAt`, `UpdatedAt`) VALUES
-(2, 104, 'Romeo Paolo', 'Tolentino', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', NULL, 'VERIFIED', 5, 0, '2026-09-01 14:31:07', '2026-09-01 14:31:07');
+(2, 104, 'Romeo Paolo', 'Tolentino', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80', 'VERIFIED', 5, 0, '2026-09-01 14:31:07', '2026-09-01 14:31:07'),
+(3, 105, 'Pogilameg', 'Tester', '09171234567', 'pogilameg@gmail.com', 'BSCS', '3rd Yr', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', 'VERIFIED', 5, 0, '2026-09-01 14:31:07', '2026-09-01 14:31:07');
 
 -- --------------------------------------------------------
 
@@ -251,12 +252,13 @@ CREATE TABLE IF NOT EXISTS `Users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 --
--- Dumping data for table `Users` (Admin & Romeo Only)
+-- Dumping data for table `Users` (Admin, Romeo & Pogilameg Only)
 --
 
 INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`, `CreatedAt`, `UpdatedAt`, `LastLoginAt`) VALUES
 (100, 'admin', 'Pogilameg', 'ADMIN', 'VERIFIED', '2026-09-01 13:26:08', '2026-09-01 13:26:08', NULL),
-(104, 'romeopaolotolentino@gmail.com', '$2y$10$MZvmGKUWO1qAZz8sb7GZRO6dY8AYR.FniTTV2azZBV2BZKBt5bs.C', 'STUDENT', 'VERIFIED', '2026-09-01 14:31:07', '2026-09-01 14:31:07', NULL);
+(104, 'romeopaolotolentino@gmail.com', '$2y$10$MZvmGKUWO1qAZz8sb7GZRO6dY8AYR.FniTTV2azZBV2BZKBt5bs.C', 'STUDENT', 'VERIFIED', '2026-09-01 14:31:07', '2026-09-01 14:31:07', NULL),
+(105, 'pogilameg@gmail.com', '$2y$10$MZvmGKUWO1qAZz8sb7GZRO6dY8AYR.FniTTV2azZBV2BZKBt5bs.C', 'STUDENT', 'VERIFIED', '2026-09-01 14:31:07', '2026-09-01 14:31:07', NULL);
 
 -- --------------------------------------------------------
 

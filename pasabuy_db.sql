@@ -216,13 +216,13 @@ INSERT INTO `MeetupLocations` (`Id`, `Name`, `Description`, `LocationDetails`, `
 (3, 'School Gate Main Entrance', 'Main Campus Pedestrian Gate', 'Guard Post Area', 1),
 (4, 'Student Plaza', 'Open Covered Court Plaza', 'Near Information Kiosk', 1);
 
--- Default Student Account
+-- Clean Authorized Accounts (Admin, Romeo Paolo Tolentino, Pogilameg Tester)
 INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`) VALUES
-(1, 'john.doe@student.edu.ph', 'hashed_pass_123', 'STUDENT', 'VERIFIED');
+(100, 'admin', 'Pogilameg', 'ADMIN', 'VERIFIED'),
+(101, 'admin@pasabuy.site', 'Pogilameg', 'ADMIN', 'VERIFIED'),
+(104, 'romeopaolotolentino@gmail.com', '$2y$10$MZvmGKUWO1qAZz8sb7GZRO6dY8AYR.FniTTV2azZBV2BZKBt5bs.C', 'STUDENT', 'VERIFIED'),
+(105, 'pogilameg@gmail.com', '$2y$10$MZvmGKUWO1qAZz8sb7GZRO6dY8AYR.FniTTV2azZBV2BZKBt5bs.C', 'STUDENT', 'VERIFIED');
 
 INSERT INTO `StudentProfiles` (`Id`, `UserId`, `FirstName`, `LastName`, `StudentNumber`, `SchoolEmail`, `Course`, `YearLevel`, `ProfileImage`, `VerificationStatus`, `Rating`, `CompletedTransactions`) VALUES
-(1, 1, 'John', 'Doe', '2023-00123', 'john.doe@student.edu.ph', 'BS Computer Science', '3rd Yr', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80', 'VERIFIED', 4.9, 18);
-
--- Admin Account
-INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`) VALUES
-(99, 'admin@pasabuy.edu.ph', 'admin_hash_999', 'ADMIN', 'VERIFIED');
+(1, 104, 'Romeo Paolo', 'Tolentino', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80', 'VERIFIED', 5.0, 12),
+(2, 105, 'Pogilameg', 'Tester', '09171234567', 'pogilameg@gmail.com', 'BSCS', '3rd Yr', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', 'VERIFIED', 5.0, 8);
