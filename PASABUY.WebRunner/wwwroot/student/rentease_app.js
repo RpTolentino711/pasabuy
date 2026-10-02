@@ -82,44 +82,44 @@ function renderFeaturedRentals() {
         html += `
         <div class="col-6 mb-2">
             <div class="card border-0 rounded-4 shadow-sm h-100 bg-white position-relative d-flex flex-column justify-content-between overflow-hidden" 
-                 style="padding: 10px; cursor:pointer;" onclick="openEquipmentDetail(${item.id})">
+                 style="padding: 8px; cursor:pointer;" onclick="openEquipmentDetail(${item.id})">
                 <div>
-                    <div class="position-relative mb-2">
-                        <img src="${item.image_url}" class="rounded-3 w-100" style="height: 125px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
-                        <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" 
-                                style="width:26px; height:26px; background:rgba(255,255,255,0.9);" 
+                    <div class="position-relative mb-1.5">
+                        <img src="${item.image_url}" class="rounded-3 w-100" style="height: 98px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                        <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-xs" 
+                                style="width:24px; height:24px; background:rgba(255,255,255,0.9);" 
                                 onclick="event.stopPropagation(); toggleWishlist(this, ${item.id})">
-                            <i class="fa-regular fa-heart text-dark fs-9"></i>
+                            <i class="fa-regular fa-heart text-dark" style="font-size: 0.7rem;"></i>
                         </button>
                     </div>
-                    <h6 class="fw-bold mb-1 text-dark fs-8 text-truncate" title="${item.name}">${item.name}</h6>
+                    <h6 class="fw-bold mb-0.5 text-dark fs-8 text-truncate" title="${item.name}" style="font-size: 0.8rem;">${item.name}</h6>
                     <div class="d-flex align-items-baseline gap-1 mb-1">
-                        <span class="fw-extrabold text-dark fs-7">₱${parseFloat(item.price_per_day).toFixed(0)}</span>
-                        <span class="text-muted fs-9">/ day</span>
+                        <span class="fw-extrabold text-dark fs-8">₱${parseFloat(item.price_per_day).toFixed(0)}</span>
+                        <span class="text-muted" style="font-size: 0.68rem;">/ day</span>
                     </div>
                 </div>
-                <div class="d-flex align-items-center justify-content-between pt-1">
+                <div class="d-flex align-items-center justify-content-between pt-0.5">
                     <div class="d-flex align-items-center gap-1">
-                        <i class="fa-solid fa-star text-warning fs-9"></i>
-                        <span class="fw-bold text-dark fs-9">${parseFloat(item.rating).toFixed(1)}</span>
-                        <span class="text-muted fs-9">(${item.reviews_count})</span>
+                        <i class="fa-solid fa-star text-warning" style="font-size: 0.68rem;"></i>
+                        <span class="fw-bold text-dark" style="font-size: 0.72rem;">${parseFloat(item.rating).toFixed(1)}</span>
+                        <span class="text-muted" style="font-size: 0.65rem;">(${item.reviews_count})</span>
                     </div>
                     ${isCurrentUserOwnerOfItem(item) 
-                        ? `<button class="btn btn-sm rounded-pill px-2.5 py-1 text-white border-0 fw-bold fs-9 shadow-xs" 
-                                   style="background: #475569;"
+                        ? `<button class="btn btn-sm rounded-pill px-2 py-0.5 text-white border-0 fw-bold shadow-xs" 
+                                   style="background: #475569; font-size: 0.65rem;"
                                    onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Your Equipment">
-                               <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.65rem;"></i> Yours
+                               <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.6rem;"></i> Yours
                            </button>`
                         : (rentEaseCart.some(c => c.id == item.id)
                             ? `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
-                                       style="width:30px; height:30px; background: linear-gradient(135deg, #10B981, #059669); flex-shrink: 0;"
+                                       style="width:26px; height:26px; background: linear-gradient(135deg, #10B981, #059669); flex-shrink: 0;"
                                        onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="In Cart">
-                                   <i class="fa-solid fa-check fs-8"></i>
+                                   <i class="fa-solid fa-check" style="font-size: 0.7rem;"></i>
                                </button>`
                             : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
-                                       style="width:30px; height:30px; background: linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink: 0;"
+                                       style="width:26px; height:26px; background: linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink: 0;"
                                        onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="Add to Cart">
-                                   <i class="fa-solid fa-cart-plus fs-8"></i>
+                                   <i class="fa-solid fa-cart-plus" style="font-size: 0.7rem;"></i>
                                </button>`
                           )
                     }
@@ -302,37 +302,37 @@ function renderGridElements(items) {
         }
 
         html += `
-        <div class="col-6 mb-3">
+        <div class="col-6 mb-2">
             <div class="card border-0 rounded-4 shadow-sm h-100 bg-white position-relative d-flex flex-column justify-content-between overflow-hidden" 
-                 style="padding: 10px; cursor:pointer;" onclick="openEquipmentDetail(${p.id})">
+                 style="padding: 8px; cursor:pointer;" onclick="openEquipmentDetail(${p.id})">
                 <div>
-                    <div class="position-relative mb-2">
-                        <img src="${p.image_url}" class="rounded-3 w-100" style="height: 130px; object-fit: cover;" alt="${p.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
-                        <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" 
-                                style="width:26px; height:26px; background:rgba(255,255,255,0.9);" 
+                    <div class="position-relative mb-1.5">
+                        <img src="${p.image_url}" class="rounded-3 w-100" style="height: 100px; object-fit: cover;" alt="${p.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                        <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-xs" 
+                                style="width:24px; height:24px; background:rgba(255,255,255,0.9);" 
                                 onclick="event.stopPropagation(); toggleWishlist(this, ${p.id})">
-                            <i class="fa-regular fa-heart text-dark fs-9"></i>
+                            <i class="fa-regular fa-heart text-dark" style="font-size:0.7rem;"></i>
                         </button>
                     </div>
-                    <h6 class="fw-bold mb-1 text-dark fs-8 text-truncate" title="${p.name}">${p.name}</h6>
+                    <h6 class="fw-bold mb-0.5 text-dark fs-8 text-truncate" title="${p.name}" style="font-size:0.8rem;">${p.name}</h6>
                     <div class="d-flex align-items-baseline gap-1 mb-1">
-                        <span class="fw-extrabold text-dark fs-7">₱${parseFloat(p.price_per_day).toFixed(0)}</span>
-                        <span class="text-muted fs-9">/ day</span>
+                        <span class="fw-extrabold text-dark fs-8">₱${parseFloat(p.price_per_day).toFixed(0)}</span>
+                        <span class="text-muted" style="font-size:0.68rem;">/ day</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between mb-1.5">
-                        <span class="badge ${p.qty_available > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-bold" style="font-size: 0.65rem;">
-                            <i class="fa-solid fa-boxes-stacked me-1"></i>Stock: ${p.qty_available ?? p.qty_total}
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="badge ${p.qty_available > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-bold" style="font-size: 0.6rem; padding: 2px 5px;">
+                            <i class="fa-solid fa-boxes-stacked me-0.5"></i>Stock: ${p.qty_available ?? p.qty_total}
                         </span>
-                        ${isMine ? `<span class="badge bg-primary-subtle text-primary" style="font-size:0.62rem;"><i class="fa-solid fa-crown me-0.5"></i>Yours</span>` : (p.owner_name ? `<span class="text-muted" style="font-size:0.62rem;"><i class="fa-regular fa-user me-0.5"></i>${p.owner_name.split(' ')[0]}</span>` : '')}
+                        ${isMine ? `<span class="badge bg-primary-subtle text-primary" style="font-size:0.58rem; padding: 2px 4px;"><i class="fa-solid fa-crown me-0.5"></i>Yours</span>` : (p.owner_name ? `<span class="text-muted" style="font-size:0.6rem;"><i class="fa-regular fa-user me-0.5"></i>${p.owner_name.split(' ')[0]}</span>` : '')}
                     </div>
-                    <div class="d-flex align-items-center gap-1 mb-2.5">
-                        <i class="fa-solid fa-star text-warning fs-9"></i>
-                        <span class="fw-bold text-dark fs-9">${parseFloat(p.rating).toFixed(1)}</span>
-                        <span class="text-muted fs-9">(${p.reviews_count})</span>
+                    <div class="d-flex align-items-center gap-1 mb-2">
+                        <i class="fa-solid fa-star text-warning" style="font-size:0.68rem;"></i>
+                        <span class="fw-bold text-dark" style="font-size:0.72rem;">${parseFloat(p.rating).toFixed(1)}</span>
+                        <span class="text-muted" style="font-size:0.65rem;">(${p.reviews_count})</span>
                     </div>
                 </div>
-                <button class="btn btn-sm rounded-pill w-100 fw-bold fs-9 py-2 shadow-2xs ${cartBtnClass}" 
-                        style="${cartBtnStyle}" onclick="${cartOnClick}">
+                <button class="btn btn-sm rounded-pill w-100 fw-bold fs-9 py-1 shadow-2xs ${cartBtnClass}" 
+                        style="${cartBtnStyle}; font-size:0.72rem;" onclick="${cartOnClick}">
                     ${cartBtnText}
                 </button>
             </div>
