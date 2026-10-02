@@ -61,6 +61,11 @@ try {
 } catch (Exception $eQty) {}
 
 try {
+    $db->exec("DELETE FROM `rental_orders` WHERE `order_code` IN ('#RE-10245', '#RE-10234') OR `order_code` LIKE '%10234%'");
+    $db->exec("UPDATE `rental_orders` SET `order_status` = 'RETURNED' WHERE `order_code` IN ('#RE-10245', '#RE-10234') OR `order_code` LIKE '%10234%'");
+} catch (Exception $ePurgeTestOrders) {}
+
+try {
     $db->exec("ALTER TABLE ChatMessages ADD COLUMN IsRead TINYINT(1) DEFAULT 0;");
 } catch (Exception $eIsRead) {}
 
@@ -776,6 +781,8 @@ if ($action === 'check_active_transaction') {
                 $rSql = "SELECT order_code, order_status FROM rental_orders 
                          WHERE ((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
                             OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
+                           AND order_code NOT IN ('#RE-10245', '#RE-10234')
+                           AND order_code NOT LIKE '%10234%'
                            AND UPPER(order_status) NOT IN ('RETURNED', 'CANCELLED', 'COMPLETED', 'REJECTED')
                          LIMIT 1";
                 $rStmt = $db->prepare($rSql);
@@ -856,6 +863,8 @@ if ($action === 'delete_conversation') {
                 $rSql = "SELECT order_code, order_status FROM rental_orders 
                          WHERE ((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
                             OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
+                           AND order_code NOT IN ('#RE-10245', '#RE-10234')
+                           AND order_code NOT LIKE '%10234%'
                            AND UPPER(order_status) NOT IN ('RETURNED', 'CANCELLED', 'COMPLETED', 'REJECTED')
                          LIMIT 1";
                 $rStmt = $db->prepare($rSql);

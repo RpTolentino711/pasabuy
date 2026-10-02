@@ -1964,8 +1964,7 @@
                                 <div class="text-muted fs-8 text-truncate" style="max-width:200px;">${lastMsg}</div>
                             </div>
                         </div>
-                        <div class="text-end d-flex align-items-center gap-2" style="pointer-events: none;">
-                            <span class="text-muted opacity-40 fs-9 d-none d-sm-inline"><i class="fa-solid fa-angles-left me-1"></i>swipe</span>
+                        <div class="text-end" style="pointer-events: none;">
                             <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
                         </div>
                     </div>
