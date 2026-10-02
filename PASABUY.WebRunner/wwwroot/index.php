@@ -1931,29 +1931,385 @@
                                     avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(partnerName)}`;
                                 }
 
+                                const safePartnerName = partnerName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                                const safePartnerNameAttr = partnerName.replace(/"/g, '&quot;');
+                                const safeItemTitle = itemTitle.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                                const safeAvatarUrl = avatarUrl.replace(/'/g, "\\'");
+
                                 html += `
-                <div class="p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center justify-content-between mb-2 position-relative" style="cursor:pointer;" onclick="checkAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${itemTitle.replace(/'/g, "\\'")}', '₱0.00', '${avatarUrl.replace(/'/g, "\\'")}')">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="position-relative">
-                            <img src="${avatarUrl}" class="rounded-circle border" width="50" height="50" style="object-fit:cover; background:#f0f3f8;">
-                            <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white" style="width:14px; height:14px;"></span>
-                        </div>
-                        <div>
-                            <div class="d-flex align-items-center gap-2">
-                                <h6 class="fw-bold mb-0 text-dark fs-7">${partnerName}</h6>
-                                <span class="badge bg-primary-subtle text-primary rounded-pill fs-9 fw-semibold px-2 py-0.5">${itemTitle}</span>
-                            </div>
-                            <div class="text-muted fs-8 text-truncate" style="max-width:200px;">${lastMsg}</div>
+                <div class="swipe-conv-wrapper position-relative mb-2 overflow-hidden rounded-4" style="touch-action: pan-y; -webkit-user-select: none; user-select: none;">
+                    <div class="swipe-delete-bg position-absolute top-0 bottom-0 end-0 d-flex align-items-center justify-content-end px-3 rounded-4 bg-danger text-white" 
+                         style="width: 100%; z-index: 1; cursor: pointer;" 
+                         onclick="initiateDeleteConversation(${partnerId}, '${safePartnerName}', event)">
+                        <div class="d-flex flex-column align-items-center justify-content-center text-white" style="width: 65px;">
+                            <i class="fa-solid fa-trash-can fs-5 mb-1"></i>
+                            <span style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;">DELETE</span>
                         </div>
                     </div>
-                    <div class="text-end">
-                        <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
+                    <div class="swipe-conv-card p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center justify-content-between position-relative" 
+                         style="z-index: 2; transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1); background: #ffffff; cursor: pointer;" 
+                         data-partner-id="${partnerId}" 
+                         data-partner-name="${safePartnerNameAttr}" 
+                         onclick="handleConversationCardClick(event, this, ${partnerId}, '${safePartnerName}', '${safeItemTitle}', '₱0.00', '${safeAvatarUrl}')">
+                        <div class="d-flex align-items-center gap-3" style="pointer-events: none;">
+                            <div class="position-relative">
+                                <img src="${avatarUrl}" class="rounded-circle border" width="50" height="50" style="object-fit:cover; background:#f0f3f8;">
+                                <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white" style="width:14px; height:14px;"></span>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <h6 class="fw-bold mb-0 text-dark fs-7">${partnerName}</h6>
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill fs-9 fw-semibold px-2 py-0.5">${itemTitle}</span>
+                                </div>
+                                <div class="text-muted fs-8 text-truncate" style="max-width:200px;">${lastMsg}</div>
+                            </div>
+                        </div>
+                        <div class="text-end d-flex align-items-center gap-2" style="pointer-events: none;">
+                            <span class="text-muted opacity-40 fs-9 d-none d-sm-inline"><i class="fa-solid fa-angles-left me-1"></i>swipe</span>
+                            <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
+                        </div>
                     </div>
                 </div>`;
                             });
 
                             container.innerHTML = html;
+                            setupConversationSwipeGestures(container);
                         }
+
+                        function setupConversationSwipeGestures(container) {
+                            if (!container) return;
+                            const wrappers = container.querySelectorAll('.swipe-conv-wrapper');
+
+                            function closeAllCards(exceptCard) {
+                                wrappers.forEach(w => {
+                                    const c = w.querySelector('.swipe-conv-card');
+                                    if (c && c !== exceptCard) {
+                                        c.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1)';
+                                        c.style.transform = 'translateX(0px)';
+                                        c.dataset.currentX = '0';
+                                    }
+                                });
+                            }
+
+                            wrappers.forEach(wrapper => {
+                                const card = wrapper.querySelector('.swipe-conv-card');
+                                if (!card) return;
+
+                                let startX = 0;
+                                let startY = 0;
+                                let initialTranslateX = 0;
+                                let isDragging = false;
+                                let isHorizontalSwipe = false;
+
+                                const setCardTransform = (x, animate = false) => {
+                                    card.style.transition = animate ? 'transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1)' : 'none';
+                                    card.style.transform = `translateX(${x}px)`;
+                                    card.dataset.currentX = x.toString();
+                                };
+
+                                // Touch handlers for mobile
+                                card.addEventListener('touchstart', (e) => {
+                                    if (e.touches.length !== 1) return;
+                                    startX = e.touches[0].clientX;
+                                    startY = e.touches[0].clientY;
+                                    initialTranslateX = parseFloat(card.dataset.currentX || '0');
+                                    isDragging = true;
+                                    isHorizontalSwipe = false;
+                                    card.dataset.hasDragged = '0';
+                                    card.style.transition = 'none';
+                                    closeAllCards(card);
+                                }, { passive: true });
+
+                                card.addEventListener('touchmove', (e) => {
+                                    if (!isDragging || e.touches.length !== 1) return;
+                                    const currentX = e.touches[0].clientX;
+                                    const currentY = e.touches[0].clientY;
+                                    const diffX = currentX - startX;
+                                    const diffY = currentY - startY;
+
+                                    if (!isHorizontalSwipe) {
+                                        if (Math.abs(diffX) > 7 && Math.abs(diffX) > Math.abs(diffY)) {
+                                            isHorizontalSwipe = true;
+                                        } else if (Math.abs(diffY) > 7) {
+                                            isDragging = false;
+                                            return;
+                                        }
+                                    }
+
+                                    if (isHorizontalSwipe) {
+                                        if (e.cancelable) e.preventDefault();
+                                        card.dataset.hasDragged = '1';
+                                        let targetX = initialTranslateX + diffX;
+                                        if (targetX > 0) {
+                                            targetX = targetX * 0.15;
+                                        } else if (targetX < -120) {
+                                            targetX = -120 + (targetX + 120) * 0.2;
+                                        }
+                                        setCardTransform(targetX, false);
+                                    }
+                                }, { passive: false });
+
+                                card.addEventListener('touchend', () => {
+                                    if (!isDragging) return;
+                                    isDragging = false;
+                                    const currentX = parseFloat(card.dataset.currentX || '0');
+
+                                    if (currentX < -110) {
+                                        setCardTransform(-80, true);
+                                        const partnerId = card.dataset.partnerId;
+                                        const partnerName = card.dataset.partnerName;
+                                        initiateDeleteConversation(partnerId, partnerName);
+                                    } else if (currentX < -40) {
+                                        setCardTransform(-80, true);
+                                    } else {
+                                        setCardTransform(0, true);
+                                    }
+
+                                    setTimeout(() => { card.dataset.hasDragged = '0'; }, 80);
+                                });
+
+                                card.addEventListener('touchcancel', () => {
+                                    isDragging = false;
+                                    setCardTransform(0, true);
+                                });
+
+                                // Mouse drag handlers for desktop / emulator
+                                let mouseStartX = 0;
+
+                                const onMouseMove = (e) => {
+                                    if (!isDragging) return;
+                                    const diffX = e.clientX - mouseStartX;
+                                    if (Math.abs(diffX) > 6) {
+                                        card.dataset.hasDragged = '1';
+                                        let targetX = initialTranslateX + diffX;
+                                        if (targetX > 0) targetX = 0;
+                                        if (targetX < -120) targetX = -120 + (targetX + 120) * 0.2;
+                                        setCardTransform(targetX, false);
+                                    }
+                                };
+
+                                const onMouseUp = () => {
+                                    if (!isDragging) return;
+                                    isDragging = false;
+                                    window.removeEventListener('mousemove', onMouseMove);
+                                    window.removeEventListener('mouseup', onMouseUp);
+
+                                    const currentX = parseFloat(card.dataset.currentX || '0');
+                                    if (currentX < -110) {
+                                        setCardTransform(-80, true);
+                                        const partnerId = card.dataset.partnerId;
+                                        const partnerName = card.dataset.partnerName;
+                                        initiateDeleteConversation(partnerId, partnerName);
+                                    } else if (currentX < -40) {
+                                        setCardTransform(-80, true);
+                                    } else {
+                                        setCardTransform(0, true);
+                                    }
+
+                                    setTimeout(() => { card.dataset.hasDragged = '0'; }, 80);
+                                };
+
+                                card.addEventListener('mousedown', (e) => {
+                                    if (e.button !== 0) return;
+                                    mouseStartX = e.clientX;
+                                    initialTranslateX = parseFloat(card.dataset.currentX || '0');
+                                    isDragging = true;
+                                    card.dataset.hasDragged = '0';
+                                    card.style.transition = 'none';
+                                    closeAllCards(card);
+
+                                    window.addEventListener('mousemove', onMouseMove);
+                                    window.addEventListener('mouseup', onMouseUp);
+                                });
+                            });
+                        }
+
+                        function handleConversationCardClick(event, card, partnerId, partnerName, itemTitle, price, avatarUrl) {
+                            if (card && card.dataset.hasDragged === '1') {
+                                return;
+                            }
+                            const currentX = parseFloat(card.dataset.currentX || '0');
+                            if (currentX < -20) {
+                                card.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1)';
+                                card.style.transform = 'translateX(0px)';
+                                card.dataset.currentX = '0';
+                                return;
+                            }
+                            checkAndOpenChat(partnerId, partnerName, itemTitle, price, avatarUrl);
+                        }
+
+                        let pendingDeletePartnerId = null;
+                        let pendingDeletePartnerName = '';
+
+                        window.initiateDeleteConversation = async function(partnerId, partnerName, event) {
+                            if (event) {
+                                event.stopPropagation();
+                                event.preventDefault();
+                            }
+                            pendingDeletePartnerId = partnerId;
+                            pendingDeletePartnerName = partnerName || 'User';
+
+                            const modalEl = document.getElementById('deleteConversationModal');
+                            if (!modalEl) {
+                                if (confirm(`Are you sure you want to delete your conversation with ${partnerName}?`)) {
+                                    executeDeleteConversation();
+                                }
+                                return;
+                            }
+
+                            const partnerNameEl = document.getElementById('deleteConvPartnerName');
+                            if (partnerNameEl) partnerNameEl.textContent = pendingDeletePartnerName;
+
+                            const checkingState = document.getElementById('deleteConvCheckingState');
+                            const confirmState = document.getElementById('deleteConvConfirmState');
+                            const blockedState = document.getElementById('deleteConvBlockedState');
+                            const btnCancel = document.getElementById('btnCancelDeleteConv');
+                            const btnConfirm = document.getElementById('btnConfirmDeleteConv');
+                            const btnCloseBlocked = document.getElementById('btnCloseBlockedDeleteConv');
+                            const iconWrap = document.getElementById('deleteConvIconWrap');
+                            const icon = document.getElementById('deleteConvIcon');
+                            const title = document.getElementById('deleteConvTitle');
+
+                            // Reset to checking state
+                            if (checkingState) checkingState.style.display = 'block';
+                            if (confirmState) confirmState.style.display = 'none';
+                            if (blockedState) blockedState.style.display = 'none';
+                            if (btnConfirm) { btnConfirm.style.display = 'none'; btnConfirm.disabled = true; }
+                            if (btnCancel) btnCancel.style.display = 'inline-block';
+                            if (btnCloseBlocked) btnCloseBlocked.style.display = 'none';
+                            if (title) title.textContent = 'Verifying Status...';
+                            if (iconWrap) {
+                                iconWrap.style.background = 'rgba(91, 63, 168, 0.1)';
+                                iconWrap.style.color = '#5B3FA8';
+                            }
+                            if (icon) icon.className = 'fa-solid fa-spinner fa-spin fs-4';
+
+                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                                bsModal.show();
+                            }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            if (currentUserId <= 1) currentUserId = 104;
+
+                            try {
+                                const resp = await fetch(`/pasabuy_api.php?action=check_active_transaction&user_id=${currentUserId}&partner_id=${partnerId}`);
+                                const data = await resp.json();
+
+                                if (checkingState) checkingState.style.display = 'none';
+
+                                if (data && data.hasActiveTransaction) {
+                                    // Blocked by active transaction
+                                    if (title) title.textContent = 'Deletion Blocked';
+                                    if (iconWrap) {
+                                        iconWrap.style.background = 'rgba(245, 158, 11, 0.12)';
+                                        iconWrap.style.color = '#D97706';
+                                    }
+                                    if (icon) icon.className = 'fa-solid fa-shield-halved fs-4';
+
+                                    const orderCodeEl = document.getElementById('deleteConvOrderCode');
+                                    if (orderCodeEl) {
+                                        orderCodeEl.textContent = (data.transaction && data.transaction.orderId) ? data.transaction.orderId : 'Active Order';
+                                    }
+
+                                    if (confirmState) confirmState.style.display = 'none';
+                                    if (blockedState) blockedState.style.display = 'block';
+                                    if (btnConfirm) btnConfirm.style.display = 'none';
+                                    if (btnCancel) btnCancel.style.display = 'none';
+                                    if (btnCloseBlocked) btnCloseBlocked.style.display = 'inline-block';
+                                } else {
+                                    // Safe to delete
+                                    if (title) title.textContent = 'Delete Conversation?';
+                                    if (iconWrap) {
+                                        iconWrap.style.background = 'rgba(220, 53, 69, 0.1)';
+                                        iconWrap.style.color = '#dc3545';
+                                    }
+                                    if (icon) icon.className = 'fa-solid fa-trash-can fs-4';
+
+                                    if (confirmState) confirmState.style.display = 'block';
+                                    if (blockedState) blockedState.style.display = 'none';
+                                    if (btnConfirm) {
+                                        btnConfirm.style.display = 'inline-block';
+                                        btnConfirm.disabled = false;
+                                        btnConfirm.innerHTML = '<i class="fa-solid fa-trash-can me-1 fs-9"></i> Delete';
+                                    }
+                                    if (btnCancel) btnCancel.style.display = 'inline-block';
+                                    if (btnCloseBlocked) btnCloseBlocked.style.display = 'none';
+                                }
+                            } catch (err) {
+                                console.error('Error checking active transaction:', err);
+                                if (checkingState) checkingState.style.display = 'none';
+                                if (confirmState) confirmState.style.display = 'block';
+                                if (title) title.textContent = 'Delete Conversation?';
+                                if (iconWrap) {
+                                    iconWrap.style.background = 'rgba(220, 53, 69, 0.1)';
+                                    iconWrap.style.color = '#dc3545';
+                                }
+                                if (icon) icon.className = 'fa-solid fa-trash-can fs-4';
+                                if (btnConfirm) {
+                                    btnConfirm.style.display = 'inline-block';
+                                    btnConfirm.disabled = false;
+                                }
+                            }
+                        };
+
+                        window.executeDeleteConversation = async function() {
+                            if (!pendingDeletePartnerId) return;
+
+                            const btnConfirm = document.getElementById('btnConfirmDeleteConv');
+                            if (btnConfirm) {
+                                btnConfirm.disabled = true;
+                                btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Deleting...';
+                            }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            if (currentUserId <= 1) currentUserId = 104;
+
+                            try {
+                                const formData = new URLSearchParams();
+                                formData.append('userId', currentUserId);
+                                formData.append('partnerId', pendingDeletePartnerId);
+
+                                const resp = await fetch('/pasabuy_api.php?action=delete_conversation', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                    body: formData.toString()
+                                });
+                                const result = await resp.json();
+
+                                const modalEl = document.getElementById('deleteConversationModal');
+                                if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                                    if (bsModal) bsModal.hide();
+                                }
+
+                                if (result.blocked) {
+                                    alert(result.message || 'Cannot delete conversation: Active rental transaction is currently in progress.');
+                                } else if (result.success) {
+                                    if (typeof currentActiveChatSellerId !== 'undefined' && currentActiveChatSellerId == pendingDeletePartnerId) {
+                                        if (typeof closeChat === 'function') closeChat();
+                                    }
+                                    if (typeof loadChatConversationsList === 'function') {
+                                        await loadChatConversationsList();
+                                    }
+                                } else {
+                                    alert(result.message || 'Failed to delete conversation.');
+                                }
+                            } catch (err) {
+                                console.error('Delete conversation error:', err);
+                                alert('An error occurred while deleting the conversation.');
+                            } finally {
+                                if (btnConfirm) {
+                                    btnConfirm.disabled = false;
+                                    btnConfirm.innerHTML = '<i class="fa-solid fa-trash-can me-1 fs-9"></i> Delete';
+                                }
+                                pendingDeletePartnerId = null;
+                            }
+                        };
 
                         let uploadedPhotoUrls = [];
 

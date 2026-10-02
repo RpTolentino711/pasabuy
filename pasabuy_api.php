@@ -721,6 +721,190 @@ if ($action === 'mark_messages_read' || $action === 'read_messages') {
 }
 
 // ---------------------------------------------------------
+// CHECK ACTIVE TRANSACTION & DELETE CHAT CONVERSATION
+// ---------------------------------------------------------
+if ($action === 'check_active_transaction') {
+    $userId = (int)($_GET['user_id'] ?? $body['userId'] ?? 104);
+    $partnerId = (int)($_GET['partner_id'] ?? $body['partnerId'] ?? 104);
+    if ($userId <= 1) $userId = 104;
+    if ($partnerId <= 1) $partnerId = 104;
+
+    $hasActive = false;
+    $details = null;
+
+    // 1. Check Orders table (PasaBuy Marketplace)
+    try {
+        $uList = ($userId == 104) ? [1, 104] : [$userId];
+        $pList = ($partnerId == 104) ? [1, 104] : [$partnerId];
+        $uPlace = implode(',', array_fill(0, count($uList), '?'));
+        $pPlace = implode(',', array_fill(0, count($pList), '?'));
+
+        $sql = "SELECT Id, Status, FulfillmentType, TotalPrice FROM Orders 
+                WHERE ((BuyerId IN ($uPlace) AND SellerId IN ($pPlace)) 
+                   OR (BuyerId IN ($pPlace) AND SellerId IN ($uPlace)))
+                  AND UPPER(Status) NOT IN ('COMPLETED', 'CANCELLED', 'REJECTED')
+                LIMIT 1";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(array_merge($uList, $pList, $pList, $uList));
+        $ord = $stmt->fetch();
+        if ($ord) {
+            $hasActive = true;
+            $details = [
+                'type' => 'marketplace',
+                'orderId' => '#ORD-' . $ord['Id'],
+                'status' => $ord['Status']
+            ];
+        }
+    } catch (Exception $e) {}
+
+    // 2. Check rental_orders table (RentEase Rentals)
+    if (!$hasActive) {
+        try {
+            $emailStmt = $db->prepare("SELECT u.Id, u.Email, sp.SchoolEmail FROM Users u LEFT JOIN StudentProfiles sp ON u.Id = sp.UserId WHERE u.Id IN (?, ?)");
+            $emailStmt->execute([$userId, $partnerId]);
+            $rows = $emailStmt->fetchAll();
+            $emails = [];
+            foreach ($rows as $r) {
+                $e = strtolower(trim($r['SchoolEmail'] ?: $r['Email']));
+                if ($e) $emails[(int)$r['Id']] = $e;
+            }
+
+            $uEmail = $emails[$userId] ?? ($userId == 104 ? 'romeopaolotolentino@gmail.com' : ($userId == 105 ? 'pogilameg@gmail.com' : ''));
+            $pEmail = $emails[$partnerId] ?? ($partnerId == 104 ? 'romeopaolotolentino@gmail.com' : ($partnerId == 105 ? 'pogilameg@gmail.com' : ''));
+
+            if ($uEmail && $pEmail) {
+                $rSql = "SELECT order_code, order_status FROM rental_orders 
+                         WHERE ((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
+                            OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
+                           AND UPPER(order_status) NOT IN ('RETURNED', 'CANCELLED', 'COMPLETED', 'REJECTED')
+                         LIMIT 1";
+                $rStmt = $db->prepare($rSql);
+                $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail]);
+                $rOrd = $rStmt->fetch();
+                if ($rOrd) {
+                    $hasActive = true;
+                    $details = [
+                        'type' => 'rental',
+                        'orderId' => $rOrd['order_code'],
+                        'status' => $rOrd['order_status']
+                    ];
+                }
+            }
+        } catch (Exception $e2) {}
+    }
+
+    echo json_encode([
+        'success' => true,
+        'hasActiveTransaction' => $hasActive,
+        'transaction' => $details,
+        'message' => $hasActive 
+            ? "Cannot delete conversation: An active transaction (" . ($details['orderId'] ?? 'Order') . ") is ongoing between you and this user."
+            : "No active transaction found."
+    ]);
+    exit;
+}
+
+if ($action === 'delete_conversation') {
+    $userId = (int)($_POST['userId'] ?? $body['userId'] ?? $_GET['user_id'] ?? 104);
+    $partnerId = (int)($_POST['partnerId'] ?? $body['partnerId'] ?? $_GET['partner_id'] ?? 104);
+    if ($userId <= 1) $userId = 104;
+    if ($partnerId <= 1) $partnerId = 104;
+
+    if ($userId === $partnerId) {
+        echo json_encode(['success' => false, 'message' => 'Invalid conversation target.']);
+        exit;
+    }
+
+    // Check active transaction first
+    $hasActive = false;
+    $activeOrderCode = '';
+    try {
+        $uList = ($userId == 104) ? [1, 104] : [$userId];
+        $pList = ($partnerId == 104) ? [1, 104] : [$partnerId];
+        $uPlace = implode(',', array_fill(0, count($uList), '?'));
+        $pPlace = implode(',', array_fill(0, count($pList), '?'));
+
+        $sql = "SELECT Id, Status FROM Orders 
+                WHERE ((BuyerId IN ($uPlace) AND SellerId IN ($pPlace)) 
+                   OR (BuyerId IN ($pPlace) AND SellerId IN ($uPlace)))
+                  AND UPPER(Status) NOT IN ('COMPLETED', 'CANCELLED', 'REJECTED')
+                LIMIT 1";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(array_merge($uList, $pList, $pList, $uList));
+        $ord = $stmt->fetch();
+        if ($ord) {
+            $hasActive = true;
+            $activeOrderCode = '#ORD-' . $ord['Id'];
+        }
+    } catch (Exception $e) {}
+
+    if (!$hasActive) {
+        try {
+            $emailStmt = $db->prepare("SELECT u.Id, u.Email, sp.SchoolEmail FROM Users u LEFT JOIN StudentProfiles sp ON u.Id = sp.UserId WHERE u.Id IN (?, ?)");
+            $emailStmt->execute([$userId, $partnerId]);
+            $rows = $emailStmt->fetchAll();
+            $emails = [];
+            foreach ($rows as $r) {
+                $e = strtolower(trim($r['SchoolEmail'] ?: $r['Email']));
+                if ($e) $emails[(int)$r['Id']] = $e;
+            }
+
+            $uEmail = $emails[$userId] ?? ($userId == 104 ? 'romeopaolotolentino@gmail.com' : ($userId == 105 ? 'pogilameg@gmail.com' : ''));
+            $pEmail = $emails[$partnerId] ?? ($partnerId == 104 ? 'romeopaolotolentino@gmail.com' : ($partnerId == 105 ? 'pogilameg@gmail.com' : ''));
+
+            if ($uEmail && $pEmail) {
+                $rSql = "SELECT order_code, order_status FROM rental_orders 
+                         WHERE ((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
+                            OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
+                           AND UPPER(order_status) NOT IN ('RETURNED', 'CANCELLED', 'COMPLETED', 'REJECTED')
+                         LIMIT 1";
+                $rStmt = $db->prepare($rSql);
+                $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail]);
+                $rOrd = $rStmt->fetch();
+                if ($rOrd) {
+                    $hasActive = true;
+                    $activeOrderCode = $rOrd['order_code'];
+                }
+            }
+        } catch (Exception $e2) {}
+    }
+
+    if ($hasActive) {
+        echo json_encode([
+            'success' => false,
+            'blocked' => true,
+            'message' => "Cannot delete conversation: An active transaction ($activeOrderCode) is currently in progress with this user. Please complete or return the rental first."
+        ]);
+        exit;
+    }
+
+    // Delete chat messages between these two users
+    try {
+        $uList = ($userId == 104) ? [1, 104] : [$userId];
+        $pList = ($partnerId == 104) ? [1, 104] : [$partnerId];
+        $uPlace = implode(',', array_fill(0, count($uList), '?'));
+        $pPlace = implode(',', array_fill(0, count($pList), '?'));
+
+        $delSql = "DELETE FROM ChatMessages 
+                   WHERE ((SenderId IN ($uPlace) AND ReceiverId IN ($pPlace)) 
+                      OR (SenderId IN ($pPlace) AND ReceiverId IN ($uPlace)))";
+        $delStmt = $db->prepare($delSql);
+        $delStmt->execute(array_merge($uList, $pList, $pList, $uList));
+        $deletedCount = $delStmt->rowCount();
+
+        echo json_encode([
+            'success' => true,
+            'deletedCount' => $deletedCount,
+            'message' => 'Conversation deleted successfully.'
+        ]);
+        exit;
+    } catch (Exception $eDel) {
+        echo json_encode(['success' => false, 'message' => 'Failed to delete conversation: ' . $eDel->getMessage()]);
+        exit;
+    }
+}
+
+// ---------------------------------------------------------
 // 4. GET WANTED POSTS (Wanted Tab)
 // ---------------------------------------------------------
 if ($action === 'wanted_posts' || $action === 'get_wanted') {

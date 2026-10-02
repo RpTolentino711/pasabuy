@@ -59,3 +59,60 @@
                 class="fa-solid fa-paper-plane"></i></button>
     </div>
 </div>
+
+<!-- DELETE CONVERSATION CONFIRMATION MODAL -->
+<div class="modal fade" id="deleteConversationModal" tabindex="-1" aria-labelledby="deleteConversationModalLabel" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 360px;">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-white">
+            <div class="modal-body text-center p-2">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" 
+                     id="deleteConvIconWrap"
+                     style="width: 56px; height: 56px; background: rgba(220, 53, 69, 0.1); color: #dc3545;">
+                    <i class="fa-solid fa-trash-can fs-4" id="deleteConvIcon"></i>
+                </div>
+                
+                <h6 class="fw-bold text-dark fs-7 mb-2" id="deleteConvTitle">Delete Conversation?</h6>
+                
+                <!-- Checking Status Loading indicator -->
+                <div id="deleteConvCheckingState" class="py-3 text-secondary" style="display:none;">
+                    <i class="fa-solid fa-spinner fa-spin text-primary fs-5 mb-2"></i>
+                    <div class="fs-9">Verifying rental transaction status...</div>
+                </div>
+
+                <!-- Normal Confirmation State -->
+                <div id="deleteConvConfirmState">
+                    <p class="text-muted fs-8 mb-3">
+                        Are you sure you want to delete your conversation with <strong id="deleteConvPartnerName" class="text-dark">User</strong>? All chat messages will be permanently removed.
+                    </p>
+                </div>
+
+                <!-- Blocked by Active Transaction State -->
+                <div id="deleteConvBlockedState" style="display:none;" class="mb-3 text-start">
+                    <div class="alert alert-warning border-0 rounded-3 p-2.5 mb-0" style="background:#FFFBEB; border:1px solid #FDE68A !important;">
+                        <div class="d-flex gap-2">
+                            <i class="fa-solid fa-triangle-exclamation text-warning fs-6 mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <div class="fw-bold text-dark fs-8 mb-1">Active Transaction Ongoing</div>
+                                <p class="text-muted mb-0" style="font-size:0.75rem; line-height: 1.4;">
+                                    You have an active ongoing transaction (<strong id="deleteConvOrderCode" class="text-dark">#RE-ORDER</strong>) with this user.
+                                    <br><br>
+                                    Chat history cannot be deleted while a transaction is pending or in progress to protect both renter and lender. You can delete this conversation once the rental is completed or returned.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-center gap-2 mt-2">
+                    <button type="button" class="btn btn-light rounded-pill px-3.5 py-1.5 fs-8 fw-bold" data-bs-dismiss="modal" id="btnCancelDeleteConv">Cancel</button>
+                    <button type="button" class="btn btn-danger rounded-pill px-3.5 py-1.5 fs-8 fw-bold text-white shadow-2xs" id="btnConfirmDeleteConv" onclick="executeDeleteConversation()">
+                        <i class="fa-solid fa-trash-can me-1 fs-9"></i> Delete
+                    </button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 py-1.5 fs-8 fw-bold text-white shadow-2xs" id="btnCloseBlockedDeleteConv" data-bs-dismiss="modal" style="display:none; background:#5B3FA8; border:none;">
+                        Understood
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
