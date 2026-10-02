@@ -150,9 +150,17 @@
 
         <div class="row g-2.5" id="homeFeaturedContainer">
             <!-- Dynamic Live Featured Equipment populated from database by loadRentEaseCatalog() -->
-            <div class="col-12 text-center py-4 text-secondary">
-                <i class="fa-solid fa-spinner fa-spin fs-4 text-primary mb-2"></i>
-                <div class="fs-8">Loading live equipment inventory...</div>
+            <div class="col-12">
+                <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-2 text-muted" style="width:52px; height:52px; background: rgba(91,63,168,0.08) !important;">
+                        <i class="fa-solid fa-box-open fs-3" style="color:#5B3FA8;"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark fs-7 mb-1">Empty Stocks</h6>
+                    <p class="text-muted fs-9 mb-2.5">No equipment currently available for rent.</p>
+                    <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold mx-auto" style="background:#5B3FA8; border:none;" onclick="switchTab('sell')">
+                        <i class="fa-solid fa-plus me-1"></i> Post Equipment
+                    </button>
+                </div>
             </div>
         </div>
     </div>

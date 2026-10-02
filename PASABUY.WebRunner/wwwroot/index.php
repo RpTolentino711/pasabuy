@@ -1792,6 +1792,7 @@
                             if (tabName === 'home') {
                                 filterProducts();
                                 updateUnreadBadges();
+                                if (typeof renderFeaturedRentals === 'function') renderFeaturedRentals();
                             } else if (tabName === 'messages') {
                                 const tabBadge = document.getElementById('tabMessagesBadge');
                                 if (tabBadge) tabBadge.style.display = 'none';

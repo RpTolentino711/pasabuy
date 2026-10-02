@@ -37,15 +37,19 @@ async function loadRentEaseCatalog() {
         const res = await fetch(getRentEaseApiUrl('get_inventory'));
         if (res.ok) {
             const data = await res.json();
-            rentEaseInventory = data.items || [];
-            renderFeaturedRentals();
-            renderExploreCatalog();
+            rentEaseInventory = Array.isArray(data.items) ? data.items : [];
+        } else {
+            rentEaseInventory = [];
         }
     } catch (e) {
         console.error("RentEase catalog load error:", e);
+        rentEaseInventory = [];
     }
+    renderFeaturedRentals();
+    renderExploreCatalog();
     updateCartBadgeCount();
 }
+window.loadRentEaseCatalog = loadRentEaseCatalog;
 
 function renderFeaturedRentals() {
     const container = document.getElementById('homeFeaturedContainer');
@@ -60,11 +64,11 @@ function renderFeaturedRentals() {
         container.innerHTML = `
             <div class="col-12">
                 <div class="card border-0 rounded-4 shadow-sm p-4 bg-white text-center">
-                    <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-2 text-muted" style="width:48px; height:48px; color:#5B3FA8;">
-                        <i class="fa-solid fa-box-open fs-4"></i>
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-2 text-muted" style="width:52px; height:52px; background: rgba(91,63,168,0.08) !important;">
+                        <i class="fa-solid fa-box-open fs-3" style="color:#5B3FA8;"></i>
                     </div>
-                    <h6 class="fw-bold text-dark fs-8 mb-1">No equipment listed yet</h6>
-                    <p class="text-muted fs-9 mb-2.5">Be the first to list equipment for rent on campus!</p>
+                    <h6 class="fw-bold text-dark fs-7 mb-1">Empty Stocks</h6>
+                    <p class="text-muted fs-9 mb-2.5">No equipment currently available for rent.</p>
                     <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold mx-auto" style="background:#5B3FA8; border:none;" onclick="switchTab('sell')">
                         <i class="fa-solid fa-plus me-1"></i> Post Equipment
                     </button>
@@ -261,12 +265,17 @@ function renderGridElements(items) {
     const grid = document.getElementById('exploreProductGrid');
     if (!grid) return;
 
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
         grid.innerHTML = `
         <div class="col-12 text-center py-5 bg-white rounded-4 border p-4">
-            <i class="fa-solid fa-box-open fs-2 d-block mb-2 text-secondary opacity-50"></i>
-            <h6 class="fw-bold text-dark fs-7 mb-1">No equipment found</h6>
-            <p class="fs-9 text-muted mb-0">Try selecting another filter chip or category.</p>
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-2 text-muted" style="width:52px; height:52px; background: rgba(91,63,168,0.08) !important;">
+                <i class="fa-solid fa-box-open fs-3" style="color:#5B3FA8;"></i>
+            </div>
+            <h6 class="fw-bold text-dark fs-7 mb-1">Empty Stocks</h6>
+            <p class="fs-9 text-muted mb-2.5">No equipment currently available in this category.</p>
+            <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold mx-auto" style="background:#5B3FA8; border:none;" onclick="switchTab('sell')">
+                <i class="fa-solid fa-plus me-1"></i> Post Equipment
+            </button>
         </div>`;
         return;
     }
@@ -3446,6 +3455,7 @@ window.switchTab = function (tabName) {
     } else if (tabName === 'home') {
         if (typeof updateUnreadBadges === 'function') updateUnreadBadges();
         if (typeof pollRentEaseUnreadMessages === 'function') pollRentEaseUnreadMessages();
+        if (typeof renderFeaturedRentals === 'function') renderFeaturedRentals();
     } else if (tabName === 'explore') {
         renderExploreCatalog();
     } else if (tabName === 'sell') {
@@ -4101,8 +4111,8 @@ function pollRentEaseUnreadMessages() {
 }
 window.pollRentEaseUnreadMessages = pollRentEaseUnreadMessages;
 
-// Automatic bootstrap on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
+// Automatic bootstrap on DOM ready or immediately if document is already loaded
+function initRentEaseAppBootstrap() {
     loadRentEaseCatalog();
     syncRentEaseProfileUI();
     updateCartBadgeCount();
@@ -4137,9 +4147,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const tabbar = document.querySelector('.app-tabbar');
         if (tabbar) tabbar.style.display = 'none';
-        const auth = document.getElementById('authScreen');
-        if (auth && localStorage.getItem('pasabuy_student_logged_in') !== 'true') {
-            // Keep auth screen if splash is done
-        }
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRentEaseAppBootstrap);
+} else {
+    initRentEaseAppBootstrap();
+}
