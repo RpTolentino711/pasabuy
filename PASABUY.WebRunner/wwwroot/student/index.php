@@ -1802,6 +1802,10 @@
                                 filterProducts();
                             } else if (tabName === 'wanted') {
                                 loadWantedPosts();
+                            } else if (tabName === 'sell') {
+                                if (typeof checkRentOutVerification === 'function') {
+                                    try { checkRentOutVerification(); } catch (e) { }
+                                }
                             } else if (tabName === 'profile') {
                                 if (typeof syncRentEaseProfileUI === 'function') {
                                     try { syncRentEaseProfileUI(); } catch (e) { console.error(e); }

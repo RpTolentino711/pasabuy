@@ -192,8 +192,8 @@
          ========================================================== -->
     <div id="rentoutSectionPost" class="flex-column gap-2.5 mb-3" style="display:flex;">
 
-        <!-- Minimized Sleek Promo Strip (No awkward overflowing tags) -->
-        <div class="rentout-mini-hero px-3 py-2 text-white d-flex align-items-center justify-content-between mb-1">
+        <!-- Minimized Sleek Promo Strip -->
+        <div class="rentout-mini-hero px-3 py-2 text-white d-flex align-items-center mb-1">
             <div class="d-flex align-items-center gap-2 text-truncate">
                 <div class="rounded-circle d-flex align-items-center justify-content-center" 
                      style="background: rgba(255,255,255,0.2); width:28px; height:28px; flex-shrink:0;">
@@ -204,9 +204,6 @@
                     <div class="text-white-50 text-truncate" style="font-size:0.68rem;">Earn daily rental income from idle sound, tents, cameras & tables</div>
                 </div>
             </div>
-            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-2 py-1 fw-semibold flex-shrink-0 ms-2" style="font-size:0.66rem;">
-                <i class="fa-solid fa-shield-halved text-warning me-1"></i>Verified
-            </span>
         </div>
 
         <!-- Minimized User Verification Required Alert -->
@@ -620,6 +617,45 @@ window.switchRentOutSubTab = function(mode) {
         }
     }
 };
+
+window.checkRentOutVerification = function() {
+    let currentUser = {};
+    try {
+        if (typeof getRentEaseCurrentUser === 'function') {
+            currentUser = getRentEaseCurrentUser();
+        } else {
+            const raw = localStorage.getItem('pasabuy_student_user') || localStorage.getItem('pasabuy_user');
+            if (raw) currentUser = JSON.parse(raw);
+        }
+    } catch(e) {}
+
+    const email = (currentUser.email || currentUser.SchoolEmail || '').toLowerCase();
+    const isRomeo = (email === 'romeopaolotolentino@gmail.com' || (currentUser.id == 104));
+    let isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.Status === 'VERIFIED');
+
+    if (typeof updateSellVerificationState === 'function') {
+        updateSellVerificationState(isVerified);
+    }
+
+    const uId = currentUser.id || currentUser.Id || currentUser.userId || currentUser.UserId || 0;
+    if (uId > 0 && !isRomeo) {
+        fetch(`/pasabuy_api.php?action=get_verification_status&userId=${uId}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return;
+                const st = (data.VerificationStatus || data.Status || '').toUpperCase();
+                const liveVerified = (st === 'VERIFIED' || st === 'APPROVED');
+                if (typeof updateSellVerificationState === 'function') {
+                    updateSellVerificationState(liveVerified);
+                }
+            })
+            .catch(() => {});
+    }
+};
+
+setTimeout(function() {
+    if (typeof checkRentOutVerification === 'function') checkRentOutVerification();
+}, 200);
 
 window.openEquipmentReviewModal = function() {
     const currentUser = typeof getRentEaseCurrentUser === 'function' ? getRentEaseCurrentUser() : {};

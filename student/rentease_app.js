@@ -3539,7 +3539,7 @@ window.updateSellVerificationState = function (isVerified) {
             btn.disabled = false;
             btn.classList.remove('disabled');
             btn.removeAttribute('title');
-            btn.innerHTML = '<i class="fa-solid fa-paper-plane fs-8"></i> <span>Publish Equipment for Rent</span>';
+            btn.innerHTML = '<i class="fa-solid fa-clipboard-check fs-8"></i> <span>Review & Publish Equipment</span>';
         }
     } else {
         if (vBanner) vBanner.style.display = 'block';
