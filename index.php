@@ -2534,8 +2534,13 @@
                                 payMongoGatewayModalInstance = new bootstrap.Modal(document.getElementById('payMongoGatewayModal'));
                             }
                             if (amountText) {
-                                document.getElementById('gatewayAmount').innerText = amountText;
-                                document.getElementById('gcashAmountDisplay').innerText = amountText;
+                                const elGw = document.getElementById('gatewayAmount');
+                                if (elGw) elGw.innerText = amountText;
+                                const elGc = document.getElementById('gcashAmountDisplay');
+                                if (elGc) elGc.innerText = amountText;
+                                document.querySelectorAll('#pmStep1 .badge.rounded-pill').forEach(b => {
+                                    if (b.innerText.toLowerCase().includes('pay')) b.innerText = 'Pay ' + amountText;
+                                });
                             }
                             showPmStep1();
                             payMongoGatewayModalInstance.show();
@@ -2679,6 +2684,31 @@
                                 clearInterval(paymongoPollTimer);
                                 paymongoPollTimer = null;
                             }
+
+                            if (typeof window.onPayMongoPaymentSuccess === 'function') {
+                                const cb = window.onPayMongoPaymentSuccess;
+                                window.onPayMongoPaymentSuccess = null;
+
+                                const modalEl = document.getElementById('payMongoGatewayModal');
+                                if (payMongoGatewayModalInstance) {
+                                    try { payMongoGatewayModalInstance.hide(); } catch (e) { }
+                                }
+                                if (modalEl) {
+                                    try {
+                                        const bsModal = bootstrap.Modal.getInstance(modalEl);
+                                        if (bsModal) bsModal.hide();
+                                    } catch (e) { }
+                                    modalEl.style.display = 'none';
+                                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                                    backdrops.forEach(b => b.remove());
+                                    document.body.classList.remove('modal-open');
+                                    document.body.style.overflow = '';
+                                }
+
+                                await cb();
+                                return;
+                            }
+
                             await publishListingToDatabase();
 
                             const modalEl = document.getElementById('payMongoGatewayModal');

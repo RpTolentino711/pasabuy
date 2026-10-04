@@ -3557,6 +3557,11 @@ window.updateSellVerificationState = function (isVerified) {
 // POST RENTAL ITEM HANDLER (Live Video & Photo Rental Posting)
 // ----------------------------------------------------------
 window.postRentalItemLive = async function () {
+    if (typeof window.openEquipmentReviewModal === 'function') {
+        window.openEquipmentReviewModal();
+        return;
+    }
+
     // Strict Guard: Only admin-verified student accounts can post equipment for rent
     const currentUser = getRentEaseCurrentUser();
     const isRomeo = (currentUser.email === 'romeopaolotolentino@gmail.com');
@@ -3578,7 +3583,7 @@ window.postRentalItemLive = async function () {
     const price = parseFloat(document.getElementById('sellPrice')?.value) || 0;
     const quantity = parseInt(document.getElementById('sellQuantity')?.value) || 1;
     const condition = document.getElementById('sellCondition')?.value || 'Good';
-    const location = document.getElementById('sellMeetup')?.value.trim() || 'San Pablo, Laguna';
+    const location = document.getElementById('sellMeetup')?.value.trim() || 'Campus / In-App Chat';
     const description = document.getElementById('sellDescription')?.value.trim();
     
     // Photo from file input dataUrl or text url input

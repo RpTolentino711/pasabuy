@@ -280,31 +280,23 @@
                 </div>
             </div>
 
-            <!-- Condition & Location -->
-            <div class="row g-2">
-                <div class="col-5">
-                    <label class="rentout-input-label" for="sellCondition">
-                        <span>Condition</span>
-                    </label>
-                    <select class="form-select rentout-control" id="sellCondition">
-                        <option value="Brand New">Brand New</option>
-                        <option value="Like New" selected>Like New</option>
-                        <option value="Good">Good</option>
-                        <option value="Fair">Fair</option>
-                    </select>
+            <!-- Condition (Pickup Hub removed: In-Campus Handover via In-App Chat) -->
+            <div class="mb-0">
+                <label class="rentout-input-label" for="sellCondition">
+                    <span>Condition</span>
+                </label>
+                <select class="form-select rentout-control" id="sellCondition">
+                    <option value="Brand New">Brand New</option>
+                    <option value="Like New" selected>Like New</option>
+                    <option value="Good">Good</option>
+                    <option value="Fair">Fair</option>
+                </select>
+                <div class="d-flex align-items-center gap-1.5 mt-1.5 text-muted px-1" style="font-size:0.7rem;">
+                    <i class="fa-solid fa-comments text-primary fs-8"></i>
+                    <span><strong>Campus Handover:</strong> Coordinate pickup &amp; return directly with renters via in-app chat.</span>
                 </div>
-                <div class="col-7">
-                    <label class="rentout-input-label" for="sellMeetup">
-                        <span>Pickup Hub</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 py-1 px-2" style="border-radius:10px 0 0 10px; border-color:#E2E8F0;">
-                            <i class="fa-solid fa-location-dot fs-9" style="color:#5B3FA8;"></i>
-                        </span>
-                        <input type="text" class="form-control rentout-control border-start-0 py-1" id="sellMeetup" 
-                               value="San Pablo, Laguna" placeholder="Campus Hub / Gate 1" style="border-radius:0 10px 10px 0;">
-                    </div>
-                </div>
+                <!-- Hidden location for backend API compatibility -->
+                <input type="hidden" id="sellMeetup" value="Campus / In-App Chat">
             </div>
         </div>
 
@@ -467,11 +459,11 @@
             </div>
         </div>
 
-        <!-- Final CTA Button -->
+        <!-- Final CTA Button: Triggers Review Modal -->
         <button type="button" class="btn rentout-publish-btn w-100 d-flex align-items-center justify-content-center gap-2 mb-1" 
                 id="btnPublishRentalItem"
-                onclick="postRentalItemLive()">
-            <i class="fa-solid fa-paper-plane fs-8"></i> <span>Publish Equipment for Rent</span>
+                onclick="openEquipmentReviewModal()">
+            <i class="fa-solid fa-clipboard-check fs-8"></i> <span>Review &amp; Publish Equipment</span>
         </button>
 
         <!-- Lender Protection Note (Clean & Minimal) -->
@@ -481,6 +473,95 @@
 
     </div> <!-- End rentoutSectionPost -->
 
+</div>
+
+<!-- ==========================================================
+     FINAL REVIEW EQUIPMENT LISTING MODAL
+     Review all details before proceeding to payment
+     ========================================================== -->
+<div class="modal fade" id="modalReviewEquipmentListing" tabindex="-1" aria-labelledby="modalReviewEquipmentListingLabel" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-white">
+            <div class="modal-header border-0 pb-1 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:32px; height:32px; background:linear-gradient(135deg, #5B3FA8, #341F97);">
+                        <i class="fa-solid fa-clipboard-check fs-8"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark fs-7 mb-0" id="modalReviewEquipmentListingLabel">Final Listing Review</h6>
+                        <span class="text-muted" style="font-size:0.68rem;">Review your equipment details before payment</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body pt-2 px-1">
+                <!-- Equipment Summary Card -->
+                <div class="card border-0 rounded-4 shadow-2xs p-2.5 bg-light mb-2.5 border">
+                    <div class="d-flex gap-2.5 align-items-start">
+                        <img id="reviewEquipmentImg" src="https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80" 
+                             class="rounded-3 border shadow-2xs" 
+                             style="width:72px; height:72px; object-fit:cover; flex-shrink:0;" 
+                             alt="Equipment Preview">
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
+                                <span class="badge bg-primary-subtle text-primary fw-bold fs-9" id="reviewEquipmentCategory">Chairs</span>
+                                <span class="badge bg-white text-secondary border fs-9" id="reviewEquipmentMaterial">Plastic</span>
+                                <span class="badge bg-success-subtle text-success fs-9 fw-bold" id="reviewEquipmentCondition">Brand New</span>
+                            </div>
+                            <h6 class="fw-extrabold text-dark fs-8 mb-1 text-truncate" id="reviewEquipmentTitle">Equipment Title</h6>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <span class="fw-extrabold text-primary fs-7" id="reviewEquipmentRate">₱ 100</span>
+                                <span class="text-muted" style="font-size:0.7rem;">/ day</span>
+                                <span class="text-muted">•</span>
+                                <span class="fw-bold text-dark fs-8" id="reviewEquipmentStock">10 Units</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campus Handover Badge -->
+                    <div class="d-flex align-items-center gap-1.5 mt-2 pt-2 border-top text-muted" style="font-size:0.7rem;">
+                        <i class="fa-solid fa-comments text-primary fs-8"></i>
+                        <span><strong>Campus Handover:</strong> Coordinate pickup &amp; return directly via in-app chat.</span>
+                    </div>
+                </div>
+
+                <!-- Description Preview -->
+                <div class="p-2.5 rounded-3 bg-white border mb-2.5 shadow-2xs">
+                    <span class="text-muted d-block fw-bold mb-1" style="font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px;">Description &amp; Notes</span>
+                    <p class="text-dark mb-0 fs-9 text-break" id="reviewEquipmentDesc" style="white-space: pre-line; max-height:80px; overflow-y:auto;">
+                        No additional description provided.
+                    </p>
+                </div>
+
+                <!-- Platform Posting Fee Card -->
+                <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between mb-1" style="background: rgba(91,63,168,0.06); border-color: rgba(91,63,168,0.2) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:28px; height:28px; background:#7C3AED; font-size:0.7rem;">
+                            <i class="fa-solid fa-receipt"></i>
+                        </div>
+                        <div>
+                            <span class="fw-bold text-dark fs-8 d-block">Platform Posting Fee</span>
+                            <span class="text-muted" style="font-size:0.65rem;">PayMongo Live Gateway • GCash / Maya</span>
+                        </div>
+                    </div>
+                    <span class="fw-extrabold fs-7" style="color:#5B3FA8;" id="reviewEquipmentFee">₱15.00</span>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-2 d-flex gap-2">
+                <button type="button" class="btn btn-light rounded-pill px-3 py-2 fs-8 fw-bold text-secondary flex-grow-1 border" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-pen-to-square me-1"></i> Edit Form
+                </button>
+                <button type="button" class="btn btn-primary rounded-pill px-3 py-2 fs-8 fw-extrabold text-white flex-grow-1 shadow-2xs" 
+                        id="btnConfirmReviewAndPay"
+                        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
+                        onclick="proceedFromReviewToPayment()">
+                    <i class="fa-solid fa-credit-card me-1"></i> Proceed to Payment
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -538,5 +619,206 @@ window.switchRentOutSubTab = function(mode) {
             btnPrep.style.boxShadow = 'none';
         }
     }
+};
+
+window.openEquipmentReviewModal = function() {
+    const currentUser = typeof getRentEaseCurrentUser === 'function' ? getRentEaseCurrentUser() : {};
+    const isRomeo = (currentUser.email === 'romeopaolotolentino@gmail.com');
+    const isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.verification_status === 'VERIFIED');
+
+    if (!isVerified) {
+        alert('🔒 Account Verification Required\n\nOnly admin-verified student accounts can publish equipment for rent.\n\nPlease submit your student ID verification under your Profile to get verified by Admin.');
+        if (typeof openVerificationModal === 'function') openVerificationModal();
+        else if (typeof switchTab === 'function') switchTab('profile');
+        return;
+    }
+
+    const title = document.getElementById('sellTitle')?.value.trim();
+    const price = parseFloat(document.getElementById('sellPrice')?.value) || 0;
+    const quantity = parseInt(document.getElementById('sellQuantity')?.value) || 1;
+    const category = document.getElementById('sellCategory')?.value || 'Others';
+    const materialTag = document.getElementById('sellMaterialTag')?.value || 'Plastic';
+    const condition = document.getElementById('sellCondition')?.value || 'Good';
+    const description = document.getElementById('sellDescription')?.value.trim() || 'No additional guidelines specified.';
+
+    if (!title) {
+        alert('⚠️ Please enter an equipment title / name before reviewing.');
+        document.getElementById('sellTitle')?.focus();
+        return;
+    }
+
+    if (price <= 0) {
+        alert('⚠️ Please enter a valid daily rental price.');
+        document.getElementById('sellPrice')?.focus();
+        return;
+    }
+
+    let photoUrl = 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+    if (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > 0) {
+        photoUrl = uploadedPhotoUrls[0];
+    } else {
+        const customUrl = document.getElementById('sellPhotoUrlInput')?.value.trim();
+        if (customUrl) photoUrl = customUrl;
+    }
+
+    let fee = 15;
+    if (price > 0 && price < 100) fee = 10;
+    else if (price >= 100 && price <= 500) fee = 15;
+    else if (price > 500 && price <= 1000) fee = 20;
+    else if (price > 1000 && price <= 2500) fee = 30;
+    else if (price > 2500 && price <= 5000) fee = 50;
+    else if (price > 5000) fee = 100;
+
+    const elImg = document.getElementById('reviewEquipmentImg');
+    const elTitle = document.getElementById('reviewEquipmentTitle');
+    const elCat = document.getElementById('reviewEquipmentCategory');
+    const elMat = document.getElementById('reviewEquipmentMaterial');
+    const elCond = document.getElementById('reviewEquipmentCondition');
+    const elRate = document.getElementById('reviewEquipmentRate');
+    const elStock = document.getElementById('reviewEquipmentStock');
+    const elDesc = document.getElementById('reviewEquipmentDesc');
+    const elFee = document.getElementById('reviewEquipmentFee');
+    const elBtnPay = document.getElementById('btnConfirmReviewAndPay');
+
+    if (elImg) elImg.src = photoUrl;
+    if (elTitle) elTitle.innerText = title;
+    if (elCat) elCat.innerText = category;
+    if (elMat) elMat.innerText = materialTag;
+    if (elCond) elCond.innerText = condition;
+    if (elRate) elRate.innerText = '₱ ' + price.toLocaleString();
+    if (elStock) elStock.innerText = quantity + ' Unit' + (quantity > 1 ? 's' : '');
+    if (elDesc) elDesc.innerText = description;
+    if (elFee) elFee.innerText = '₱' + fee.toFixed(2);
+    if (elBtnPay) elBtnPay.innerHTML = '<i class="fa-solid fa-credit-card me-1"></i> Proceed to Payment (₱' + fee.toFixed(2) + ')';
+
+    const modalEl = document.getElementById('modalReviewEquipmentListing');
+    if (modalEl) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        } else {
+            modalEl.classList.add('show');
+            modalEl.style.display = 'block';
+        }
+    }
+};
+
+window.proceedFromReviewToPayment = function() {
+    const modalEl = document.getElementById('modalReviewEquipmentListing');
+    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const inst = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+        inst.hide();
+    }
+
+    const price = parseFloat(document.getElementById('sellPrice')?.value) || 0;
+    let fee = 15;
+    if (price > 0 && price < 100) fee = 10;
+    else if (price >= 100 && price <= 500) fee = 15;
+    else if (price > 500 && price <= 1000) fee = 20;
+    else if (price > 1000 && price <= 2500) fee = 30;
+    else if (price > 2500 && price <= 5000) fee = 50;
+    else if (price > 5000) fee = 100;
+
+    const feeText = '₱' + fee.toFixed(2);
+
+    const pmModal = document.getElementById('payMongoGatewayModal');
+    if (pmModal && typeof openPayMongoGatewayModal === 'function') {
+        window.onPayMongoPaymentSuccess = function() {
+            window.executePostRentalItemLive(fee);
+        };
+        openPayMongoGatewayModal(feeText);
+    } else {
+        window.executePostRentalItemLive(fee);
+    }
+};
+
+window.executePostRentalItemLive = async function(fee) {
+    const title = document.getElementById('sellTitle')?.value.trim();
+    const category = document.getElementById('sellCategory')?.value || 'Others';
+    const materialTag = document.getElementById('sellMaterialTag')?.value || 'Plastic';
+    const price = parseFloat(document.getElementById('sellPrice')?.value) || 0;
+    const quantity = parseInt(document.getElementById('sellQuantity')?.value) || 1;
+    const condition = document.getElementById('sellCondition')?.value || 'Good';
+    const location = document.getElementById('sellMeetup')?.value.trim() || 'Campus / In-App Chat';
+    const description = document.getElementById('sellDescription')?.value.trim();
+    
+    let photoUrl = (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > 0) 
+        ? uploadedPhotoUrls[0] 
+        : (document.getElementById('sellPhotoUrlInput')?.value.trim() || '');
+    if (!photoUrl) photoUrl = 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+    
+    const videoUrl = document.getElementById('sellVideoUrlInput')?.value.trim() || '';
+
+    const btn = document.getElementById('btnPublishRentalItem');
+    const oldBtnHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Publishing Equipment...';
+    }
+
+    try {
+        const currentUser = typeof getRentEaseCurrentUser === 'function' ? getRentEaseCurrentUser() : {};
+        const apiUrl = typeof getRentEaseApiUrl === 'function' ? getRentEaseApiUrl('post_item') : 'rentease_api.php?action=post_item';
+        const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: title,
+                category: category,
+                material_tag: materialTag,
+                price_per_day: price,
+                qty_total: quantity,
+                image_url: photoUrl,
+                photos: (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > 0) ? uploadedPhotoUrls : [photoUrl],
+                video_url: videoUrl,
+                item_condition: condition,
+                location: location,
+                description: description,
+                posting_fee: fee || 15,
+                owner_id: currentUser.id || (currentUser.email === 'romeopaolotolentino@gmail.com' ? 104 : 0),
+                owner_name: currentUser.name || 'Romeo Paolo Tolentino',
+                owner_email: currentUser.email || 'romeopaolotolentino@gmail.com',
+                owner_contact: currentUser.phone || '09668257301'
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            if (data.id) {
+                try {
+                    let postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
+                    postedIds.push(parseInt(data.id));
+                    localStorage.setItem('rentease_user_posted_ids', JSON.stringify(postedIds));
+                } catch(e) {}
+            }
+
+            const feeInfo = data.posting_fee ? `\n🏷️ Posting Fee: ₱${parseFloat(data.posting_fee).toFixed(2)}` : '';
+            alert(`🎉 Success!\n\n"${title}" has been published live for rent on RentEase!${feeInfo}\nStudents can now rent this equipment from you.`);
+            
+            if (document.getElementById('sellTitle')) document.getElementById('sellTitle').value = '';
+            if (document.getElementById('sellDescription')) document.getElementById('sellDescription').value = '';
+            if (document.getElementById('sellPhotoUrlInput')) document.getElementById('sellPhotoUrlInput').value = '';
+            if (document.getElementById('sellVideoUrlInput')) document.getElementById('sellVideoUrlInput').value = '';
+            if (document.getElementById('sellPhotosPreviewGrid')) document.getElementById('sellPhotosPreviewGrid').innerHTML = '';
+            if (document.getElementById('sellVideoPreviewContainer')) document.getElementById('sellVideoPreviewContainer').style.display = 'none';
+            if (typeof uploadedPhotoUrls !== 'undefined') uploadedPhotoUrls = [];
+
+            if (typeof loadRentEaseCatalog === 'function') await loadRentEaseCatalog();
+            if (typeof switchTab === 'function') switchTab('profile');
+        } else {
+            alert(data.message || '❌ Failed to post equipment. Please try again.');
+        }
+    } catch (e) {
+        console.error("Error posting rental item:", e);
+        alert('❌ Error connecting to server to post item.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = oldBtnHtml;
+        }
+    }
+};
+
+window.postRentalItemLive = function() {
+    window.openEquipmentReviewModal();
 };
 </script>
