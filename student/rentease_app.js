@@ -2777,6 +2777,9 @@ window.openSettingsHubModal = function () {
         console.warn("settingsHubModal not found");
         return;
     }
+    if (modalEl.parentElement !== document.body) {
+        document.body.appendChild(modalEl);
+    }
     syncRentEaseProfileUI();
     if (typeof checkUserOrderUpdatesBadge === 'function') {
         checkUserOrderUpdatesBadge();
@@ -2799,6 +2802,15 @@ window.openIssueModal = function () {
         openIssueReportingModal();
     }
 };
+
+window.openProfileSettingsModal = openProfileSettingsModal;
+window.openMyOrdersModal = openMyOrdersModal;
+window.openPurchaseHistoryModal = openPurchaseHistoryModal;
+window.openSavedAddressesModal = openSavedAddressesModal;
+window.openPaymentMethodsModal = openPaymentMethodsModal;
+window.openIssueReportingModal = openIssueReportingModal;
+window.openAboutRentEaseModal = openAboutRentEaseModal;
+window.logoutRentEaseUser = logoutRentEaseUser;
 
 function openProfileSettingsModal() {
     const modalEl = document.getElementById('profileSettingsModal');
@@ -4032,10 +4044,14 @@ window.openVerificationModal = function () {
             .catch(() => {});
     }
 
-    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-    } else {
-        switchTab('profile');
+    if (modalEl) {
+        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            return;
+        }
+    }
+    switchTab('profile');
     }
 };
 
