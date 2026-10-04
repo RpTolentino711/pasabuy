@@ -335,7 +335,7 @@ if (($action === 'update_profile' || $action === 'save_profile') && $method === 
             $up = $db->prepare("UPDATE StudentProfiles SET FirstName = ?, LastName = ?, StudentNumber = ?, Course = ?, YearLevel = ?, ProfileImage = ?, UpdatedAt = NOW() WHERE UserId = ?");
             $up->execute([$firstName, $lastName, $studentNumber, $course, $yearLevel, $profileImage, $userId]);
         } else {
-            $ins = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, ProfileImage, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, 'student@pasabuy.site', ?, ?, ?, 'VERIFIED', 5.0, 0, NOW(), NOW())");
+            $ins = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, ProfileImage, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, 'student@pasabuy.site', ?, ?, ?, 'UNVERIFIED', 5.0, 0, NOW(), NOW())");
             $ins->execute([$userId, $firstName, $lastName, $studentNumber, $course, $yearLevel, $profileImage]);
         }
     }

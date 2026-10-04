@@ -2612,10 +2612,10 @@ function getRentEaseCurrentUser() {
             const uEmail = (u.email || u.SchoolEmail || '').trim();
             const isPogilameg = (uEmail.toLowerCase().includes('pogilameg') || uId === 105);
             const isRomeo = (uEmail.toLowerCase().includes('romeo') || uId === 104);
-            const isVer = (u.is_verified === 1 || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || u.VerificationStatus === 'VERIFIED' || isRomeo || isPogilameg) ? 1 : 0;
+            const isVer = (u.is_verified === 1 || u.is_verified === '1' || u.is_verified === true || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || u.VerificationStatus === 'VERIFIED') ? 1 : 0;
             
             if (fullName || uEmail) {
-                const courseInfo = u.course ? `${u.course} • ${u.yearLevel || 'Student'}` : (u.sub || 'Verified Student');
+                const courseInfo = u.course ? `${u.course} • ${u.yearLevel || 'Student'}` : (u.sub || 'Student');
                 const defaultAvatar = isPogilameg 
                     ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80'
                     : (isRomeo ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80');
@@ -2624,13 +2624,13 @@ function getRentEaseCurrentUser() {
                     id: uId,
                     firstName: first || (isPogilameg ? 'Pogilameg' : (isRomeo ? 'Romeo Paolo' : 'Student')),
                     lastName: last || (isPogilameg ? 'Tester' : (isRomeo ? 'Tolentino' : '')),
-                    name: fullName || (isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : 'Verified Student')),
+                    name: fullName || (isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : 'Student')),
                     sub: courseInfo,
                     email: uEmail || (isPogilameg ? 'pogilameg@gmail.com' : (isRomeo ? 'romeopaolotolentino@gmail.com' : 'user@campus.edu.ph')),
                     phone: u.phone || u.phoneNumber || u.PhoneNumber || u.studentNumber || (isPogilameg ? '09171234567' : '09668257301'),
                     studentNumber: u.studentNumber || (isPogilameg ? '09171234567' : '09668257301'),
                     is_verified: isVer,
-                    verification_status: isVer ? 'VERIFIED' : (u.verification_status || u.VerificationStatus || 'PENDING'),
+                    verification_status: isVer ? 'VERIFIED' : (u.verification_status || u.VerificationStatus || 'UNVERIFIED'),
                     course: u.course || (isPogilameg ? 'BSCS' : 'BSIT'),
                     yearLevel: u.yearLevel || (isPogilameg ? '3rd Yr' : '4th Yr'),
                     avatar: u.profileImage || u.avatar || defaultAvatar

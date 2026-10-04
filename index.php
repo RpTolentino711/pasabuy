@@ -569,6 +569,7 @@
                                     const pObj = data.profile || {};
                                     const realUserId = uObj.id || uObj.userId || data.userId || 104;
 
+                                    const isVerified = (pObj.VerificationStatus === 'VERIFIED' || pObj.verificationStatus === 'VERIFIED' || uObj.Status === 'VERIFIED' || data.VerificationStatus === 'VERIFIED');
                                     const studentUser = {
                                         id: realUserId,
                                         userId: realUserId,
@@ -578,7 +579,8 @@
                                         studentNumber: pObj.studentNumber || '2024-00123',
                                         course: pObj.course || 'BS Computer Science',
                                         yearLevel: pObj.yearLevel || '3rd Yr',
-                                        verificationStatus: 'VERIFIED'
+                                        verificationStatus: isVerified ? 'VERIFIED' : 'UNVERIFIED',
+                                        is_verified: isVerified ? 1 : 0
                                     };
 
                                     localStorage.setItem('pasabuy_student_logged_in', 'true');
@@ -1614,14 +1616,16 @@
                                         userId: uId,
                                         firstName: nameShow,
                                         lastName: uObj.lastName || '',
-                                        email: pendingRegistrationEmail
+                                        email: pendingRegistrationEmail,
+                                        verificationStatus: 'UNVERIFIED',
+                                        is_verified: 0
                                     };
                                     localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
                                     localStorage.setItem('pasabuy_student_logged_in', 'true');
 
                                     document.getElementById('profileName').innerText = `${studentUser.firstName} ${studentUser.lastName}`.trim();
                                     document.getElementById('homeWelcomeName').innerText = `Good day, ${studentUser.firstName}!`;
-                                    document.getElementById('profileSub').innerText = `${pendingRegistrationEmail} • Verified Student`;
+                                    document.getElementById('profileSub').innerText = `${pendingRegistrationEmail} • Unverified`;
 
                                     document.getElementById('authScreen').style.display = 'none';
                                     document.querySelector('.app-tabbar').style.display = 'flex';

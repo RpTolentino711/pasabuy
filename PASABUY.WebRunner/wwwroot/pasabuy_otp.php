@@ -201,21 +201,21 @@ if ($action === 'verify_otp' || $action === 'verify') {
 
             if ($existingUser) {
                 $userId = (int)$existingUser['Id'];
-                $upStmt = $db->prepare("UPDATE Users SET PasswordHash = ?, Status = 'VERIFIED', UpdatedAt = NOW() WHERE Id = ?");
+                $upStmt = $db->prepare("UPDATE Users SET PasswordHash = ?, Status = 'ACTIVE', UpdatedAt = NOW() WHERE Id = ?");
                 $upStmt->execute([$passHash, $userId]);
 
                 $pStmt = $db->prepare("SELECT Id FROM StudentProfiles WHERE UserId = ?");
                 $pStmt->execute([$userId]);
                 if (!$pStmt->fetch()) {
-                    $insProf = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, 'VERIFIED', 5.0, 0, NOW(), NOW())");
+                    $insProf = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, 'UNVERIFIED', 5.0, 0, NOW(), NOW())");
                     $insProf->execute([$userId, $firstName, $lastName, $studentNo, $userEmail, $course, $yearLevel]);
                 }
             } else {
-                $insUser = $db->prepare("INSERT INTO Users (Email, PasswordHash, Role, Status, CreatedAt, UpdatedAt) VALUES (?, ?, 'STUDENT', 'VERIFIED', NOW(), NOW())");
+                $insUser = $db->prepare("INSERT INTO Users (Email, PasswordHash, Role, Status, CreatedAt, UpdatedAt) VALUES (?, ?, 'STUDENT', 'ACTIVE', NOW(), NOW())");
                 $insUser->execute([$userEmail, $passHash]);
                 $userId = (int)$db->lastInsertId();
 
-                $insProf = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, 'VERIFIED', 5.0, 0, NOW(), NOW())");
+                $insProf = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, 'UNVERIFIED', 5.0, 0, NOW(), NOW())");
                 $insProf->execute([$userId, $firstName, $lastName, $studentNo, $userEmail, $course, $yearLevel]);
             }
 
@@ -229,7 +229,7 @@ if ($action === 'verify_otp' || $action === 'verify') {
 
     echo json_encode([
         'success' => true,
-        'message' => '🎉 OTP verified! Account recorded in database successfully.',
+        'message' => '🎉 Email OTP verified! Account registered as Unverified. Please submit your Student ID for Admin approval.',
         'dbRecorded' => $recordedInDb,
         'user' => [
             'id' => $userId,
@@ -237,7 +237,9 @@ if ($action === 'verify_otp' || $action === 'verify') {
             'email' => $userEmail,
             'firstName' => $firstName,
             'lastName' => $lastName,
-            'role' => 'STUDENT'
+            'role' => 'STUDENT',
+            'verificationStatus' => 'UNVERIFIED',
+            'is_verified' => 0
         ]
     ]);
     exit;
