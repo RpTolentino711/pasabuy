@@ -120,6 +120,27 @@ if ($db) {
         }
     } catch (Exception $e) {}
 
+    // 2c. VerificationRequests table
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `VerificationRequests` (
+            `Id` INT AUTO_INCREMENT PRIMARY KEY,
+            `UserId` INT NOT NULL,
+            `Hometown` VARCHAR(255) NULL,
+            `HomeAddress` TEXT NULL,
+            `PostalCode` VARCHAR(50) NULL,
+            `PhoneNumber` VARCHAR(50) NULL,
+            `GuardianName` VARCHAR(255) NULL,
+            `GuardianPhone` VARCHAR(50) NULL,
+            `IdType` VARCHAR(100) NULL,
+            `IdNumber` VARCHAR(100) NULL,
+            `IdFrontImage` LONGTEXT NULL,
+            `Status` VARCHAR(50) DEFAULT 'PENDING',
+            `RejectionReason` TEXT NULL,
+            `CreatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            `UpdatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
+
     // 2c. Order tracking columns & Issue Step reporting migration
     try {
         $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `delivery_plate_number` VARCHAR(50) DEFAULT 'MC-8888-JY'");
@@ -300,6 +321,32 @@ if ($action === 'get_dashboard') {
 
     $activeTickets = (int)$db->query("SELECT COUNT(*) FROM `rental_issues` WHERE `status` != 'RESOLVED'")->fetchColumn();
 
+    $pendingVerificationsCount = 0;
+    $latestPendingVerifications = [];
+    try {
+        $pendingVerificationsCount = (int)$db->query("SELECT COUNT(*) FROM `VerificationRequests` WHERE `Status` = 'PENDING'")->fetchColumn();
+        $latestPendingVerifications = $db->query("SELECT vr.Id, vr.UserId, vr.IdType, vr.IdNumber, vr.CreatedAt,
+                COALESCE(p.FirstName, 'Student') as FirstName,
+                COALESCE(p.LastName, 'User') as LastName,
+                COALESCE(p.StudentNumber, 'N/A') as StudentNumber,
+                COALESCE(p.Course, 'BSIT') as Course,
+                COALESCE(p.YearLevel, 'N/A') as YearLevel,
+                u.Email
+         FROM `VerificationRequests` vr
+         JOIN `Users` u ON vr.UserId = u.Id
+         LEFT JOIN `StudentProfiles` p ON u.Id = p.UserId
+         WHERE vr.Status = 'PENDING'
+         ORDER BY vr.CreatedAt DESC
+         LIMIT 5")->fetchAll();
+    } catch (Exception $e) {}
+
+    $latestCustomerId = 0;
+    $newCustomersCount = 0;
+    try {
+        $latestCustomerId = (int)$db->query("SELECT COALESCE(MAX(Id), 0) FROM `Users` WHERE `Role` = 'STUDENT'")->fetchColumn();
+        $newCustomersCount = (int)$db->query("SELECT COUNT(*) FROM `Users` WHERE `Role` = 'STUDENT' AND `CreatedAt` >= (NOW() - INTERVAL 24 HOUR)")->fetchColumn();
+    } catch (Exception $e) {}
+
     $recentOrders = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 6")->fetchAll();
     $recentTickets = $db->query("SELECT * FROM `rental_issues` ORDER BY `id` DESC LIMIT 6")->fetchAll();
 
@@ -313,7 +360,11 @@ if ($action === 'get_dashboard') {
             'low_stock_items' => $lowStock,
             'out_of_stock_items' => $outOfStock,
             'stock_value' => $stockValue,
-            'active_tickets' => $activeTickets
+            'active_tickets' => $activeTickets,
+            'pending_verifications_count' => $pendingVerificationsCount,
+            'latest_pending_verifications' => $latestPendingVerifications,
+            'latest_customer_id' => $latestCustomerId,
+            'new_customers_count' => $newCustomersCount
         ],
         'recent_orders' => $recentOrders,
         'recent_tickets' => $recentTickets
@@ -673,42 +724,156 @@ if ($action === 'update_order_status') {
 // 5. CUSTOMERS MODULE (User Database & Management)
 // ----------------------------------------------------------
 if ($action === 'get_customers') {
-    if (!$db) { echo json_encode(['success' => true, 'customers' => []]); exit; }
+    if (!$db) { echo json_encode(['success' => true, 'customers' => [], 'pending_verifications_count' => 0, 'latest_customer_id' => 0]); exit; }
     $search = trim((string)($req['search'] ?? ''));
     $status = trim((string)($req['status'] ?? 'All'));
+    $subtab = trim((string)($req['subtab'] ?? 'all'));
+
+    $pendingVerificationsCount = 0;
+    $latestCustomerId = 0;
+    try {
+        $pendingVerificationsCount = (int)$db->query("SELECT COUNT(*) FROM `VerificationRequests` WHERE `Status` = 'PENDING'")->fetchColumn();
+        $latestCustomerId = (int)$db->query("SELECT COALESCE(MAX(Id), 0) FROM `Users` WHERE `Role` = 'STUDENT'")->fetchColumn();
+    } catch (Exception $e) {}
 
     $sql = "SELECT u.Id, u.Email, u.Role, u.Status, u.CreatedAt,
-                   COALESCE(MAX(p.FirstName), 'Student') as FirstName,
-                   COALESCE(MAX(p.LastName), 'Member') as LastName,
-                   COALESCE(MAX(p.StudentNumber), 'N/A') as PhoneOrId,
-                   COALESCE(MAX(p.SchoolEmail), u.Email) as SchoolEmail,
-                   COALESCE(MAX(p.Rating), 5.0) as Rating,
+                   COALESCE(p.FirstName, 'Student') as FirstName,
+                   COALESCE(p.LastName, 'Member') as LastName,
+                   COALESCE(p.StudentNumber, 'N/A') as PhoneOrId,
+                   COALESCE(p.SchoolEmail, u.Email) as SchoolEmail,
+                   COALESCE(p.Course, 'BSIT') as Course,
+                   COALESCE(p.YearLevel, 'N/A') as YearLevel,
+                   COALESCE(p.Rating, 5.0) as Rating,
+                   COALESCE(p.VerificationStatus, 'UNVERIFIED') as ProfileVerificationStatus,
+                   vr.Id as VerificationRequestId,
+                   COALESCE(vr.Status, 'NONE') as VerificationRequestStatus,
+                   vr.Hometown,
+                   vr.HomeAddress,
+                   vr.PostalCode,
+                   COALESCE(vr.PhoneNumber, p.StudentNumber, 'N/A') as PhoneNumber,
+                   vr.GuardianName,
+                   vr.GuardianPhone,
+                   vr.IdType,
+                   vr.IdNumber,
+                   vr.IdFrontImage,
+                   vr.RejectionReason,
+                   vr.CreatedAt as VerificationSubmittedAt,
                    (SELECT COUNT(*) FROM `rental_orders` o WHERE o.customer_email = u.Email) as total_orders
             FROM `Users` u
             LEFT JOIN `StudentProfiles` p ON u.Id = p.UserId
+            LEFT JOIN (
+                SELECT vr1.*
+                FROM `VerificationRequests` vr1
+                INNER JOIN (
+                    SELECT UserId, MAX(Id) as MaxId
+                    FROM `VerificationRequests`
+                    GROUP BY UserId
+                ) vr2 ON vr1.Id = vr2.MaxId
+            ) vr ON u.Id = vr.UserId
             WHERE u.Role = 'STUDENT'";
     $params = [];
 
-    if ($status === 'Active') {
+    if ($subtab === 'requests' || $status === 'Pending' || $status === 'Verification Pending') {
+        $sql .= " AND (vr.Status = 'PENDING' OR (u.Status = 'UNVERIFIED' AND vr.Id IS NOT NULL))";
+    } elseif ($status === 'Active' || $status === 'VERIFIED') {
         $sql .= " AND u.Status = 'VERIFIED'";
-    } elseif ($status === 'Inactive') {
-        $sql .= " AND u.Status != 'VERIFIED'";
+    } elseif ($status === 'Inactive' || $status === 'UNVERIFIED') {
+        $sql .= " AND u.Status = 'UNVERIFIED'";
+    } elseif ($status === 'SUSPENDED') {
+        $sql .= " AND u.Status = 'SUSPENDED'";
     }
 
     if ($search !== '') {
-        $sql .= " AND (u.Email LIKE ? OR p.FirstName LIKE ? OR p.LastName LIKE ? OR p.StudentNumber LIKE ?)";
+        $sql .= " AND (u.Email LIKE ? OR p.FirstName LIKE ? OR p.LastName LIKE ? OR p.StudentNumber LIKE ? OR p.Course LIKE ?)";
+        $params[] = "%{$search}%";
         $params[] = "%{$search}%";
         $params[] = "%{$search}%";
         $params[] = "%{$search}%";
         $params[] = "%{$search}%";
     }
 
-    $sql .= " GROUP BY u.Id ORDER BY u.Id ASC";
+    $sql .= " ORDER BY (CASE WHEN vr.Status = 'PENDING' THEN 0 ELSE 1 END), u.Id DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $customers = $stmt->fetchAll();
 
-    echo json_encode(['success' => true, 'count' => count($customers), 'customers' => $customers]);
+    echo json_encode([
+        'success' => true, 
+        'count' => count($customers), 
+        'customers' => $customers,
+        'pending_verifications_count' => $pendingVerificationsCount,
+        'latest_customer_id' => $latestCustomerId
+    ]);
+    exit;
+}
+
+if ($action === 'get_customer_verification_details') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $userId = (int)($req['id'] ?? $req['userId'] ?? $_GET['id'] ?? 0);
+    
+    $sql = "SELECT u.Id, u.Email, u.Role, u.Status, u.CreatedAt,
+                   COALESCE(p.FirstName, 'Student') as FirstName,
+                   COALESCE(p.LastName, 'Member') as LastName,
+                   COALESCE(p.StudentNumber, 'N/A') as StudentNumber,
+                   COALESCE(p.SchoolEmail, u.Email) as SchoolEmail,
+                   COALESCE(p.Course, 'BSIT') as Course,
+                   COALESCE(p.YearLevel, 'N/A') as YearLevel,
+                   COALESCE(p.Rating, 5.0) as Rating,
+                   COALESCE(p.VerificationStatus, 'UNVERIFIED') as ProfileVerificationStatus,
+                   vr.Id as VerificationRequestId,
+                   COALESCE(vr.Status, 'NONE') as VerificationRequestStatus,
+                   vr.Hometown,
+                   vr.HomeAddress,
+                   vr.PostalCode,
+                   COALESCE(vr.PhoneNumber, p.StudentNumber, 'N/A') as PhoneNumber,
+                   vr.GuardianName,
+                   vr.GuardianPhone,
+                   vr.IdType,
+                   vr.IdNumber,
+                   vr.IdFrontImage,
+                   vr.RejectionReason,
+                   vr.CreatedAt as VerificationSubmittedAt,
+                   vr.UpdatedAt as VerificationUpdatedAt
+            FROM `Users` u
+            LEFT JOIN `StudentProfiles` p ON u.Id = p.UserId
+            LEFT JOIN (
+                SELECT vr1.*
+                FROM `VerificationRequests` vr1
+                INNER JOIN (
+                    SELECT UserId, MAX(Id) as MaxId
+                    FROM `VerificationRequests`
+                    GROUP BY UserId
+                ) vr2 ON vr1.Id = vr2.MaxId
+            ) vr ON u.Id = vr.UserId
+            WHERE u.Id = ? LIMIT 1";
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$userId]);
+    $details = $stmt->fetch();
+    if (!$details) {
+        echo json_encode(['success' => false, 'message' => 'Customer not found']);
+        exit;
+    }
+    echo json_encode(['success' => true, 'details' => $details]);
+    exit;
+}
+
+if ($action === 'reject_verification') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $id = (int)($req['id'] ?? $req['userId'] ?? $_GET['id'] ?? 0);
+    $reason = trim((string)($req['reason'] ?? $_POST['reason'] ?? 'Submitted verification details were incomplete or unreadable.'));
+
+    $stmt = $db->prepare("UPDATE `Users` SET `Status` = 'UNVERIFIED' WHERE `Id` = ?");
+    $stmt->execute([$id]);
+
+    try {
+        $db->prepare("UPDATE `StudentProfiles` SET `VerificationStatus` = 'REJECTED', `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$id]);
+    } catch (Exception $e) {}
+
+    try {
+        $db->prepare("UPDATE `VerificationRequests` SET `Status` = 'REJECTED', `RejectionReason` = ?, `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$reason, $id]);
+    } catch (Exception $e) {}
+
+    echo json_encode(['success' => true, 'message' => "Verification request for student #{$id} has been REJECTED. Reason recorded: {$reason}"]);
     exit;
 }
 

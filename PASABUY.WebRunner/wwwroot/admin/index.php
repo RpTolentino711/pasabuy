@@ -446,8 +446,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="javascript:void(0)" class="nav-link" onclick="switchAdminTab('customers', this)">
-                        <i class="fa-solid fa-users"></i> <span>Customers</span>
+                    <a href="javascript:void(0)" class="nav-link d-flex align-items-center justify-content-between" onclick="switchAdminTab('customers', this)">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-users"></i> <span>Customers</span>
+                        </div>
+                        <span class="badge rounded-pill bg-danger" id="sidebarCustomersBadge" style="font-size:0.65rem; padding:2px 6px; display:none; min-width:18px;">0</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -551,6 +554,29 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 rounded-pill fw-bold fs-9 d-flex align-items-center gap-1.5 shadow-2xs">
                             <span class="pulse-live" style="width:7px; height:7px;"></span> Live
                         </span>
+                    </div>
+                </div>
+
+                <!-- Live Verification Requests Banner (Real-time student verification alert) -->
+                <div id="dashVerificationBanner" class="card border-0 shadow-sm mb-4" style="display:none; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border-left: 5px solid #F59E0B !important; border-radius: 14px;">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-xs" style="width:44px; height:44px; min-width:44px; background: #F59E0B;">
+                                <i class="fa-solid fa-user-shield fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold text-white"><span class="pulse-live me-1" style="background:#fff;"></span>LIVE REQUEST</span>
+                                    <strong class="text-dark fs-8" id="dashVerificationBannerTitle">Student Verification Request Pending</strong>
+                                </div>
+                                <p class="mb-0 fs-8 text-secondary mt-0.5" id="dashVerificationBannerDesc">Student(s) have submitted verification documents and are waiting for admin approval.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-dark rounded-pill px-3.5 py-1.5 fw-bold fs-9 shadow-xs" onclick="switchAdminTab('customers'); openCustomerVerificationSubtab();">
+                                <i class="fa-solid fa-id-card me-1"></i> Review Requests (<span id="dashVerificationBannerCount">0</span>)
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -869,6 +895,17 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     </div>
                 </div>
 
+                <!-- Sub-tabs: All Students vs Verification Requests -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs" id="subtabCustAll" onclick="switchCustomerSubtab('all')">
+                        <i class="fa-solid fa-users me-1"></i> All Students
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-bold fs-9" id="subtabCustRequests" onclick="switchCustomerSubtab('requests')">
+                        <i class="fa-solid fa-id-card me-1"></i> Verification Requests 
+                        <span class="badge bg-danger rounded-pill ms-1" id="custRequestsPillBadge" style="display:none;">0</span>
+                    </button>
+                </div>
+
                 <div class="admin-table-card p-3">
                     <div class="row g-2 mb-3">
                         <div class="col-12 col-md-5">
@@ -880,8 +917,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <div class="col-6 col-md-3">
                             <select class="form-select form-select-sm" id="customerStatusFilter" onchange="loadCustomers()">
                                 <option value="All">All Status</option>
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
+                                <option value="Active">Verified</option>
+                                <option value="Inactive">Unverified</option>
+                                <option value="Pending">Verification Pending</option>
+                                <option value="SUSPENDED">Suspended</option>
                             </select>
                         </div>
                         <div class="col-6 col-md-4">
@@ -901,7 +940,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     <th>Phone / ID</th>
                                     <th>Total Orders</th>
                                     <th>Status</th>
-                                    <th width="120">Actions</th>
+                                    <th width="210">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="customersTableBody">
@@ -1867,6 +1906,32 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         </div>
     </div>
 
+    <!-- Student Verification Details & Review Modal -->
+    <div class="modal fade" id="customerVerificationModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:40px; height:40px; background: linear-gradient(135deg, #5B3FA8, #341F97);">
+                            <i class="fa-solid fa-id-card fs-6"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-extrabold text-dark mb-0">Student Verification Details</h5>
+                            <span class="fs-9 text-muted">Review submitted student credentials and verification status</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3" id="customerVerificationModalBody">
+                    <!-- Populated dynamically via openCustomerVerificationModal(userId) -->
+                </div>
+                <div class="modal-footer border-0 pt-0" id="customerVerificationModalFooter">
+                    <!-- Action buttons populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Delivery Driver Modal -->
     <div class="modal fade" id="addDriverModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -1978,15 +2043,89 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             } catch (e) {}
         }
 
+        let latestKnownCustomerId = 0;
+        function updateCustomerSidebarBadge(latestId, pendingCount, newCount) {
+            if (latestId) latestKnownCustomerId = Math.max(latestKnownCustomerId, parseInt(latestId) || 0);
+            const lastSeenId = parseInt(localStorage.getItem('admin_last_seen_customer_id') || '0');
+            const custBadge = document.getElementById('sidebarCustomersBadge');
+            if (!custBadge) return;
+
+            // If currently on customers section, keep badge hidden and update seen id
+            if (currentActiveSection === 'customers') {
+                custBadge.style.display = 'none';
+                if (latestKnownCustomerId > 0) {
+                    localStorage.setItem('admin_last_seen_customer_id', latestKnownCustomerId);
+                }
+                return;
+            }
+
+            let unreadCount = 0;
+            if (latestKnownCustomerId > lastSeenId) {
+                unreadCount += (latestKnownCustomerId - lastSeenId);
+            }
+            if (parseInt(pendingCount) > 0) {
+                unreadCount += parseInt(pendingCount);
+            }
+
+            if (unreadCount > 0) {
+                custBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                custBadge.style.display = 'inline-block';
+            } else {
+                custBadge.style.display = 'none';
+            }
+        }
+
+        function markCustomersAsViewed() {
+            if (latestKnownCustomerId > 0) {
+                localStorage.setItem('admin_last_seen_customer_id', latestKnownCustomerId);
+            }
+            localStorage.setItem('admin_last_viewed_customers_time', Date.now());
+            const custBadge = document.getElementById('sidebarCustomersBadge');
+            if (custBadge) custBadge.style.display = 'none';
+        }
+
+        async function pollCustomerVerificationStatus() {
+            try {
+                const res = await fetch(`${API_URL}?action=get_dashboard`);
+                const data = await res.json();
+                if (data && data.success && data.stats) {
+                    const s = data.stats;
+                    updateCustomerSidebarBadge(s.latest_customer_id, s.pending_verifications_count, s.new_customers_count);
+
+                    const vBanner = document.getElementById('dashVerificationBanner');
+                    const vCount = document.getElementById('dashVerificationBannerCount');
+                    const vTitle = document.getElementById('dashVerificationBannerTitle');
+                    const vDesc = document.getElementById('dashVerificationBannerDesc');
+                    const pVerifCount = parseInt(s.pending_verifications_count) || 0;
+
+                    if (vBanner && vCount) {
+                        vCount.innerText = pVerifCount;
+                        if (pVerifCount > 0) {
+                            vBanner.style.setProperty('display', 'flex', 'important');
+                            if (vTitle) vTitle.innerText = `${pVerifCount} Student Verification Request${pVerifCount > 1 ? 's' : ''} Pending`;
+                            if (vDesc && s.latest_pending_verifications && s.latest_pending_verifications.length > 0) {
+                                const req = s.latest_pending_verifications[0];
+                                vDesc.innerHTML = `Student <strong>${req.FirstName} ${req.LastName}</strong> (${req.Course || 'Student'}, ID: <code>${req.StudentNumber || req.IdNumber || 'N/A'}</code>) has submitted verification credentials and is waiting for review.`;
+                            }
+                        } else {
+                            vBanner.style.setProperty('display', 'none', 'important');
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+
         let liveAdminPollingInterval = null;
         function startLiveAdminPolling() {
             if (liveAdminPollingInterval) clearInterval(liveAdminPollingInterval);
             pollPendingTicketsCount();
+            pollCustomerVerificationStatus();
             liveAdminPollingInterval = setInterval(() => {
                 const authOverlay = document.getElementById('authOverlay');
                 if (authOverlay && authOverlay.style.display !== 'none') return;
 
                 pollPendingTicketsCount();
+                pollCustomerVerificationStatus();
 
                 if (currentActiveSection === 'dashboard') {
                     loadDashboardStats();
@@ -2006,6 +2145,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         function switchAdminTab(sectionName, linkEl = null) {
             currentActiveSection = sectionName;
             
+            // Mark customers viewed when switching to customers
+            if (sectionName === 'customers') {
+                markCustomersAsViewed();
+            }
+
             // Hide all sections
             document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
 
@@ -2630,21 +2774,57 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         }
 
         // ----------------------------------------------------------
-        // 6. CUSTOMERS MODULE
+        // 6. CUSTOMERS & VERIFICATION REVIEW MODULE
         // ----------------------------------------------------------
+        let currentCustomerSubtab = 'all';
+        function switchCustomerSubtab(subtab) {
+            currentCustomerSubtab = subtab;
+            const btnAll = document.getElementById('subtabCustAll');
+            const btnReq = document.getElementById('subtabCustRequests');
+            const statusSelect = document.getElementById('customerStatusFilter');
+
+            if (subtab === 'requests') {
+                if (btnAll) btnAll.className = 'btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-bold fs-9';
+                if (btnReq) btnReq.className = 'btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs';
+                if (statusSelect) statusSelect.value = 'Pending';
+            } else {
+                if (btnAll) btnAll.className = 'btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs';
+                if (btnReq) btnReq.className = 'btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-bold fs-9';
+                if (statusSelect) statusSelect.value = 'All';
+            }
+            loadCustomers();
+        }
+
+        function openCustomerVerificationSubtab() {
+            switchCustomerSubtab('requests');
+        }
+
         async function loadCustomers() {
             const search = document.getElementById('customerSearchInput')?.value || '';
             const status = document.getElementById('customerStatusFilter')?.value || 'All';
 
             try {
-                const res = await fetch(`${API_URL}?action=get_customers&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}`);
+                const res = await fetch(`${API_URL}?action=get_customers&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&subtab=${encodeURIComponent(currentCustomerSubtab)}`);
                 const data = await res.json();
                 const tbody = document.getElementById('customersTableBody');
+
+                if (data.latest_customer_id) {
+                    latestKnownCustomerId = Math.max(latestKnownCustomerId, parseInt(data.latest_customer_id) || 0);
+                }
+
+                // Update subtab badge
+                const reqBadge = document.getElementById('custRequestsPillBadge');
+                if (reqBadge) {
+                    const pCount = parseInt(data.pending_verifications_count) || 0;
+                    reqBadge.innerText = pCount;
+                    reqBadge.style.display = pCount > 0 ? 'inline-block' : 'none';
+                }
 
                 if (data.success && data.customers.length > 0) {
                     tbody.innerHTML = data.customers.map(c => {
                         const isVerified = (c.Status === 'VERIFIED');
                         const isSuspended = (c.Status === 'SUSPENDED');
+                        const isPending = (c.VerificationRequestStatus === 'PENDING');
                         return `
                         <tr>
                             <td>
@@ -2654,24 +2834,30 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     </div>
                                     <div>
                                         <div class="fw-bold text-dark">${c.FirstName} ${c.LastName}</div>
-                                        <div class="fs-9 text-muted">ID: ${c.Id}</div>
+                                        <div class="fs-9 text-muted">ID: ${c.Id} • ${c.Course || 'Student'}</div>
                                     </div>
                                 </div>
                             </td>
                             <td>${c.Email}</td>
-                            <td>${c.PhoneOrId || 'N/A'}</td>
+                            <td><code>${c.PhoneOrId || c.StudentNumber || 'N/A'}</code></td>
                             <td class="fw-bold">${c.total_orders || 0}</td>
                             <td>
                                 ${isVerified 
                                     ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>'
                                     : (isSuspended 
                                         ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-ban me-1"></i>Suspended</span>'
-                                        : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-clock me-1"></i>Unverified</span>'
+                                        : (isPending
+                                            ? '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-clock me-1"></i>Pending Review</span>'
+                                            : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-clock me-1"></i>Unverified</span>'
+                                          )
                                       )
                                 }
                             </td>
                             <td>
-                                <div class="d-flex align-items-center">
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                    <button class="btn btn-sm btn-outline-primary py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="openCustomerVerificationModal(${c.Id})" title="View student registration & submitted verification details">
+                                        <i class="fa-solid fa-id-card me-1"></i> View Info
+                                    </button>
                                     ${isSuspended 
                                         ? `<button class="btn btn-sm btn-outline-info py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="adminUnsuspendUser(${c.Id})" title="Lift suspension and set student to Unverified so they can be verified">
                                             <i class="fa-solid fa-unlock me-1"></i> Unsuspend
@@ -2690,9 +2876,262 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </tr>
                     `;}).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No customer records.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No student records found.</td></tr>';
                 }
             } catch (e) {}
+        }
+
+        async function openCustomerVerificationModal(userId) {
+            const modalEl = document.getElementById('customerVerificationModal');
+            const modalBody = document.getElementById('customerVerificationModalBody');
+            const modalFooter = document.getElementById('customerVerificationModalFooter');
+            if (!modalEl || !modalBody) return;
+
+            modalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted fs-8">Loading student verification details...</div></div>';
+            modalFooter.innerHTML = '<button type="button" class="btn btn-light border rounded-pill px-3 fw-bold fs-9" data-bs-dismiss="modal">Close</button>';
+            
+            const bsModal = new bootstrap.Modal(modalEl);
+            bsModal.show();
+
+            try {
+                const res = await fetch(`${API_URL}?action=get_customer_verification_details&id=${userId}`);
+                const data = await res.json();
+                if (!data.success || !data.details) {
+                    modalBody.innerHTML = `<div class="alert alert-danger">Failed to load student details: ${data.message || 'Unknown error'}</div>`;
+                    return;
+                }
+
+                const d = data.details;
+                const isVerified = (d.Status === 'VERIFIED');
+                const isSuspended = (d.Status === 'SUSPENDED');
+                const isPending = (d.VerificationRequestStatus === 'PENDING');
+                const isRejected = (d.VerificationRequestStatus === 'REJECTED');
+
+                let statusBadgeHtml = '';
+                if (isVerified) {
+                    statusBadgeHtml = '<span class="badge bg-success text-white px-3 py-1.5 rounded-pill fw-bold fs-9"><i class="fa-solid fa-circle-check me-1"></i>Verified Seller</span>';
+                } else if (isSuspended) {
+                    statusBadgeHtml = '<span class="badge bg-danger text-white px-3 py-1.5 rounded-pill fw-bold fs-9"><i class="fa-solid fa-ban me-1"></i>Account Suspended</span>';
+                } else if (isPending) {
+                    statusBadgeHtml = '<span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fw-bold fs-9"><i class="fa-solid fa-clock me-1"></i>Verification Pending Review</span>';
+                } else if (isRejected) {
+                    statusBadgeHtml = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1.5 rounded-pill fw-bold fs-9"><i class="fa-solid fa-circle-xmark me-1"></i>Verification Rejected</span>';
+                } else {
+                    statusBadgeHtml = '<span class="badge bg-secondary text-white px-3 py-1.5 rounded-pill fw-bold fs-9"><i class="fa-solid fa-user-clock me-1"></i>Unverified Account</span>';
+                }
+
+                let decisionAlertHtml = '';
+                if (isVerified) {
+                    decisionAlertHtml = `
+                    <div class="alert alert-success border-0 rounded-3 p-3 d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-circle-check fs-4 text-success"></i>
+                        <div>
+                            <strong class="text-success d-block">Admin Decision: VERIFIED</strong>
+                            <span class="fs-9 text-dark">This student has been verified by the administrator and is fully authorized to post and rent out equipment on campus.</span>
+                        </div>
+                    </div>`;
+                } else if (isSuspended) {
+                    decisionAlertHtml = `
+                    <div class="alert alert-danger border-0 rounded-3 p-3 d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-ban fs-4 text-danger"></i>
+                        <div>
+                            <strong class="text-danger d-block">Account Status: SUSPENDED</strong>
+                            <span class="fs-9 text-dark">This account is currently suspended. You must unsuspend the account before you can verify or grant privileges.</span>
+                        </div>
+                    </div>`;
+                } else if (isPending) {
+                    decisionAlertHtml = `
+                    <div class="alert alert-warning border-0 rounded-3 p-3 d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-clock fs-4 text-warning-emphasis"></i>
+                        <div>
+                            <strong class="text-warning-emphasis d-block">Action Required: VERIFICATION PENDING</strong>
+                            <span class="fs-9 text-dark">Student has submitted registration and credentials for review. Review the details below and select Approve or Reject.</span>
+                        </div>
+                    </div>`;
+                } else if (isRejected) {
+                    decisionAlertHtml = `
+                    <div class="alert alert-danger border-0 rounded-3 p-3 d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-circle-xmark fs-4 text-danger"></i>
+                        <div>
+                            <strong class="text-danger d-block">Admin Decision: REJECTED</strong>
+                            <span class="fs-9 text-dark">Reason: ${d.RejectionReason || 'Verification request was rejected by admin.'}</span>
+                        </div>
+                    </div>`;
+                } else {
+                    decisionAlertHtml = `
+                    <div class="alert alert-secondary border-0 rounded-3 p-3 d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-circle-info fs-4 text-secondary"></i>
+                        <div>
+                            <strong class="text-dark d-block">Account Status: UNVERIFIED</strong>
+                            <span class="fs-9 text-muted">This student has not yet been verified. You can review their info and grant verification when ready.</span>
+                        </div>
+                    </div>`;
+                }
+
+                modalBody.innerHTML = `
+                    <div class="p-3 bg-light rounded-4 mb-3 border">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-purple text-white d-flex align-items-center justify-content-center fw-bold fs-6" style="width:48px; height:48px; background:#5B3FA8;">
+                                    ${(d.FirstName || 'S')[0]}
+                                </div>
+                                <div>
+                                    <h5 class="fw-extrabold text-dark mb-0">${d.FirstName} ${d.LastName}</h5>
+                                    <span class="fs-9 text-muted">Student User #${d.Id} • Registered: ${d.CreatedAt || 'N/A'}</span>
+                                </div>
+                            </div>
+                            <div>
+                                ${statusBadgeHtml}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <!-- Academic & Contact Column -->
+                        <div class="col-12 col-md-6">
+                            <div class="card border rounded-3 h-100 shadow-none">
+                                <div class="card-header bg-white py-2 px-3 border-bottom">
+                                    <span class="fs-8 fw-bold text-dark"><i class="fa-solid fa-graduation-cap me-1.5 text-primary"></i> Academic & Contact Info</span>
+                                </div>
+                                <div class="card-body p-3 fs-8">
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">Student ID:</span><strong class="text-dark font-monospace">${d.StudentNumber || 'N/A'}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">Course / Degree:</span><strong class="text-dark">${d.Course || 'N/A'}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">Year Level:</span><strong class="text-dark">${d.YearLevel || 'N/A'}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">School Email:</span><strong class="text-dark">${d.SchoolEmail || d.Email}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">Personal Email:</span><strong class="text-dark">${d.Email}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5"><span class="text-muted">Phone Number:</span><strong class="text-dark">${d.PhoneNumber || 'N/A'}</strong></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Residence & Guardian Column -->
+                        <div class="col-12 col-md-6">
+                            <div class="card border rounded-3 h-100 shadow-none">
+                                <div class="card-header bg-white py-2 px-3 border-bottom">
+                                    <span class="fs-8 fw-bold text-dark"><i class="fa-solid fa-house-user me-1.5 text-info"></i> Residence & Guardian Info</span>
+                                </div>
+                                <div class="card-body p-3 fs-8">
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">Hometown / City:</span><strong class="text-dark">${d.Hometown || 'San Pablo City'}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">Home Address:</span><strong class="text-dark">${d.HomeAddress || 'Campus Area'}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">Postal Code:</span><strong class="text-dark">${d.PostalCode || '4000'}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">Guardian Name:</span><strong class="text-dark">${d.GuardianName || 'N/A'}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom"><span class="text-muted">Guardian Phone:</span><strong class="text-dark">${d.GuardianPhone || 'N/A'}</strong></div>
+                                    <div class="d-flex justify-content-between py-1.5"><span class="text-muted">Submitted ID Type:</span><strong class="text-dark">${d.IdType || 'Campus Student ID Card'}</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Uploaded ID Document / Photo -->
+                    <div class="card border rounded-3 mb-3 shadow-none">
+                        <div class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+                            <span class="fs-8 fw-bold text-dark"><i class="fa-solid fa-camera me-1.5 text-secondary"></i> Uploaded ID Proof / Registration Photo</span>
+                            <span class="fs-9 text-muted">ID Number: <strong>${d.IdNumber || d.StudentNumber || 'N/A'}</strong></span>
+                        </div>
+                        <div class="card-body p-3 text-center bg-light rounded-bottom">
+                            ${d.IdFrontImage ? `
+                                <div class="position-relative d-inline-block">
+                                    <img src="${d.IdFrontImage}" alt="Student ID" class="img-fluid rounded-3 border shadow-sm" style="max-height:260px; object-fit:contain; cursor:pointer;" onclick="window.open('${d.IdFrontImage}', '_blank')">
+                                    <div class="mt-2 fs-9 text-muted"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Click photo to open full resolution in new tab</div>
+                                </div>
+                            ` : `
+                                <div class="py-4 text-muted">
+                                    <i class="fa-solid fa-id-badge fs-1 text-secondary mb-2 d-block opacity-50"></i>
+                                    <div class="fw-bold">No photo file submitted</div>
+                                    <div class="fs-9">Student registered with institutional campus credentials (${d.SchoolEmail || d.Email}).</div>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+
+                    ${decisionAlertHtml}
+                `;
+
+                // Configure footer buttons based on status
+                let footerBtns = '';
+                if (isSuspended) {
+                    footerBtns = `
+                        <button type="button" class="btn btn-info text-white rounded-pill px-3 fw-bold fs-9" onclick="adminUnsuspendUserFromModal(${d.Id})">
+                            <i class="fa-solid fa-unlock me-1"></i> Unsuspend Student
+                        </button>
+                    `;
+                } else if (isVerified) {
+                    footerBtns = `
+                        <button type="button" class="btn btn-outline-warning rounded-pill px-3 fw-bold fs-9" onclick="adminUnverifyUserFromModal(${d.Id})">
+                            <i class="fa-solid fa-user-xmark me-1"></i> Revoke Verification
+                        </button>
+                    `;
+                } else {
+                    footerBtns = `
+                        <button type="button" class="btn btn-success rounded-pill px-3.5 fw-bold fs-9 shadow-xs" onclick="adminVerifyUserFromModal(${d.Id})">
+                            <i class="fa-solid fa-circle-check me-1"></i> Approve & Verify Student
+                        </button>
+                        <button type="button" class="btn btn-outline-danger rounded-pill px-3 fw-bold fs-9" onclick="adminRejectVerificationFromModal(${d.Id})">
+                            <i class="fa-solid fa-circle-xmark me-1"></i> Reject Request
+                        </button>
+                    `;
+                }
+                footerBtns += `<button type="button" class="btn btn-light border rounded-pill px-3 fw-bold fs-9" data-bs-dismiss="modal">Close</button>`;
+                modalFooter.innerHTML = footerBtns;
+
+            } catch (e) {
+                modalBody.innerHTML = '<div class="alert alert-danger">Error connecting to server.</div>';
+            }
+        }
+
+        async function adminVerifyUserFromModal(id) {
+            const modalEl = document.getElementById('customerVerificationModal');
+            if (modalEl) {
+                const bs = bootstrap.Modal.getInstance(modalEl);
+                if (bs) bs.hide();
+            }
+            await adminVerifyUser(id);
+        }
+
+        async function adminUnverifyUserFromModal(id) {
+            const modalEl = document.getElementById('customerVerificationModal');
+            if (modalEl) {
+                const bs = bootstrap.Modal.getInstance(modalEl);
+                if (bs) bs.hide();
+            }
+            await adminUnverifyUser(id);
+        }
+
+        async function adminUnsuspendUserFromModal(id) {
+            const modalEl = document.getElementById('customerVerificationModal');
+            if (modalEl) {
+                const bs = bootstrap.Modal.getInstance(modalEl);
+                if (bs) bs.hide();
+            }
+            await adminUnsuspendUser(id);
+        }
+
+        async function adminRejectVerificationFromModal(id) {
+            const reason = prompt('Please enter the reason for rejecting this verification request:', 'Submitted student credentials could not be validated.');
+            if (reason === null) return;
+            
+            try {
+                const res = await fetch(`${API_URL}?action=reject_verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `id=${id}&reason=${encodeURIComponent(reason)}`
+                });
+                const d = await res.json();
+                if (d.success) {
+                    alert(`Student #${id} verification has been REJECTED.`);
+                    const modalEl = document.getElementById('customerVerificationModal');
+                    if (modalEl) {
+                        const bs = bootstrap.Modal.getInstance(modalEl);
+                        if (bs) bs.hide();
+                    }
+                    loadCustomers();
+                    loadDashboardStats();
+                } else {
+                    alert(d.message || 'Failed to reject verification.');
+                }
+            } catch (e) {
+                alert('Error connecting to server.');
+            }
         }
 
         async function adminUnsuspendUser(id) {
@@ -2703,6 +3142,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 if (d.success) {
                     alert(`✅ Student #${id} has been UNSUSPENDED and is now UNVERIFIED.\n\nYou can now review and verify them.`);
                     loadCustomers();
+                    loadDashboardStats();
                 } else {
                     alert(d.message || 'Failed to unsuspend student.');
                 }
@@ -2719,6 +3159,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 if (d.success) {
                     alert(`✅ Student #${id} has been UNVERIFIED successfully.`);
                     loadCustomers();
+                    loadDashboardStats();
                 } else {
                     alert(d.message || 'Failed to unverify student.');
                 }
@@ -2739,6 +3180,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 if (d.success) {
                     alert(`✅ Student #${id} has been VERIFIED successfully!`);
                     loadCustomers();
+                    loadDashboardStats();
                 } else {
                     alert(d.message || 'Failed to verify student.');
                 }
