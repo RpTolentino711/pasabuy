@@ -167,57 +167,7 @@ if ($db) {
             ON DUPLICATE KEY UPDATE `FirstName` = 'Pogilameg', `LastName` = 'Tester', `StudentNumber` = 'pogilameg@10'");
     } catch (Exception $e) {}
 
-    // 4. Seed Live Equipment for Romeo (Lender) if none posted
-    try {
-        $lenderCount = $db->query("SELECT COUNT(*) FROM `rental_inventory` WHERE `owner_name` LIKE '%Romeo%' OR `owner_name` LIKE '%Tolentino%'")->fetchColumn();
-        if ($lenderCount == 0) {
-            $stmtItem = $db->prepare("INSERT INTO `rental_inventory` 
-                (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `rating`, `reviews_count`, `description`, `min_rental_days`, `is_featured`, `owner_name`, `owner_contact`, `item_condition`, `location`) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-            $stmtItem->execute([
-                'Sony Alpha A7 IV 4K Camera Rig',
-                'Cameras',
-                'Premium',
-                1200.00,
-                2,
-                1,
-                1,
-                0,
-                'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80',
-                5.0,
-                14,
-                'Professional full-frame hybrid mirrorless camera with 24-70mm GM lens, cage rig, and dual batteries. Owned and maintained by Romeo Paolo Tolentino.',
-                1,
-                1,
-                'Romeo Paolo Tolentino',
-                '09668257301',
-                'Like New',
-                'San Pablo City, Laguna'
-            ]);
-
-            $stmtItem->execute([
-                'Yamaha StagePas 400BT Portable Sound System',
-                'Sound System',
-                'Premium',
-                1500.00,
-                1,
-                1,
-                0,
-                0,
-                'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80',
-                4.9,
-                8,
-                '400W compact PA system with 8-channel powered mixer, 2 speakers, wireless Bluetooth and dual mic set. Listed by Romeo Paolo Tolentino.',
-                1,
-                1,
-                'Romeo Paolo Tolentino',
-                '09668257301',
-                'Excellent',
-                'San Pablo City, Laguna'
-            ]);
-        }
-    } catch (Exception $e) {}
+    // Clean slate: do not auto-seed equipment so that when stock is deleted, it remains 0
 
     // Clear seeded demo orders and transactions so platform starts with zero sales until real orders are placed
     try {
@@ -488,6 +438,19 @@ if ($action === 'delete_product') {
     $stmt->execute([$id]);
     echo json_encode(['success' => true, 'message' => 'Equipment listing taken down successfully by Admin.']);
     exit;
+}
+
+if ($action === 'clear_all_inventory' || $action === 'delete_all_stock' || $action === 'wipe_stock') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    try {
+        $db->exec("DELETE FROM `rental_order_items` WHERE 1=1;");
+        $db->exec("DELETE FROM `rental_inventory` WHERE 1=1;");
+        echo json_encode(['success' => true, 'message' => 'All inventory and equipment stock deleted successfully (0 units).']);
+        exit;
+    } catch (Exception $eClear) {
+        echo json_encode(['success' => false, 'message' => $eClear->getMessage()]);
+        exit;
+    }
 }
 
 if ($action === 'adjust_stock') {

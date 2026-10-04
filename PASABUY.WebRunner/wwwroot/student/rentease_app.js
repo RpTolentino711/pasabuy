@@ -979,10 +979,13 @@ window.quickAddRentEaseItem = quickAddRentEaseItem;
 // 8. PROFILE 3-SUBTABS: REQUESTS, RENT ITEMS (STOCK MONITOR), HISTORY
 // ==========================================================
 window.switchProfileSubTab = function(subtab) {
+    if (!subtab) subtab = 'requests';
     const tabs = ['requests', 'inventory', 'history'];
     tabs.forEach(t => {
-        const sec = document.getElementById('profileSection' + t.charAt(0).toUpperCase() + t.slice(1));
-        const btn = document.getElementById('btnProfileTab' + t.charAt(0).toUpperCase() + t.slice(1));
+        const secName = 'profileSection' + t.charAt(0).toUpperCase() + t.slice(1);
+        const btnName = 'btnProfileTab' + t.charAt(0).toUpperCase() + t.slice(1);
+        const sec = document.getElementById(secName);
+        const btn = document.getElementById(btnName);
         const isActive = (t === subtab);
         if (sec) {
             if (isActive) {
@@ -998,18 +1001,30 @@ window.switchProfileSubTab = function(subtab) {
                 btn.className = 'btn btn-sm rounded-pill flex-grow-1 profile-subtab-btn active text-white d-flex align-items-center justify-content-center gap-1.5';
                 btn.style.background = 'linear-gradient(135deg, #5B3FA8, #341F97)';
                 btn.style.boxShadow = '0 2px 8px rgba(91, 63, 168, 0.25)';
+                btn.style.color = '#ffffff';
                 btn.style.border = 'none';
             } else {
                 btn.className = 'btn btn-sm rounded-pill flex-grow-1 profile-subtab-btn text-secondary d-flex align-items-center justify-content-center gap-1.5';
                 btn.style.background = 'transparent';
                 btn.style.boxShadow = 'none';
+                btn.style.color = '#64748B';
                 btn.style.border = 'none';
             }
         }
     });
 
-    if (subtab === 'requests' || subtab === 'inventory' || subtab === 'history') {
-        loadOwnerRentalDashboard(false);
+    try {
+        if (typeof loadOwnerRentalDashboard === 'function') {
+            loadOwnerRentalDashboard(false);
+        }
+    } catch(e) { console.error("loadOwnerRentalDashboard error:", e); }
+
+    if (subtab === 'inventory') {
+        try {
+            if (typeof loadUserRentedOutItems === 'function') {
+                loadUserRentedOutItems();
+            }
+        } catch(e) { console.error("loadUserRentedOutItems error:", e); }
     }
 };
 

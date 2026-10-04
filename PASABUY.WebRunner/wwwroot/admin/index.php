@@ -659,6 +659,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <h4 class="fw-extrabold mb-1 text-dark">Equipment Catalog</h4>
                         <p class="text-muted fs-8 mb-0">Equipment listings posted by verified student lenders.</p>
                     </div>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill fw-bold fs-9 shadow-xs" onclick="adminWipeAllStock()">
+                        <i class="fa-solid fa-trash-can me-1"></i> Clear All Stock (Wipe to 0)
+                    </button>
                 </div>
 
                 <div class="admin-table-card p-3 mb-4">
@@ -2271,6 +2274,24 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     loadInventory();
                 } else {
                     alert(data.message || 'Error taking down listing.');
+                }
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+            }
+        }
+
+        async function adminWipeAllStock() {
+            if (!confirm("⚠️ Are you sure you want to delete ALL equipment stock in the system?\n\nThis will wipe all inventory units to 0.")) return;
+            try {
+                const res = await fetch(`${API_URL}?action=clear_all_inventory`);
+                const data = await res.json();
+                if (data.success) {
+                    alert("✅ All inventory and equipment stock deleted successfully (0 units).");
+                    loadDashboardStats();
+                    loadProducts();
+                    if (typeof loadInventory === 'function') loadInventory();
+                } else {
+                    alert(data.message || "Failed to clear stock.");
                 }
             } catch (e) {
                 alert('Connection error: ' + e.message);

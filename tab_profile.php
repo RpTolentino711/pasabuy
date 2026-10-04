@@ -13,11 +13,18 @@
         }
         .profile-subtab-btn {
             border-radius: 999px !important;
-            padding: 5px 10px !important;
+            padding: 6px 10px !important;
             font-size: 0.78rem !important;
             font-weight: 700 !important;
             border: none !important;
             transition: all 0.2s ease;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            user-select: none !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .profile-subtab-btn * {
+            pointer-events: none !important;
         }
         .profile-kpi-card {
             border-radius: 12px;
@@ -46,21 +53,21 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs position-relative" 
-                    id="btnProfileSettingsGear"
+                    id="btnProfileSettingsGear" 
                     style="width:34px; height:34px; background:#F8FAFC; border:1px solid #E2E8F0;" 
-                    data-bs-toggle="modal" data-bs-target="#settingsHubModal"
+                    data-bs-toggle="modal" data-bs-target="#settingsHubModal" 
                     onclick="openSettingsHubModal()" title="Account & Settings Hub">
                 <i class="fa-solid fa-gear text-secondary fs-8"></i>
                 <span class="position-absolute top-0 start-100 translate-middle bg-danger border border-2 border-white rounded-circle badge-pulse-glow" 
                       id="settingsGearBadge" 
-                      style="display:none; width:10px; height:10px; margin-top:2px; margin-left:-2px;"
+                      style="display:none; width:10px; height:10px; margin-top:2px; margin-left:-2px;" 
                       title="Order Status Updated"></span>
             </button>
         </div>
     </div>
 
     <!-- 3 Profile Section Tabs (Compact Segmented Pill Bar) -->
-    <div class="profile-nav-pills d-flex align-items-center mb-2.5 shadow-2xs gap-1">
+    <div class="profile-nav-pills d-flex align-items-center mb-2.5 shadow-2xs gap-1" style="position:relative; z-index:10;">
         <!-- Subtab 1: Rental Requests / Incoming Orders -->
         <button type="button" class="btn btn-sm flex-grow-1 profile-subtab-btn active text-white d-flex align-items-center justify-content-center gap-1.5" 
                 id="btnProfileTabRequests" 

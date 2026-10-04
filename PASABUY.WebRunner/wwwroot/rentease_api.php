@@ -1401,65 +1401,55 @@ if ($action === 'get_owner_rental_data') {
             $ownerInventory = $invStmt->fetchAll();
         }
 
-        // If the user owns no equipment, they CANNOT have incoming rental requests!
-        if (empty($ownerInventory)) {
-            echo json_encode([
-                'success' => true,
-                'incoming_requests' => [],
-                'inventory' => [],
-                'history' => [],
-                'pending_count' => 0,
-                'total_stock_owned' => 0,
-                'total_rented_out' => 0,
-                'total_available' => 0
-            ]);
-            exit;
-        }
-
-        $ownedProductIds = array_map(function($x) { return (int)$x['id']; }, $ownerInventory);
-
-        // 2. Fetch rental orders ONLY for items owned by this owner
-        $inClause = implode(',', array_fill(0, count($ownedProductIds), '?'));
-        $sql = "SELECT DISTINCT ro.* FROM `rental_orders` ro 
-                INNER JOIN `rental_order_items` roi ON ro.id = roi.order_id 
-                WHERE roi.product_id IN ($inClause)";
-        $params = $ownedProductIds;
-
-        if (!empty($ownerEmail)) {
-            $sql .= " OR LOWER(ro.owner_email) = ?";
-            $params[] = $ownerEmail;
-        }
-
-        $sql .= " ORDER BY ro.id DESC LIMIT 60";
-        $orderStmt = $db->prepare($sql);
-        $orderStmt->execute($params);
-        $allOrders = $orderStmt->fetchAll();
-
-        // Attach line items to each order
-        $itemFetchStmt = $db->prepare("SELECT roi.*, ri.image_url, ri.category FROM `rental_order_items` roi LEFT JOIN `rental_inventory` ri ON roi.product_id = ri.id WHERE roi.order_id = ?");
-
         $incoming = [];
         $history = [];
 
-        foreach ($allOrders as $ord) {
-            $itemFetchStmt->execute([$ord['id']]);
-            $ord['items'] = $itemFetchStmt->fetchAll();
+        // 2. Fetch rental orders ONLY for items owned by this owner (if any)
+        if (!empty($ownerInventory)) {
+            $ownedProductIds = array_map(function($x) { return (int)$x['id']; }, $ownerInventory);
+            $inClause = implode(',', array_fill(0, count($ownedProductIds), '?'));
+            $sql = "SELECT DISTINCT ro.* FROM `rental_orders` ro 
+                    INNER JOIN `rental_order_items` roi ON ro.id = roi.order_id 
+                    WHERE roi.product_id IN ($inClause)";
+            $params = $ownedProductIds;
 
-            $status = strtoupper(trim((string)($ord['order_status'] ?? 'CONFIRMED')));
-            if (in_array($status, ['RETURNED', 'COMPLETED', 'CANCELLED'])) {
-                $history[] = $ord;
-            } else {
-                $incoming[] = $ord;
+            if (!empty($ownerEmail)) {
+                $sql .= " OR LOWER(ro.owner_email) = ?";
+                $params[] = $ownerEmail;
+            }
+
+            $sql .= " ORDER BY ro.id DESC LIMIT 60";
+            $orderStmt = $db->prepare($sql);
+            $orderStmt->execute($params);
+            $allOrders = $orderStmt->fetchAll();
+
+            $itemFetchStmt = $db->prepare("SELECT roi.*, ri.image_url, ri.category FROM `rental_order_items` roi LEFT JOIN `rental_inventory` ri ON roi.product_id = ri.id WHERE roi.order_id = ?");
+
+            foreach ($allOrders as $ord) {
+                $itemFetchStmt->execute([$ord['id']]);
+                $ord['items'] = $itemFetchStmt->fetchAll();
+
+                $status = strtoupper(trim((string)($ord['order_status'] ?? 'CONFIRMED')));
+                if (in_array($status, ['RETURNED', 'COMPLETED', 'CANCELLED'])) {
+                    $history[] = $ord;
+                } else {
+                    $incoming[] = $ord;
+                }
             }
         }
 
-        // 3. Fetch bookings where this user rented equipment as a customer
-        $custStmt = $db->prepare("SELECT * FROM `rental_orders` WHERE LOWER(`customer_email`) = ? OR `customer_phone` = ? ORDER BY `id` DESC LIMIT 20");
-        $custStmt->execute([$ownerEmail, $data['customer_phone'] ?? '09668257301']);
-        $custOrders = $custStmt->fetchAll();
-        foreach ($custOrders as &$cOrd) {
-            $itemFetchStmt->execute([$cOrd['id']]);
-            $cOrd['items'] = $itemFetchStmt->fetchAll();
+        // 3. Fetch bookings where this user rented equipment as a customer (Student Renter History)
+        $custOrders = [];
+        if (!empty($ownerEmail) || !empty($data['customer_phone'])) {
+            $custPhone = $data['customer_phone'] ?? '09668257301';
+            $custStmt = $db->prepare("SELECT * FROM `rental_orders` WHERE (LOWER(`customer_email`) = ? OR `customer_phone` = ?) ORDER BY `id` DESC LIMIT 30");
+            $custStmt->execute([$ownerEmail, $custPhone]);
+            $custOrders = $custStmt->fetchAll();
+            $itemFetchStmt2 = $db->prepare("SELECT roi.*, ri.image_url, ri.category FROM `rental_order_items` roi LEFT JOIN `rental_inventory` ri ON roi.product_id = ri.id WHERE roi.order_id = ?");
+            foreach ($custOrders as &$cOrd) {
+                $itemFetchStmt2->execute([$cOrd['id']]);
+                $cOrd['items'] = $itemFetchStmt2->fetchAll();
+            }
         }
 
         echo json_encode([
@@ -1469,13 +1459,31 @@ if ($action === 'get_owner_rental_data') {
             'history' => $history,
             'my_bookings' => $custOrders,
             'pending_count' => count($incoming),
-            'total_stock_owned' => array_sum(array_column($ownerInventory, 'qty_total')),
-            'total_rented_out' => array_sum(array_column($ownerInventory, 'qty_rented')),
-            'total_available' => array_sum(array_column($ownerInventory, 'qty_available'))
+            'total_stock_owned' => empty($ownerInventory) ? 0 : array_sum(array_column($ownerInventory, 'qty_total')),
+            'total_rented_out' => empty($ownerInventory) ? 0 : array_sum(array_column($ownerInventory, 'qty_rented')),
+            'total_available' => empty($ownerInventory) ? 0 : array_sum(array_column($ownerInventory, 'qty_available'))
         ]);
         exit;
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
+}
+
+if ($action === 'delete_all_inventory' || $action === 'clear_all_stock') {
+    if (!$db) {
+        saveRentEaseItemsFallback([]);
+        echo json_encode(['success' => true, 'message' => 'All inventory cleared from fallback.']);
+        exit;
+    }
+    try {
+        $db->exec("DELETE FROM `rental_order_items` WHERE 1=1;");
+        $db->exec("DELETE FROM `rental_inventory` WHERE 1=1;");
+        saveRentEaseItemsFallback([]);
+        echo json_encode(['success' => true, 'message' => 'All inventory and equipment stock deleted successfully (0 units).']);
+        exit;
+    } catch (Exception $eDelAll) {
+        echo json_encode(['success' => false, 'message' => $eDelAll->getMessage()]);
         exit;
     }
 }

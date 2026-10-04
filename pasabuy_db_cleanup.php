@@ -67,14 +67,8 @@ try {
         (3, 105, 'Pogilameg', 'Tester', 'pogilameg@10', 'pogilameg@gmail.com', 'BSIT', '3rd Yr', NULL, 'VERIFIED', 5.0, 1, NOW(), NOW())
         ON DUPLICATE KEY UPDATE `FirstName` = VALUES(`FirstName`), `LastName` = VALUES(`LastName`), `StudentNumber` = VALUES(`StudentNumber`)");
 
-    // Seed Real Live Equipment for Romeo (Lender) with 0 rented (clean slate)
-    $stmtInv = $pdo->prepare("INSERT INTO `rental_inventory` 
-        (`id`, `name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `rating`, `reviews_count`, `description`, `min_rental_days`, `is_featured`, `owner_name`, `owner_contact`, `item_condition`, `location`) 
-        VALUES 
-        (1, 'Sony Alpha A7 IV 4K Camera Rig', 'Cameras', 'Premium', 1200.00, 2, 2, 0, 0, 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80', 5.0, 14, 'Professional full-frame hybrid mirrorless camera with 24-70mm GM lens, cage rig, and dual batteries. Listed for rent by Romeo Paolo Tolentino.', 1, 1, 'Romeo Paolo Tolentino', '09668257301', 'Like New', 'San Pablo City, Laguna'),
-        (2, 'Yamaha StagePas 400BT Portable Sound System', 'Sound System', 'Premium', 1500.00, 1, 1, 0, 0, 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80', 4.9, 8, '400W compact PA system with 8-channel powered mixer, 2 speakers, wireless Bluetooth and dual mic set. Listed by Romeo Paolo Tolentino.', 1, 1, 'Romeo Paolo Tolentino', '09668257301', 'Excellent', 'San Pablo City, Laguna')
-        ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `qty_rented` = 0, `qty_available` = VALUES(`qty_total`);");
-    $stmtInv->execute();
+    // Keep rental_inventory completely clean (0 stock units)
+    try { $pdo->exec("DELETE FROM `rental_inventory` WHERE 1=1;"); } catch (Exception $e) {}
 
     // Ensure zero orders and zero transactions until real orders are placed
     try { $pdo->exec("DELETE FROM `rental_order_items` WHERE 1=1;"); } catch (Exception $e) {}
