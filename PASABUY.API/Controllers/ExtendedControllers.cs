@@ -225,11 +225,11 @@ namespace PASABUY.API.Controllers
             var user = await _db.Users.Include(u => u.StudentProfile).FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null) return NotFound();
 
-            user.Status = "VERIFIED";
-            if (user.StudentProfile != null) user.StudentProfile.VerificationStatus = "VERIFIED";
+            user.Status = "UNVERIFIED";
+            if (user.StudentProfile != null) user.StudentProfile.VerificationStatus = "UNVERIFIED";
 
             await _db.SaveChangesAsync();
-            return Ok(new { message = $"Student {user.Email} has been RESTORED.", status = "VERIFIED" });
+            return Ok(new { message = $"Student {user.Email} has been RESTORED to UNVERIFIED.", status = "UNVERIFIED" });
         }
 
         [HttpGet("listings")]
@@ -295,6 +295,11 @@ namespace PASABUY.API.Controllers
         {
             var user = await _db.Users.Include(u => u.StudentProfile).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return NotFound();
+
+            if (user.Status == "SUSPENDED")
+            {
+                return BadRequest(new { message = "Cannot verify student while their account is SUSPENDED. Please unsuspend them first." });
+            }
 
             user.Status = "VERIFIED";
             if (user.StudentProfile != null) user.StudentProfile.VerificationStatus = "VERIFIED";

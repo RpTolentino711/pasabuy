@@ -565,9 +565,12 @@
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    ${user.Status === 'VERIFIED' || user.status === 'VERIFIED'
-                                        ? `<button class="btn btn-sm btn-outline-warning rounded-pill px-2.5 py-0.5 fw-bold fs-9" onclick="unverifyStudentUser(${user.Id || user.id})"><i class="fa-solid fa-user-xmark me-1"></i>Unverify</button>`
-                                        : `<button class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-0.5 fw-bold fs-9" onclick="verifyStudentUser(${user.Id || user.id})"><i class="fa-solid fa-user-check me-1"></i>Verify</button>`
+                                    ${(user.Status === 'SUSPENDED' || user.status === 'SUSPENDED')
+                                        ? `<button class="btn btn-sm btn-outline-info rounded-pill px-2.5 py-0.5 fw-bold fs-9" onclick="unsuspendStudentUser(${user.Id || user.id})"><i class="fa-solid fa-unlock me-1"></i>Unsuspend</button>`
+                                        : ((user.Status === 'VERIFIED' || user.status === 'VERIFIED')
+                                            ? `<button class="btn btn-sm btn-outline-warning rounded-pill px-2.5 py-0.5 fw-bold fs-9" onclick="unverifyStudentUser(${user.Id || user.id})"><i class="fa-solid fa-user-xmark me-1"></i>Unverify</button>`
+                                            : `<button class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-0.5 fw-bold fs-9" onclick="verifyStudentUser(${user.Id || user.id}, '${user.Status || user.status || ''}')"><i class="fa-solid fa-user-check me-1"></i>Verify</button>`
+                                          )
                                     }
                                 </div>
                             </td>
@@ -577,6 +580,23 @@
                 }
             } catch (e) {
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No registered student accounts in database yet.</td></tr>';
+            }
+        }
+
+        async function unsuspendStudentUser(userId) {
+            if (confirm(`Admin Action: Unsuspend student #${userId}?\n\nTheir suspension will be lifted and their account will be set to UNVERIFIED so you can review and verify them.`)) {
+                try {
+                    const res = await fetch(`${API_BASE}/admin_api.php?action=unsuspend_customer&id=${userId}`, { method: 'POST' });
+                    const d = await res.json();
+                    if (d.success) {
+                        alert(`Student #${userId} has been UNSUSPENDED and is now UNVERIFIED. You can now verify them.`);
+                        fetchAdminStudents();
+                    } else {
+                        alert(d.message || 'Failed to unsuspend student.');
+                    }
+                } catch (e) {
+                    alert('Error unsuspending user.');
+                }
             }
         }
 
@@ -592,12 +612,21 @@
             }
         }
 
-        async function verifyStudentUser(userId) {
+        async function verifyStudentUser(userId, currentStatus) {
+            if (currentStatus === 'SUSPENDED') {
+                alert(`❌ Cannot verify student #${userId} while account is SUSPENDED. Please unsuspend them first.`);
+                return;
+            }
             if (confirm(`Admin Action: Verify student #${userId}? This authorizes them to post equipment for rent.`)) {
                 try {
-                    await fetch(`${API_BASE}/admin_api.php?action=verify_customer&id=${userId}`, { method: 'POST' });
-                    alert(`Student #${userId} has been VERIFIED.`);
-                    fetchAdminStudents();
+                    const res = await fetch(`${API_BASE}/admin_api.php?action=verify_customer&id=${userId}`, { method: 'POST' });
+                    const d = await res.json();
+                    if (d.success) {
+                        alert(`Student #${userId} has been VERIFIED.`);
+                        fetchAdminStudents();
+                    } else {
+                        alert(d.message || 'Error verifying user.');
+                    }
                 } catch (e) {
                     alert('Error verifying user.');
                 }

@@ -747,32 +747,57 @@ if ($action === 'add_customer') {
     exit;
 }
 
-if ($action === 'update_customer_status' || $action === 'unverify_customer' || $action === 'verify_customer') {
+if ($action === 'update_customer_status' || $action === 'unverify_customer' || $action === 'verify_customer' || $action === 'unsuspend_customer') {
     if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
     $id = (int)($req['id'] ?? $req['userId'] ?? $req['user_id'] ?? $_GET['id'] ?? 0);
     $status = trim((string)($req['status'] ?? $_GET['status'] ?? ''));
 
-    if ($action === 'unverify_customer') $status = 'UNVERIFIED';
-    elseif ($action === 'verify_customer') $status = 'VERIFIED';
-    elseif (empty($status)) $status = 'UNVERIFIED';
+    // Fetch current user status
+    $chk = $db->prepare("SELECT `Status` FROM `Users` WHERE `Id` = ?");
+    $chk->execute([$id]);
+    $currentStatus = strtoupper(trim((string)$chk->fetchColumn()));
+
+    if ($action === 'unverify_customer') {
+        $status = 'UNVERIFIED';
+    } elseif ($action === 'unsuspend_customer') {
+        // Unsuspending restores student to UNVERIFIED so admin can review and verify
+        $status = 'UNVERIFIED';
+    } elseif ($action === 'verify_customer') {
+        if ($currentStatus === 'SUSPENDED') {
+            echo json_encode([
+                'success' => false, 
+                'message' => "Cannot verify student #{$id} because their account is SUSPENDED. Please unsuspend them first."
+            ]);
+            exit;
+        }
+        $status = 'VERIFIED';
+    } elseif (empty($status)) {
+        $status = 'UNVERIFIED';
+    }
 
     $stmt = $db->prepare("UPDATE `Users` SET `Status` = ? WHERE `Id` = ?");
     $stmt->execute([$status, $id]);
 
-    $vStatus = ($status === 'VERIFIED') ? 'VERIFIED' : 'UNVERIFIED';
+    $vStatus = ($status === 'VERIFIED') ? 'VERIFIED' : (($status === 'SUSPENDED') ? 'SUSPENDED' : 'UNVERIFIED');
     try {
         $db->prepare("UPDATE `StudentProfiles` SET `VerificationStatus` = ?, `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$vStatus, $id]);
     } catch (Exception $e) {}
 
     try {
         if ($status === 'UNVERIFIED') {
-            $db->prepare("UPDATE `VerificationRequests` SET `Status` = 'REJECTED', `RejectionReason` = 'Verification revoked by Admin', `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$id]);
+            $db->prepare("UPDATE `VerificationRequests` SET `Status` = 'REJECTED', `RejectionReason` = 'Account set to Unverified by Admin', `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$id]);
         } elseif ($status === 'VERIFIED') {
             $db->prepare("UPDATE `VerificationRequests` SET `Status` = 'APPROVED', `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$id]);
+        } elseif ($status === 'SUSPENDED') {
+            $db->prepare("UPDATE `VerificationRequests` SET `Status` = 'REJECTED', `RejectionReason` = 'Account Suspended by Admin', `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$id]);
         }
     } catch (Exception $e) {}
 
-    echo json_encode(['success' => true, 'message' => "Student #{$id} status set to {$status} successfully."]);
+    $msg = ($action === 'unsuspend_customer')
+        ? "Student #{$id} has been UNSUSPENDED and reset to UNVERIFIED. You can now verify them."
+        : "Student #{$id} status set to {$status} successfully.";
+
+    echo json_encode(['success' => true, 'message' => $msg]);
     exit;
 }
 

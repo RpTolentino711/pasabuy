@@ -2672,13 +2672,18 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    ${isVerified 
-                                        ? `<button class="btn btn-sm btn-outline-warning py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="adminUnverifyUser(${c.Id})" title="Revoke verified status from this student">
-                                            <i class="fa-solid fa-user-xmark me-1"></i> Unverify
+                                    ${isSuspended 
+                                        ? `<button class="btn btn-sm btn-outline-info py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="adminUnsuspendUser(${c.Id})" title="Lift suspension and set student to Unverified so they can be verified">
+                                            <i class="fa-solid fa-unlock me-1"></i> Unsuspend
                                            </button>`
-                                        : `<button class="btn btn-sm btn-outline-success py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="adminVerifyUser(${c.Id})" title="Verify this student to allow posting equipment">
-                                            <i class="fa-solid fa-user-check me-1"></i> Verify
-                                           </button>`
+                                        : (isVerified 
+                                            ? `<button class="btn btn-sm btn-outline-warning py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="adminUnverifyUser(${c.Id})" title="Revoke verified status from this student">
+                                                <i class="fa-solid fa-user-xmark me-1"></i> Unverify
+                                               </button>`
+                                            : `<button class="btn btn-sm btn-outline-success py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="adminVerifyUser(${c.Id}, '${c.Status || ''}')" title="Verify this student to allow posting equipment">
+                                                <i class="fa-solid fa-user-check me-1"></i> Verify
+                                               </button>`
+                                          )
                                     }
                                 </div>
                             </td>
@@ -2688,6 +2693,22 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No customer records.</td></tr>';
                 }
             } catch (e) {}
+        }
+
+        async function adminUnsuspendUser(id) {
+            if (!confirm(`Admin Action: Unsuspend student #${id}?\n\nTheir suspension will be lifted and their account will be set to UNVERIFIED so you can review and verify them.`)) return;
+            try {
+                const res = await fetch(`${API_URL}?action=unsuspend_customer&id=${id}`, { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    alert(`✅ Student #${id} has been UNSUSPENDED and is now UNVERIFIED.\n\nYou can now review and verify them.`);
+                    loadCustomers();
+                } else {
+                    alert(d.message || 'Failed to unsuspend student.');
+                }
+            } catch (e) {
+                alert('Error connecting to server.');
+            }
         }
 
         async function adminUnverifyUser(id) {
@@ -2706,7 +2727,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             }
         }
 
-        async function adminVerifyUser(id) {
+        async function adminVerifyUser(id, currentStatus) {
+            if (currentStatus === 'SUSPENDED') {
+                alert(`❌ Cannot verify student #${id} while their account is SUSPENDED.\n\nPlease unsuspend them first before verifying.`);
+                return;
+            }
             if (!confirm(`Admin Action: Verify student #${id}?\n\nThis will mark the student as VERIFIED and authorize them to publish equipment for rent.`)) return;
             try {
                 const res = await fetch(`${API_URL}?action=verify_customer&id=${id}`, { method: 'POST' });
@@ -2720,15 +2745,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             } catch (e) {
                 alert('Error connecting to server.');
             }
-        }
-
-        async function toggleCustomerStatus(id, current) {
-            const next = (current === 'SUSPENDED') ? 'VERIFIED' : 'SUSPENDED';
-            if (!confirm(`Change student #${id} account status to ${next}?`)) return;
-            try {
-                await fetch(`${API_URL}?action=update_customer_status&id=${id}&status=${next}`);
-                loadCustomers();
-            } catch (e) {}
         }
 
         function openAddCustomerModal() {
