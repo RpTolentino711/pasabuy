@@ -3562,10 +3562,11 @@ window.updateSellVerificationState = function (isVerified) {
         if (vBanner) vBanner.style.display = 'block';
         if (warnBox) warnBox.style.display = 'block';
         if (btn) {
-            btn.disabled = true;
+            btn.disabled = false;
             btn.classList.add('disabled');
             btn.setAttribute('title', 'Only admin-verified student accounts can list equipment for rent');
-            btn.innerHTML = '<i class="fa-solid fa-lock fs-8"></i> <span>Verification Required to Post Equipment</span>';
+            btn.setAttribute('onclick', 'openVerificationModal()');
+            btn.innerHTML = '<i class="fa-solid fa-lock fs-8 text-warning me-1"></i> <span>Verification Required to Post Equipment</span>';
         }
     }
 };
@@ -3581,15 +3582,16 @@ window.postRentalItemLive = async function () {
 
     // Strict Guard: Only admin-verified student accounts can post equipment for rent
     const currentUser = getRentEaseCurrentUser();
-    const isRomeo = (currentUser.email === 'romeopaolotolentino@gmail.com');
-    const isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.verification_status === 'VERIFIED');
+    const email = (currentUser.email || currentUser.SchoolEmail || '').toLowerCase();
+    const isRomeo = (email === 'romeopaolotolentino@gmail.com' || (currentUser.id == 104));
+    const isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED');
 
     if (!isVerified) {
-        alert('🔒 Account Verification Required\n\nOnly admin-verified student accounts can publish equipment for rent.\n\nPlease submit your student ID verification under your Profile to get verified by Admin.');
         if (typeof openVerificationModal === 'function') {
             openVerificationModal();
         } else {
-            switchTab('profile');
+            alert('🔒 Account Verification Required\n\nOnly admin-verified student accounts can publish equipment for rent.\n\nPlease submit your student ID verification under your Profile to get verified by Admin.');
+            if (typeof switchTab === 'function') switchTab('profile');
         }
         return;
     }

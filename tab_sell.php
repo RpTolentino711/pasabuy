@@ -675,6 +675,34 @@ window.switchRentOutSubTab = function(mode) {
     }
 };
 
+window.updateSellVerificationState = function (isVerified) {
+    const vBanner = document.getElementById('sellVerificationBanner');
+    const warnBox = document.getElementById('sellPublishVerificationWarning');
+    const btn = document.getElementById('btnPublishRentalItem');
+
+    if (isVerified) {
+        if (vBanner) vBanner.style.display = 'none';
+        if (warnBox) warnBox.style.display = 'none';
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+            btn.removeAttribute('title');
+            btn.setAttribute('onclick', 'openEquipmentReviewModal()');
+            btn.innerHTML = '<i class="fa-solid fa-clipboard-check fs-8"></i> <span>Review & Publish Equipment</span>';
+        }
+    } else {
+        if (vBanner) vBanner.style.display = 'block';
+        if (warnBox) warnBox.style.display = 'block';
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.add('disabled');
+            btn.setAttribute('title', 'Only admin-verified student accounts can list equipment for rent');
+            btn.setAttribute('onclick', 'openVerificationModal()');
+            btn.innerHTML = '<i class="fa-solid fa-lock fs-8 text-warning me-1"></i> <span>Verification Required to Post Equipment</span>';
+        }
+    }
+};
+
 window.checkRentOutVerification = function() {
     let currentUser = {};
     try {
@@ -688,7 +716,7 @@ window.checkRentOutVerification = function() {
 
     const email = (currentUser.email || currentUser.SchoolEmail || '').toLowerCase();
     const isRomeo = (email === 'romeopaolotolentino@gmail.com' || (currentUser.id == 104));
-    let isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.Status === 'VERIFIED');
+    let isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED' || currentUser.Status === 'VERIFIED');
 
     if (typeof updateSellVerificationState === 'function') {
         updateSellVerificationState(isVerified);
@@ -710,19 +738,35 @@ window.checkRentOutVerification = function() {
     }
 };
 
-setTimeout(function() {
+(function initVerificationCheck() {
     if (typeof checkRentOutVerification === 'function') checkRentOutVerification();
-}, 200);
+    setTimeout(function() {
+        if (typeof checkRentOutVerification === 'function') checkRentOutVerification();
+    }, 300);
+})();
 
 window.openEquipmentReviewModal = function() {
-    const currentUser = typeof getRentEaseCurrentUser === 'function' ? getRentEaseCurrentUser() : {};
-    const isRomeo = (currentUser.email === 'romeopaolotolentino@gmail.com');
-    const isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.verification_status === 'VERIFIED');
+    let currentUser = {};
+    try {
+        if (typeof getRentEaseCurrentUser === 'function') {
+            currentUser = getRentEaseCurrentUser();
+        } else {
+            const raw = localStorage.getItem('pasabuy_student_user') || localStorage.getItem('pasabuy_user');
+            if (raw) currentUser = JSON.parse(raw);
+        }
+    } catch(e) {}
+
+    const email = (currentUser.email || currentUser.SchoolEmail || '').toLowerCase();
+    const isRomeo = (email === 'romeopaolotolentino@gmail.com' || (currentUser.id == 104));
+    const isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED');
 
     if (!isVerified) {
-        alert('🔒 Account Verification Required\n\nOnly admin-verified student accounts can publish equipment for rent.\n\nPlease submit your student ID verification under your Profile to get verified by Admin.');
-        if (typeof openVerificationModal === 'function') openVerificationModal();
-        else if (typeof switchTab === 'function') switchTab('profile');
+        if (typeof openVerificationModal === 'function') {
+            openVerificationModal();
+        } else {
+            alert('🔒 Account Verification Required\n\nOnly admin-verified student accounts can publish equipment for rent.\n\nPlease submit your student ID verification under your Profile to get verified by Admin.');
+            if (typeof switchTab === 'function') switchTab('profile');
+        }
         return;
     }
 
