@@ -176,6 +176,14 @@ if ($db) {
         $db->exec("DELETE FROM `rental_transactions` WHERE `transaction_code` = '#TRX-8801'");
         $db->exec("DELETE FROM `rental_issues` WHERE `ticket_number` = '#TKT-0012'");
         $db->exec("UPDATE `rental_inventory` SET `qty_rented` = 0, `qty_available` = `qty_total` WHERE `qty_rented` > 0");
+
+        // One-time auto-wipe of demo/legacy stock so that total stock is reset to 0
+        $isPurged = $db->query("SELECT `setting_value` FROM `rental_settings` WHERE `setting_key` = 'stock_purged_zero'")->fetchColumn();
+        if (!$isPurged) {
+            $db->exec("DELETE FROM `rental_order_items` WHERE 1=1;");
+            $db->exec("DELETE FROM `rental_inventory` WHERE 1=1;");
+            $db->exec("INSERT INTO `rental_settings` (`setting_key`, `setting_value`) VALUES ('stock_purged_zero', '1') ON DUPLICATE KEY UPDATE `setting_value` = '1'");
+        }
     } catch (Exception $eClean) {}
 
     // Deduplicate StudentProfiles so users appear only once

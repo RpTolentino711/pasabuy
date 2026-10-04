@@ -122,6 +122,21 @@ if ($db) {
         $db->exec("DELETE FROM `rental_orders` WHERE `order_code` = '#RE-10245'");
         $db->exec("DELETE FROM `rental_order_items` WHERE `product_name` IN ('Monoblock Chair', 'Folding Table', 'Event Tent (10x10ft)')");
         $db->exec("DELETE FROM `rental_issues` WHERE `ticket_number` IN ('#10245', '#10238', '#10231')");
+
+        // One-time auto-wipe of demo/legacy stock so that total stock is reset to 0
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_settings` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `setting_key` VARCHAR(100) UNIQUE NOT NULL,
+            `setting_value` TEXT,
+            `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+        $isPurged = $db->query("SELECT `setting_value` FROM `rental_settings` WHERE `setting_key` = 'stock_purged_zero'")->fetchColumn();
+        if (!$isPurged) {
+            $db->exec("DELETE FROM `rental_order_items` WHERE 1=1;");
+            $db->exec("DELETE FROM `rental_inventory` WHERE 1=1;");
+            $db->exec("INSERT INTO `rental_settings` (`setting_key`, `setting_value`) VALUES ('stock_purged_zero', '1') ON DUPLICATE KEY UPDATE `setting_value` = '1'");
+        }
     } catch (Exception $ePurge) {}
 }
 
