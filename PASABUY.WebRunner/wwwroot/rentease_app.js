@@ -998,17 +998,15 @@ window.switchProfileSubTab = function(subtab) {
         }
         if (btn) {
             if (isActive) {
-                btn.className = 'btn btn-sm rounded-pill flex-grow-1 profile-subtab-btn active text-white d-flex align-items-center justify-content-center gap-1.5';
-                btn.style.background = 'linear-gradient(135deg, #5B3FA8, #341F97)';
-                btn.style.boxShadow = '0 2px 8px rgba(91, 63, 168, 0.25)';
-                btn.style.color = '#ffffff';
-                btn.style.border = 'none';
+                btn.className = 'btn btn-sm flex-grow-1 profile-subtab-btn active text-white d-flex align-items-center justify-content-center gap-1.5';
+                btn.style.setProperty('background', 'linear-gradient(135deg, #5B3FA8, #341F97)', 'important');
+                btn.style.setProperty('box-shadow', '0 2px 8px rgba(91, 63, 168, 0.25)', 'important');
+                btn.style.setProperty('color', '#ffffff', 'important');
             } else {
-                btn.className = 'btn btn-sm rounded-pill flex-grow-1 profile-subtab-btn text-secondary d-flex align-items-center justify-content-center gap-1.5';
-                btn.style.background = 'transparent';
-                btn.style.boxShadow = 'none';
-                btn.style.color = '#64748B';
-                btn.style.border = 'none';
+                btn.className = 'btn btn-sm flex-grow-1 profile-subtab-btn text-secondary d-flex align-items-center justify-content-center gap-1.5';
+                btn.style.setProperty('background', 'transparent', 'important');
+                btn.style.setProperty('box-shadow', 'none', 'important');
+                btn.style.setProperty('color', '#64748B', 'important');
             }
         }
     });

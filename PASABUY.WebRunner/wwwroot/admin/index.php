@@ -562,8 +562,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <span class="fs-8 fw-bold text-muted">Total Revenue</span>
                                 <div class="stat-icon-wrapper bg-primary-subtle text-primary"><i class="fa-solid fa-peso-sign"></i></div>
                             </div>
-                            <h3 class="fw-extrabold text-dark mb-1" id="dashMetricRevenue">₱ 0</h3>
-                            <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-arrow-trend-up me-1"></i>+15% from last period</span>
+                            <h3 class="fw-extrabold text-dark mb-0" id="dashMetricRevenue">₱ 0</h3>
                         </div>
                     </div>
                     <div class="col-6 col-xl-3">
@@ -572,8 +571,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <span class="fs-8 fw-bold text-muted">Total Orders</span>
                                 <div class="stat-icon-wrapper bg-success-subtle text-success"><i class="fa-solid fa-truck-ramp-box"></i></div>
                             </div>
-                            <h3 class="fw-extrabold text-dark mb-1" id="dashMetricOrders">0</h3>
-                            <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-arrow-trend-up me-1"></i>+8% active velocity</span>
+                            <h3 class="fw-extrabold text-dark mb-0" id="dashMetricOrders">0</h3>
                         </div>
                     </div>
                     <div class="col-6 col-xl-3">
@@ -593,7 +591,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <div class="stat-icon-wrapper bg-danger-subtle text-danger"><i class="fa-solid fa-headset"></i></div>
                             </div>
                             <h3 class="fw-extrabold text-dark mb-1" id="dashMetricTickets">0</h3>
-                            <span class="fs-9 text-danger fw-bold"><i class="fa-solid fa-circle-exclamation me-1"></i>Action required</span>
+                            <span class="fs-9 text-muted" id="dashMetricTicketSubtext">0 open tickets</span>
                         </div>
                     </div>
                 </div>
@@ -2146,6 +2144,16 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     document.getElementById('dashMetricStock').innerText = s.total_stock;
                     document.getElementById('dashMetricLowStockText').innerText = `${s.low_stock_items} items low stock`;
                     document.getElementById('dashMetricTickets').innerText = s.active_tickets;
+                    const ticketSub = document.getElementById('dashMetricTicketSubtext');
+                    if (ticketSub) {
+                        if (parseInt(s.active_tickets) > 0) {
+                            ticketSub.className = 'fs-9 text-danger fw-bold';
+                            ticketSub.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i>Action required';
+                        } else {
+                            ticketSub.className = 'fs-9 text-muted';
+                            ticketSub.innerText = 'All tickets resolved';
+                        }
+                    }
                     updatePendingTicketsBadges(s.active_tickets);
 
                     // Render recent orders table

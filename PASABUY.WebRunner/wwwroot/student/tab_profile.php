@@ -98,6 +98,92 @@
         </button>
     </div>
 
+    <!-- Inline Bulletproof Subtab Controller for Instant Mobile & Desktop Navigation -->
+    <script>
+    window.switchProfileSubTab = function(subtab) {
+        if (!subtab) subtab = 'requests';
+        var tabs = ['requests', 'inventory', 'history'];
+        tabs.forEach(function(t) {
+            var secName = 'profileSection' + t.charAt(0).toUpperCase() + t.slice(1);
+            var btnName = 'btnProfileTab' + t.charAt(0).toUpperCase() + t.slice(1);
+            var sec = document.getElementById(secName);
+            var btn = document.getElementById(btnName);
+            var isActive = (t === subtab);
+
+            if (sec) {
+                if (isActive) {
+                    sec.classList.remove('d-none');
+                    sec.style.setProperty('display', 'flex', 'important');
+                } else {
+                    sec.classList.add('d-none');
+                    sec.style.setProperty('display', 'none', 'important');
+                }
+            }
+
+            if (btn) {
+                if (isActive) {
+                    btn.className = 'btn btn-sm flex-grow-1 profile-subtab-btn active text-white d-flex align-items-center justify-content-center gap-1.5';
+                    btn.style.setProperty('background', 'linear-gradient(135deg, #5B3FA8, #341F97)', 'important');
+                    btn.style.setProperty('box-shadow', '0 2px 8px rgba(91, 63, 168, 0.25)', 'important');
+                    btn.style.setProperty('color', '#ffffff', 'important');
+                } else {
+                    btn.className = 'btn btn-sm flex-grow-1 profile-subtab-btn text-secondary d-flex align-items-center justify-content-center gap-1.5';
+                    btn.style.setProperty('background', 'transparent', 'important');
+                    btn.style.setProperty('box-shadow', 'none', 'important');
+                    btn.style.setProperty('color', '#64748B', 'important');
+                }
+            }
+        });
+
+        try {
+            if (typeof loadOwnerRentalDashboard === 'function') {
+                loadOwnerRentalDashboard(false);
+            }
+        } catch (e) {
+            console.warn('loadOwnerRentalDashboard error:', e);
+        }
+
+        if (subtab === 'inventory') {
+            try {
+                if (typeof loadUserRentedOutItems === 'function') {
+                    loadUserRentedOutItems();
+                }
+            } catch (e) {
+                console.warn('loadUserRentedOutItems error:', e);
+            }
+        }
+    };
+
+    (function initProfileSubtabBinds() {
+        function attachListeners() {
+            var map = [
+                { id: 'btnProfileTabRequests', tab: 'requests' },
+                { id: 'btnProfileTabInventory', tab: 'inventory' },
+                { id: 'btnProfileTabHistory', tab: 'history' }
+            ];
+            map.forEach(function(item) {
+                var el = document.getElementById(item.id);
+                if (el) {
+                    el.onclick = function(e) {
+                        if (e) { e.preventDefault(); }
+                        window.switchProfileSubTab(item.tab);
+                    };
+                    el.ontouchend = function(e) {
+                        window.switchProfileSubTab(item.tab);
+                    };
+                }
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', attachListeners);
+        } else {
+            attachListeners();
+        }
+        setTimeout(attachListeners, 200);
+        setTimeout(attachListeners, 600);
+    })();
+    </script>
+
     <!-- ==========================================================
          SUBTAB 1: RENTAL REQUESTS / INCOMING ORDERS FROM RENTERS
          ========================================================== -->
