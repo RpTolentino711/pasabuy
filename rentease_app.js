@@ -2723,6 +2723,52 @@ window.syncRentEaseProfileUI = function syncRentEaseProfileUI() {
     if (hubName) hubName.innerText = user.name;
     if (hubSub) hubSub.innerText = user.sub || `${user.course} • ${user.yearLevel}`;
     if (hubAvatar && user.avatar) hubAvatar.src = user.avatar;
+
+    // Student Verification Badges (Profile Card & Settings Hub)
+    const badge = document.getElementById('profileVerificationBadge');
+    const hubBadge = document.getElementById('settingsHubVerificationBadge');
+    const isVer = (user.is_verified === 1 || user.is_verified === '1' || user.is_verified === true || user.verification_status === 'VERIFIED' || user.verification_status === 'APPROVED');
+
+    function renderVerificationBadges(verified) {
+        if (badge) {
+            badge.style.display = 'inline-flex';
+            if (verified) {
+                badge.className = 'badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2 py-0.5 fw-bold d-inline-flex align-items-center gap-1';
+                badge.innerHTML = '<i class="fa-solid fa-circle-check fs-9 text-success"></i> You\'re Verified';
+                badge.title = 'Admin Verified Student';
+                badge.style.cursor = 'default';
+                badge.onclick = null;
+            } else {
+                badge.className = 'badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5 fw-bold d-inline-flex align-items-center gap-1';
+                badge.innerHTML = '<i class="fa-solid fa-shield-halved fs-9 text-warning"></i> Not Verified';
+                badge.title = 'Click to submit student ID verification to Admin';
+                badge.style.cursor = 'pointer';
+                badge.onclick = function() { if (typeof openVerificationModal === 'function') openVerificationModal(); };
+            }
+        }
+        if (hubBadge) {
+            if (verified) {
+                hubBadge.className = 'badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2 py-0.5 fs-9 fw-bold';
+                hubBadge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> Verified';
+            } else {
+                hubBadge.className = 'badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5 fs-9 fw-bold';
+                hubBadge.innerHTML = '<i class="fa-solid fa-clock me-1"></i> Not Verified';
+            }
+        }
+    }
+
+    renderVerificationBadges(isVer);
+
+    if (user.id > 0) {
+        fetch(`/pasabuy_api.php?action=get_verification_status&userId=${user.id}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return;
+                const st = (data.VerificationStatus || data.Status || '').toUpperCase();
+                const liveVer = (st === 'VERIFIED' || st === 'APPROVED');
+                renderVerificationBadges(liveVer);
+            }).catch(() => {});
+    }
 }
 
 window.openSettingsHubModal = function () {

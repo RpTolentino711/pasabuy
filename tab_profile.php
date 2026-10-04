@@ -42,8 +42,13 @@
                 <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width:10px; height:10px;"></span>
             </div>
             <div>
-                <h6 class="fw-bold text-dark fs-8 mb-0" id="profileName">Campus Student</h6>
-                <div class="text-muted d-flex align-items-center gap-1.5 flex-wrap" style="font-size:0.7rem;">
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <h6 class="fw-bold text-dark fs-8 mb-0" id="profileName">Campus Student</h6>
+                    <span id="profileVerificationBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2 py-0.5 fw-bold" style="font-size:0.65rem; display:none;">
+                        <i class="fa-solid fa-circle-check me-1"></i>You're Verified
+                    </span>
+                </div>
+                <div class="text-muted d-flex align-items-center gap-1.5 flex-wrap mt-0.5" style="font-size:0.7rem;">
                     <span id="profileSub">College Student</span>
                     <span>•</span>
                     <span id="profileStudentNumber">ID: Loading...</span>
@@ -426,6 +431,21 @@
                             <span class="fw-bold text-dark fs-8">Saved Addresses</span>
                         </div>
                         <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
+                    </a>
+
+                    <!-- ID Verification Status -->
+                    <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between py-2.5 px-3 text-decoration-none border-bottom" 
+                       onclick="switchFromSettingsHub(openVerificationModal)">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <div class="rounded-3 p-1.5 bg-light d-flex align-items-center justify-content-center" style="width:30px; height:30px; color:#5B3FA8;">
+                                <i class="fa-solid fa-id-card fs-8"></i>
+                            </div>
+                            <span class="fw-bold text-dark fs-8">Student ID Verification</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span id="settingsHubVerificationBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2 py-0.5 fs-9 fw-bold">Verified</span>
+                            <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
+                        </div>
                     </a>
 
                     <!-- Payment Methods -->

@@ -747,14 +747,32 @@ if ($action === 'add_customer') {
     exit;
 }
 
-if ($action === 'update_customer_status') {
+if ($action === 'update_customer_status' || $action === 'unverify_customer' || $action === 'verify_customer') {
     if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
-    $id = (int)($req['id'] ?? 0);
-    $status = trim((string)($req['status'] ?? 'VERIFIED'));
+    $id = (int)($req['id'] ?? $req['userId'] ?? $req['user_id'] ?? $_GET['id'] ?? 0);
+    $status = trim((string)($req['status'] ?? $_GET['status'] ?? ''));
+
+    if ($action === 'unverify_customer') $status = 'UNVERIFIED';
+    elseif ($action === 'verify_customer') $status = 'VERIFIED';
+    elseif (empty($status)) $status = 'UNVERIFIED';
 
     $stmt = $db->prepare("UPDATE `Users` SET `Status` = ? WHERE `Id` = ?");
     $stmt->execute([$status, $id]);
-    echo json_encode(['success' => true, 'message' => 'Customer status updated.']);
+
+    $vStatus = ($status === 'VERIFIED') ? 'VERIFIED' : 'UNVERIFIED';
+    try {
+        $db->prepare("UPDATE `StudentProfiles` SET `VerificationStatus` = ?, `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$vStatus, $id]);
+    } catch (Exception $e) {}
+
+    try {
+        if ($status === 'UNVERIFIED') {
+            $db->prepare("UPDATE `VerificationRequests` SET `Status` = 'REJECTED', `RejectionReason` = 'Verification revoked by Admin', `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$id]);
+        } elseif ($status === 'VERIFIED') {
+            $db->prepare("UPDATE `VerificationRequests` SET `Status` = 'APPROVED', `UpdatedAt` = NOW() WHERE `UserId` = ?")->execute([$id]);
+        }
+    } catch (Exception $e) {}
+
+    echo json_encode(['success' => true, 'message' => "Student #{$id} status set to {$status} successfully."]);
     exit;
 }
 

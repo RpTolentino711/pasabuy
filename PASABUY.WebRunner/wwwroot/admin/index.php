@@ -2674,7 +2674,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const tbody = document.getElementById('customersTableBody');
 
                 if (data.success && data.customers.length > 0) {
-                    tbody.innerHTML = data.customers.map(c => `
+                    tbody.innerHTML = data.customers.map(c => {
+                        const isVerified = (c.Status === 'VERIFIED');
+                        const isSuspended = (c.Status === 'SUSPENDED');
+                        return `
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center gap-2.5">
@@ -2690,23 +2693,73 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <td>${c.Email}</td>
                             <td>${c.PhoneOrId || 'N/A'}</td>
                             <td class="fw-bold">${c.total_orders || 0}</td>
-                            <td><span class="badge ${c.Status === 'VERIFIED' ? 'badge-stock-in' : 'badge-stock-out'}" title="Verified account - Authorized to post equipment and rent"><i class="fa-solid fa-circle-check me-1"></i>${c.Status === 'VERIFIED' ? 'Verified' : 'Suspended'}</span></td>
                             <td>
-                                <button class="btn btn-sm btn-light border py-1 px-2 fs-9" onclick="toggleCustomerStatus(${c.Id}, '${c.Status}')">
-                                    <i class="fa-solid fa-power-off me-1"></i> ${c.Status === 'VERIFIED' ? 'Suspend' : 'Activate'}
-                                </button>
+                                ${isVerified 
+                                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>'
+                                    : (isSuspended 
+                                        ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-ban me-1"></i>Suspended</span>'
+                                        : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-clock me-1"></i>Unverified</span>'
+                                      )
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                    ${isVerified 
+                                        ? `<button class="btn btn-sm btn-outline-warning py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="adminUnverifyUser(${c.Id})" title="Revoke verified status from this student">
+                                            <i class="fa-solid fa-user-xmark me-1"></i> Unverify
+                                           </button>`
+                                        : `<button class="btn btn-sm btn-outline-success py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="adminVerifyUser(${c.Id})" title="Verify this student to allow posting equipment">
+                                            <i class="fa-solid fa-user-check me-1"></i> Verify
+                                           </button>`
+                                    }
+                                    <button class="btn btn-sm btn-light border py-1 px-2 fs-9 rounded-pill text-secondary" onclick="toggleCustomerStatus(${c.Id}, '${c.Status}')" title="${isSuspended ? 'Reactivate account' : 'Suspend account'}">
+                                        <i class="fa-solid fa-power-off text-${isSuspended ? 'success' : 'danger'}"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
-                    `).join('');
+                    `;}).join('');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No customer records.</td></tr>';
                 }
             } catch (e) {}
         }
 
+        async function adminUnverifyUser(id) {
+            if (!confirm(`Admin Action: Revoke verification for student #${id}?\n\nThey will be UNVERIFIED and blocked from publishing equipment until re-approved.`)) return;
+            try {
+                const res = await fetch(`${API_URL}?action=unverify_customer&id=${id}`, { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    alert(`✅ Student #${id} has been UNVERIFIED successfully.`);
+                    loadCustomers();
+                } else {
+                    alert(d.message || 'Failed to unverify student.');
+                }
+            } catch (e) {
+                alert('Error connecting to server.');
+            }
+        }
+
+        async function adminVerifyUser(id) {
+            if (!confirm(`Admin Action: Verify student #${id}?\n\nThis will mark the student as VERIFIED and authorize them to publish equipment for rent.`)) return;
+            try {
+                const res = await fetch(`${API_URL}?action=verify_customer&id=${id}`, { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    alert(`✅ Student #${id} has been VERIFIED successfully!`);
+                    loadCustomers();
+                } else {
+                    alert(d.message || 'Failed to verify student.');
+                }
+            } catch (e) {
+                alert('Error connecting to server.');
+            }
+        }
+
         async function toggleCustomerStatus(id, current) {
-            const next = (current === 'VERIFIED') ? 'SUSPENDED' : 'VERIFIED';
-            if (!confirm(`Change customer status to ${next}?`)) return;
+            const next = (current === 'SUSPENDED') ? 'VERIFIED' : 'SUSPENDED';
+            if (!confirm(`Change student #${id} account status to ${next}?`)) return;
             try {
                 await fetch(`${API_URL}?action=update_customer_status&id=${id}&status=${next}`);
                 loadCustomers();

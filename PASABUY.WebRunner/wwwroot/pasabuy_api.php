@@ -1120,9 +1120,22 @@ if ($action === 'admin_approve_verification' && $method === 'POST') {
     }
     if ($userId > 0) {
         $db->prepare("UPDATE StudentProfiles SET VerificationStatus = 'VERIFIED', UpdatedAt = NOW() WHERE UserId = ?")->execute([$userId]);
+        $db->prepare("UPDATE Users SET Status = 'VERIFIED', UpdatedAt = NOW() WHERE Id = ?")->execute([$userId]);
     }
 
     echo json_encode(['success' => true, 'message' => 'Student seller verification APPROVED successfully!']);
+    exit;
+}
+
+if (($action === 'admin_unverify_user' || $action === 'admin_unverify_student') && ($method === 'POST' || $method === 'GET')) {
+    $userId = (int)($body['userId'] ?? $body['user_id'] ?? $_GET['userId'] ?? $_GET['id'] ?? 0);
+    if ($userId > 0) {
+        $db->prepare("UPDATE StudentProfiles SET VerificationStatus = 'UNVERIFIED', UpdatedAt = NOW() WHERE UserId = ?")->execute([$userId]);
+        $db->prepare("UPDATE Users SET Status = 'UNVERIFIED', UpdatedAt = NOW() WHERE Id = ?")->execute([$userId]);
+        $db->prepare("UPDATE VerificationRequests SET Status = 'REJECTED', RejectionReason = 'Verification revoked by Admin', UpdatedAt = NOW() WHERE UserId = ?")->execute([$userId]);
+    }
+
+    echo json_encode(['success' => true, 'message' => "Student #{$userId} verification has been REVOKED/UNVERIFIED by Admin."]);
     exit;
 }
 
