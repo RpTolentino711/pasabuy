@@ -657,9 +657,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <h4 class="fw-extrabold mb-1 text-dark">Equipment Catalog</h4>
                         <p class="text-muted fs-8 mb-0">Equipment listings posted by verified student lenders.</p>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger rounded-pill fw-bold fs-9 shadow-xs" onclick="adminWipeAllStock()">
-                        <i class="fa-solid fa-trash-can me-1"></i> Clear All Stock (Wipe to 0)
-                    </button>
                 </div>
 
                 <div class="admin-table-card p-3 mb-4">
@@ -807,9 +804,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <h4 class="fw-extrabold mb-1 text-dark">Orders</h4>
                         <p class="text-muted fs-8 mb-0">View and manage customer orders.</p>
                     </div>
-                    <button type="button" class="btn-admin-primary" onclick="switchAdminTab('products')">
-                        <i class="fa-solid fa-plus"></i> Process Purchase
-                    </button>
                 </div>
 
                 <div class="admin-table-card p-3">
@@ -873,9 +867,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <h4 class="fw-extrabold mb-1 text-dark">Customers</h4>
                         <p class="text-muted fs-8 mb-0">Manage your customer database and view their activity.</p>
                     </div>
-                    <button type="button" class="btn-admin-primary" onclick="openAddCustomerModal()">
-                        <i class="fa-solid fa-user-plus"></i> Add Customer
-                    </button>
                 </div>
 
                 <div class="admin-table-card p-3">
@@ -1026,27 +1017,14 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     </div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label fs-8 fw-bold">Delivery Fee (per km)</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white">₱</span>
-                                        <input type="number" class="form-control" id="rateDeliveryPerKm" value="50" oninput="updateLiveRatesPreview()">
-                                    </div>
-                                </div>
+                                <input type="hidden" id="rateDeliveryPerKm" value="0">
+                                <input type="hidden" id="rateMinOrderDelivery" value="0">
 
                                 <div class="mb-3">
                                     <label class="form-label fs-8 fw-bold">Service Charge Rate</label>
                                     <div class="input-group">
                                         <input type="number" class="form-control" id="rateServiceCharge" value="10" oninput="updateLiveRatesPreview()">
                                         <span class="input-group-text bg-white">%</span>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label fs-8 fw-bold">Minimum Order for Delivery</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white">₱</span>
-                                        <input type="number" class="form-control" id="rateMinOrderDelivery" value="1500" oninput="updateLiveRatesPreview()">
                                     </div>
                                 </div>
 
@@ -1075,10 +1053,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     <span class="fw-bold" id="cardRateSetupFee">₱ 500</span>
                                 </div>
                                 <div class="d-flex justify-content-between py-2 border-bottom fs-8">
-                                    <span class="text-muted">Delivery Fee (per km)</span>
-                                    <span class="fw-bold" id="cardRateDeliveryFee">₱ 50</span>
-                                </div>
-                                <div class="d-flex justify-content-between py-2 border-bottom fs-8">
                                     <span class="text-muted">Service Charge Rate</span>
                                     <span class="fw-bold" id="cardRateServiceFee">10%</span>
                                 </div>
@@ -1100,14 +1074,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     <label class="fs-9 text-muted fw-bold">Equipment Subtotal (₱)</label>
                                     <input type="number" class="form-control form-control-sm" id="calcSubtotal" value="2000" oninput="runLiveTestCalculation()">
                                 </div>
-                                <div class="mb-2">
-                                    <label class="fs-9 text-muted fw-bold">Distance (km)</label>
-                                    <input type="number" class="form-control form-control-sm" id="calcDistance" value="5" oninput="runLiveTestCalculation()">
-                                </div>
+                                <input type="hidden" id="calcDistance" value="0">
                                 <div class="p-2.5 bg-light rounded-3 mt-3">
-                                    <div class="d-flex justify-content-between fs-9"><span>Delivery Fee:</span><span class="fw-bold" id="calcResultDelivery">₱ 250</span></div>
+                                    <div class="d-flex justify-content-between fs-9"><span>Campus Handover:</span><span class="fw-bold text-success"><i class="fa-solid fa-graduation-cap me-1"></i>On-Campus Meetup</span></div>
                                     <div class="d-flex justify-content-between fs-9"><span>Service Charge:</span><span class="fw-bold" id="calcResultService">₱ 200</span></div>
-                                    <div class="d-flex justify-content-between fs-8 fw-extrabold text-dark border-top pt-1 mt-1"><span>Total Estimated:</span><span class="text-primary" id="calcResultTotal">₱ 2,950</span></div>
+                                    <div class="d-flex justify-content-between fs-8 fw-extrabold text-dark border-top pt-1 mt-1"><span>Total Estimated:</span><span class="text-primary" id="calcResultTotal">₱ 2,200</span></div>
                                 </div>
                             </div>
                         </div>
@@ -1124,9 +1095,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <h4 class="fw-extrabold mb-1 text-dark">Customer Support / Issues</h4>
                         <p class="text-muted fs-8 mb-0">Manage customer inquiries and support tickets.</p>
                     </div>
-                    <button type="button" class="btn-admin-primary" onclick="openCreateTicketModal()">
-                        <i class="fa-solid fa-plus"></i> Create Ticket
-                    </button>
                 </div>
 
                 <div class="admin-table-card p-3">
@@ -2703,7 +2671,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 }
                             </td>
                             <td>
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                <div class="d-flex align-items-center">
                                     ${isVerified 
                                         ? `<button class="btn btn-sm btn-outline-warning py-1 px-2.5 fs-9 rounded-pill fw-bold" onclick="adminUnverifyUser(${c.Id})" title="Revoke verified status from this student">
                                             <i class="fa-solid fa-user-xmark me-1"></i> Unverify
@@ -2712,9 +2680,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                             <i class="fa-solid fa-user-check me-1"></i> Verify
                                            </button>`
                                     }
-                                    <button class="btn btn-sm btn-light border py-1 px-2 fs-9 rounded-pill text-secondary" onclick="toggleCustomerStatus(${c.Id}, '${c.Status}')" title="${isSuspended ? 'Reactivate account' : 'Suspend account'}">
-                                        <i class="fa-solid fa-power-off text-${isSuspended ? 'success' : 'danger'}"></i>
-                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -3119,30 +3084,24 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         }
 
         function updateLiveRatesPreview() {
-            const setup = document.getElementById('rateEventSetupFee').value;
-            const delivery = document.getElementById('rateDeliveryPerKm').value;
-            const service = document.getElementById('rateServiceCharge').value;
-            const tax = document.getElementById('rateTaxRate').value;
+            const setup = document.getElementById('rateEventSetupFee')?.value || 500;
+            const service = document.getElementById('rateServiceCharge')?.value || 10;
+            const tax = document.getElementById('rateTaxRate')?.value || 12;
 
-            document.getElementById('cardRateSetupFee').innerText = '₱ ' + setup;
-            document.getElementById('cardRateDeliveryFee').innerText = '₱ ' + delivery;
-            document.getElementById('cardRateServiceFee').innerText = service + '%';
-            document.getElementById('cardRateTax').innerText = tax + '%';
+            if (document.getElementById('cardRateSetupFee')) document.getElementById('cardRateSetupFee').innerText = '₱ ' + setup;
+            if (document.getElementById('cardRateServiceFee')) document.getElementById('cardRateServiceFee').innerText = service + '%';
+            if (document.getElementById('cardRateTax')) document.getElementById('cardRateTax').innerText = tax + '%';
 
             runLiveTestCalculation();
         }
 
         function runLiveTestCalculation() {
             const subtotal = parseFloat(document.getElementById('calcSubtotal')?.value || 0);
-            const km = parseFloat(document.getElementById('calcDistance')?.value || 0);
-            const perKm = parseFloat(document.getElementById('rateDeliveryPerKm')?.value || 50);
             const servRate = parseFloat(document.getElementById('rateServiceCharge')?.value || 10) / 100;
 
-            const deliveryFee = km * perKm;
             const serviceFee = subtotal * servRate;
-            const total = subtotal + deliveryFee + serviceFee;
+            const total = subtotal + serviceFee;
 
-            if (document.getElementById('calcResultDelivery')) document.getElementById('calcResultDelivery').innerText = '₱ ' + deliveryFee.toLocaleString();
             if (document.getElementById('calcResultService')) document.getElementById('calcResultService').innerText = '₱ ' + serviceFee.toLocaleString();
             if (document.getElementById('calcResultTotal')) document.getElementById('calcResultTotal').innerText = '₱ ' + total.toLocaleString();
         }

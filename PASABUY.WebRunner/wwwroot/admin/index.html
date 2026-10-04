@@ -564,14 +564,11 @@
                                 </span>
                             </td>
                             <td>
-                                <div class="d-flex align-items-center gap-1">
+                                <div class="d-flex align-items-center">
                                     ${user.Status === 'VERIFIED' || user.status === 'VERIFIED'
                                         ? `<button class="btn btn-sm btn-outline-warning rounded-pill px-2.5 py-0.5 fw-bold fs-9" onclick="unverifyStudentUser(${user.Id || user.id})"><i class="fa-solid fa-user-xmark me-1"></i>Unverify</button>`
                                         : `<button class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-0.5 fw-bold fs-9" onclick="verifyStudentUser(${user.Id || user.id})"><i class="fa-solid fa-user-check me-1"></i>Verify</button>`
                                     }
-                                    ${user.Status === 'SUSPENDED' || user.status === 'SUSPENDED'
-                                        ? '<button class="btn btn-sm btn-light border rounded-pill px-2.5 py-0.5 text-muted fs-9" onclick="suspendStudentUser(' + (user.Id || user.id) + ')">Reactivate</button>' 
-                                        : `<button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-0.5 fw-bold fs-9" onclick="suspendStudentUser(${user.Id || user.id})">Suspend</button>`}
                                 </div>
                             </td>
                         </tr>`;
