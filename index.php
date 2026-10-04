@@ -1806,6 +1806,12 @@
                                 if (typeof checkRentOutVerification === 'function') {
                                     try { checkRentOutVerification(); } catch (e) { }
                                 }
+                                if (typeof updateSellPostingFeeTier === 'function') {
+                                    try {
+                                        const p = document.getElementById('sellPrice')?.value || 100;
+                                        updateSellPostingFeeTier(p);
+                                    } catch (e) { }
+                                }
                             } else if (tabName === 'profile') {
                                 if (typeof syncRentEaseProfileUI === 'function') {
                                     try { syncRentEaseProfileUI(); } catch (e) { console.error(e); }

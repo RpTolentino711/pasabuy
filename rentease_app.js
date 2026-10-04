@@ -2021,15 +2021,32 @@ let currentTrackingOrderCode = (function() {
 })();
 
 window.updateSellPostingFeeTier = function(price) {
-    price = parseFloat(price) || 0;
-    let fee = 0;
-    let tier = 'Free';
-    if (price > 0 && price < 100) { fee = 10; tier = '₱1 - ₱99'; }
-    else if (price >= 100 && price <= 500) { fee = 15; tier = '₱100 - ₱500'; }
-    else if (price > 500 && price <= 1000) { fee = 20; tier = '₱501 - ₱1,000'; }
-    else if (price > 1000 && price <= 2500) { fee = 30; tier = '₱1,001 - ₱2,500'; }
-    else if (price > 2500 && price <= 5000) { fee = 50; tier = '₱2,501 - ₱5,000'; }
-    else if (price > 5000) { fee = 100; tier = 'Above ₱5,000'; }
+    const num = parseFloat(price);
+    let fee = 15;
+    let tier = '₱100 – ₱500';
+
+    if (isNaN(num) || num <= 0) {
+        fee = 10;
+        tier = 'Under ₱100';
+    } else if (num < 100) {
+        fee = 10;
+        tier = '₱1 – ₱99';
+    } else if (num >= 100 && num <= 500) {
+        fee = 15;
+        tier = '₱100 – ₱500';
+    } else if (num > 500 && num <= 1000) {
+        fee = 20;
+        tier = '₱501 – ₱1,000';
+    } else if (num > 1000 && num <= 2500) {
+        fee = 30;
+        tier = '₱1,001 – ₱2,500';
+    } else if (num > 2500 && num <= 5000) {
+        fee = 50;
+        tier = '₱2,501 – ₱5,000';
+    } else if (num > 5000) {
+        fee = 100;
+        tier = 'Above ₱5,000';
+    }
 
     const badge = document.getElementById('sellPostingFeeBadge');
     if (badge) {

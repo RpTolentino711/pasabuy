@@ -318,7 +318,11 @@
                     <div class="input-group">
                         <span class="input-group-text bg-white fw-bold border-end-0 py-1 px-2.5 fs-8" style="border-radius:10px 0 0 10px; border-color:#E2E8F0; color:#5B3FA8 !important;">₱</span>
                         <input type="number" class="form-control rentout-control border-start-0 fw-bold fs-7 text-dark py-1" 
-                               id="sellPrice" value="100" min="1" oninput="updateSellPostingFeeTier(this.value)" style="border-radius:0 10px 10px 0;">
+                               id="sellPrice" value="100" min="1" 
+                               oninput="updateSellPostingFeeTier(this.value)" 
+                               onkeyup="updateSellPostingFeeTier(this.value)" 
+                               onchange="updateSellPostingFeeTier(this.value)" 
+                               style="border-radius:0 10px 10px 0;">
                     </div>
                 </div>
                 <div class="col-6">
@@ -562,6 +566,59 @@
 </div>
 
 <script>
+window.updateSellPostingFeeTier = function(price) {
+    const num = parseFloat(price);
+    let fee = 15;
+    let tier = '₱100 – ₱500';
+
+    if (isNaN(num) || num <= 0) {
+        fee = 10;
+        tier = 'Under ₱100';
+    } else if (num < 100) {
+        fee = 10;
+        tier = '₱1 – ₱99';
+    } else if (num >= 100 && num <= 500) {
+        fee = 15;
+        tier = '₱100 – ₱500';
+    } else if (num > 500 && num <= 1000) {
+        fee = 20;
+        tier = '₱501 – ₱1,000';
+    } else if (num > 1000 && num <= 2500) {
+        fee = 30;
+        tier = '₱1,001 – ₱2,500';
+    } else if (num > 2500 && num <= 5000) {
+        fee = 50;
+        tier = '₱2,501 – ₱5,000';
+    } else if (num > 5000) {
+        fee = 100;
+        tier = 'Above ₱5,000';
+    }
+
+    const badge = document.getElementById('sellPostingFeeBadge');
+    if (badge) {
+        badge.innerText = `₱${fee.toFixed(2)} (Tier: ${tier})`;
+    }
+};
+
+(function initSellPriceListeners() {
+    function bindPrice() {
+        const priceEl = document.getElementById('sellPrice');
+        if (priceEl) {
+            ['input', 'keyup', 'change', 'paste'].forEach(evt => {
+                priceEl.addEventListener(evt, function() {
+                    window.updateSellPostingFeeTier(this.value);
+                });
+            });
+            window.updateSellPostingFeeTier(priceEl.value);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindPrice);
+    } else {
+        bindPrice();
+    }
+})();
+
 window.switchRentOutSubTab = function(mode) {
     const secPrep = document.getElementById('rentoutSectionPrepare');
     const secPost = document.getElementById('rentoutSectionPost');
