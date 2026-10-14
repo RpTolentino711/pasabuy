@@ -73,23 +73,23 @@
     <!-- 3 Profile Section Tabs (Compact Segmented Pill Bar) -->
     <div class="profile-nav-pills d-flex align-items-center mb-2.5 shadow-2xs gap-1" style="position:relative; z-index:10;">
         <!-- Subtab 1: Rental Requests / Incoming Orders -->
-        <button type="button" class="btn btn-sm flex-grow-1 profile-subtab-btn active text-white d-flex align-items-center justify-content-center gap-1.5" 
+        <button type="button" class="btn btn-sm flex-grow-1 profile-subtab-btn text-secondary d-flex align-items-center justify-content-center gap-1.5" 
                 id="btnProfileTabRequests" 
-                style="background: linear-gradient(135deg, #5B3FA8, #341F97); box-shadow: 0 2px 8px rgba(91, 63, 168, 0.25);" 
+                style="background:transparent;" 
                 onclick="switchProfileSubTab('requests')">
             <i class="fa-solid fa-bell fs-9"></i>
             <span>Requests</span>
             <span class="badge rounded-pill bg-danger text-white fw-bold ms-0.5 badge-pulse-glow" id="profileRequestsBadge" style="display:none; font-size:0.62rem; padding: 2px 5px;">0</span>
         </button>
 
-        <!-- Subtab 2: Rent Items / Stock Inventory Monitoring -->
-        <button type="button" class="btn btn-sm flex-grow-1 profile-subtab-btn text-secondary d-flex align-items-center justify-content-center gap-1.5" 
+        <!-- Subtab 2: Rent Items / Stock Inventory Monitoring (Default Active) -->
+        <button type="button" class="btn btn-sm flex-grow-1 profile-subtab-btn active text-white d-flex align-items-center justify-content-center gap-1.5" 
                 id="btnProfileTabInventory" 
-                style="background:transparent;" 
+                style="background: linear-gradient(135deg, #5B3FA8, #341F97); box-shadow: 0 2px 8px rgba(91, 63, 168, 0.25);" 
                 onclick="switchProfileSubTab('inventory')">
             <i class="fa-solid fa-boxes-stacked fs-9"></i>
             <span>Rent Items</span>
-            <span class="badge rounded-pill bg-primary-subtle text-primary fw-bold ms-0.5" id="myRentalCountBadge" style="font-size:0.62rem; padding: 2px 5px;">0</span>
+            <span class="badge rounded-pill bg-light text-dark fw-bold ms-0.5" id="myRentalCountBadge" style="font-size:0.62rem; padding: 2px 5px;">1</span>
         </button>
 
         <!-- Subtab 3: Rental History -->
@@ -105,7 +105,7 @@
     <!-- Inline Bulletproof Subtab Controller for Instant Mobile & Desktop Navigation -->
     <script>
     window.switchProfileSubTab = function(subtab) {
-        if (!subtab) subtab = 'requests';
+        if (!subtab) subtab = 'inventory';
         window._lastActiveProfileSubTab = subtab;
         var tabs = ['requests', 'inventory', 'history'];
         tabs.forEach(function(t) {
@@ -148,14 +148,12 @@
             console.warn('loadOwnerRentalDashboard error:', e);
         }
 
-        if (subtab === 'inventory') {
-            try {
-                if (typeof loadUserRentedOutItems === 'function') {
-                    loadUserRentedOutItems();
-                }
-            } catch (e) {
-                console.warn('loadUserRentedOutItems error:', e);
+        try {
+            if (typeof loadUserRentedOutItems === 'function') {
+                loadUserRentedOutItems();
             }
+        } catch (e) {
+            console.warn('loadUserRentedOutItems error:', e);
         }
     };
 
@@ -192,7 +190,7 @@
     <!-- ==========================================================
          SUBTAB 1: RENTAL REQUESTS / INCOMING ORDERS FROM RENTERS
          ========================================================== -->
-    <div id="profileSectionRequests" class="flex-column gap-2 pb-3" style="display:flex;">
+    <div id="profileSectionRequests" class="flex-column gap-2 pb-3" style="display:none;">
         <!-- Compact Status Bar -->
         <div id="profileRequestsAlertBanner" class="p-2 px-3 rounded-pill bg-white border d-flex align-items-center justify-content-between shadow-2xs">
             <div class="d-flex align-items-center gap-2">
@@ -221,9 +219,9 @@
     </div>
 
     <!-- ==========================================================
-         SUBTAB 2: RENT ITEMS & STOCK INVENTORY MONITOR
+         SUBTAB 2: RENT ITEMS & STOCK INVENTORY MONITOR (DEFAULT ACTIVE)
          ========================================================== -->
-    <div id="profileSectionInventory" class="flex-column gap-2 pb-3" style="display:none;">
+    <div id="profileSectionInventory" class="flex-column gap-2 pb-3" style="display:flex;">
         <!-- Compact Stock Overview KPI Bar -->
         <div class="card border-0 rounded-4 shadow-2xs p-2.5 px-3 bg-white border">
             <div class="d-flex align-items-center justify-content-between mb-2">

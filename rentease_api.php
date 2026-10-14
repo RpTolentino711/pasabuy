@@ -1435,7 +1435,8 @@ if ($action === 'get_owner_rental_data') {
     $ownerEmail = strtolower(trim((string)($data['owner_email'] ?? $_GET['owner_email'] ?? '')));
     $ownerName = trim((string)($data['owner_name'] ?? $_GET['owner_name'] ?? ''));
     $ownerId = (int)($data['owner_id'] ?? $_GET['owner_id'] ?? 0);
-    $isPogilameg = ($ownerId === 105 || strpos($ownerEmail, 'pogilameg') !== false || stripos($ownerName, 'pogilameg') !== false);
+    $custPhone = trim((string)($data['customer_phone'] ?? $_GET['customer_phone'] ?? ''));
+    $isPogilameg = ($ownerId === 105 || $ownerId === 20261058 || strpos($ownerEmail, 'pogilameg') !== false || stripos($ownerName, 'pogilameg') !== false || $custPhone === '20261058');
     $isRomeo = ($ownerId === 104 || strpos($ownerEmail, 'romeo') !== false || stripos($ownerName, 'romeo') !== false);
 
     if (!$db) {

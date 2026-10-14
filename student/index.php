@@ -1859,7 +1859,10 @@
                                     try { syncRentEaseProfileUI(); } catch (e) { console.error(e); }
                                 }
                                 if (typeof switchProfileSubTab === 'function') {
-                                    try { switchProfileSubTab('requests'); } catch (e) { console.error(e); }
+                                    try { 
+                                        const targetSub = window._lastActiveProfileSubTab || 'inventory';
+                                        switchProfileSubTab(targetSub); 
+                                    } catch (e) { console.error(e); }
                                 }
                             }
                         }
