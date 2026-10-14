@@ -1838,7 +1838,10 @@
                                 markMessagesAsRead();
                                 loadChatConversationsList();
                             } else if (tabName === 'explore') {
-                                filterProducts();
+                                if (typeof currentCategory !== 'undefined') currentCategory = 'All';
+                                if (typeof currentTag !== 'undefined') currentTag = 'All';
+                                if (typeof renderExploreCatalog === 'function') renderExploreCatalog();
+                                else filterProducts();
                             } else if (tabName === 'wanted') {
                                 loadWantedPosts();
                             } else if (tabName === 'sell') {

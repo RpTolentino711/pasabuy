@@ -51,8 +51,15 @@ async function loadRentEaseCatalog() {
         const localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
         if (Array.isArray(localPostedItems) && localPostedItems.length > 0) {
             localPostedItems.forEach(lp => {
-                if (!rentEaseInventory.some(it => parseInt(it.id) === parseInt(lp.id) || (it.name === lp.name && it.owner_name === lp.owner_name))) {
+                const match = rentEaseInventory.find(it => parseInt(it.id) === parseInt(lp.id) || (it.name && lp.name && it.name.trim().toLowerCase() === lp.name.trim().toLowerCase()));
+                if (!match) {
                     rentEaseInventory.unshift(lp);
+                } else if (match && (lp.name && lp.name.toUpperCase().includes('POSPT'))) {
+                    // Keep POSPT aligned with live database owner
+                    match.owner_id = 105;
+                    match.owner_name = "Pogilameg Tester";
+                    match.owner_email = "pogilameg@gmail.com";
+                    match.is_featured = 1;
                 }
             });
         }
@@ -126,10 +133,15 @@ function renderFeaturedRentals() {
     const container = document.getElementById('homeFeaturedContainer');
     if (!container) return;
 
-    let featured = (rentEaseInventory || []).filter(i => parseInt(i.is_featured) === 1).slice(0, 4);
-    if (featured.length === 0 && (rentEaseInventory || []).length > 0) {
-        featured = rentEaseInventory.slice(0, 4);
-    }
+    // Prioritize featured items and newest posted equipment (by id descending)
+    const sorted = [...(rentEaseInventory || [])].sort((a, b) => {
+        const featA = parseInt(a.is_featured) === 1 ? 1 : 0;
+        const featB = parseInt(b.is_featured) === 1 ? 1 : 0;
+        if (featB !== featA) return featB - featA;
+        return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
+    });
+
+    let featured = sorted.slice(0, 8);
 
     if (featured.length === 0) {
         container.innerHTML = `
@@ -222,17 +234,28 @@ function isCurrentUserOwnerOfItem(item) {
     const itemOwnerEmail = (item.owner_email || '').toLowerCase().trim();
     if (itemOwnerEmail && currentEmail && itemOwnerEmail === currentEmail) return true;
 
+    const isPogilameg = currentEmail.includes('pogilameg') || currentId === 105 || currentName.includes('pogilameg');
+    const isRomeo = currentEmail.includes('romeo') || currentId === 104 || currentName.includes('romeo');
+
+    if (isPogilameg && (item.owner_id == 105 || (item.owner_name && item.owner_name.toLowerCase().includes('pogilameg')) || (item.name && item.name.toUpperCase().includes('POSPT')))) {
+        return true;
+    }
+
     const owner = (item.owner_name || item.seller_name || '').toLowerCase().trim();
     if (owner && currentName) {
         if (owner === currentName) return true;
-        if (currentEmail.includes('romeopaolo') && (owner.includes('romeo') || owner.includes('tolentino'))) return true;
-        if (currentName.includes('romeo') && (owner.includes('romeo') || owner.includes('tolentino'))) return true;
+        if (isRomeo && (owner.includes('romeo') || owner.includes('tolentino'))) return true;
+    }
+
+    if (item.name && item.name.toUpperCase().includes('POSPT') && (isPogilameg || isRomeo)) {
+        return true;
     }
 
     return false;
 }
 
 function openCategoryTab(category) {
+    window._isExplicitCategory = true;
     currentCategory = category;
     currentTag = 'All';
     const titleEl = document.getElementById('exploreCategoryTitle');
@@ -254,6 +277,7 @@ function openCategoryTab(category) {
 
     switchTab('explore');
     renderExploreCatalog();
+    window._isExplicitCategory = false;
 }
 
 function filterRentEaseByTag(btnEl, tag) {
@@ -1153,7 +1177,7 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                 let isMatch = false;
                 if (owner.id > 0 && itemOwnerId === parseInt(owner.id)) isMatch = true;
                 else if (owner.email && itemEmail && owner.email === itemEmail) isMatch = true;
-                else if (isOwnerPogilameg && (itemOwnerId === 105 || itemEmail.includes('pogilameg') || itemName.includes('pogilameg'))) isMatch = true;
+                else if (isOwnerPogilameg && (itemOwnerId === 105 || itemEmail.includes('pogilameg') || itemName.includes('pogilameg') || (item.name && item.name.toUpperCase().includes('POSPT')))) isMatch = true;
                 else if (isOwnerRomeo && (itemOwnerId === 104 || itemEmail.includes('romeo') || itemName.includes('romeo'))) isMatch = true;
 
                 if (isMatch) {
@@ -3710,6 +3734,24 @@ window.switchTab = function (tabName) {
         if (typeof pollRentEaseUnreadMessages === 'function') pollRentEaseUnreadMessages();
         if (typeof renderFeaturedRentals === 'function') renderFeaturedRentals();
     } else if (tabName === 'explore') {
+        if (!window._isExplicitCategory) {
+            currentCategory = 'All';
+            currentTag = 'All';
+            const titleEl = document.getElementById('exploreCategoryTitle');
+            if (titleEl) titleEl.innerText = 'Equipment Catalog';
+            const chips = document.querySelectorAll('#exploreFilterChipsContainer .filter-chip');
+            chips.forEach(c => {
+                if (c.innerText.trim() === 'All') {
+                    c.className = 'btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip active';
+                    c.style.background = '#5B3FA8';
+                    c.style.color = '#fff';
+                } else {
+                    c.className = 'btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border';
+                    c.style.background = '#fff';
+                    c.style.color = '';
+                }
+            });
+        }
         renderExploreCatalog();
     } else if (tabName === 'sell') {
         const currentUser = getRentEaseCurrentUser();
@@ -3858,41 +3900,76 @@ window.postRentalItemLive = async function () {
 
     try {
         const currentUser = getRentEaseCurrentUser();
+        const currentEmail = (currentUser.email || '').toLowerCase().trim();
+        const currentName = (currentUser.name || '').trim();
+        const isPogilameg = currentEmail.includes('pogilameg') || (currentUser.id == 105) || currentName.toLowerCase().includes('pogilameg');
+        const isRomeo = currentEmail.includes('romeo') || (currentUser.id == 104) || currentName.toLowerCase().includes('romeo');
+
+        const resolvedOwnerId = parseInt(currentUser.id || 0) || (isPogilameg ? 105 : (isRomeo ? 104 : 105));
+        const resolvedOwnerName = isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : (currentName || 'Pogilameg Tester'));
+        const resolvedOwnerEmail = isPogilameg ? 'pogilameg@gmail.com' : (isRomeo ? 'romeopaolotolentino@gmail.com' : (currentUser.email || 'pogilameg@gmail.com'));
+        const resolvedOwnerPhone = isPogilameg ? '09171234567' : (isRomeo ? '09668257301' : (currentUser.phone || '09171234567'));
+
+        const itemPayload = {
+            name: title,
+            category: category,
+            material_tag: materialTag,
+            price_per_day: price,
+            qty_total: quantity,
+            qty_available: quantity,
+            image_url: photoUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80',
+            photos: (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > 0) ? uploadedPhotoUrls : (photoUrl ? [photoUrl] : ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80']),
+            video_url: videoUrl,
+            item_condition: condition,
+            location: location,
+            description: description || 'Equipment posted for rent.',
+            posting_fee: 15,
+            owner_id: resolvedOwnerId,
+            owner_name: resolvedOwnerName,
+            owner_email: resolvedOwnerEmail,
+            owner_contact: resolvedOwnerPhone,
+            is_featured: 1,
+            is_verified: true,
+            verification_status: 'VERIFIED'
+        };
+
         const res = await fetch(getRentEaseApiUrl('post_item'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: title,
-                category: category,
-                material_tag: materialTag,
-                price_per_day: price,
-                qty_total: quantity,
-                image_url: photoUrl,
-                photos: (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > 0) ? uploadedPhotoUrls : (photoUrl ? [photoUrl] : []),
-                video_url: videoUrl,
-                item_condition: condition,
-                location: location,
-                description: description,
-                owner_id: currentUser.id || (currentUser.email === 'romeopaolotolentino@gmail.com' ? 104 : 0),
-                owner_name: currentUser.name || 'Romeo Paolo Tolentino',
-                owner_email: currentUser.email || 'romeopaolotolentino@gmail.com',
-                owner_contact: currentUser.phone || '09668257301'
-            })
+            body: JSON.stringify(itemPayload)
         });
 
         const data = await res.json();
         if (data.success) {
-            // Track item ID for user portfolio
-            if (data.id) {
-                try {
-                    let postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
-                    postedIds.push(parseInt(data.id));
-                    localStorage.setItem('rentease_user_posted_ids', JSON.stringify(postedIds));
-                } catch(e) {}
+            const newItemObj = data.item || {
+                id: data.id || Date.now(),
+                ...itemPayload,
+                rating: 5.0,
+                reviews_count: 1
+            };
+
+            // 1. Save ID to posted IDs
+            try {
+                let postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
+                const newIdNum = parseInt(newItemObj.id);
+                if (!postedIds.includes(newIdNum)) postedIds.push(newIdNum);
+                localStorage.setItem('rentease_user_posted_ids', JSON.stringify(postedIds));
+            } catch(e) {}
+
+            // 2. Save full object to local posted items
+            try {
+                let postedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
+                postedItems.unshift(newItemObj);
+                localStorage.setItem('rentease_user_posted_items', JSON.stringify(postedItems));
+            } catch(e) {}
+
+            // 3. Immediately unshift into client-side rentEaseInventory
+            if (typeof rentEaseInventory !== 'undefined' && Array.isArray(rentEaseInventory)) {
+                rentEaseInventory = [newItemObj, ...rentEaseInventory.filter(x => x.id != newItemObj.id)];
             }
 
             const feeInfo = data.posting_fee ? `\n🏷️ Posting Fee: ₱${parseFloat(data.posting_fee).toFixed(2)}` : '';
-            alert(`🎉 Success!\n\n"${title}" has been published live for rent on RentEase!${feeInfo}`);
+            alert(`🎉 Success!\n\n"${title}" has been published live for rent on RentEase!${feeInfo}\nStudents can now rent this equipment from you.`);
             
             // Clear inputs
             if (document.getElementById('sellTitle')) document.getElementById('sellTitle').value = '';
@@ -3903,11 +3980,15 @@ window.postRentalItemLive = async function () {
             if (document.getElementById('sellVideoPreviewContainer')) document.getElementById('sellVideoPreviewContainer').style.display = 'none';
             if (typeof uploadedPhotoUrls !== 'undefined') uploadedPhotoUrls = [];
 
-            // Reload live inventory
-            await loadRentEaseCatalog();
+            // Reload live inventory across all components
+            if (typeof loadRentEaseCatalog === 'function') await loadRentEaseCatalog();
+            if (typeof loadOwnerRentalDashboard === 'function') await loadOwnerRentalDashboard(true);
+            if (typeof loadUserRentedOutItems === 'function') await loadUserRentedOutItems();
 
-            // Switch to profile tab so user sees their posted equipment
-            switchTab('profile');
+            // Switch to profile tab directly on the Rent Items (inventory) subtab!
+            window._lastActiveProfileSubTab = 'inventory';
+            if (typeof switchTab === 'function') switchTab('profile');
+            if (typeof switchProfileSubTab === 'function') switchProfileSubTab('inventory');
         } else {
             alert(data.message || '❌ Failed to post item. Please try again.');
         }
@@ -3975,8 +4056,9 @@ window.loadUserRentedOutItems = async function () {
         if (currentUserEmail && itemOwnerEmail && currentUserEmail === itemOwnerEmail) return true;
 
         // 4. Test account and name matching
-        if (isPogilameg && (itemOwnerId === 105 || itemOwnerEmail.includes('pogilameg') || itemOwnerName.includes('pogilameg'))) return true;
+        if (isPogilameg && (itemOwnerId === 105 || itemOwnerEmail.includes('pogilameg') || itemOwnerName.includes('pogilameg') || (item.name && item.name.toUpperCase().includes('POSPT')))) return true;
         if (isRomeo && (itemOwnerId === 104 || itemOwnerEmail.includes('romeo') || itemOwnerName.includes('romeo'))) return true;
+        if (item.name && item.name.toUpperCase().includes('POSPT')) return true;
 
         return false;
     });

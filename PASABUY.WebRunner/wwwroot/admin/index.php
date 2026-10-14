@@ -1492,7 +1492,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
                         <div class="mb-2.5">
                             <label class="form-label fs-9 fw-bold">Owner / Lender Name</label>
-                            <input type="text" class="form-control form-control-sm" id="mProdOwner" value="Romeo Paolo Tolentino">
+                            <input type="text" class="form-control form-control-sm" id="mProdOwner" value="Pogilameg Tester">
                         </div>
                         <div class="mb-2.5">
                             <label class="form-label fs-9 fw-bold">Image URL</label>

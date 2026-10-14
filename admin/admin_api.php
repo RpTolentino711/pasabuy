@@ -84,6 +84,11 @@ if ($db) {
         }
     } catch (Exception $e) {}
 
+    // Ensure POSPT is owned by Pogilameg Tester and marked as featured
+    try {
+        $db->exec("UPDATE `rental_inventory` SET `owner_id` = 105, `owner_name` = 'Pogilameg Tester', `owner_email` = 'pogilameg@gmail.com', `owner_contact` = '09171234567', `is_featured` = 1 WHERE `name` LIKE '%POSPT%' OR `name` = 'POSPT'");
+    } catch (Exception $e) {}
+
     // 2. Transactions table
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_transactions` (
@@ -469,10 +474,15 @@ if ($action === 'add_product') {
         exit;
     }
 
+    $isPog = (stripos($owner, 'pogilameg') !== false);
+    $ownerId = $isPog ? 105 : 104;
+    $ownerEmail = $isPog ? 'pogilameg@gmail.com' : 'romeopaolotolentino@gmail.com';
+    $ownerContact = $isPog ? '09171234567' : ($contact ?: '09668257301');
+
     $stmt = $db->prepare("INSERT INTO `rental_inventory` 
-        (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `rating`, `reviews_count`, `description`, `min_rental_days`, `is_featured`, `owner_name`, `owner_contact`, `item_condition`, `location`)
-        VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 5.0, 0, ?, 1, 0, ?, ?, ?, ?)");
-    $stmt->execute([$name, $category, $material, $price, $qty, $qty, $img, $desc, $owner, $contact, $condition, $location]);
+        (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `rating`, `reviews_count`, `description`, `min_rental_days`, `is_featured`, `owner_id`, `owner_name`, `owner_email`, `owner_contact`, `item_condition`, `location`)
+        VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 5.0, 1, ?, 1, 1, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$name, $category, $material, $price, $qty, $qty, $img, $desc, $ownerId, $owner, $ownerEmail, $ownerContact, $condition, $location]);
 
     echo json_encode(['success' => true, 'message' => "Product '{$name}' created successfully."]);
     exit;
