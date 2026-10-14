@@ -555,7 +555,7 @@
                         html += `
                         <tr>
                             <td><strong class="text-dark">${name}</strong></td>
-                            <td><code>${user.StudentNumber || user.studentNumber || 'N/A'}</code></td>
+                            <td><code>${(user.StudentNumber || user.studentNumber || '').toString().replace(/[^0-9]/g, '') || 'N/A'}</code></td>
                             <td>${user.Course || user.course || 'N/A'} (${user.YearLevel || user.yearLevel || 'N/A'})</td>
                             <td>${user.Email || user.email}</td>
                             <td>
