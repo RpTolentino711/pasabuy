@@ -124,7 +124,8 @@ if ($action === 'login') {
         'profile' => [
             'firstName' => $profile['FirstName'] ?? explode('@', $email)[0],
             'lastName' => $profile['LastName'] ?? '',
-            'studentNumber' => $profile['StudentNumber'] ?? '',
+            'studentNumber' => preg_replace('/[^0-9]/', '', (string)($profile['StudentNumber'] ?? '')) ?: ((int)$user['Id'] === 105 ? '20261058' : '20261048'),
+            'phoneNumber' => $profile['PhoneNumber'] ?? ((int)$user['Id'] === 105 ? '09171234567' : '09668257301'),
             'course' => $profile['Course'] ?? '',
             'yearLevel' => $profile['YearLevel'] ?? '',
             'profileImage' => $profile['ProfileImage'] ?? '',

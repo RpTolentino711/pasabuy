@@ -2627,8 +2627,8 @@ function getRentEaseCurrentUser() {
                     name: fullName || (isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : 'Student')),
                     sub: courseInfo,
                     email: uEmail || (isPogilameg ? 'pogilameg@gmail.com' : (isRomeo ? 'romeopaolotolentino@gmail.com' : 'user@campus.edu.ph')),
-                    phone: u.phone || u.phoneNumber || u.PhoneNumber || u.studentNumber || (isPogilameg ? '09171234567' : '09668257301'),
-                    studentNumber: u.studentNumber || (isPogilameg ? '09171234567' : '09668257301'),
+                    phone: u.phone || u.phoneNumber || u.PhoneNumber || (isPogilameg ? '09171234567' : '09668257301'),
+                    studentNumber: ((u.studentNumber || '').toString().replace(/[^0-9]/g, '')) || (isPogilameg ? '20261058' : '20261048'),
                     is_verified: isVer,
                     verification_status: isVer ? 'VERIFIED' : (u.verification_status || u.VerificationStatus || 'UNVERIFIED'),
                     course: u.course || (isPogilameg ? 'BSCS' : 'BSIT'),
@@ -2818,19 +2818,48 @@ function openProfileSettingsModal() {
         if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
         
         const user = getRentEaseCurrentUser();
+        let studentUser = {};
+        try {
+            const storedUserStr = localStorage.getItem('pasabuy_student_user');
+            studentUser = storedUserStr ? JSON.parse(storedUserStr) : {};
+        } catch (e) { }
+
         const fn = document.getElementById('settingsFirstName');
         const ln = document.getElementById('settingsLastName');
         const sn = document.getElementById('settingsStudentNumber');
+        const em = document.getElementById('settingsEmail');
+        const ph = document.getElementById('settingsPhone');
         const cs = document.getElementById('settingsCourse');
         const yl = document.getElementById('settingsYearLevel');
         const prev = document.getElementById('settingsAvatarPreview');
 
-        if (fn) fn.value = user.firstName || 'Romeo Paolo';
-        if (ln) ln.value = user.lastName || 'Tolentino';
-        if (sn) sn.value = user.studentNumber || '09668257301';
-        if (cs) cs.value = user.course || 'BSIT';
-        if (yl) yl.value = user.yearLevel || '4th Yr';
-        if (prev && user.avatar) prev.src = user.avatar;
+        if (fn) fn.value = user.firstName || studentUser.firstName || 'Romeo Paolo';
+        if (ln) ln.value = user.lastName || studentUser.lastName || 'Tolentino';
+        
+        // Student number must be numeric only
+        if (sn) {
+            let snVal = (studentUser.studentNumber || user.studentNumber || '').toString().replace(/[^0-9]/g, '');
+            if (!snVal) {
+                snVal = (studentUser.id === 105 || (user.email && user.email.includes('pogilameg'))) ? '20261058' : '20261048';
+            }
+            sn.value = snVal;
+        }
+
+        if (em) {
+            em.value = studentUser.email || studentUser.SchoolEmail || user.email || (studentUser.id === 105 ? 'pogilameg@gmail.com' : 'romeopaolotolentino@gmail.com');
+        }
+
+        if (ph) {
+            let phoneVal = (studentUser.phoneNumber || studentUser.phone || user.phone || '').toString().replace(/[^0-9+]/g, '');
+            if (!phoneVal) {
+                phoneVal = (studentUser.id === 105 || (user.email && user.email.includes('pogilameg'))) ? '09171234567' : '09668257301';
+            }
+            ph.value = phoneVal;
+        }
+
+        if (cs) cs.value = user.course || studentUser.course || 'BSIT';
+        if (yl) yl.value = user.yearLevel || studentUser.yearLevel || '4th Yr';
+        if (prev && (user.avatar || studentUser.profileImage)) prev.src = user.avatar || studentUser.profileImage;
 
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
         return;
@@ -2859,18 +2888,27 @@ window.saveProfileSettings = async function () {
     const fnEl = document.getElementById('settingsFirstName');
     const lnEl = document.getElementById('settingsLastName');
     const snEl = document.getElementById('settingsStudentNumber');
+    const emEl = document.getElementById('settingsEmail');
+    const phEl = document.getElementById('settingsPhone');
     const csEl = document.getElementById('settingsCourse');
     const ylEl = document.getElementById('settingsYearLevel');
     const prevEl = document.getElementById('settingsAvatarPreview');
 
     const firstName = fnEl ? fnEl.value.trim() : '';
     const lastName = lnEl ? lnEl.value.trim() : '';
-    const studentNo = snEl ? snEl.value.trim() : '';
+    const studentNo = snEl ? snEl.value.trim().replace(/[^0-9]/g, '') : '';
+    const email = emEl ? emEl.value.trim() : '';
+    const phone = phEl ? phEl.value.trim().replace(/[^0-9+]/g, '') : '';
     const course = csEl ? csEl.value.trim() : '';
     const yearLevel = ylEl ? ylEl.value : '4th Yr';
 
     if (!firstName || !lastName) {
         alert('Please enter your First Name and Last Name.');
+        return;
+    }
+
+    if (studentNo && !/^\d+$/.test(studentNo)) {
+        alert('Student Number must contain numbers only.');
         return;
     }
 
@@ -2904,8 +2942,10 @@ window.saveProfileSettings = async function () {
         name: fullName,
         fullName: fullName,
         studentNumber: studentNo,
-        phoneNumber: studentNo,
-        phone: studentNo,
+        phoneNumber: phone || studentNo,
+        phone: phone || studentNo,
+        email: email || studentUser.email,
+        SchoolEmail: email || studentUser.SchoolEmail,
         course: course,
         yearLevel: yearLevel,
         Course: course,
@@ -2924,8 +2964,8 @@ window.saveProfileSettings = async function () {
             firstName: firstName,
             lastName: lastName,
             sub: `${course} • ${yearLevel}`,
-            email: studentUser.email || studentUser.SchoolEmail || 'romeopaolotolentino@gmail.com',
-            phone: studentNo,
+            email: email || studentUser.email || 'romeopaolotolentino@gmail.com',
+            phone: phone || studentNo,
             studentNumber: studentNo,
             course: course,
             yearLevel: yearLevel,
@@ -2947,6 +2987,9 @@ window.saveProfileSettings = async function () {
                 firstName: firstName,
                 lastName: lastName,
                 studentNumber: studentNo,
+                email: email,
+                phoneNumber: phone,
+                phone: phone,
                 course: course,
                 yearLevel: yearLevel,
                 profileImage: finalAvatar

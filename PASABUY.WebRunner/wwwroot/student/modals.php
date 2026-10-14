@@ -245,10 +245,25 @@
                     </div>
                 </div>
 
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-bold fs-7">Student Number</label>
+                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="form-control rounded-3 fs-7" id="settingsStudentNumber"
+                            placeholder="Numbers only" style="-moz-appearance: textfield;"
+                            onkeydown="if(!['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key) && (event.key &lt; '0' || event.key &gt; '9')) event.preventDefault();"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold fs-7">Phone Number</label>
+                        <input type="tel" inputmode="numeric" class="form-control rounded-3 fs-7" id="settingsPhone"
+                            placeholder="09171234567" oninput="this.value = this.value.replace(/[^0-9+]/g, '')">
+                    </div>
+                </div>
+
                 <div class="mb-3">
-                    <label class="form-label fw-bold fs-7">Student Number</label>
-                    <input type="text" class="form-control rounded-3 fs-7" id="settingsStudentNumber"
-                        placeholder="Student Number">
+                    <label class="form-label fw-bold fs-7">Registered Email</label>
+                    <input type="email" class="form-control rounded-3 fs-7" id="settingsEmail"
+                        placeholder="you@school.edu.ph">
                 </div>
 
                 <div class="row g-2 mb-3">

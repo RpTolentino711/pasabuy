@@ -1250,10 +1250,25 @@
                         </div>
                     </div>
 
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">Student Number</label>
+                            <input type="number" inputmode="numeric" pattern="[0-9]*" class="form-control rounded-3 fs-7" id="settingsStudentNumber"
+                                placeholder="Numbers only" style="-moz-appearance: textfield;"
+                                onkeydown="if(!['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key) && (event.key &lt; '0' || event.key &gt; '9')) event.preventDefault();"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold fs-7">Phone Number</label>
+                            <input type="tel" inputmode="numeric" class="form-control rounded-3 fs-7" id="settingsPhone"
+                                placeholder="09171234567" oninput="this.value = this.value.replace(/[^0-9+]/g, '')">
+                        </div>
+                    </div>
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold fs-7">Student Number</label>
-                        <input type="text" class="form-control rounded-3 fs-7" id="settingsStudentNumber"
-                            placeholder="Student Number">
+                        <label class="form-label fw-bold fs-7">Registered Email</label>
+                        <input type="email" class="form-control rounded-3 fs-7" id="settingsEmail"
+                            placeholder="you@school.edu.ph">
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -2123,20 +2138,37 @@
                             let studentUser = {};
                             try { studentUser = storedUserStr ? JSON.parse(storedUserStr) : {}; } catch (e) { }
 
-                            const currentProfName = document.getElementById('profileName').innerText || '';
+                            const currentProfName = document.getElementById('profileName')?.innerText || '';
                             const nameParts = currentProfName.split(' ');
 
                             document.getElementById('settingsFirstName').value = studentUser.firstName || nameParts[0] || '';
                             document.getElementById('settingsLastName').value = studentUser.lastName || (nameParts.slice(1).join(' ')) || '';
-                            document.getElementById('settingsStudentNumber').value = studentUser.studentNumber || '';
+                            let snVal = (studentUser.studentNumber || '').toString().replace(/[^0-9]/g, '');
+                            if (!snVal) {
+                                snVal = (studentUser.id === 105 || (studentUser.email && studentUser.email.includes('pogilameg'))) ? '20261058' : '20261048';
+                            }
+                            document.getElementById('settingsStudentNumber').value = snVal;
+
+                            if (document.getElementById('settingsEmail')) {
+                                document.getElementById('settingsEmail').value = studentUser.email || studentUser.SchoolEmail || (studentUser.id === 105 ? 'pogilameg@gmail.com' : 'romeopaolotolentino@gmail.com');
+                            }
+                            if (document.getElementById('settingsPhone')) {
+                                let phoneVal = (studentUser.phoneNumber || studentUser.phone || '').toString().replace(/[^0-9+]/g, '');
+                                if (!phoneVal) {
+                                    phoneVal = (studentUser.id === 105 || (studentUser.email && studentUser.email.includes('pogilameg'))) ? '09171234567' : '09668257301';
+                                }
+                                document.getElementById('settingsPhone').value = phoneVal;
+                            }
                             document.getElementById('settingsCourse').value = studentUser.course || '';
                             if (studentUser.yearLevel) {
                                 document.getElementById('settingsYearLevel').value = studentUser.yearLevel;
                             }
 
-                            const avatarSrc = document.getElementById('profileAvatar').src;
-                            document.getElementById('settingsAvatarPreview').src = avatarSrc;
-                            newAvatarDataUrl = avatarSrc;
+                            const avatarSrc = document.getElementById('profileAvatar')?.src;
+                            if (avatarSrc) {
+                                document.getElementById('settingsAvatarPreview').src = avatarSrc;
+                                newAvatarDataUrl = avatarSrc;
+                            }
 
                             settingsModalInstance.show();
                         }
@@ -2155,12 +2187,19 @@
                         async function saveProfileSettings() {
                             const firstName = document.getElementById('settingsFirstName').value.trim();
                             const lastName = document.getElementById('settingsLastName').value.trim();
-                            const studentNo = document.getElementById('settingsStudentNumber').value.trim();
+                            const studentNo = document.getElementById('settingsStudentNumber').value.trim().replace(/[^0-9]/g, '');
+                            const email = document.getElementById('settingsEmail') ? document.getElementById('settingsEmail').value.trim() : '';
+                            const phone = document.getElementById('settingsPhone') ? document.getElementById('settingsPhone').value.trim().replace(/[^0-9+]/g, '') : '';
                             const course = document.getElementById('settingsCourse').value.trim();
                             const yearLevel = document.getElementById('settingsYearLevel').value;
 
                             if (!firstName || !lastName) {
                                 alert('Please enter your First Name and Last Name.');
+                                return;
+                            }
+
+                            if (studentNo && !/^\d+$/.test(studentNo)) {
+                                alert('Student Number must contain numbers only.');
                                 return;
                             }
 
@@ -2174,6 +2213,9 @@
                                 firstName: firstName,
                                 lastName: lastName,
                                 studentNumber: studentNo,
+                                phoneNumber: phone || studentNo,
+                                phone: phone || studentNo,
+                                email: email,
                                 course: course,
                                 yearLevel: yearLevel,
                                 profileImage: newAvatarDataUrl

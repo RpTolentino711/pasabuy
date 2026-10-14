@@ -322,6 +322,8 @@ if (($action === 'update_profile' || $action === 'save_profile') && $method === 
     $firstName = trim((string)($body['firstName'] ?? ''));
     $lastName = trim((string)($body['lastName'] ?? ''));
     $studentNumber = trim((string)($body['studentNumber'] ?? ''));
+    $email = trim((string)($body['email'] ?? $body['schoolEmail'] ?? ''));
+    $phoneNumber = trim((string)($body['phoneNumber'] ?? $body['phone'] ?? ''));
     $course = trim((string)($body['course'] ?? ''));
     $yearLevel = trim((string)($body['yearLevel'] ?? ''));
     $profileImage = trim((string)($body['profileImage'] ?? $body['profile_image'] ?? ''));
@@ -332,11 +334,15 @@ if (($action === 'update_profile' || $action === 'save_profile') && $method === 
         $stmt = $db->prepare("SELECT Id FROM StudentProfiles WHERE UserId = ?");
         $stmt->execute([$userId]);
         if ($stmt->fetch()) {
-            $up = $db->prepare("UPDATE StudentProfiles SET FirstName = ?, LastName = ?, StudentNumber = ?, Course = ?, YearLevel = ?, ProfileImage = ?, UpdatedAt = NOW() WHERE UserId = ?");
-            $up->execute([$firstName, $lastName, $studentNumber, $course, $yearLevel, $profileImage, $userId]);
+            $up = $db->prepare("UPDATE StudentProfiles SET FirstName = ?, LastName = ?, StudentNumber = ?, Course = ?, YearLevel = ?, ProfileImage = ?, SchoolEmail = IF(? != '', ?, SchoolEmail), PhoneNumber = IF(? != '', ?, PhoneNumber), UpdatedAt = NOW() WHERE UserId = ?");
+            $up->execute([$firstName, $lastName, $studentNumber, $course, $yearLevel, $profileImage, $email, $email, $phoneNumber, $phoneNumber, $userId]);
         } else {
-            $ins = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, Course, YearLevel, ProfileImage, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, 'student@pasabuy.site', ?, ?, ?, 'UNVERIFIED', 5.0, 0, NOW(), NOW())");
-            $ins->execute([$userId, $firstName, $lastName, $studentNumber, $course, $yearLevel, $profileImage]);
+            $ins = $db->prepare("INSERT INTO StudentProfiles (UserId, FirstName, LastName, StudentNumber, SchoolEmail, PhoneNumber, Course, YearLevel, ProfileImage, VerificationStatus, Rating, CompletedTransactions, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UNVERIFIED', 5.0, 0, NOW(), NOW())");
+            $ins->execute([$userId, $firstName, $lastName, $studentNumber, $email ?: 'student@pasabuy.site', $phoneNumber ?: '09171234567', $course, $yearLevel, $profileImage]);
+        }
+        if (!empty($email)) {
+            $uUp = $db->prepare("UPDATE Users SET Email = ?, UpdatedAt = NOW() WHERE Id = ?");
+            $uUp->execute([$email, $userId]);
         }
     }
     echo json_encode(['success' => true, 'message' => 'Profile updated in Hostinger MySQL database']);

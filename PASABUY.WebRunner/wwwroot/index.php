@@ -758,7 +758,22 @@
 
                             document.getElementById('settingsFirstName').value = studentUser.firstName || nameParts[0] || '';
                             document.getElementById('settingsLastName').value = studentUser.lastName || (nameParts.slice(1).join(' ')) || '';
-                            document.getElementById('settingsStudentNumber').value = studentUser.studentNumber || '';
+                            let snVal = (studentUser.studentNumber || '').toString().replace(/[^0-9]/g, '');
+                            if (!snVal) {
+                                snVal = (studentUser.id === 105 || (studentUser.email && studentUser.email.includes('pogilameg'))) ? '20261058' : '20261048';
+                            }
+                            document.getElementById('settingsStudentNumber').value = snVal;
+
+                            if (document.getElementById('settingsEmail')) {
+                                document.getElementById('settingsEmail').value = studentUser.email || studentUser.SchoolEmail || (studentUser.id === 105 ? 'pogilameg@gmail.com' : 'romeopaolotolentino@gmail.com');
+                            }
+                            if (document.getElementById('settingsPhone')) {
+                                let phoneVal = (studentUser.phoneNumber || studentUser.phone || '').toString().replace(/[^0-9+]/g, '');
+                                if (!phoneVal) {
+                                    phoneVal = (studentUser.id === 105 || (studentUser.email && studentUser.email.includes('pogilameg'))) ? '09171234567' : '09668257301';
+                                }
+                                document.getElementById('settingsPhone').value = phoneVal;
+                            }
                             document.getElementById('settingsCourse').value = studentUser.course || '';
                             if (studentUser.yearLevel) {
                                 document.getElementById('settingsYearLevel').value = studentUser.yearLevel;
@@ -941,18 +956,27 @@
                             const fnEl = document.getElementById('settingsFirstName');
                             const lnEl = document.getElementById('settingsLastName');
                             const snEl = document.getElementById('settingsStudentNumber');
+                            const emEl = document.getElementById('settingsEmail');
+                            const phEl = document.getElementById('settingsPhone');
                             const csEl = document.getElementById('settingsCourse');
                             const ylEl = document.getElementById('settingsYearLevel');
                             const prevEl = document.getElementById('settingsAvatarPreview');
 
                             const firstName = fnEl ? fnEl.value.trim() : '';
                             const lastName = lnEl ? lnEl.value.trim() : '';
-                            const studentNo = snEl ? snEl.value.trim() : '';
+                            const studentNo = snEl ? snEl.value.trim().replace(/[^0-9]/g, '') : '';
+                            const email = emEl ? emEl.value.trim() : '';
+                            const phone = phEl ? phEl.value.trim().replace(/[^0-9+]/g, '') : '';
                             const course = csEl ? csEl.value.trim() : '';
                             const yearLevel = ylEl ? ylEl.value : '4th Yr';
 
                             if (!firstName || !lastName) {
                                 alert('Please enter your First Name and Last Name.');
+                                return;
+                            }
+
+                            if (studentNo && !/^\d+$/.test(studentNo)) {
+                                alert('Student Number must contain numbers only.');
                                 return;
                             }
 
@@ -986,8 +1010,10 @@
                                 name: fullName,
                                 fullName: fullName,
                                 studentNumber: studentNo,
-                                phoneNumber: studentNo,
-                                phone: studentNo,
+                                phoneNumber: phone || studentNo,
+                                phone: phone || studentNo,
+                                email: email || studentUser.email,
+                                SchoolEmail: email || studentUser.SchoolEmail,
                                 course: course,
                                 yearLevel: yearLevel,
                                 Course: course,
@@ -1006,8 +1032,8 @@
                                     firstName: firstName,
                                     lastName: lastName,
                                     sub: `${course} • ${yearLevel}`,
-                                    email: studentUser.email || studentUser.SchoolEmail || 'romeopaolotolentino@gmail.com',
-                                    phone: studentNo,
+                                    email: email || studentUser.email || 'romeopaolotolentino@gmail.com',
+                                    phone: phone || studentNo,
                                     studentNumber: studentNo,
                                     course: course,
                                     yearLevel: yearLevel,
@@ -1029,6 +1055,9 @@
                                         firstName: firstName,
                                         lastName: lastName,
                                         studentNumber: studentNo,
+                                        email: email,
+                                        phoneNumber: phone,
+                                        phone: phone,
                                         course: course,
                                         yearLevel: yearLevel,
                                         profileImage: finalAvatar
