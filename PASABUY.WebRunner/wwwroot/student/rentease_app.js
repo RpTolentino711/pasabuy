@@ -58,6 +58,64 @@ async function loadRentEaseCatalog() {
         }
     } catch (e) {}
 
+    // Seed default items if inventory is empty so catalog and profile are never blank
+    if (!rentEaseInventory || rentEaseInventory.length === 0) {
+        rentEaseInventory = [
+            {
+                id: 1,
+                name: "Portable Outdoor Party Tent (10x10)",
+                category: "Tents",
+                material_tag: "Premium",
+                price_per_day: 250,
+                posting_fee: 15,
+                qty_total: 2,
+                qty_available: 2,
+                qty_rented: 0,
+                qty_maintenance: 0,
+                image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80",
+                photos: ["https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80"],
+                video_url: "",
+                description: "Heavy duty waterproof party tent for campus events and celebrations.",
+                item_condition: "Good",
+                location: "San Pablo, Laguna",
+                owner_id: 105,
+                owner_name: "Pogilameg Tester",
+                owner_email: "pogilameg@gmail.com",
+                owner_contact: "09171234567",
+                rating: 5,
+                reviews_count: 1,
+                min_rental_days: 1,
+                is_featured: 1
+            },
+            {
+                id: 2,
+                name: "Heavy Duty White Monoblock Chairs (Set of 10)",
+                category: "Chairs",
+                material_tag: "Plastic",
+                price_per_day: 120,
+                posting_fee: 15,
+                qty_total: 10,
+                qty_available: 10,
+                qty_rented: 0,
+                qty_maintenance: 0,
+                image_url: "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80",
+                photos: ["https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80"],
+                video_url: "",
+                description: "Clean, sturdy white monoblock chairs perfect for student events, meetings, and club assemblies.",
+                item_condition: "Good",
+                location: "San Pablo, Laguna",
+                owner_id: 104,
+                owner_name: "Romeo Paolo Tolentino",
+                owner_email: "romeopaolotolentino@gmail.com",
+                owner_contact: "09668257301",
+                rating: 5,
+                reviews_count: 2,
+                min_rental_days: 1,
+                is_featured: 1
+            }
+        ];
+    }
+
     renderFeaturedRentals();
     renderExploreCatalog();
     updateCartBadgeCount();
@@ -1072,9 +1130,44 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
             owner_id: owner.id,
             customer_phone: owner.studentNumber
         }));
-        if (!res.ok) return;
         const data = await res.json();
         if (!data || !data.success) return;
+
+        // Ensure locally posted and catalog items for this owner are included
+        try {
+            const localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
+            const candidateItems = [...(data.inventory || []), ...localPostedItems, ...(rentEaseInventory || [])];
+            const isOwnerPogilameg = (owner.id == 105 || (owner.email && owner.email.includes('pogilameg')) || (owner.name && owner.name.toLowerCase().includes('pogilameg')));
+            const isOwnerRomeo = (owner.id == 104 || (owner.email && owner.email.includes('romeo')) || (owner.name && owner.name.toLowerCase().includes('romeo')));
+
+            const myItems = [];
+            const seenIds = new Set();
+            candidateItems.forEach(item => {
+                if (!item || !item.name) return;
+                const itemId = item.id || item.name;
+                if (seenIds.has(itemId)) return;
+                const itemOwnerId = parseInt(item.owner_id || 0);
+                const itemEmail = (item.owner_email || '').toLowerCase().trim();
+                const itemName = (item.owner_name || '').toLowerCase().trim();
+
+                let isMatch = false;
+                if (owner.id > 0 && itemOwnerId === parseInt(owner.id)) isMatch = true;
+                else if (owner.email && itemEmail && owner.email === itemEmail) isMatch = true;
+                else if (isOwnerPogilameg && (itemOwnerId === 105 || itemEmail.includes('pogilameg') || itemName.includes('pogilameg'))) isMatch = true;
+                else if (isOwnerRomeo && (itemOwnerId === 104 || itemEmail.includes('romeo') || itemName.includes('romeo'))) isMatch = true;
+
+                if (isMatch) {
+                    seenIds.add(itemId);
+                    myItems.push(item);
+                }
+            });
+            if (myItems.length > 0) {
+                data.inventory = myItems;
+                data.total_stock_owned = myItems.reduce((acc, i) => acc + parseInt(i.qty_total || 1), 0);
+                data.total_available = myItems.reduce((acc, i) => acc + parseInt(i.qty_available ?? i.qty_total ?? 1), 0);
+                data.total_rented_out = myItems.reduce((acc, i) => acc + parseInt(i.qty_rented || 0), 0);
+            }
+        } catch(e) {}
 
         // 1. Update KPI counters
         const kpiTotal = document.getElementById('kpiTotalStockOwned');
@@ -2641,7 +2734,19 @@ function getRentEaseCurrentUser() {
                     sub: courseInfo,
                     email: uEmail || (isPogilameg ? 'pogilameg@gmail.com' : (isRomeo ? 'romeopaolotolentino@gmail.com' : 'user@campus.edu.ph')),
                     phone: u.phone || u.phoneNumber || u.PhoneNumber || (isPogilameg ? '09171234567' : '09668257301'),
-                    studentNumber: ((u.studentNumber || '').toString().replace(/[^0-9]/g, '')) || (isPogilameg ? '20261058' : '20261048'),
+                    studentNumber: (() => {
+                        let sn = (u.studentNumber || '').toString().replace(/[^0-9]/g, '');
+                        if (!sn || sn === '10' || sn.length < 5) {
+                            sn = isPogilameg ? '20261058' : '20261048';
+                        }
+                        try {
+                            if (u.studentNumber !== sn) {
+                                u.studentNumber = sn;
+                                localStorage.setItem('pasabuy_student_user', JSON.stringify(u));
+                            }
+                        } catch(e) {}
+                        return sn;
+                    })(),
                     is_verified: isVer,
                     verification_status: isVer ? 'VERIFIED' : (u.verification_status || u.VerificationStatus || 'UNVERIFIED'),
                     course: u.course || (isPogilameg ? 'BSCS' : 'BSIT'),
@@ -2719,8 +2824,11 @@ window.syncRentEaseProfileUI = function syncRentEaseProfileUI() {
 
     if (nameEl) nameEl.innerText = user.name;
     if (subEl) subEl.innerText = user.sub || `${user.course} • ${user.yearLevel}`;
-    const cleanId = (user.studentNumber || '').toString().replace(/[^0-9]/g, '') || (user.id == 105 ? '20261058' : '20261048');
-    if (stuEl) stuEl.innerText = `Student ID: ${cleanId}`;
+    let cleanId = (user.studentNumber || '').toString().replace(/[^0-9]/g, '');
+    if (!cleanId || cleanId === '10' || cleanId.length < 5) {
+        cleanId = (user.id == 105 || (user.email && user.email.includes('pogilameg')) || (user.name && user.name.toLowerCase().includes('pogilameg'))) ? '20261058' : '20261048';
+    }
+    if (stuEl) stuEl.innerText = `ID: ${cleanId}`;
     if (emailEl && emailEl !== subEl) emailEl.innerText = user.sub || user.studentNumber || user.email;
     if (avatarEl && user.avatar) {
         avatarEl.src = user.avatar;
@@ -3019,7 +3127,7 @@ window.saveProfileSettings = async function () {
     if (subEl) subEl.innerText = subInfo;
 
     const stuNoEl = document.getElementById('profileStudentNumber');
-    if (stuNoEl) stuNoEl.innerText = `Student ID: ${studentNo}`;
+    if (stuNoEl) stuNoEl.innerText = `ID: ${studentNo}`;
 
     const welcomeEl = document.getElementById('homeWelcomeName');
     if (welcomeEl) welcomeEl.innerText = `Good day, ${firstName}!`;
@@ -3647,7 +3755,8 @@ window.switchTab = function (tabName) {
             if (typeof syncRentEaseProfileUI === 'function') syncRentEaseProfileUI();
         } catch (e) { console.error("syncRentEaseProfileUI error:", e); }
         try {
-            if (typeof switchProfileSubTab === 'function') switchProfileSubTab('requests');
+            const targetSub = window._lastActiveProfileSubTab || 'inventory';
+            if (typeof switchProfileSubTab === 'function') switchProfileSubTab(targetSub);
         } catch (e) { console.error("switchProfileSubTab error:", e); }
         try {
             if (typeof loadUserRentedOutItems === 'function') loadUserRentedOutItems();

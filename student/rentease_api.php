@@ -135,6 +135,27 @@ if ($db) {
             $db->exec("DELETE FROM `rental_inventory` WHERE 1=1;");
             $db->exec("INSERT INTO `rental_settings` (`setting_key`, `setting_value`) VALUES ('stock_purged_zero', '1') ON DUPLICATE KEY UPDATE `setting_value` = '1'");
         }
+
+        // Auto-seed rental_inventory from local fallback so items are never empty
+        $countItems = (int)$db->query("SELECT COUNT(*) FROM `rental_inventory`")->fetchColumn();
+        if ($countItems === 0) {
+            $fb = getRentEaseItemsFallback();
+            if (!empty($fb)) {
+                $seedStmt = $db->prepare("INSERT INTO `rental_inventory` 
+                    (`name`, `category`, `material_tag`, `price_per_day`, `posting_fee`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `photos`, `video_url`, `description`, `item_condition`, `location`, `owner_id`, `owner_name`, `owner_email`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
+                foreach ($fb as $it) {
+                    $seedStmt->execute([
+                        $it['name'], $it['category'], $it['material_tag'] ?? 'All', $it['price_per_day'], $it['posting_fee'] ?? 15,
+                        $it['qty_total'] ?? 1, $it['qty_available'] ?? $it['qty_total'] ?? 1,
+                        $it['image_url'], is_array($it['photos'] ?? null) ? json_encode($it['photos']) : ($it['photos'] ?? null),
+                        $it['video_url'] ?? '', $it['description'] ?? '', $it['item_condition'] ?? 'Good', $it['location'] ?? 'San Pablo, Laguna',
+                        $it['owner_id'] ?? 105, $it['owner_name'] ?? 'Pogilameg Tester', $it['owner_email'] ?? 'pogilameg@gmail.com',
+                        $it['owner_contact'] ?? '09171234567'
+                    ]);
+                }
+            }
+        }
     } catch (Exception $ePurge) {}
 }
 
@@ -1800,6 +1821,7 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
             'message' => "🎉 '{$name}' has been successfully posted for rent on RentEase! Posting Fee: ₱" . number_format($postingFee, 2) . " (Daily rate: ₱" . number_format($price, 2) . ")",
             'id' => $newId,
             'posting_fee' => $postingFee,
+            'item' => $newItem
         ]);
         exit;
     } catch (Exception $ePost) {

@@ -10,12 +10,12 @@
         "qty_available": 2,
         "qty_rented": 0,
         "qty_maintenance": 0,
-        "image_url": "https:\/\/images.unsplash.com\/photo-1519741497674-611481863552?w=500&q=80",
+        "image_url": "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80",
         "photos": [
-            "https:\/\/images.unsplash.com\/photo-1519741497674-611481863552?w=500&q=80"
+            "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80"
         ],
         "video_url": "",
-        "description": "Event equipment available for rent on RentEase.",
+        "description": "Heavy duty waterproof party tent for campus events and celebrations.",
         "item_condition": "Good",
         "location": "San Pablo, Laguna",
         "owner_id": 105,
@@ -24,6 +24,34 @@
         "owner_contact": "09171234567",
         "rating": 5,
         "reviews_count": 1,
+        "min_rental_days": 1,
+        "is_featured": 1
+    },
+    {
+        "id": 2,
+        "name": "Heavy Duty White Monoblock Chairs (Set of 10)",
+        "category": "Chairs",
+        "material_tag": "Plastic",
+        "price_per_day": 120,
+        "posting_fee": 15,
+        "qty_total": 10,
+        "qty_available": 10,
+        "qty_rented": 0,
+        "qty_maintenance": 0,
+        "image_url": "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80",
+        "photos": [
+            "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80"
+        ],
+        "video_url": "",
+        "description": "Clean, sturdy white monoblock chairs perfect for student events, meetings, and club assemblies.",
+        "item_condition": "Good",
+        "location": "San Pablo, Laguna",
+        "owner_id": 104,
+        "owner_name": "Romeo Paolo Tolentino",
+        "owner_email": "romeopaolotolentino@gmail.com",
+        "owner_contact": "09668257301",
+        "rating": 5,
+        "reviews_count": 2,
         "min_rental_days": 1,
         "is_featured": 1
     }

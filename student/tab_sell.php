@@ -972,6 +972,7 @@ window.executePostRentalItemLive = async function(fee) {
             if (typeof loadRentEaseCatalog === 'function') await loadRentEaseCatalog();
             if (typeof loadOwnerRentalDashboard === 'function') await loadOwnerRentalDashboard(true);
             if (typeof loadUserRentedOutItems === 'function') await loadUserRentedOutItems();
+            window._lastActiveProfileSubTab = 'inventory';
             if (typeof switchTab === 'function') switchTab('profile');
             if (typeof switchProfileSubTab === 'function') {
                 switchProfileSubTab('inventory');

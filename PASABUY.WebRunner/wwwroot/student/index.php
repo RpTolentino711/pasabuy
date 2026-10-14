@@ -1073,7 +1073,7 @@
                             if (subEl) subEl.innerText = subInfo;
 
                             const stuNoEl = document.getElementById('profileStudentNumber');
-                            if (stuNoEl) stuNoEl.innerText = `Student ID: ${studentNo}`;
+                            if (stuNoEl) stuNoEl.innerText = `ID: ${studentNo}`;
 
                             const welcomeEl = document.getElementById('homeWelcomeName');
                             if (welcomeEl) welcomeEl.innerText = `Good day, ${firstName}!`;
@@ -1307,7 +1307,12 @@
                                         if (welcomeEl) welcomeEl.innerText = `Good day, ${firstName}!`;
                                         const profSubEl = document.getElementById('profileSub');
                                         if (profSubEl) profSubEl.innerText = studentUser.course ? `${studentUser.course} • ${studentUser.yearLevel || 'Student'}` : `${email} • Verified Student`;
-                                        const cleanSn = (studentUser.studentNumber || '').toString().replace(/[^0-9]/g, '') || (isPogilameg ? '20261058' : '20261048');
+                                        let cleanSn = (studentUser.studentNumber || '').toString().replace(/[^0-9]/g, '');
+                                        if (!cleanSn || cleanSn === '10' || cleanSn.length < 5) {
+                                            cleanSn = isPogilameg ? '20261058' : '20261048';
+                                        }
+                                        studentUser.studentNumber = cleanSn;
+                                        try { localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser)); } catch (e) {}
                                         const stuNoEl = document.getElementById('profileStudentNumber');
                                         if (stuNoEl) stuNoEl.innerText = `ID: ${cleanSn}`;
                                         const rateEl = document.getElementById('profileRating');

@@ -106,6 +106,7 @@
     <script>
     window.switchProfileSubTab = function(subtab) {
         if (!subtab) subtab = 'requests';
+        window._lastActiveProfileSubTab = subtab;
         var tabs = ['requests', 'inventory', 'history'];
         tabs.forEach(function(t) {
             var secName = 'profileSection' + t.charAt(0).toUpperCase() + t.slice(1);
