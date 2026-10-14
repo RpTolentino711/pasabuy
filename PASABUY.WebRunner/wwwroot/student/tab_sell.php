@@ -125,16 +125,9 @@
     </style>
 
     <!-- Top Action Header (Compact & Minimized) -->
-    <div class="d-flex align-items-center justify-content-between mb-2 pt-1">
-        <button class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs border" 
-                style="width:32px; height:32px; background:#fff;" onclick="switchTab('home')" title="Back to Home">
-            <i class="fa-solid fa-arrow-left text-dark" style="font-size:0.75rem;"></i>
-        </button>
-        <div class="text-center">
-            <h6 class="fw-bold mb-0 text-dark fs-7" style="letter-spacing:-0.2px;">Lender Studio</h6>
-            <span class="text-muted fw-semibold" style="font-size:0.68rem;">Equipment Owner Management</span>
-        </div>
-        <div style="width:32px;"></div>
+    <div class="text-center mb-2 pt-1">
+        <h6 class="fw-bold mb-0 text-dark fs-7" style="letter-spacing:-0.2px;">Lender Studio</h6>
+        <span class="text-muted fw-semibold" style="font-size:0.68rem;">Equipment Owner Management</span>
     </div>
 
     <!-- Mode Switcher: Prepare Orders vs Post New Equipment -->
