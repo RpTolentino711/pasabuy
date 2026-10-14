@@ -45,6 +45,19 @@ async function loadRentEaseCatalog() {
         console.error("RentEase catalog load error:", e);
         rentEaseInventory = [];
     }
+
+    // Merge locally posted items so user equipment always appears instantly
+    try {
+        const localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
+        if (Array.isArray(localPostedItems) && localPostedItems.length > 0) {
+            localPostedItems.forEach(lp => {
+                if (!rentEaseInventory.some(it => parseInt(it.id) === parseInt(lp.id) || (it.name === lp.name && it.owner_name === lp.owner_name))) {
+                    rentEaseInventory.unshift(lp);
+                }
+            });
+        }
+    } catch (e) {}
+
     renderFeaturedRentals();
     renderExploreCatalog();
     updateCartBadgeCount();
@@ -2621,7 +2634,7 @@ function getRentEaseCurrentUser() {
                     : (isRomeo ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80');
 
                 return {
-                    id: uId,
+                    id: uId || (isPogilameg ? 105 : (isRomeo ? 104 : 0)),
                     firstName: first || (isPogilameg ? 'Pogilameg' : (isRomeo ? 'Romeo Paolo' : 'Student')),
                     lastName: last || (isPogilameg ? 'Tester' : (isRomeo ? 'Tolentino' : '')),
                     name: fullName || (isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : 'Student')),
@@ -2706,7 +2719,8 @@ window.syncRentEaseProfileUI = function syncRentEaseProfileUI() {
 
     if (nameEl) nameEl.innerText = user.name;
     if (subEl) subEl.innerText = user.sub || `${user.course} • ${user.yearLevel}`;
-    if (stuEl) stuEl.innerText = `Student ID: ${user.studentNumber || user.phone || '09668257301'}`;
+    const cleanId = (user.studentNumber || '').toString().replace(/[^0-9]/g, '') || (user.id == 105 ? '20261058' : '20261048');
+    if (stuEl) stuEl.innerText = `Student ID: ${cleanId}`;
     if (emailEl && emailEl !== subEl) emailEl.innerText = user.sub || user.studentNumber || user.email;
     if (avatarEl && user.avatar) {
         avatarEl.src = user.avatar;
@@ -3814,6 +3828,9 @@ window.loadUserRentedOutItems = async function () {
     const currentUser = getRentEaseCurrentUser();
     const currentUserId = parseInt(currentUser.id || 0);
     const currentUserEmail = (currentUser.email || '').toLowerCase().trim();
+    const currentUserName = (currentUser.name || '').toLowerCase().trim();
+    const isPogilameg = currentUserEmail.includes('pogilameg') || currentUserId === 105 || currentUserName.includes('pogilameg');
+    const isRomeo = currentUserEmail.includes('romeo') || currentUserId === 104 || currentUserName.includes('romeo');
 
     let postedIds = [];
     try {
@@ -3821,12 +3838,23 @@ window.loadUserRentedOutItems = async function () {
         postedIds = postedIds.map(x => parseInt(x));
     } catch (e) {}
 
-    // Strict ownership verification:
-    // Only display items explicitly posted by this user in session OR matching owner ID / exact email
-    const myItems = (rentEaseInventory || []).filter(item => {
+    let localPostedItems = [];
+    try {
+        localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
+    } catch (e) {}
+
+    const combined = [...(rentEaseInventory || [])];
+    localPostedItems.forEach(lp => {
+        if (!combined.some(it => parseInt(it.id) === parseInt(lp.id) || (it.name === lp.name && it.owner_name === lp.owner_name))) {
+            combined.unshift(lp);
+        }
+    });
+
+    const myItems = combined.filter(item => {
         const idNum = parseInt(item.id);
         const itemOwnerId = parseInt(item.owner_id || 0);
         const itemOwnerEmail = (item.owner_email || '').toLowerCase().trim();
+        const itemOwnerName = (item.owner_name || '').toLowerCase().trim();
 
         // 1. Explicitly published in this user's active session
         if (postedIds.includes(idNum)) return true;
@@ -3836,6 +3864,10 @@ window.loadUserRentedOutItems = async function () {
 
         // 3. Strict exact Email match if both exist and match
         if (currentUserEmail && itemOwnerEmail && currentUserEmail === itemOwnerEmail) return true;
+
+        // 4. Test account and name matching
+        if (isPogilameg && (itemOwnerId === 105 || itemOwnerEmail.includes('pogilameg') || itemOwnerName.includes('pogilameg'))) return true;
+        if (isRomeo && (itemOwnerId === 104 || itemOwnerEmail.includes('romeo') || itemOwnerName.includes('romeo'))) return true;
 
         return false;
     });
@@ -4021,10 +4053,15 @@ Do you want to proceed and take down this listing?`;
                 let postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
                 postedIds = postedIds.filter(pid => parseInt(pid) !== parseInt(id));
                 localStorage.setItem('rentease_user_posted_ids', JSON.stringify(postedIds));
+
+                let postedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
+                postedItems = postedItems.filter(p => parseInt(p.id) !== parseInt(id));
+                localStorage.setItem('rentease_user_posted_items', JSON.stringify(postedItems));
             } catch (e) {}
 
             await loadRentEaseCatalog();
             await loadUserRentedOutItems();
+            if (typeof loadOwnerRentalDashboard === 'function') await loadOwnerRentalDashboard(true);
             alert(`✅ Equipment "${name}" has been taken down.\n\nYour posting fee refund request has been logged.`);
         } else {
             alert('❌ ' + (data.message || 'Failed to take down equipment.'));
@@ -4032,6 +4069,11 @@ Do you want to proceed and take down this listing?`;
     } catch (e) {
         console.error("Delete rental item error:", e);
         alert('❌ Error connecting to server to take down equipment.');
+    }
+};
+window.confirmTakeDownOwnerItem = function(id, name) {
+    if (typeof window.deleteUserRentalItem === 'function') {
+        window.deleteUserRentalItem(id, name);
     }
 };
 

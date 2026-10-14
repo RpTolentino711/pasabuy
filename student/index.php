@@ -1307,8 +1307,9 @@
                                         if (welcomeEl) welcomeEl.innerText = `Good day, ${firstName}!`;
                                         const profSubEl = document.getElementById('profileSub');
                                         if (profSubEl) profSubEl.innerText = studentUser.course ? `${studentUser.course} • ${studentUser.yearLevel || 'Student'}` : `${email} • Verified Student`;
+                                        const cleanSn = (studentUser.studentNumber || '').toString().replace(/[^0-9]/g, '') || (isPogilameg ? '20261058' : '20261048');
                                         const stuNoEl = document.getElementById('profileStudentNumber');
-                                        if (stuNoEl) stuNoEl.innerText = `ID: ${studentUser.studentNumber || (isPogilameg ? '09171234567' : '09668257301')}`;
+                                        if (stuNoEl) stuNoEl.innerText = `ID: ${cleanSn}`;
                                         const rateEl = document.getElementById('profileRating');
                                         if (rateEl) rateEl.innerText = studentUser.rating || '5.0';
                                         const dealsEl = document.getElementById('profileDeals');
