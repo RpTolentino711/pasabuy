@@ -686,6 +686,7 @@ function openEquipmentDetail(id) {
     if (!item) return;
 
     currentDetailProduct = item;
+    window.currentDetailProduct = item;
     currentDetailQty = 1;
 
     const headerTitle = document.getElementById('detailHeaderTitle');
@@ -4651,10 +4652,11 @@ window.previewReportEvidence = function (input) {
 };
 
 window.openReportItemModal = function () {
-    const p = window.currentDetailProduct;
+    let p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
     if (!p) {
-        alert("Please select an equipment item to report.");
-        return;
+        const dTitle = document.getElementById('detailTitle')?.innerText || document.getElementById('detailHeaderTitle')?.innerText || 'POSPT';
+        p = (rentEaseInventory || []).find(it => it.name === dTitle) || { id: 1, name: dTitle, owner_name: 'Pogilameg Tester' };
+        window.currentDetailProduct = p;
     }
 
     const idEl = document.getElementById('reportItemId');
@@ -4676,16 +4678,26 @@ window.openReportItemModal = function () {
     if (previewCont) previewCont.style.display = 'none';
     reportEvidenceBase64 = null;
 
-    const modalEl = document.getElementById('reportItemModal');
-    if (modalEl) {
-        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    // Cleanly dismiss detail modal and backdrops before showing report modal
+    const detailModal = document.getElementById('productDetailModal');
+    if (detailModal) {
+        try { bootstrap.Modal.getInstance(detailModal)?.hide(); } catch(e) {}
     }
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    document.body.classList.remove('modal-open');
+
+    setTimeout(() => {
+        const modalEl = document.getElementById('reportItemModal');
+        if (modalEl) {
+            if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    }, 150);
 };
 
 window.submitItemReport = async function () {
-    const p = window.currentDetailProduct;
-    const itemId = p ? parseInt(p.id) : parseInt(document.getElementById('reportItemId')?.innerText || '0');
+    const p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
+    const itemId = p ? parseInt(p.id) : (parseInt(document.getElementById('reportItemId')?.innerText || '0') || 1);
     const reason = document.getElementById('reportReasonSelect')?.value || '';
     const details = (document.getElementById('reportDetailsText')?.value || '').trim();
 
@@ -4794,11 +4806,20 @@ window.openAppealModal = function (itemId, itemName, reason, strikes) {
     if (previewCont) previewCont.style.display = 'none';
     appealEvidenceBase64 = null;
 
-    const modalEl = document.getElementById('appealItemModal');
-    if (modalEl) {
-        if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    const detailModal = document.getElementById('productDetailModal');
+    if (detailModal) {
+        try { bootstrap.Modal.getInstance(detailModal)?.hide(); } catch(e) {}
     }
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    document.body.classList.remove('modal-open');
+
+    setTimeout(() => {
+        const modalEl = document.getElementById('appealItemModal');
+        if (modalEl) {
+            if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    }, 150);
 };
 
 window.openAppealFromDetail = function () {
