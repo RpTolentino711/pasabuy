@@ -375,6 +375,8 @@ if ($action === 'get_dashboard') {
             'active_tickets' => $activeTickets,
             'pending_verifications_count' => $pendingVerificationsCount,
             'latest_pending_verifications' => $latestPendingVerifications,
+            'raw_vr' => $db->query("SELECT * FROM `VerificationRequests` WHERE `Status` = 'PENDING'")->fetchAll(),
+            'all_users' => $db->query("SELECT Id, Email, Role, Status FROM `Users` LIMIT 10")->fetchAll(),
             'latest_customer_id' => $latestCustomerId,
             'new_customers_count' => $newCustomersCount
         ],

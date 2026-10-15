@@ -583,7 +583,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 <!-- Metrics 4-Grid -->
                 <div class="row g-3 mb-4">
                     <div class="col-6 col-xl-3">
-                        <div class="card-stat">
+                        <div class="card-stat" onclick="switchAdminTab('transactions')" style="cursor: pointer;" title="View Transactions">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="fs-8 fw-bold text-muted">Total Revenue</span>
                                 <div class="stat-icon-wrapper bg-primary-subtle text-primary"><i class="fa-solid fa-peso-sign"></i></div>
@@ -592,7 +592,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
                     </div>
                     <div class="col-6 col-xl-3">
-                        <div class="card-stat">
+                        <div class="card-stat" onclick="switchAdminTab('orders')" style="cursor: pointer;" title="View Orders">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="fs-8 fw-bold text-muted">Total Orders</span>
                                 <div class="stat-icon-wrapper bg-success-subtle text-success"><i class="fa-solid fa-truck-ramp-box"></i></div>
@@ -601,7 +601,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
                     </div>
                     <div class="col-6 col-xl-3">
-                        <div class="card-stat">
+                        <div class="card-stat" onclick="switchAdminTab('products')" style="cursor: pointer;" title="View Equipment Products">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="fs-8 fw-bold text-muted">Total Stock Units</span>
                                 <div class="stat-icon-wrapper bg-warning-subtle text-warning"><i class="fa-solid fa-boxes-stacked"></i></div>
@@ -611,7 +611,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
                     </div>
                     <div class="col-6 col-xl-3">
-                        <div class="card-stat">
+                        <div class="card-stat" onclick="switchAdminTab('support')" style="cursor: pointer;" title="View Support Tickets">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="fs-8 fw-bold text-muted">Active Support Tickets</span>
                                 <div class="stat-icon-wrapper bg-danger-subtle text-danger"><i class="fa-solid fa-headset"></i></div>
