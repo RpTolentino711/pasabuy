@@ -96,10 +96,12 @@ if (!defined('PASABUY_INCLUDED')) {
         splash.style.display = 'flex';
         splash.style.opacity = '1';
 
+        <?php if (!$is_standalone): ?>
         if (splashTimeout) clearTimeout(splashTimeout);
         splashTimeout = setTimeout(function() {
             hideSplashScreen();
         }, 2800);
+        <?php endif; ?>
     };
 
     setTimeout(initSplashScreen, 10);
