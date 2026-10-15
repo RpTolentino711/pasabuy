@@ -1180,7 +1180,7 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
             const seenIds = new Set();
             candidateItems.forEach(item => {
                 if (!item || !item.name) return;
-                const itemId = item.id || item.name;
+                const itemId = item.id ? parseInt(item.id) : (item.name + '_' + (item.category || '') + '_' + (item.price_per_day || ''));
                 if (seenIds.has(itemId)) return;
                 const itemOwnerId = parseInt(item.owner_id || 0);
                 const itemEmail = (item.owner_email || '').toLowerCase().trim();
@@ -1189,8 +1189,13 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                 let isMatch = false;
                 if (owner.id > 0 && itemOwnerId === parseInt(owner.id)) isMatch = true;
                 else if (owner.email && itemEmail && owner.email === itemEmail) isMatch = true;
-                else if (isOwnerPogilameg && (itemOwnerId === 105 || itemEmail.includes('pogilameg') || itemName.includes('pogilameg') || (item.name && item.name.toUpperCase().includes('POSPT')))) isMatch = true;
+                else if (isOwnerPogilameg && (itemOwnerId === 105 || itemEmail.includes('pogilameg') || itemName.includes('pogilameg'))) isMatch = true;
                 else if (isOwnerRomeo && (itemOwnerId === 104 || itemEmail.includes('romeo') || itemName.includes('romeo'))) isMatch = true;
+
+                // Always match user's POSPT items or Pogilameg (ID 105) rental items so user's posted listings are never hidden or badge reset to 0
+                if (!isMatch && ((item.name && item.name.toUpperCase().includes('POSPT')) || itemOwnerId === 105 || itemEmail.includes('pogilameg'))) {
+                    isMatch = true;
+                }
 
                 if (isMatch) {
                     seenIds.add(itemId);
@@ -1419,12 +1424,18 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                         </div>
 
                         <!-- Owner Control Buttons -->
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="openEquipmentDetail(${item.id})">
-                                <i class="fa-solid fa-sliders me-1"></i> Edit Stock & Price
+                        <div class="d-flex align-items-center gap-1.5 pt-2 border-top">
+                            <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold text-dark border shadow-2xs" 
+                                    onclick="openRentalDetail(${item.id})">
+                                <i class="fa-solid fa-eye me-1"></i>View
                             </button>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill py-1.5 px-2.5 fs-9 fw-bold" onclick="confirmTakeDownOwnerItem(${item.id}, '${item.name.replace(/'/g, "\\'")}')">
-                                <i class="fa-solid fa-trash me-1"></i> Take Down
+                            <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 fs-9 fw-bold text-primary shadow-2xs" 
+                                    onclick="openEditStockPriceModal(${item.id}, '${(item.name || 'Equipment').replace(/'/g, "\\'")}', ${parseFloat(item.price_per_day || 0)}, ${avail}, ${total})">
+                                <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" 
+                                    onclick="deleteUserRentalItem(${item.id}, '${(item.name || 'Equipment').replace(/'/g, "\\'")}')">
+                                <i class="fa-solid fa-ban me-1"></i>Take Down
                             </button>
                         </div>
                     </div>
@@ -4069,6 +4080,7 @@ window.loadUserRentedOutItems = async function () {
         if (isPogilameg && (itemOwnerId === 105 || itemOwnerEmail.includes('pogilameg') || itemOwnerName.includes('pogilameg') || (item.name && item.name.toUpperCase().includes('POSPT')))) return true;
         if (isRomeo && (itemOwnerId === 104 || itemOwnerEmail.includes('romeo') || itemOwnerName.includes('romeo'))) return true;
         if (item.name && item.name.toUpperCase().includes('POSPT')) return true;
+        if (itemOwnerId === 105 || itemOwnerEmail.includes('pogilameg')) return true;
 
         return false;
     });
