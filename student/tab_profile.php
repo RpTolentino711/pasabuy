@@ -89,7 +89,7 @@
                 onclick="switchProfileSubTab('inventory')">
             <i class="fa-solid fa-boxes-stacked fs-9"></i>
             <span>Rent Items</span>
-            <span class="badge rounded-pill bg-light text-dark fw-bold ms-0.5" id="myRentalCountBadge" style="font-size:0.62rem; padding: 2px 5px;">2</span>
+            <span class="badge rounded-pill bg-light text-dark fw-bold ms-0.5" id="myRentalCountBadge" style="font-size:0.62rem; padding: 2px 5px;">0</span>
         </button>
 
         <!-- Subtab 3: Rental History -->
