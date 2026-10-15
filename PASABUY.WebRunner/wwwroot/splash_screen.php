@@ -56,27 +56,18 @@ if (!defined('PASABUY_INCLUDED')) {
         </div>
     </div>
 
-    <!-- Bottom Tagline & 5-Second Progress Bar -->
-    <div class="w-100 mt-auto pt-3 text-center">
+    <!-- Bottom Tagline -->
+    <div class="w-100 mt-auto pb-2 text-center">
         <h5 class="fw-extrabold text-white mb-1">Rent. Book. Celebrate.</h5>
-        <p class="text-white-50 fs-7 mb-3">Quality Equipment for Every Occasion.</p>
-        
-        <!-- 5-Second Progress Bar -->
-        <div class="progress bg-white bg-opacity-25 rounded-pill overflow-hidden mx-auto mb-2" style="height: 6px; max-width: 160px;">
-            <div class="progress-bar bg-white rounded-pill" id="splashProgressBar" style="width: 0%; height: 100%; transition: width 0.1s linear;"></div>
-        </div>
-        <span class="fs-9 text-white-50 d-block" style="font-size:0.68rem;">Tap anywhere to skip...</span>
+        <p class="text-white-50 fs-7 mb-0">Quality Equipment for Every Occasion.</p>
     </div>
 </div>
 
 <script>
 (function() {
-    let splashProgress = 0;
-    let splashInterval = null;
     let splashTimeout = null;
 
     window.hideSplashScreen = function() {
-        if (splashInterval) clearInterval(splashInterval);
         if (splashTimeout) clearTimeout(splashTimeout);
         const splash = document.getElementById('splashScreen');
         const auth = document.getElementById('authScreen');
@@ -100,28 +91,15 @@ if (!defined('PASABUY_INCLUDED')) {
 
     window.initSplashScreen = function() {
         const splash = document.getElementById('splashScreen');
-        const bar = document.getElementById('splashProgressBar');
         if (!splash) return;
 
         splash.style.display = 'flex';
         splash.style.opacity = '1';
 
-        splashProgress = 0;
-        if (bar) bar.style.width = '0%';
-
-        if (splashInterval) clearInterval(splashInterval);
-        splashInterval = setInterval(function() {
-            splashProgress += 2;
-            if (bar) bar.style.width = splashProgress + '%';
-            if (splashProgress >= 100) {
-                clearInterval(splashInterval);
-            }
-        }, 100);
-
         if (splashTimeout) clearTimeout(splashTimeout);
         splashTimeout = setTimeout(function() {
             hideSplashScreen();
-        }, 3000);
+        }, 2800);
     };
 
     setTimeout(initSplashScreen, 10);
