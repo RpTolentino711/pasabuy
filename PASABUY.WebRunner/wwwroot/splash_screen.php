@@ -1,7 +1,7 @@
 <?php
 if (!defined('PASABUY_INCLUDED')) {
     define('PASABUY_INCLUDED', true);
-    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PasaBuy - Splash Screen</title><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" /><style>body { font-family: "Plus Jakarta Sans", sans-serif; background: #0F172A; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; } .app-container { width: 100%; max-width: 440px; height: 880px; background: #FFF; position: relative; overflow: hidden; display: flex; flex-direction: column; border-radius: 40px; border: 8px solid #1E293B; }</style></head><body><div class="app-container">';
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>RentEase - Welcome</title><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" /><style>body { font-family: "Plus Jakarta Sans", sans-serif; background: #0F172A; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; } .app-container { width: 100%; max-width: 440px; height: 880px; background: #1E1B4B; position: relative; overflow: hidden; display: flex; flex-direction: column; border-radius: 40px; border: 8px solid #1E293B; box-shadow: 0 25px 60px rgba(0,0,0,0.6); }</style></head><body><div class="app-container">';
     $is_standalone = true;
 } else {
     $is_standalone = false;
@@ -17,27 +17,31 @@ if (!defined('PASABUY_INCLUDED')) {
     0% { transform: rotate(360deg); }
     100% { transform: rotate(0deg); }
 }
+@keyframes splashPulseGlow {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255,255,255,0.4)); }
+    50% { transform: scale(1.02); filter: drop-shadow(0 0 20px rgba(255,255,255,0.7)); }
+}
 </style>
 
 <!-- 1. 5-SECOND SPLASH SCREEN (PHP COMPONENT) -->
-<div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #5B3FA8 0%, #341F97 50%, #1E1B4B 100%); color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden; cursor:pointer;" onclick="hideSplashScreen()">
+<div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #5B3FA8 0%, #341F97 45%, #1E1B4B 100%) !important; color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden; cursor:pointer;" onclick="hideSplashScreen()">
     <!-- Main Branding Logo with Rotating White Loading Spinner Ring -->
     <div class="my-auto d-flex flex-column align-items-center">
         <!-- Circular Loading Animation with LOGO.png -->
-        <div class="position-relative d-flex align-items-center justify-content-center mb-4" style="width: 140px; height: 140px;">
+        <div class="position-relative d-flex align-items-center justify-content-center mb-4" style="width: 150px; height: 150px;">
             <!-- Outer Spinning White Loading Ring -->
             <div class="splash-spinner-ring position-absolute" 
-                 style="width: 140px; height: 140px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.15); border-top: 4px solid #ffffff; border-right: 4px solid rgba(255, 255, 255, 0.85); animation: splashSpin 1.1s cubic-bezier(0.5, 0, 0.5, 1) infinite; box-shadow: 0 0 20px rgba(255, 255, 255, 0.35); pointer-events: none;"></div>
+                 style="width: 146px; height: 146px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.2); border-top: 4px solid #ffffff; border-right: 4px solid #ffffff; animation: splashSpin 1.1s linear infinite; box-shadow: 0 0 25px rgba(255, 255, 255, 0.45); pointer-events: none;"></div>
             
             <!-- Secondary Ambient Pulsing Ring -->
             <div class="position-absolute" 
-                 style="width: 154px; height: 154px; border-radius: 50%; border: 1.5px dashed rgba(255, 255, 255, 0.25); animation: splashSpinRev 8s linear infinite; pointer-events: none;"></div>
+                 style="width: 160px; height: 160px; border-radius: 50%; border: 1.5px dashed rgba(255, 255, 255, 0.35); animation: splashSpinRev 7s linear infinite; pointer-events: none;"></div>
 
-            <!-- Central Clean White Circular Base for Logo -->
+            <!-- Central Clean White Circular Base for Logo with Glow -->
             <div class="rounded-circle bg-white d-flex align-items-center justify-content-center shadow-lg" 
-                 style="width: 112px; height: 112px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); z-index: 2;">
+                 style="width: 116px; height: 116px; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4); z-index: 2; animation: splashPulseGlow 2.5s ease-in-out infinite;">
                 <img src="LOGO.png" alt="RentEase Logo" 
-                     style="width: 76px; height: 76px; object-fit: contain;" 
+                     style="width: 80px; height: 80px; object-fit: contain;" 
                      onerror="if (this.src.indexOf('../LOGO.png') === -1) { this.src='../LOGO.png'; } else { this.onerror=null; this.parentNode.innerHTML='<i class=\'fa-solid fa-chair display-5\' style=\'color:#5B3FA8;\'></i>'; }">
             </div>
         </div>
@@ -46,7 +50,7 @@ if (!defined('PASABUY_INCLUDED')) {
         <p class="text-white-50 fs-7 mb-3">Easy Rentals. Seamless Events.</p>
 
         <!-- Dynamic Status Indicator -->
-        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(8px);">
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill" style="background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.22); backdrop-filter: blur(8px);">
             <span class="spinner-grow spinner-grow-sm text-white" role="status" style="width: 7px; height: 7px; animation-duration: 0.9s;"></span>
             <span class="text-white fs-9 fw-semibold" style="letter-spacing: 0.3px;">Loading Campus Hub...</span>
         </div>
