@@ -100,6 +100,62 @@
             gap: 4px;
         }
 
+        /* RentEase Flying Cart & Red Badge Pop Animations */
+        @keyframes cartBouncePop {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.38) rotate(-12deg); }
+            60% { transform: scale(0.9) rotate(6deg); }
+            80% { transform: scale(1.1) rotate(-3deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        @keyframes cartRippleEffect {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.75); }
+            70% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        @keyframes badgeBouncePop {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.45); opacity: 1; }
+            75% { transform: translate(-50%, -50%) scale(0.85); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .cart-bounce-pop {
+            animation: cartBouncePop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        }
+
+        .cart-ripple {
+            animation: cartRippleEffect 0.65s ease-out !important;
+        }
+
+        .cart-badge-pop {
+            animation: badgeBouncePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        }
+
+        .badge-cart-counter {
+            background: linear-gradient(135deg, #FF3B30 0%, #DC2626 100%) !important;
+            color: #FFFFFF !important;
+            border: 2px solid #FFFFFF !important;
+            font-weight: 800 !important;
+            font-size: 0.65rem !important;
+            min-width: 19px !important;
+            height: 19px !important;
+            line-height: 15px !important;
+            padding: 1px 4px !important;
+            border-radius: 999px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.5) !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 100% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 10 !important;
+        }
+
         /* Main Body Scrollable Area */
         .app-body {
             flex: 1;
@@ -340,9 +396,9 @@
             </div>
             <div class="d-flex align-items-center gap-2" id="headerUserActions" style="display: none !important;">
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="switchTab('cart')" title="RentEase Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9;">
+                    onclick="switchTab('cart')" title="RentEase Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9; transition: transform 0.2s ease;">
                     <i class="fa-solid fa-cart-shopping text-secondary fs-7"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="font-size:0.6rem; padding: 2px 4px; display:none;">0</span>
+                    <span class="badge-cart-counter position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="display:none;">0</span>
                 </button>
                 <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
                     onclick="openTrackScreen()" title="Live Rental Tracking" id="headerOrdersBtn" style="width:36px; height:36px; background: #F1F5F9;">

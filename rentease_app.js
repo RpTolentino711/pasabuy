@@ -707,18 +707,27 @@ function openEquipmentDetail(id) {
     const qtyValEl = document.getElementById('detailQtyVal');
     if (qtyValEl) qtyValEl.innerText = currentDetailQty;
 
+    // Category and stock labels
+    const catBadge = document.getElementById('detailCategoryBadge');
+    if (catBadge) {
+        catBadge.innerHTML = `<i class="fa-solid fa-layer-group me-1"></i> ${item.category || 'Rental Equipment'}`;
+    }
+
     // Display stock clearly
     const avail = parseInt(item.qty_available ?? item.qty_total ?? 1);
     const stockEl = document.getElementById('detailStockBadge');
     if (stockEl) {
         stockEl.innerHTML = avail > 0 
-            ? `<i class="fa-solid fa-boxes-stacked text-success fs-7 mb-1"></i><span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;">Stock: <strong>${avail}</strong> units</span>` 
-            : `<i class="fa-solid fa-triangle-exclamation text-danger fs-7 mb-1"></i><span class="fs-9 fw-bold text-danger" style="font-size:0.68rem;">Out of Stock</span>`;
+            ? `${avail} Available` 
+            : `Out of Stock`;
     }
     const maxStockLabel = document.getElementById('detailMaxStockLabel');
     if (maxStockLabel) {
-        maxStockLabel.innerText = `(Max ${avail})`;
+        maxStockLabel.innerText = `Available: ${avail} units`;
     }
+
+    // Keep modal cart badge synchronized with active cart count
+    updateCartBadgeCount();
 
     // Check if the current user is the owner of this equipment!
     const isOwner = isCurrentUserOwnerOfItem(item);
@@ -757,18 +766,18 @@ function openEquipmentDetail(id) {
 
         if (footerActions) {
             footerActions.innerHTML = `
-                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1 text-nowrap" 
-                        style="border-color:#5B3FA8; color:#5B3FA8;" onclick="chatWithOwnerFromDetail()" title="Chat with Owner">
+                <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 text-nowrap" 
+                        style="background:#F8FAFC; border: 1.5px solid #E2E8F0; color:#5B3FA8; height:46px;" onclick="chatWithOwnerFromDetail()" title="Chat with Owner">
                     <i class="fa-regular fa-comment-dots fs-6"></i>
                     <span>Chat</span>
                 </button>
-                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs text-nowrap" 
-                        style="border: 2px solid #5B3FA8; color: #5B3FA8; background: #fff;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart()">
+                <button type="button" class="btn rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-2 shadow-2xs text-nowrap" 
+                        style="border: 2px solid #5B3FA8; color: #5B3FA8; background: #FAF5FF; height:46px; transition: all 0.2s ease;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart(this)">
                     <i class="fa-solid fa-cart-plus fs-6"></i>
                     <span>Add to Cart</span>
                 </button>
-                <button type="button" class="btn btn-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5 shadow-sm text-nowrap" 
-                        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border: none; color: #fff;" id="detailRentNowBtn" onclick="confirmRentNowDetail()">
+                <button type="button" class="btn btn-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-2 shadow-sm text-nowrap" 
+                        style="background: linear-gradient(135deg, #6C5CE7, #5B3FA8); border: none; color: #fff; height:46px; box-shadow: 0 4px 14px rgba(91, 63, 168, 0.35);" id="detailRentNowBtn" onclick="confirmRentNowDetail()">
                     <i class="fa-solid fa-bolt fs-6 text-warning"></i>
                     <span>Rent Now</span>
                 </button>
@@ -934,7 +943,72 @@ Do you want to proceed and take down this listing?`;
 // Parabolic Fly-To-Cart Animation (using native Web Animations API)
 window.animateFlyToCart = function (sourceElement, imageUrl) {
     try {
-        const cartTarget = document.getElementById('headerCartBtn') || document.getElementById('cartCountBadge') || document.querySelector('.fa-cart-shopping');
+        // Automatically inject keyframes and styling if not present
+        if (!document.getElementById('rentease-cart-anim-styles')) {
+            const style = document.createElement('style');
+            style.id = 'rentease-cart-anim-styles';
+            style.textContent = `
+                @keyframes cartBouncePop {
+                    0% { transform: scale(1); }
+                    30% { transform: scale(1.38) rotate(-12deg); }
+                    60% { transform: scale(0.9) rotate(6deg); }
+                    80% { transform: scale(1.1) rotate(-3deg); }
+                    100% { transform: scale(1) rotate(0deg); }
+                }
+                @keyframes cartRippleEffect {
+                    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.75); }
+                    70% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+                }
+                @keyframes badgeBouncePop {
+                    0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+                    50% { transform: translate(-50%, -50%) scale(1.45); opacity: 1; }
+                    75% { transform: translate(-50%, -50%) scale(0.85); }
+                    100% { transform: translate(-50%, -50%) scale(1); }
+                }
+                .cart-bounce-pop {
+                    animation: cartBouncePop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+                }
+                .cart-ripple {
+                    animation: cartRippleEffect 0.65s ease-out !important;
+                }
+                .cart-badge-pop {
+                    animation: badgeBouncePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+                }
+                .badge-cart-counter {
+                    background: linear-gradient(135deg, #FF3B30 0%, #DC2626 100%) !important;
+                    color: #FFFFFF !important;
+                    border: 2px solid #FFFFFF !important;
+                    font-weight: 800 !important;
+                    font-size: 0.65rem !important;
+                    min-width: 19px !important;
+                    height: 19px !important;
+                    line-height: 15px !important;
+                    padding: 1px 4px !important;
+                    border-radius: 999px !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.5) !important;
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 100% !important;
+                    transform: translate(-50%, -50%) !important;
+                    z-index: 10 !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Determine destination cart target
+        const modalEl = document.getElementById('productDetailModal');
+        const isModalOpen = modalEl && (modalEl.classList.contains('show') || modalEl.style.display === 'block');
+        let cartTarget = null;
+        if (isModalOpen) {
+            cartTarget = document.getElementById('modalHeaderCartBtn') || document.getElementById('headerCartBtn') || document.getElementById('cartCountBadge');
+        } else {
+            cartTarget = document.getElementById('headerCartBtn') || document.getElementById('cartCountBadge') || document.querySelector('.fa-cart-shopping');
+        }
         if (!cartTarget) return;
 
         let srcRect = null;
@@ -950,29 +1024,29 @@ window.animateFlyToCart = function (sourceElement, imageUrl) {
 
         const dstRect = cartTarget.getBoundingClientRect();
 
-        const startX = srcRect.left + (srcRect.width / 2) - 22;
-        const startY = srcRect.top + (srcRect.height / 2) - 22;
-        const endX = dstRect.left + (dstRect.width / 2) - 22;
-        const endY = dstRect.top + (dstRect.height / 2) - 22;
+        const startX = srcRect.left + (srcRect.width / 2) - 24;
+        const startY = srcRect.top + (srcRect.height / 2) - 24;
+        const endX = dstRect.left + (dstRect.width / 2) - 24;
+        const endY = dstRect.top + (dstRect.height / 2) - 24;
 
         const deltaX = endX - startX;
         const deltaY = endY - startY;
 
         const flyer = document.createElement('div');
         flyer.className = 'fly-to-cart-element';
-        const img = imageUrl || 'LOGO.png';
+        const img = imageUrl || (currentDetailProduct && (currentDetailProduct.image_url || currentDetailProduct.img)) || 'LOGO.png';
         flyer.style.cssText = `
             position: fixed !important;
             left: ${startX}px !important;
             top: ${startY}px !important;
-            width: 44px !important;
-            height: 44px !important;
+            width: 48px !important;
+            height: 48px !important;
             border-radius: 50% !important;
             background-image: url('${img}') !important;
             background-size: cover !important;
             background-position: center !important;
-            border: 2.5px solid #5B3FA8 !important;
-            box-shadow: 0 10px 25px rgba(91, 63, 168, 0.6) !important;
+            border: 3px solid #FFFFFF !important;
+            box-shadow: 0 12px 30px rgba(91, 63, 168, 0.6), 0 0 0 2px #5B3FA8 !important;
             z-index: 9999999 !important;
             pointer-events: none !important;
             will-change: transform, opacity !important;
@@ -987,7 +1061,7 @@ window.animateFlyToCart = function (sourceElement, imageUrl) {
                 opacity: 1
             },
             {
-                transform: `translate(${deltaX * 0.45}px, ${deltaY * 0.35 - 75}px) scale(0.85) rotate(160deg)`,
+                transform: `translate(${deltaX * 0.45}px, ${deltaY * 0.3 - 80}px) scale(0.9) rotate(160deg)`,
                 opacity: 0.95,
                 offset: 0.45
             },
@@ -1005,17 +1079,52 @@ window.animateFlyToCart = function (sourceElement, imageUrl) {
             if (flyer && flyer.parentNode) {
                 flyer.parentNode.removeChild(flyer);
             }
+            
+            // Pop the cart target button
+            cartTarget.classList.remove('cart-bounce-pop');
+            void cartTarget.offsetWidth;
             cartTarget.classList.add('cart-bounce-pop');
-            const badge = document.getElementById('cartCountBadge') || document.getElementById('headerCartBadge');
-            if (badge) {
-                badge.classList.add('cart-badge-pop');
-                setTimeout(() => badge.classList.remove('cart-badge-pop'), 450);
-            }
-            setTimeout(() => cartTarget.classList.remove('cart-bounce-pop'), 550);
+
+            // Trigger ripple effect around cart
+            cartTarget.classList.remove('cart-ripple');
+            void cartTarget.offsetWidth;
+            cartTarget.classList.add('cart-ripple');
+
+            // Update badge counts immediately
+            updateCartBadgeCount();
+
+            // Trigger pop animation on all visible red badges
+            const badges = [
+                document.getElementById('modalCartCountBadge'),
+                document.getElementById('cartCountBadge'),
+                document.getElementById('headerCartBadge')
+            ];
+            badges.forEach(b => {
+                if (b) {
+                    b.classList.remove('cart-badge-pop');
+                    void b.offsetWidth;
+                    b.classList.add('cart-badge-pop');
+                    setTimeout(() => b.classList.remove('cart-badge-pop'), 600);
+                }
+            });
+
+            setTimeout(() => {
+                cartTarget.classList.remove('cart-bounce-pop');
+                cartTarget.classList.remove('cart-ripple');
+            }, 600);
         };
     } catch (e) {
         console.warn("Fly animation error:", e);
     }
+};
+
+window.openCartFromDetailModal = function() {
+    const modalEl = document.getElementById('productDetailModal');
+    if (modalEl) {
+        const bs = bootstrap.Modal.getInstance(modalEl);
+        if (bs) bs.hide();
+    }
+    switchTab('cart');
 };
 
 function confirmAddDetailToCart(btnEl) {
@@ -1036,20 +1145,22 @@ function confirmAddDetailToCart(btnEl) {
     const btn = btnEl || document.getElementById('detailAddToCartBtn');
     if (btn) {
         const origHtml = btn.innerHTML;
-        btn.classList.remove('btn-outline-primary');
-        btn.classList.add('btn-success', 'text-white');
+        const origStyle = btn.getAttribute('style') || '';
+        btn.style.background = '#10B981';
+        btn.style.borderColor = '#10B981';
+        btn.style.color = '#FFFFFF';
         btn.innerHTML = '<i class="fa-solid fa-check fs-6"></i> Added to Cart!';
         setTimeout(() => {
             if (btn) {
-                btn.classList.remove('btn-success', 'text-white');
-                btn.classList.add('btn-outline-primary');
+                btn.setAttribute('style', origStyle);
                 btn.innerHTML = origHtml;
             }
         }, 1800);
     }
 
     if (typeof window.animateFlyToCart === 'function') {
-        window.animateFlyToCart(btn, currentDetailProduct.image_url);
+        const source = btn || document.getElementById('detailMainImg') || document.getElementById('detailAddToCartBtn');
+        window.animateFlyToCart(source, currentDetailProduct.image_url);
     }
 
     showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, qty, alreadyInCart);
@@ -1739,12 +1850,19 @@ function updateCartBadgeCount() {
         document.getElementById('tabCartBadge'), 
         document.getElementById('cartCountBadge'),
         document.getElementById('headerCartBadge'),
-        document.getElementById('homeCartCountBadge')
+        document.getElementById('homeCartCountBadge'),
+        document.getElementById('modalCartCountBadge')
     ];
     badges.forEach(b => {
         if (b) {
             b.innerText = count;
-            b.style.display = count > 0 ? 'inline-block' : 'none';
+            b.classList.add('badge-cart-counter');
+            if (count > 0) {
+                b.style.removeProperty('display');
+                b.style.setProperty('display', 'inline-flex', 'important');
+            } else {
+                b.style.setProperty('display', 'none', 'important');
+            }
         }
     });
 }

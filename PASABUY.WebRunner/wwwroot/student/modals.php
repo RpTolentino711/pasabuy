@@ -947,25 +947,31 @@
 <!-- PRODUCT DETAIL VIEW MODAL (MATCHING RENTEASE SCREEN 3 IN UIDESIFNAPP.png 1:1) -->
 <div class="modal fade" id="productDetailModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content rounded-4 border-0 p-0 shadow-lg overflow-hidden">
+        <div class="modal-content rounded-4 border-0 p-0 shadow-lg overflow-hidden" style="border: 1px solid rgba(0,0,0,0.08);">
             
             <!-- Top Header Action Bar -->
-            <div class="modal-header border-0 bg-white px-3 py-2.5 d-flex align-items-center justify-content-between position-relative z-3">
-                <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9;" data-bs-dismiss="modal">
+            <div class="modal-header border-bottom border-light-subtle bg-white px-3 py-2.5 d-flex align-items-center justify-content-between position-relative z-3">
+                <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" data-bs-dismiss="modal" title="Back">
                     <i class="fa-solid fa-arrow-left text-dark fs-7"></i>
                 </button>
-                <div class="fw-bold text-dark fs-7" id="detailHeaderTitle">Equipment Details</div>
-                <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9;" onclick="toggleWishlist(this, currentDetailProductId)">
-                    <i class="fa-regular fa-heart text-dark fs-7" id="detailWishlistIcon"></i>
-                </button>
+                <div class="fw-extrabold text-dark fs-7" id="detailHeaderTitle" style="letter-spacing: -0.2px;">Equipment Details</div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="toggleWishlist(this, currentDetailProductId)" title="Wishlist">
+                        <i class="fa-regular fa-heart text-dark fs-7" id="detailWishlistIcon"></i>
+                    </button>
+                    <button type="button" class="btn btn-light rounded-circle position-relative p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="openCartFromDetailModal()" title="View Cart" id="modalHeaderCartBtn">
+                        <i class="fa-solid fa-cart-shopping text-dark fs-7"></i>
+                        <span class="badge-cart-counter position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="modalCartCountBadge" style="display:none;">0</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Modal Body Scrollable Area (Screen 3) -->
             <div class="modal-body p-3 bg-white" id="productDetailModalBody">
                 
                 <!-- Dynamic Media Carousel with Auto-slide & Touch Swiping -->
-                <div id="detailMediaCarousel" class="carousel slide rounded-4 overflow-hidden border bg-dark mb-2.5 position-relative shadow-sm" 
-                     data-bs-ride="carousel" data-bs-interval="3500" data-bs-touch="true" style="min-height:230px; user-select:none; -webkit-user-select:none;">
+                <div id="detailMediaCarousel" class="carousel slide rounded-4 overflow-hidden border bg-dark mb-3 position-relative shadow-sm" 
+                     data-bs-ride="carousel" data-bs-interval="3500" data-bs-touch="true" style="min-height:230px; user-select:none; -webkit-user-select:none; box-shadow: 0 8px 24px rgba(0,0,0,0.08);">
                     
                     <!-- Carousel Inner Slides (Images & Videos) -->
                     <div class="carousel-inner" id="detailCarouselInner" style="max-height:260px; min-height:230px; background:#0f172a;">
@@ -1006,61 +1012,93 @@
                 <!-- Hidden fallback video player container for backwards compatibility -->
                 <div id="detailVideoContainer" style="display:none;"><video id="detailVideoPlayer"></video></div>
 
-                <!-- Title, Rating & Price (Screen 3) -->
-                <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle">Equipment Details</h4>
+                <!-- Category Tag & Verification Row -->
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="badge rounded-pill px-2.5 py-1 text-primary fw-bold" style="background: #F3E8FF; font-size: 0.7rem;" id="detailCategoryBadge">
+                        <i class="fa-solid fa-layer-group me-1"></i> Rental Equipment
+                    </span>
+                    <span class="badge rounded-pill px-2 py-0.5 text-success fw-bold" style="background: #ECFDF5; font-size: 0.68rem;">
+                        <i class="fa-solid fa-shield-halved me-1"></i> Campus Verified
+                    </span>
+                </div>
+
+                <!-- Title, Rating & Reviews -->
+                <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle" style="letter-spacing:-0.2px;">Equipment Details</h4>
                 
-                <div class="d-flex align-items-center gap-1.5 mb-2">
-                    <i class="fa-solid fa-star text-warning fs-8"></i>
-                    <span class="fw-bold text-dark fs-8" id="detailRatingVal">5.0</span>
-                    <span class="text-muted fs-8">(<span id="detailReviewCount">0</span> reviews)</span>
+                <div class="d-flex align-items-center gap-1.5 mb-3">
+                    <div class="d-flex align-items-center gap-1 bg-warning bg-opacity-10 px-2 py-0.5 rounded-pill">
+                        <i class="fa-solid fa-star text-warning fs-9"></i>
+                        <span class="fw-extrabold text-dark fs-8" id="detailRatingVal">5.0</span>
+                    </div>
+                    <span class="text-muted fs-8">(<span id="detailReviewCount">1</span> reviews)</span>
+                    <span class="text-secondary opacity-50">•</span>
+                    <span class="text-muted fs-8"><i class="fa-solid fa-location-dot text-danger fs-9 me-0.5"></i> Campus Meetup</span>
                 </div>
 
-                <div class="d-flex align-items-baseline gap-1.5 mb-3">
-                    <span class="fw-extrabold text-dark fs-3" id="detailPrice">₱0</span>
-                    <span class="text-muted fs-7 fw-semibold">/ day</span>
+                <!-- Price Highlight Card -->
+                <div class="p-3 rounded-4 mb-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%); border: 1.5px solid #E2E8F0;">
+                    <div>
+                        <div class="text-muted fw-bold text-uppercase" style="font-size:0.65rem; letter-spacing:0.6px;">Rental Price</div>
+                        <div class="d-flex align-items-baseline gap-1">
+                            <span class="fw-extrabold fs-3" id="detailPrice" style="color: #5B3FA8;">₱0</span>
+                            <span class="text-muted fs-7 fw-semibold">/ day</span>
+                        </div>
+                    </div>
+                    <span class="badge rounded-pill px-3 py-1.5 fw-bold" style="background: #EDE9FE; color: #5B3FA8; font-size: 0.72rem;">
+                        <i class="fa-regular fa-clock me-1"></i> 1 Day Min Rental
+                    </span>
                 </div>
 
-                <!-- Description (Screen 3) -->
-                <div class="mb-3">
-                    <h6 class="fw-extrabold text-dark fs-8 mb-1">Description</h6>
+                <!-- Description Card -->
+                <div class="p-3 rounded-4 mb-3" style="background: #FFFFFF; border: 1.5px solid #F1F5F9; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                    <div class="d-flex align-items-center gap-1.5 fw-bold text-dark fs-8 mb-1.5">
+                        <i class="fa-solid fa-circle-info text-primary" style="color:#5B3FA8 !important;"></i>
+                        <span>Equipment Description</span>
+                    </div>
                     <p class="fs-8 text-secondary lh-sm mb-0" id="detailDescription">
                         Quality event equipment for rent, maintained and cleaned for every booking.
                     </p>
                 </div>
 
-                <!-- Feature Badges Row (Screen 3) -->
+                <!-- Feature Badges Row (3 Specs Cards) -->
                 <div class="row g-2 mb-3">
                     <div class="col-4">
-                        <div class="p-2 rounded-3 text-center border bg-light h-100 d-flex flex-column align-items-center justify-content-center">
-                            <i class="fa-solid fa-boxes-stacked text-success fs-7 mb-1"></i>
-                            <span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;" id="detailStockBadge">Stock: 1 units</span>
+                        <div class="p-2.5 rounded-3 text-center border h-100 d-flex flex-column align-items-center justify-content-center" style="background: #ECFDF5; border-color: #A7F3D0 !important;">
+                            <i class="fa-solid fa-boxes-stacked text-success fs-6 mb-1"></i>
+                            <span class="fs-9 fw-extrabold text-success-emphasis" id="detailStockBadge">10 Available</span>
+                            <span class="text-muted" style="font-size:0.65rem;">Ready to Rent</span>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="p-2 rounded-3 text-center border bg-light h-100 d-flex flex-column align-items-center justify-content-center">
-                            <i class="fa-regular fa-clock text-primary fs-7 mb-1" style="color: #5B3FA8 !important;"></i>
-                            <span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;">Min. rental (1 day)</span>
+                        <div class="p-2.5 rounded-3 text-center border h-100 d-flex flex-column align-items-center justify-content-center" style="background: #F5F3FF; border-color: #DDD6FE !important;">
+                            <i class="fa-regular fa-calendar-check fs-6 mb-1" style="color: #6D28D9;"></i>
+                            <span class="fs-9 fw-extrabold" style="color: #6D28D9;">1 Day Min</span>
+                            <span class="text-muted" style="font-size:0.65rem;">Daily Booking</span>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="p-2 rounded-3 text-center border bg-light h-100 d-flex flex-column align-items-center justify-content-center">
-                            <i class="fa-solid fa-wand-magic-sparkles text-warning fs-7 mb-1"></i>
-                            <span class="fs-9 fw-bold text-dark" style="font-size:0.68rem;">Easy to clean</span>
+                        <div class="p-2.5 rounded-3 text-center border h-100 d-flex flex-column align-items-center justify-content-center" style="background: #FFFBEB; border-color: #FDE68A !important;">
+                            <i class="fa-solid fa-wand-magic-sparkles text-warning fs-6 mb-1"></i>
+                            <span class="fs-9 fw-extrabold text-warning-emphasis">Clean & Tested</span>
+                            <span class="text-muted" style="font-size:0.65rem;">Quality Assured</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quantity Stepper (Screen 3 - Non-Owner View) -->
-                <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light border mb-2" id="detailQtyContainer">
-                    <span class="fw-extrabold text-dark fs-8">Quantity <span class="text-muted fw-normal fs-9" id="detailMaxStockLabel">(Max 1)</span></span>
-                    <div class="d-flex align-items-center gap-2.5">
-                        <button type="button" class="btn btn-sm btn-white rounded-circle p-0 d-flex align-items-center justify-content-center border shadow-2xs" 
-                                style="width:30px; height:30px; background:#fff;" onclick="adjustDetailQty(-1)">
+                <div class="d-flex align-items-center justify-content-between p-3 rounded-4 mb-3" id="detailQtyContainer" style="background: #F8FAFC; border: 1.5px solid #E2E8F0;">
+                    <div>
+                        <div class="fw-extrabold text-dark fs-8">Rental Quantity</div>
+                        <div class="text-muted fs-9" id="detailMaxStockLabel">Available: 10 units</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-white rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
+                                style="width:34px; height:34px; background:#fff; border: 1.5px solid #CBD5E1; transition:all 0.2s ease;" onclick="adjustDetailQty(-1)">
                             <i class="fa-solid fa-minus text-dark fs-9"></i>
                         </button>
-                        <span class="fw-extrabold text-dark fs-7 px-2" id="detailQtyVal">1</span>
-                        <button type="button" class="btn btn-sm btn-white rounded-circle p-0 d-flex align-items-center justify-content-center border shadow-2xs" 
-                                style="width:30px; height:30px; background:#fff;" onclick="adjustDetailQty(1)">
+                        <span class="fw-extrabold text-dark fs-6 px-2" id="detailQtyVal" style="min-width: 28px; text-align: center;">1</span>
+                        <button type="button" class="btn btn-sm btn-white rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
+                                style="width:34px; height:34px; background:#fff; border: 1.5px solid #CBD5E1; transition:all 0.2s ease;" onclick="adjustDetailQty(1)">
                             <i class="fa-solid fa-plus text-dark fs-9"></i>
                         </button>
                     </div>
@@ -1124,19 +1162,19 @@
             </div>
 
             <!-- Bottom Sticky Action Bar: [Chat Owner] + [Add to Cart] + [Rent Now] -->
-            <div class="modal-footer border-top bg-white p-3 d-flex align-items-center gap-2 sticky-bottom" id="detailFooterActions">
-                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1 text-nowrap" 
-                        style="border-color:#5B3FA8; color:#5B3FA8;" onclick="chatWithOwnerFromDetail()" title="Chat with Owner">
+            <div class="modal-footer border-top bg-white p-3 d-flex align-items-center gap-2 sticky-bottom" id="detailFooterActions" style="box-shadow: 0 -4px 16px rgba(0,0,0,0.04);">
+                <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 text-nowrap" 
+                        style="background:#F8FAFC; border: 1.5px solid #E2E8F0; color:#5B3FA8; height:46px;" onclick="chatWithOwnerFromDetail()" title="Chat with Owner">
                     <i class="fa-regular fa-comment-dots fs-6"></i>
                     <span>Chat</span>
                 </button>
-                <button type="button" class="btn btn-outline-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5 shadow-2xs text-nowrap" 
-                        style="border: 2px solid #5B3FA8; color: #5B3FA8; background: #fff;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart()">
+                <button type="button" class="btn rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-2 shadow-2xs text-nowrap" 
+                        style="border: 2px solid #5B3FA8; color: #5B3FA8; background: #FAF5FF; height:46px; transition: all 0.2s ease;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart(this)">
                     <i class="fa-solid fa-cart-plus fs-6"></i>
                     <span>Add to Cart</span>
                 </button>
-                <button type="button" class="btn btn-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-1.5 shadow-sm text-nowrap" 
-                        style="background: linear-gradient(135deg, #5B3FA8, #341F97); border: none; color: #fff;" id="detailRentNowBtn" onclick="confirmRentNowDetail()">
+                <button type="button" class="btn btn-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-2 shadow-sm text-nowrap" 
+                        style="background: linear-gradient(135deg, #6C5CE7, #5B3FA8); border: none; color: #fff; height:46px; box-shadow: 0 4px 14px rgba(91, 63, 168, 0.35);" id="detailRentNowBtn" onclick="confirmRentNowDetail()">
                     <i class="fa-solid fa-bolt fs-6 text-warning"></i>
                     <span>Rent Now</span>
                 </button>
