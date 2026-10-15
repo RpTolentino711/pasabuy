@@ -52,7 +52,7 @@ async function loadRentEaseCatalog() {
         const localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
         if (Array.isArray(localPostedItems) && localPostedItems.length > 0) {
             localPostedItems.forEach(lp => {
-                const match = rentEaseInventory.find(it => parseInt(it.id) === parseInt(lp.id) || (it.name && lp.name && it.name.trim().toLowerCase() === lp.name.trim().toLowerCase()));
+                const match = rentEaseInventory.find(it => parseInt(it.id) === parseInt(lp.id));
                 if (!match) {
                     rentEaseInventory.unshift(lp);
                 } else if (match && (lp.name && lp.name.toUpperCase().includes('POSPT'))) {
@@ -70,54 +70,54 @@ async function loadRentEaseCatalog() {
     if (!rentEaseInventory || rentEaseInventory.length === 0) {
         rentEaseInventory = [
             {
-                id: 1,
-                name: "Portable Outdoor Party Tent (10x10)",
+                id: 19,
+                name: "POSPT",
                 category: "Tents",
-                material_tag: "Premium",
-                price_per_day: 250,
-                posting_fee: 15,
-                qty_total: 2,
-                qty_available: 2,
+                material_tag: "Standard",
+                price_per_day: 1,
+                posting_fee: 1,
+                qty_total: 1,
+                qty_available: 1,
                 qty_rented: 0,
                 qty_maintenance: 0,
                 image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80",
                 photos: ["https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80"],
                 video_url: "",
-                description: "Heavy duty waterproof party tent for campus events and celebrations.",
+                description: "21212",
                 item_condition: "Good",
-                location: "San Pablo, Laguna",
+                location: "Campus Hub",
                 owner_id: 105,
                 owner_name: "Pogilameg Tester",
                 owner_email: "pogilameg@gmail.com",
                 owner_contact: "09171234567",
                 rating: 5,
-                reviews_count: 1,
+                reviews_count: 0,
                 min_rental_days: 1,
                 is_featured: 1
             },
             {
-                id: 2,
-                name: "Heavy Duty White Monoblock Chairs (Set of 10)",
-                category: "Chairs",
-                material_tag: "Plastic",
-                price_per_day: 120,
-                posting_fee: 15,
-                qty_total: 10,
-                qty_available: 10,
+                id: 18,
+                name: "POSPT",
+                category: "Others",
+                material_tag: "Standard",
+                price_per_day: 1,
+                posting_fee: 1,
+                qty_total: 1,
+                qty_available: 1,
                 qty_rented: 0,
                 qty_maintenance: 0,
-                image_url: "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80",
-                photos: ["https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80"],
+                image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80",
+                photos: ["https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80"],
                 video_url: "",
-                description: "Clean, sturdy white monoblock chairs perfect for student events, meetings, and club assemblies.",
+                description: "dadasdsa",
                 item_condition: "Good",
-                location: "San Pablo, Laguna",
-                owner_id: 104,
-                owner_name: "Romeo Paolo Tolentino",
-                owner_email: "romeopaolotolentino@gmail.com",
-                owner_contact: "09668257301",
+                location: "Campus Hub",
+                owner_id: 105,
+                owner_name: "Pogilameg Tester",
+                owner_email: "pogilameg@gmail.com",
+                owner_contact: "09171234567",
                 rating: 5,
-                reviews_count: 2,
+                reviews_count: 0,
                 min_rental_days: 1,
                 is_featured: 1
             }
@@ -127,6 +127,11 @@ async function loadRentEaseCatalog() {
     renderFeaturedRentals();
     renderExploreCatalog();
     updateCartBadgeCount();
+    try {
+        if (typeof loadUserRentedOutItems === 'function') {
+            loadUserRentedOutItems();
+        }
+    } catch (e) {}
 }
 window.loadRentEaseCatalog = loadRentEaseCatalog;
 
@@ -2194,10 +2199,6 @@ window.updateSellPostingFeeTier = function(price) {
 // ----------------------------------------------------------
 // 6. SCREEN 7: LIVE FACE-TO-FACE RENTAL TRACKING & CAMPUS MEETUP
 // ----------------------------------------------------------
-let currentTrackingOrderCode = (function() {
-    try { return localStorage.getItem('rentease_current_order_code') || ''; } catch(e) { return ''; }
-})();
-
 window.ownerPrepareEquipment = async function(orderCode) {
     if (!orderCode) orderCode = currentTrackingOrderCode || '#RE-10245';
     try {
@@ -4049,7 +4050,7 @@ window.loadUserRentedOutItems = async function () {
 
     const combined = [...(rentEaseInventory || [])];
     localPostedItems.forEach(lp => {
-        if (!combined.some(it => parseInt(it.id) === parseInt(lp.id) || (it.name === lp.name && it.owner_name === lp.owner_name))) {
+        if (!combined.some(it => parseInt(it.id) === parseInt(lp.id))) {
             combined.unshift(lp);
         }
     });
