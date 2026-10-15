@@ -4345,7 +4345,6 @@ window.openVerificationModal = function () {
         }
     }
     switchTab('profile');
-    }
 };
 
 // Chat with item owner from Product Details modal
