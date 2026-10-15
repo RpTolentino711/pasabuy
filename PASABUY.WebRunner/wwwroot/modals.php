@@ -1222,7 +1222,7 @@
                     <img id="reportItemThumb" src="https://images.unsplash.com/photo-1519741497674-611481863552?w=100&q=80" class="rounded-2 border" style="width:44px; height:44px; object-fit:cover;">
                     <div class="min-w-0 flex-grow-1">
                         <div class="fw-bold text-dark fs-8 text-truncate" id="reportItemName">POSPT</div>
-                        <div class="fs-9 text-muted">Owner: <span class="fw-semibold text-secondary" id="reportItemOwner">Pogilameg Tester</span></div>
+                        <div class="fs-9 text-muted">Owner: <span class="fw-semibold text-secondary" id="reportItemOwner">Romeo Paolo Tolentino</span></div>
                     </div>
                     <span class="badge bg-danger-subtle text-danger fs-9 fw-bold">Item #<span id="reportItemId">0</span></span>
                 </div>

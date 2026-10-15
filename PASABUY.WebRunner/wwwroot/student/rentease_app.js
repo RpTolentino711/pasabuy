@@ -56,10 +56,11 @@ async function loadRentEaseCatalog() {
                 if (!match) {
                     rentEaseInventory.unshift(lp);
                 } else if (match && (lp.name && lp.name.toUpperCase().includes('POSPT'))) {
-                    // Keep POSPT aligned with live database owner
-                    match.owner_id = 105;
-                    match.owner_name = "Pogilameg Tester";
-                    match.owner_email = "pogilameg@gmail.com";
+                    // POSPT belongs to vendor Romeo Paolo Tolentino
+                    match.owner_id = 104;
+                    match.owner_name = "Romeo Paolo Tolentino";
+                    match.owner_email = "romeopaolotolentino@gmail.com";
+                    match.owner_contact = "09668257301";
                     match.is_featured = 1;
                 }
             });
@@ -4655,7 +4656,7 @@ window.openReportItemModal = function () {
     let p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
     if (!p) {
         const dTitle = document.getElementById('detailTitle')?.innerText || document.getElementById('detailHeaderTitle')?.innerText || 'POSPT';
-        p = (rentEaseInventory || []).find(it => it.name === dTitle) || { id: 1, name: dTitle, owner_name: 'Pogilameg Tester' };
+        p = (rentEaseInventory || []).find(it => it.name === dTitle) || { id: 19, name: dTitle, owner_name: 'Romeo Paolo Tolentino', owner_id: 104, owner_email: 'romeopaolotolentino@gmail.com' };
         window.currentDetailProduct = p;
     }
 

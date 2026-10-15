@@ -72,7 +72,7 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
     try { $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100"); } catch (Exception $e) {}
-    try { $db->exec("UPDATE `rental_inventory` SET `owner_id` = 105, `owner_name` = 'Pogilameg Tester', `owner_email` = 'pogilameg@gmail.com', `owner_contact` = '09171234567', `is_featured` = 1 WHERE `name` LIKE '%POSPT%' OR `name` = 'POSPT'"); } catch (Exception $e) {}
+    try { $db->exec("UPDATE `rental_inventory` SET `owner_id` = 104, `owner_name` = 'Romeo Paolo Tolentino', `owner_email` = 'romeopaolotolentino@gmail.com', `owner_contact` = '09668257301', `is_featured` = 1 WHERE `name` LIKE '%POSPT%' OR `name` = 'POSPT'"); } catch (Exception $e) {}
 
     // Auto-migrate rental_orders fields for duration, COD downpayment, owner and return status
     try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}
@@ -1543,8 +1543,8 @@ if ($action === 'get_owner_rental_data') {
                 if ($ownerId > 0 && $itOwnerId === $ownerId) return true;
                 if (!empty($ownerEmail) && !empty($itEmail) && $ownerEmail === $itEmail) return true;
                 if (!empty($ownerName) && !empty($itName) && strcasecmp($ownerName, $itName) === 0) return true;
-                if ($isPogilameg && ($itOwnerId === 105 || strpos($itEmail, 'pogilameg') !== false || stripos($itName, 'pogilameg') !== false || strpos($itProdName, 'POSPT') !== false)) return true;
-                if ($isRomeo && ($itOwnerId === 104 || strpos($itEmail, 'romeo') !== false || stripos($itName, 'romeo') !== false)) return true;
+                if ($isPogilameg && ($itOwnerId === 105 || strpos($itEmail, 'pogilameg') !== false || stripos($itName, 'pogilameg') !== false)) return true;
+                if ($isRomeo && ($itOwnerId === 104 || strpos($itEmail, 'romeo') !== false || stripos($itName, 'romeo') !== false || strpos($itProdName, 'POSPT') !== false)) return true;
                 return false;
             }));
         }
