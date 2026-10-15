@@ -564,27 +564,32 @@ if ($action === 'get_inventory') {
     $stmt->execute($params);
     $items = $stmt->fetchAll();
 
-    if (empty($items)) {
-        $fb = getRentEaseItemsFallback();
-        if (!empty($fb)) {
-            $items = $fb;
-            if ($category !== '' && $category !== 'All') {
-                $items = array_filter($items, fn($i) => strcasecmp($i['category'], $category) === 0);
+    $fb = getRentEaseItemsFallback();
+    if (!empty($fb)) {
+        $existingIds = array_map('intval', array_column($items, 'id'));
+        foreach ($fb as $fbItem) {
+            if (!in_array((int)$fbItem['id'], $existingIds, true)) {
+                $matches = true;
+                if ($category !== '' && $category !== 'All') {
+                    if (strcasecmp($fbItem['category'], $category) !== 0) $matches = false;
+                }
+                if ($materialTag !== '' && $materialTag !== 'All') {
+                    if (strcasecmp($fbItem['material_tag'], $materialTag) !== 0) $matches = false;
+                }
+                if ($search !== '') {
+                    if (stripos($fbItem['name'], $search) === false && stripos($fbItem['description'], $search) === false) $matches = false;
+                }
+                if ($matches) {
+                    $items[] = $fbItem;
+                }
             }
-            if ($materialTag !== '' && $materialTag !== 'All') {
-                $items = array_filter($items, fn($i) => strcasecmp($i['material_tag'], $materialTag) === 0);
-            }
-            if ($search !== '') {
-                $items = array_filter($items, fn($i) => stripos($i['name'], $search) !== false || stripos($i['description'], $search) !== false);
-            }
-            $items = array_values($items);
         }
     }
 
     echo json_encode([
         'success' => true,
         'count' => count($items),
-        'items' => $items
+        'items' => array_values($items)
     ]);
     exit;
 }
@@ -594,9 +599,22 @@ if ($action === 'get_inventory') {
 // ----------------------------------------------------------
 if ($action === 'get_product_detail') {
     $id = (int)($data['id'] ?? 0);
-    $stmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE `id` = ?");
-    $stmt->execute([$id]);
-    $item = $stmt->fetch();
+    $item = null;
+    if ($db) {
+        $stmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE `id` = ?");
+        $stmt->execute([$id]);
+        $item = $stmt->fetch();
+    }
+
+    if (!$item) {
+        $fb = getRentEaseItemsFallback();
+        foreach ($fb as $f) {
+            if ((int)$f['id'] === $id) {
+                $item = $f;
+                break;
+            }
+        }
+    }
 
     if (!$item) {
         http_response_code(404);

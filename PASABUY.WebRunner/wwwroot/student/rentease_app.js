@@ -66,62 +66,253 @@ async function loadRentEaseCatalog() {
         }
     } catch (e) {}
 
-    // Seed default items if inventory is empty so catalog and profile are never blank
+    // Ensure standard categories have sample items available
+    const defaultCatalogItems = [
+        {
+            id: 19,
+            name: "POSPT",
+            category: "Tents",
+            material_tag: "Standard",
+            price_per_day: 1,
+            posting_fee: 1,
+            qty_total: 1,
+            qty_available: 1,
+            qty_rented: 0,
+            qty_maintenance: 0,
+            image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80",
+            photos: ["https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80"],
+            video_url: "",
+            description: "21212",
+            item_condition: "Good",
+            location: "Campus Hub",
+            owner_id: 105,
+            owner_name: "Pogilameg Tester",
+            owner_email: "pogilameg@gmail.com",
+            owner_contact: "09171234567",
+            rating: 5,
+            reviews_count: 0,
+            min_rental_days: 1,
+            is_featured: 1
+        },
+        {
+            id: 18,
+            name: "POSPT",
+            category: "Others",
+            material_tag: "Standard",
+            price_per_day: 1,
+            posting_fee: 1,
+            qty_total: 1,
+            qty_available: 1,
+            qty_rented: 0,
+            qty_maintenance: 0,
+            image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80",
+            photos: ["https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80"],
+            video_url: "",
+            description: "dadasdsa",
+            item_condition: "Good",
+            location: "Campus Hub",
+            owner_id: 105,
+            owner_name: "Pogilameg Tester",
+            owner_email: "pogilameg@gmail.com",
+            owner_contact: "09171234567",
+            rating: 5,
+            reviews_count: 0,
+            min_rental_days: 1,
+            is_featured: 1
+        },
+        {
+            id: 21,
+            name: "White Tiffany Banquet Chairs (Set of 10)",
+            category: "Chairs",
+            material_tag: "Premium",
+            price_per_day: 150,
+            posting_fee: 5,
+            qty_total: 10,
+            qty_available: 10,
+            qty_rented: 0,
+            qty_maintenance: 0,
+            image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80",
+            photos: ["https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80"],
+            video_url: "",
+            description: "Elegant white Tiffany chairs perfect for university banquets, club inaugurations, and photo booths.",
+            item_condition: "Like New",
+            location: "Main Campus Hub",
+            owner_id: 102,
+            owner_name: "UST Event Supplies",
+            owner_email: "eventsupplies@campus.edu",
+            owner_contact: "09181112233",
+            rating: 4.9,
+            reviews_count: 8,
+            min_rental_days: 1,
+            is_featured: 1
+        },
+        {
+            id: 22,
+            name: "Heavy Duty Monobloc Chairs (Set of 6)",
+            category: "Chairs",
+            material_tag: "Plastic",
+            price_per_day: 60,
+            posting_fee: 2,
+            qty_total: 20,
+            qty_available: 20,
+            qty_rented: 0,
+            qty_maintenance: 0,
+            image_url: "https://images.unsplash.com/photo-1503602642458-232111445657?w=500&q=80",
+            photos: ["https://images.unsplash.com/photo-1503602642458-232111445657?w=500&q=80"],
+            video_url: "",
+            description: "Sturdy stackable white plastic monobloc chairs. Clean, sanitized, and lightweight for easy transport.",
+            item_condition: "Good",
+            location: "Engineering Quad",
+            owner_id: 103,
+            owner_name: "Campus Logistics Co.",
+            owner_email: "logistics@campus.edu",
+            owner_contact: "09182223344",
+            rating: 4.8,
+            reviews_count: 14,
+            min_rental_days: 1,
+            is_featured: 0
+        },
+        {
+            id: 23,
+            name: "6ft Foldable Banquet Table",
+            category: "Tables",
+            material_tag: "Plastic",
+            price_per_day: 120,
+            posting_fee: 4,
+            qty_total: 5,
+            qty_available: 5,
+            qty_rented: 0,
+            qty_maintenance: 0,
+            image_url: "https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=500&q=80",
+            photos: ["https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=500&q=80"],
+            video_url: "",
+            description: "Fold-in-half 6-foot heavy duty banquet table with carry handle. Seats 6-8 people comfortably.",
+            item_condition: "Like New",
+            location: "Student Activity Center",
+            owner_id: 104,
+            owner_name: "Tomasino Events",
+            owner_email: "tomasinoevents@campus.edu",
+            owner_contact: "09183334455",
+            rating: 5.0,
+            reviews_count: 11,
+            min_rental_days: 1,
+            is_featured: 1
+        },
+        {
+            id: 24,
+            name: "Waterproof Pop-up Canopy Tent (3x3m)",
+            category: "Tents",
+            material_tag: "Premium",
+            price_per_day: 350,
+            posting_fee: 10,
+            qty_total: 3,
+            qty_available: 3,
+            qty_rented: 0,
+            qty_maintenance: 0,
+            image_url: "https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=500&q=80",
+            photos: ["https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=500&q=80"],
+            video_url: "",
+            description: "All-weather UV protected 3x3m gazebo pop-up tent. Easy 5-minute setup for campus fairs and outdoor booths.",
+            item_condition: "Brand New",
+            location: "Grandstand Grounds",
+            owner_id: 102,
+            owner_name: "UST Event Supplies",
+            owner_email: "eventsupplies@campus.edu",
+            owner_contact: "09181112233",
+            rating: 4.9,
+            reviews_count: 19,
+            min_rental_days: 1,
+            is_featured: 1
+        },
+        {
+            id: 25,
+            name: "Yamaha StagePas 400BT Portable Sound System",
+            category: "Sound System",
+            material_tag: "Electronics",
+            price_per_day: 450,
+            posting_fee: 15,
+            qty_total: 2,
+            qty_available: 2,
+            qty_rented: 0,
+            qty_maintenance: 0,
+            image_url: "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80",
+            photos: ["https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80"],
+            video_url: "",
+            description: "Complete PA system with 2 speakers, 8-channel powered mixer, Bluetooth streaming, and 2 wireless microphones.",
+            item_condition: "Like New",
+            location: "Music & Audio Lab",
+            owner_id: 103,
+            owner_name: "A/V Guild Techs",
+            owner_email: "avguild@campus.edu",
+            owner_contact: "09184445566",
+            rating: 5.0,
+            reviews_count: 22,
+            min_rental_days: 1,
+            is_featured: 1
+        },
+        {
+            id: 26,
+            name: "Sony Alpha A7 III 4K Camera Kit",
+            category: "Cameras",
+            material_tag: "Electronics",
+            price_per_day: 500,
+            posting_fee: 15,
+            qty_total: 2,
+            qty_available: 2,
+            qty_rented: 0,
+            qty_maintenance: 0,
+            image_url: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80",
+            photos: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80"],
+            video_url: "",
+            description: "Full-frame 4K mirrorless camera kit including 28-70mm lens, 2 batteries, charger, and 128GB high-speed SD card.",
+            item_condition: "Like New",
+            location: "Media Production Studio",
+            owner_id: 104,
+            owner_name: "Campus Media Arts",
+            owner_email: "mediaarts@campus.edu",
+            owner_contact: "09185556677",
+            rating: 4.9,
+            reviews_count: 16,
+            min_rental_days: 1,
+            is_featured: 1
+        },
+        {
+            id: 27,
+            name: "RGB LED Stage Par Lighting Set (4 Units)",
+            category: "Lights",
+            material_tag: "Electronics",
+            price_per_day: 200,
+            posting_fee: 6,
+            qty_total: 4,
+            qty_available: 4,
+            qty_rented: 0,
+            qty_maintenance: 0,
+            image_url: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&q=80",
+            photos: ["https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&q=80"],
+            video_url: "",
+            description: "4-pack DMX-compatible RGB multi-color stage uplights with floor stands and wireless remote for stage lighting.",
+            item_condition: "Good",
+            location: "Main Stage Complex",
+            owner_id: 102,
+            owner_name: "UST Event Supplies",
+            owner_email: "eventsupplies@campus.edu",
+            owner_contact: "09181112233",
+            rating: 4.8,
+            reviews_count: 7,
+            min_rental_days: 1,
+            is_featured: 0
+        }
+    ];
+
     if (!rentEaseInventory || rentEaseInventory.length === 0) {
-        rentEaseInventory = [
-            {
-                id: 19,
-                name: "POSPT",
-                category: "Tents",
-                material_tag: "Standard",
-                price_per_day: 1,
-                posting_fee: 1,
-                qty_total: 1,
-                qty_available: 1,
-                qty_rented: 0,
-                qty_maintenance: 0,
-                image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80",
-                photos: ["https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80"],
-                video_url: "",
-                description: "21212",
-                item_condition: "Good",
-                location: "Campus Hub",
-                owner_id: 105,
-                owner_name: "Pogilameg Tester",
-                owner_email: "pogilameg@gmail.com",
-                owner_contact: "09171234567",
-                rating: 5,
-                reviews_count: 0,
-                min_rental_days: 1,
-                is_featured: 1
-            },
-            {
-                id: 18,
-                name: "POSPT",
-                category: "Others",
-                material_tag: "Standard",
-                price_per_day: 1,
-                posting_fee: 1,
-                qty_total: 1,
-                qty_available: 1,
-                qty_rented: 0,
-                qty_maintenance: 0,
-                image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80",
-                photos: ["https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80"],
-                video_url: "",
-                description: "dadasdsa",
-                item_condition: "Good",
-                location: "Campus Hub",
-                owner_id: 105,
-                owner_name: "Pogilameg Tester",
-                owner_email: "pogilameg@gmail.com",
-                owner_contact: "09171234567",
-                rating: 5,
-                reviews_count: 0,
-                min_rental_days: 1,
-                is_featured: 1
+        rentEaseInventory = [...defaultCatalogItems];
+    } else {
+        const existingIds = rentEaseInventory.map(x => parseInt(x.id));
+        defaultCatalogItems.forEach(di => {
+            if (!existingIds.includes(parseInt(di.id))) {
+                rentEaseInventory.push(di);
             }
-        ];
+        });
     }
 
     renderFeaturedRentals();
@@ -270,46 +461,92 @@ function isCurrentUserOwnerOfItem(item) {
     return false;
 }
 
-function openCategoryTab(category) {
-    window._isExplicitCategory = true;
-    currentCategory = category;
-    currentTag = 'All';
-    const titleEl = document.getElementById('exploreCategoryTitle');
-    if (titleEl) titleEl.innerText = (category === 'All') ? 'Equipment Catalog' : category;
-
-    // Reset filter chips active state
+function selectCategoryChip(category) {
+    const targetCat = (category || 'All').trim().toLowerCase();
     const chips = document.querySelectorAll('#exploreFilterChipsContainer .filter-chip');
+    let matchedChip = null;
+
     chips.forEach(c => {
-        if (c.innerText.trim() === 'All') {
-            c.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold filter-chip active';
+        const catData = (c.getAttribute('data-category') || c.innerText || '').trim().toLowerCase();
+        const matches = (targetCat === 'all' && catData === 'all') ||
+                        (targetCat !== 'all' && (
+                            catData === targetCat ||
+                            (targetCat.includes('sound') && catData.includes('sound')) ||
+                            (targetCat.includes('decor') && catData.includes('decor')) ||
+                            ((targetCat.includes('power') || targetCat.includes('gen')) && (catData.includes('power') || catData.includes('gen')))
+                        ));
+
+        if (matches) {
+            matchedChip = c;
+            c.className = 'btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip active';
             c.style.background = '#5B3FA8';
             c.style.color = '#fff';
+            c.style.borderColor = '#5B3FA8';
         } else {
-            c.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold filter-chip bg-white text-secondary border';
+            c.className = 'btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border';
             c.style.background = '#fff';
             c.style.color = '';
+            c.style.borderColor = '#E2E8F0';
         }
     });
 
+    if (matchedChip) {
+        matchedChip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+}
+window.selectCategoryChip = selectCategoryChip;
+
+function filterRentEaseByCategory(btnEl, category) {
+    currentCategory = category || 'All';
+    currentTag = 'All';
+
+    // Clear search query when selecting category chip
+    const searchInput = document.getElementById('exploreSearchInput');
+    const homeInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearExploreSearchBtn');
+    if (searchInput) searchInput.value = '';
+    if (homeInput) homeInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    const titleEl = document.getElementById('exploreCategoryTitle');
+    if (titleEl) {
+        titleEl.innerText = (currentCategory === 'All') ? 'Equipment Catalog' : currentCategory;
+    }
+
+    selectCategoryChip(currentCategory);
+    renderExploreCatalog();
+}
+window.filterRentEaseByCategory = filterRentEaseByCategory;
+
+// Backward compatibility alias
+window.filterRentEaseByTag = function (btnEl, tag) {
+    filterRentEaseByCategory(btnEl, tag);
+};
+
+function openCategoryTab(category) {
+    window._isExplicitCategory = true;
+    currentCategory = category || 'All';
+    currentTag = 'All';
+
+    // Clear search query
+    const searchInput = document.getElementById('exploreSearchInput');
+    const homeInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearExploreSearchBtn');
+    if (searchInput) searchInput.value = '';
+    if (homeInput) homeInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    const titleEl = document.getElementById('exploreCategoryTitle');
+    if (titleEl) {
+        titleEl.innerText = (currentCategory === 'All') ? 'Equipment Catalog' : currentCategory;
+    }
+
     switchTab('explore');
+    selectCategoryChip(currentCategory);
     renderExploreCatalog();
     window._isExplicitCategory = false;
 }
-
-function filterRentEaseByTag(btnEl, tag) {
-    currentTag = tag;
-    const chips = document.querySelectorAll('#exploreFilterChipsContainer .filter-chip');
-    chips.forEach(c => {
-        c.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold filter-chip bg-white text-secondary border';
-        c.style.background = '#fff';
-        c.style.color = '';
-    });
-    btnEl.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold filter-chip active';
-    btnEl.style.background = '#5B3FA8';
-    btnEl.style.color = '#fff';
-
-    renderExploreCatalog();
-}
+window.openCategoryTab = openCategoryTab;
 
 function handleRentEaseSearch(query) {
     const q = (query || '').toLowerCase().trim();
@@ -349,7 +586,15 @@ function renderExploreCatalog() {
     let filtered = rentEaseInventory || [];
 
     if (currentCategory && currentCategory !== 'All') {
-        filtered = filtered.filter(i => (i.category || '').toLowerCase() === currentCategory.toLowerCase());
+        const cat = currentCategory.toLowerCase();
+        filtered = filtered.filter(i => {
+            const itemCat = (i.category || '').toLowerCase();
+            if (itemCat === cat) return true;
+            if (cat.includes('sound') && itemCat.includes('sound')) return true;
+            if ((cat.includes('power') || cat.includes('generator')) && (itemCat.includes('power') || itemCat.includes('generator'))) return true;
+            if (cat.includes('decor') && itemCat.includes('decor')) return true;
+            return false;
+        });
     }
     if (currentTag && currentTag !== 'All') {
         filtered = filtered.filter(i => (i.material_tag || '').toLowerCase() === currentTag.toLowerCase());
@@ -3953,18 +4198,7 @@ window.switchTab = function (tabName) {
             currentTag = 'All';
             const titleEl = document.getElementById('exploreCategoryTitle');
             if (titleEl) titleEl.innerText = 'Equipment Catalog';
-            const chips = document.querySelectorAll('#exploreFilterChipsContainer .filter-chip');
-            chips.forEach(c => {
-                if (c.innerText.trim() === 'All') {
-                    c.className = 'btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip active';
-                    c.style.background = '#5B3FA8';
-                    c.style.color = '#fff';
-                } else {
-                    c.className = 'btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border';
-                    c.style.background = '#fff';
-                    c.style.color = '';
-                }
-            });
+            if (typeof selectCategoryChip === 'function') selectCategoryChip('All');
         }
         renderExploreCatalog();
     } else if (tabName === 'sell') {

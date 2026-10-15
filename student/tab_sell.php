@@ -248,9 +248,12 @@
                         <option value="Tables">Tables</option>
                         <option value="Tents">Tents</option>
                         <option value="Sound System">Sound System</option>
+                        <option value="Cameras">Cameras</option>
                         <option value="Lights">Lights</option>
                         <option value="Decorations">Decorations</option>
                         <option value="Stages">Stages</option>
+                        <option value="Catering">Catering</option>
+                        <option value="Generators">Generators</option>
                         <option value="Others" selected>Others</option>
                     </select>
                 </div>

@@ -1894,8 +1894,13 @@
                                 markMessagesAsRead();
                                 loadChatConversationsList();
                             } else if (tabName === 'explore') {
-                                if (typeof currentCategory !== 'undefined') currentCategory = 'All';
-                                if (typeof currentTag !== 'undefined') currentTag = 'All';
+                                if (!window._isExplicitCategory) {
+                                    if (typeof currentCategory !== 'undefined') currentCategory = 'All';
+                                    if (typeof currentTag !== 'undefined') currentTag = 'All';
+                                    const titleEl = document.getElementById('exploreCategoryTitle');
+                                    if (titleEl) titleEl.innerText = 'Equipment Catalog';
+                                    if (typeof selectCategoryChip === 'function') selectCategoryChip('All');
+                                }
                                 if (typeof renderExploreCatalog === 'function') renderExploreCatalog();
                                 else filterProducts();
                             } else if (tabName === 'wanted') {

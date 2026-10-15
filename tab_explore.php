@@ -11,10 +11,7 @@
             <i class="fa-solid fa-arrow-left text-dark fs-9"></i>
         </button>
         <h5 class="fw-extrabold mb-0 text-dark fs-7" id="exploreCategoryTitle">Equipment Catalog</h5>
-        <button class="btn btn-sm btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" 
-                style="width:30px; height:30px; background:#fff;" onclick="const el=document.getElementById('exploreSearchInput'); if(el){el.focus();}">
-            <i class="fa-solid fa-magnifying-glass text-dark fs-9"></i>
-        </button>
+        <div style="width:30px; height:30px;"></div>
     </div>
 
     <!-- Active Search Bar inside Rentals / Explore (Compact) -->
@@ -31,23 +28,67 @@
         </div>
     </div>
 
-    <!-- Filter Chips: All, Plastic, Wooden, Premium (Compact) -->
-    <div class="d-flex gap-1.5 overflow-x-auto pb-1.5 mb-2 no-scrollbar" id="exploreFilterChipsContainer">
+    <!-- Categories Filter Chips (Scrollable) -->
+    <div class="d-flex gap-1.5 overflow-x-auto pb-1.5 mb-2 no-scrollbar" id="exploreFilterChipsContainer" style="scrollbar-width:none; -webkit-overflow-scrolling:touch;">
         <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip active" 
-                style="background: #5B3FA8; color: #fff; border:none; font-size: 0.72rem;" onclick="filterRentEaseByTag(this, 'All')">
+                data-category="All"
+                style="background: #5B3FA8; color: #fff; border: 1px solid #5B3FA8; font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'All')">
             All
         </button>
         <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
-                style="font-size: 0.72rem;" onclick="filterRentEaseByTag(this, 'Plastic')">
-            Plastic
+                data-category="Chairs"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Chairs')">
+            Chairs
         </button>
         <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
-                style="font-size: 0.72rem;" onclick="filterRentEaseByTag(this, 'Wooden')">
-            Wooden
+                data-category="Tables"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Tables')">
+            Tables
         </button>
         <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
-                style="font-size: 0.72rem;" onclick="filterRentEaseByTag(this, 'Premium')">
-            Premium
+                data-category="Tents"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Tents')">
+            Tents
+        </button>
+        <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
+                data-category="Sound System"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Sound System')">
+            Sound
+        </button>
+        <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
+                data-category="Cameras"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Cameras')">
+            Cameras
+        </button>
+        <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
+                data-category="Lights"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Lights')">
+            Lights
+        </button>
+        <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
+                data-category="Decorations"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Decorations')">
+            Decor
+        </button>
+        <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
+                data-category="Stages"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Stages')">
+            Stages
+        </button>
+        <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
+                data-category="Catering"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Catering')">
+            Catering
+        </button>
+        <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
+                data-category="Generators"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Generators')">
+            Power
+        </button>
+        <button class="btn btn-sm rounded-pill px-2.5 py-0.5 fs-9 fw-bold filter-chip bg-white text-secondary border" 
+                data-category="Others"
+                style="font-size: 0.72rem; white-space: nowrap;" onclick="filterRentEaseByCategory(this, 'Others')">
+            Others
         </button>
     </div>
 
