@@ -332,10 +332,9 @@ if ($action === 'get_dashboard') {
 
     $activeTickets = (int)$db->query("SELECT COUNT(*) FROM `rental_issues` WHERE `status` != 'RESOLVED'")->fetchColumn();
 
-    $pendingVerificationsCount = 0;
-    $latestPendingVerifications = [];
     try {
-        $pendingVerificationsCount = (int)$db->query("SELECT COUNT(*) FROM `VerificationRequests` WHERE `Status` = 'PENDING'")->fetchColumn();
+        $db->exec("DELETE FROM `VerificationRequests` WHERE `UserId` NOT IN (SELECT `Id` FROM `Users`)");
+        $pendingVerificationsCount = (int)$db->query("SELECT COUNT(*) FROM `VerificationRequests` vr INNER JOIN `Users` u ON vr.UserId = u.Id WHERE vr.Status = 'PENDING' AND u.Role = 'STUDENT'")->fetchColumn();
         $latestPendingVerifications = $db->query("SELECT vr.Id, vr.UserId, vr.IdType, vr.IdNumber, vr.CreatedAt,
                 COALESCE(p.FirstName, 'Student') as FirstName,
                 COALESCE(p.LastName, 'User') as LastName,
@@ -346,7 +345,7 @@ if ($action === 'get_dashboard') {
          FROM `VerificationRequests` vr
          JOIN `Users` u ON vr.UserId = u.Id
          LEFT JOIN `StudentProfiles` p ON u.Id = p.UserId
-         WHERE vr.Status = 'PENDING'
+         WHERE vr.Status = 'PENDING' AND u.Role = 'STUDENT'
          ORDER BY vr.CreatedAt DESC
          LIMIT 5")->fetchAll();
     } catch (Exception $e) {}
@@ -375,8 +374,6 @@ if ($action === 'get_dashboard') {
             'active_tickets' => $activeTickets,
             'pending_verifications_count' => $pendingVerificationsCount,
             'latest_pending_verifications' => $latestPendingVerifications,
-            'raw_vr' => $db->query("SELECT * FROM `VerificationRequests` WHERE `Status` = 'PENDING'")->fetchAll(),
-            'all_users' => $db->query("SELECT Id, Email, Role, Status FROM `Users` LIMIT 10")->fetchAll(),
             'latest_customer_id' => $latestCustomerId,
             'new_customers_count' => $newCustomersCount
         ],
@@ -748,10 +745,9 @@ if ($action === 'get_customers') {
     $status = trim((string)($req['status'] ?? 'All'));
     $subtab = trim((string)($req['subtab'] ?? 'all'));
 
-    $pendingVerificationsCount = 0;
-    $latestCustomerId = 0;
     try {
-        $pendingVerificationsCount = (int)$db->query("SELECT COUNT(*) FROM `VerificationRequests` WHERE `Status` = 'PENDING'")->fetchColumn();
+        $db->exec("DELETE FROM `VerificationRequests` WHERE `UserId` NOT IN (SELECT `Id` FROM `Users`)");
+        $pendingVerificationsCount = (int)$db->query("SELECT COUNT(*) FROM `VerificationRequests` vr INNER JOIN `Users` u ON vr.UserId = u.Id WHERE vr.Status = 'PENDING' AND u.Role = 'STUDENT'")->fetchColumn();
         $latestCustomerId = (int)$db->query("SELECT COALESCE(MAX(Id), 0) FROM `Users` WHERE `Role` = 'STUDENT'")->fetchColumn();
     } catch (Exception $e) {}
 

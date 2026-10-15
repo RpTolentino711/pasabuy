@@ -1108,9 +1108,13 @@ if ($action === 'get_verification_status') {
 }
 
 if ($action === 'admin_verification_requests') {
-    $sql = "SELECT vr.*, sp.FirstName, sp.LastName, sp.StudentNumber, sp.SchoolEmail, sp.Course, sp.YearLevel, sp.ProfileImage 
+    $sql = "SELECT vr.*, COALESCE(sp.FirstName, 'Student') as FirstName, COALESCE(sp.LastName, 'Member') as LastName, 
+                   COALESCE(sp.StudentNumber, 'N/A') as StudentNumber, COALESCE(sp.SchoolEmail, u.Email) as SchoolEmail, 
+                   COALESCE(sp.Course, 'BSIT') as Course, COALESCE(sp.YearLevel, 'N/A') as YearLevel, sp.ProfileImage 
             FROM VerificationRequests vr 
-            JOIN StudentProfiles sp ON vr.UserId = sp.UserId 
+            JOIN Users u ON vr.UserId = u.Id
+            LEFT JOIN StudentProfiles sp ON vr.UserId = sp.UserId 
+            WHERE u.Role = 'STUDENT'
             ORDER BY FIELD(vr.Status, 'PENDING', 'REJECTED', 'APPROVED'), vr.CreatedAt DESC";
     $stmt = $db->query($sql);
     echo json_encode($stmt->fetchAll() ?: []);

@@ -2909,7 +2909,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </tr>
                     `;}).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No student records found.</td></tr>';
+                    const emptyMsg = currentCustomerSubtab === 'requests' 
+                        ? '<i class="fa-solid fa-circle-check text-success fs-3 d-block mb-2"></i><strong>All verification requests resolved!</strong><br><span class="fs-9 text-muted">There are currently no pending student verification requests waiting for review.</span>'
+                        : 'No student records found.';
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">${emptyMsg}</td></tr>`;
                 }
             } catch (e) {}
         }
