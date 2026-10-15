@@ -2547,11 +2547,6 @@ window.renterConfirmReceivedPackage = async function(orderCode) {
     }
 };
 
-    } catch (err) {
-        console.error("Leaflet init error:", err);
-    }
-}
-
 // ----------------------------------------------------------
 // 7. CUSTOMER SUPPORT & ISSUE CENTER (Rubric 10%)
 // ----------------------------------------------------------
