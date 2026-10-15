@@ -1303,6 +1303,11 @@ if ($action === 'admin_delete_equipment' || $action === 'delete_item' || $action
 
     $stmt = $db->prepare("DELETE FROM `rental_inventory` WHERE `id` = ?");
     $stmt->execute([$id]);
+    try {
+        $fallback = getRentEaseItemsFallback();
+        $fallback = array_values(array_filter($fallback, fn($i) => (int)$i['id'] !== $id));
+        saveRentEaseItemsFallback($fallback);
+    } catch (Exception $eFb) {}
     echo json_encode(['success' => true, 'message' => "Equipment item #{$id} taken down by Admin supervision."]);
     exit;
 }
