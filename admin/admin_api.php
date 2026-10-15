@@ -1302,6 +1302,27 @@ if ($action === 'get_reports') {
     $newCustomers = (int)$db->query("SELECT COUNT(*) FROM `Users` WHERE `Role` = 'STUDENT'")->fetchColumn();
     $avgOrder = ($totalOrders > 0) ? round($totalSales / $totalOrders, 2) : 0;
 
+    // Real week-over-week comparisons
+    $curr7Sales = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID' AND `created_at` >= (NOW() - INTERVAL 7 DAY)")->fetchColumn();
+    $prev7Sales = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID' AND `created_at` >= (NOW() - INTERVAL 14 DAY) AND `created_at` < (NOW() - INTERVAL 7 DAY)")->fetchColumn();
+
+    $curr7Orders = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `created_at` >= (NOW() - INTERVAL 7 DAY)")->fetchColumn();
+    $prev7Orders = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `created_at` >= (NOW() - INTERVAL 14 DAY) AND `created_at` < (NOW() - INTERVAL 7 DAY)")->fetchColumn();
+
+    $curr7Cust = (int)$db->query("SELECT COUNT(*) FROM `Users` WHERE `Role` = 'STUDENT' AND `CreatedAt` >= (NOW() - INTERVAL 7 DAY)")->fetchColumn();
+    $prev7Cust = (int)$db->query("SELECT COUNT(*) FROM `Users` WHERE `Role` = 'STUDENT' AND `CreatedAt` >= (NOW() - INTERVAL 14 DAY) AND `CreatedAt` < (NOW() - INTERVAL 7 DAY)")->fetchColumn();
+
+    $calcGrowth = function($curr, $prev) {
+        if ($curr == 0 && $prev == 0) return 0;
+        if ($prev == 0) return ($curr > 0) ? 100 : 0;
+        return round((($curr - $prev) / $prev) * 100, 1);
+    };
+
+    $salesGrowth = $calcGrowth($curr7Sales, $prev7Sales);
+    $ordersGrowth = $calcGrowth($curr7Orders, $prev7Orders);
+    $customersGrowth = $calcGrowth($curr7Cust, $prev7Cust);
+    $avgOrderGrowth = $calcGrowth(($curr7Orders > 0 ? $curr7Sales / $curr7Orders : 0), ($prev7Orders > 0 ? $prev7Sales / $prev7Orders : 0));
+
     // Generate recent 7 days labels and revenue
     $labels = [];
     $salesData = [];
@@ -1310,7 +1331,6 @@ if ($action === 'get_reports') {
         $dSql = date('Y-m-d', strtotime("-{$i} days"));
         $labels[] = $d;
         $daySum = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE DATE(created_at) = '{$dSql}' AND `payment_status` = 'PAID'")->fetchColumn();
-        // If today has the live order, show it
         if ($i === 0 && $daySum == 0 && $totalSales > 0) {
             $daySum = $totalSales;
         }
@@ -1337,6 +1357,12 @@ if ($action === 'get_reports') {
             'total_orders' => $totalOrders,
             'new_customers' => $newCustomers,
             'avg_order_value' => $avgOrder
+        ],
+        'growth' => [
+            'sales' => $salesGrowth,
+            'orders' => $ordersGrowth,
+            'customers' => $customersGrowth,
+            'avg_order' => $avgOrderGrowth
         ],
         'sales_chart' => [
             'labels' => $labels,

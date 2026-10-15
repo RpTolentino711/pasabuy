@@ -1279,28 +1279,28 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <div class="card-stat">
                                 <span class="fs-8 fw-bold text-muted d-block mb-1">Total Sales</span>
                                 <h3 class="fw-extrabold text-dark mb-1" id="repTotalSales">₱ 0</h3>
-                                <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-arrow-up me-1"></i>+15%</span>
+                                <div id="repSalesGrowth"><span class="fs-9 text-muted"><i class="fa-solid fa-minus me-1"></i>No sales yet</span></div>
                             </div>
                         </div>
                         <div class="col-6 col-lg-3">
                             <div class="card-stat">
                                 <span class="fs-8 fw-bold text-muted d-block mb-1">Total Orders</span>
                                 <h3 class="fw-extrabold text-dark mb-1" id="repTotalOrders">0</h3>
-                                <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-arrow-up me-1"></i>+8%</span>
+                                <div id="repOrdersGrowth"><span class="fs-9 text-muted"><i class="fa-solid fa-minus me-1"></i>No orders yet</span></div>
                             </div>
                         </div>
                         <div class="col-6 col-lg-3">
                             <div class="card-stat">
                                 <span class="fs-8 fw-bold text-muted d-block mb-1">New Customers</span>
                                 <h3 class="fw-extrabold text-dark mb-1" id="repNewCustomers">0</h3>
-                                <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-arrow-up me-1"></i>+12%</span>
+                                <div id="repCustomersGrowth"><span class="fs-9 text-muted"><i class="fa-solid fa-users me-1"></i>0 registered</span></div>
                             </div>
                         </div>
                         <div class="col-6 col-lg-3">
                             <div class="card-stat">
                                 <span class="fs-8 fw-bold text-muted d-block mb-1">Average Order Value</span>
                                 <h3 class="fw-extrabold text-dark mb-1" id="repAvgOrder">₱ 0</h3>
-                                <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-arrow-up me-1"></i>+10%</span>
+                                <div id="repAvgOrderGrowth"><span class="fs-9 text-muted"><i class="fa-solid fa-minus me-1"></i>₱0.00 avg</span></div>
                             </div>
                         </div>
                     </div>
@@ -3854,6 +3854,26 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     document.getElementById('repTotalOrders').innerText = sm.total_orders;
                     document.getElementById('repNewCustomers').innerText = sm.new_customers;
                     document.getElementById('repAvgOrder').innerText = '₱ ' + Number(sm.avg_order_value).toLocaleString();
+
+                    const g = data.growth || {};
+                    const formatGrowthBadge = (val, emptyLabel) => {
+                        const num = parseFloat(val) || 0;
+                        if (num === 0) return `<span class="fs-9 text-muted"><i class="fa-solid fa-minus me-1"></i>${emptyLabel}</span>`;
+                        if (num > 0) return `<span class="fs-9 text-success fw-bold"><i class="fa-solid fa-arrow-up me-1"></i>+${num}%</span>`;
+                        return `<span class="fs-9 text-danger fw-bold"><i class="fa-solid fa-arrow-down me-1"></i>${num}%</span>`;
+                    };
+
+                    const elSales = document.getElementById('repSalesGrowth');
+                    const elOrders = document.getElementById('repOrdersGrowth');
+                    const elCust = document.getElementById('repCustomersGrowth');
+                    const elAvg = document.getElementById('repAvgOrderGrowth');
+
+                    if (elSales) elSales.innerHTML = formatGrowthBadge(g.sales, 'No sales yet');
+                    if (elOrders) elOrders.innerHTML = formatGrowthBadge(g.orders, 'No orders yet');
+                    if (elCust) elCust.innerHTML = (g.customers === 0 && sm.new_customers > 0)
+                        ? `<span class="fs-9 text-muted"><i class="fa-solid fa-users me-1"></i>${sm.new_customers} registered</span>`
+                        : formatGrowthBadge(g.customers, 'No new signups');
+                    if (elAvg) elAvg.innerHTML = formatGrowthBadge(g.avg_order, '₱0.00 avg');
 
                     // Render Sales Trend Spline Chart
                     const ctxTrend = document.getElementById('salesTrendChart')?.getContext('2d');
