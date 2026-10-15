@@ -1134,63 +1134,160 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             <section id="section_support" class="admin-section">
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
-                        <h4 class="fw-extrabold mb-1 text-dark">Customer Support / Issues</h4>
-                        <p class="text-muted fs-8 mb-0">Manage customer inquiries and support tickets.</p>
+                        <h4 class="fw-extrabold mb-1 text-dark">Support &amp; Community Moderation</h4>
+                        <p class="text-muted fs-8 mb-0">Manage customer tickets, item violation reports (3-strike enforcement), and owner appeals.</p>
                     </div>
                 </div>
 
-                <div class="admin-table-card p-3">
-                    <div class="subtab-nav">
-                        <button class="subtab-btn active" onclick="switchTicketSubtab('All Tickets', this)">All Tickets</button>
-                        <button class="subtab-btn" onclick="switchTicketSubtab('Open', this)">Open Tickets</button>
-                        <button class="subtab-btn" onclick="switchTicketSubtab('In Progress', this)">In Progress</button>
-                        <button class="subtab-btn" onclick="switchTicketSubtab('Resolved', this)">Resolved</button>
-                    </div>
+                <!-- Top Support Tabs -->
+                <div class="subtab-nav mb-3">
+                    <button class="subtab-btn active" id="btnSupportModuleTickets" onclick="switchSupportModule('tickets', this)">
+                        <i class="fa-solid fa-headset me-1"></i> Support Tickets
+                    </button>
+                    <button class="subtab-btn" id="btnSupportModuleReports" onclick="switchSupportModule('reports', this)">
+                        <i class="fa-solid fa-flag text-danger me-1"></i> Item Violation Reports 
+                        <span class="badge rounded-pill bg-danger ms-1" id="adminReportsBadge" style="display:none; font-size:0.65rem;">0</span>
+                    </button>
+                    <button class="subtab-btn" id="btnSupportModuleAppeals" onclick="switchSupportModule('appeals', this)">
+                        <i class="fa-solid fa-scale-balanced text-primary me-1"></i> Listing Appeals 
+                        <span class="badge rounded-pill bg-warning text-dark ms-1" id="adminAppealsBadge" style="display:none; font-size:0.65rem;">0</span>
+                    </button>
+                </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-12 col-md-5">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-white"><i class="fa-solid fa-search text-muted"></i></span>
-                                <input type="text" class="form-control" id="ticketSearchInput" placeholder="Search tickets..." oninput="loadTickets()">
+                <!-- PANE 1: SUPPORT TICKETS -->
+                <div id="supportPaneTickets" class="support-module-pane">
+                    <div class="admin-table-card p-3">
+                        <div class="subtab-nav">
+                            <button class="subtab-btn active" onclick="switchTicketSubtab('All Tickets', this)">All Tickets</button>
+                            <button class="subtab-btn" onclick="switchTicketSubtab('Open', this)">Open Tickets</button>
+                            <button class="subtab-btn" onclick="switchTicketSubtab('In Progress', this)">In Progress</button>
+                            <button class="subtab-btn" onclick="switchTicketSubtab('Resolved', this)">Resolved</button>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-12 col-md-5">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="fa-solid fa-search text-muted"></i></span>
+                                    <input type="text" class="form-control" id="ticketSearchInput" placeholder="Search tickets..." oninput="loadTickets()">
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <select class="form-select form-select-sm" id="ticketPriorityFilter" onchange="loadTickets()">
+                                    <option value="All">All Priority</option>
+                                    <option value="CRITICAL">Critical</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="LOW">Low</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <select class="form-select form-select-sm" id="ticketStatusFilter" onchange="loadTickets()">
+                                    <option value="All">All Status</option>
+                                    <option value="Open">Open</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Resolved">Resolved</option>
+                                </select>
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
-                            <select class="form-select form-select-sm" id="ticketPriorityFilter" onchange="loadTickets()">
-                                <option value="All">All Priority</option>
-                                <option value="CRITICAL">Critical</option>
-                                <option value="HIGH">High</option>
-                                <option value="MEDIUM">Medium</option>
-                                <option value="LOW">Low</option>
-                            </select>
-                        </div>
-                        <div class="col-6 col-md-4">
-                            <select class="form-select form-select-sm" id="ticketStatusFilter" onchange="loadTickets()">
-                                <option value="All">All Status</option>
-                                <option value="Open">Open</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Resolved">Resolved</option>
-                            </select>
+
+                        <div class="table-responsive">
+                            <table class="table table-custom mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Ticket #</th>
+                                        <th>Order #</th>
+                                        <th>Step / Stage</th>
+                                        <th>Reporter</th>
+                                        <th>Subject &amp; Incident Notes</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th width="130">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ticketsTableBody">
+                                    <tr><td colspan="8" class="text-center py-4 text-muted">Loading live tickets...</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+                </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-custom mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Ticket #</th>
-                                    <th>Order #</th>
-                                    <th>Step / Stage</th>
-                                    <th>Reporter</th>
-                                    <th>Subject &amp; Incident Notes</th>
-                                    <th>Priority</th>
-                                    <th>Status</th>
-                                    <th width="130">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ticketsTableBody">
-                                <tr><td colspan="8" class="text-center py-4 text-muted">Loading live tickets...</td></tr>
-                            </tbody>
-                        </table>
+                <!-- PANE 2: ITEM VIOLATION REPORTS (3-STRIKE POLICY) -->
+                <div id="supportPaneReports" class="support-module-pane" style="display:none;">
+                    <div class="admin-table-card p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-extrabold text-dark mb-0">Reported Equipment Listings</h6>
+                                <p class="text-muted fs-9 mb-0">Reports submitted by students. <strong>3 approved strikes</strong> will automatically terminate the listing and suspend the poster.</p>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select form-select-sm" id="reportFilterStatus" style="width:160px;" onchange="loadItemReports()">
+                                    <option value="All">All Reports</option>
+                                    <option value="PENDING" selected>Pending Review</option>
+                                    <option value="APPROVED">Approved Strikes</option>
+                                    <option value="DISMISSED">Dismissed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-custom mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Report #</th>
+                                        <th>Equipment Listing</th>
+                                        <th>Listing Owner (Poster)</th>
+                                        <th>Reporter</th>
+                                        <th>Violation Reason &amp; Details</th>
+                                        <th>Strike Status</th>
+                                        <th>Report Status</th>
+                                        <th width="190">Moderation Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemReportsTableBody">
+                                    <tr><td colspan="8" class="text-center py-4 text-muted">Loading violation reports...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 3: LISTING APPEALS (OWNER REINSTATEMENT) -->
+                <div id="supportPaneAppeals" class="support-module-pane" style="display:none;">
+                    <div class="admin-table-card p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-extrabold text-dark mb-0">Owner Listing Appeals</h6>
+                                <p class="text-muted fs-9 mb-0">Appeals submitted by equipment owners against violation strikes or post terminations. Approving clears strikes and unsuspends the user.</p>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select form-select-sm" id="appealFilterStatus" style="width:160px;" onchange="loadItemAppeals()">
+                                    <option value="All">All Appeals</option>
+                                    <option value="PENDING" selected>Pending Review</option>
+                                    <option value="ACCEPTED">Accepted (Restored)</option>
+                                    <option value="REJECTED">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-custom mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Appeal #</th>
+                                        <th>Equipment Listing</th>
+                                        <th>Owner (Poster)</th>
+                                        <th>Owner's Defense / Explanation</th>
+                                        <th>Item Status</th>
+                                        <th>Appeal Decision</th>
+                                        <th width="190">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemAppealsTableBody">
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">Loading appeals...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -2133,17 +2230,51 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             } catch (e) {}
         }
 
+        async function pollItemReportsAndAppeals() {
+            try {
+                const res = await fetch(`${API_URL}?action=get_item_reports&status=PENDING`);
+                const data = await res.json();
+                const rBadge = document.getElementById('adminReportsBadge');
+                if (rBadge) {
+                    const pCnt = parseInt(data.pending_count || 0);
+                    if (pCnt > 0) {
+                        rBadge.innerText = pCnt;
+                        rBadge.style.display = 'inline-block';
+                    } else {
+                        rBadge.style.display = 'none';
+                    }
+                }
+            } catch (e) {}
+
+            try {
+                const res = await fetch(`${API_URL}?action=get_item_appeals&status=PENDING`);
+                const data = await res.json();
+                const aBadge = document.getElementById('adminAppealsBadge');
+                if (aBadge) {
+                    const pCnt = parseInt(data.pending_count || 0);
+                    if (pCnt > 0) {
+                        aBadge.innerText = pCnt;
+                        aBadge.style.display = 'inline-block';
+                    } else {
+                        aBadge.style.display = 'none';
+                    }
+                }
+            } catch (e) {}
+        }
+
         let liveAdminPollingInterval = null;
         function startLiveAdminPolling() {
             if (liveAdminPollingInterval) clearInterval(liveAdminPollingInterval);
             pollPendingTicketsCount();
             pollCustomerVerificationStatus();
+            pollItemReportsAndAppeals();
             liveAdminPollingInterval = setInterval(() => {
                 const authOverlay = document.getElementById('authOverlay');
                 if (authOverlay && authOverlay.style.display !== 'none') return;
 
                 pollPendingTicketsCount();
                 pollCustomerVerificationStatus();
+                pollItemReportsAndAppeals();
 
                 if (currentActiveSection === 'dashboard') {
                     loadDashboardStats();
@@ -2152,7 +2283,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 } else if (currentActiveSection === 'inventory') {
                     loadInventory();
                 } else if (currentActiveSection === 'support') {
-                    loadTickets();
+                    if (currentSupportModule === 'tickets') loadTickets();
+                    else if (currentSupportModule === 'reports') loadItemReports();
+                    else if (currentSupportModule === 'appeals') loadItemAppeals();
                 }
             }, 3000);
         }
@@ -2193,7 +2326,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 case 'customers': loadCustomers(); break;
                 case 'delivery': loadDeliveries(); break;
                 case 'serviceCharges': loadServiceCharges(); break;
-                case 'support': loadTickets(); break;
+                case 'support': 
+                    if (currentSupportModule === 'tickets') loadTickets();
+                    else if (currentSupportModule === 'reports') loadItemReports();
+                    else if (currentSupportModule === 'appeals') loadItemAppeals();
+                    break;
                 case 'transactions': loadTransactions(); break;
                 case 'reports': loadReports(); break;
                 case 'settings': loadSettings(); break;
@@ -2344,13 +2481,24 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         const totalUnits = data.products.reduce((acc, p) => acc + (parseInt(p.qty_total) || 0), 0);
                         unitsCountEl.innerText = totalUnits;
                     }
-                    tbody.innerHTML = data.products.map(p => `
+                    tbody.innerHTML = data.products.map(p => {
+                        const strikes = parseInt(p.approved_reports_count || 0);
+                        const isTerminated = (p.status === 'TERMINATED');
+                        let strikeBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle fs-9"><i class="fa-solid fa-shield-check me-1"></i>Clean (0/3)</span>';
+                        if (isTerminated) {
+                            strikeBadge = '<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>TERMINATED (3 Strikes)</span>';
+                        } else if (strikes > 0) {
+                            strikeBadge = `<span class="badge bg-warning text-dark border border-warning-subtle fs-9 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>${strikes}/3 Strikes</span>`;
+                        }
+
+                        return `
                         <tr>
                             <td><input type="checkbox" class="form-check-input"></td>
                             <td><img src="${p.image_url}" class="rounded-2 border object-fit-cover shadow-2xs" style="width:42px; height:42px; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&q=80'"></td>
                             <td>
                                 <div class="fw-bold text-dark">${p.name}</div>
                                 <div class="fs-9 text-muted">${p.owner_name || 'Admin'}</div>
+                                <div class="mt-1">${strikeBadge}</div>
                             </td>
                             <td><span class="badge bg-light text-secondary border">${p.category}</span></td>
                             <td class="fw-bold">₱${Number(p.price_per_day).toLocaleString()}</td>
@@ -2363,7 +2511,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 </button>
                             </td>
                         </tr>
-                    `).join('');
+                    `;}).join('');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No matching products found.</td></tr>';
                 }
@@ -3806,6 +3954,280 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 loadDashboardStats();
                 pollPendingTicketsCount();
             } catch (e) {}
+        }
+
+        // ----------------------------------------------------------
+        // ITEM REPORTS & APPEALS MODERATION SYSTEM (3-STRIKE ENFORCEMENT)
+        // ----------------------------------------------------------
+        let currentSupportModule = 'tickets';
+
+        function switchSupportModule(moduleName, btn) {
+            currentSupportModule = moduleName;
+            document.querySelectorAll('#section_support .subtab-btn').forEach(b => {
+                if (b.id && b.id.startsWith('btnSupportModule')) b.classList.remove('active');
+            });
+            if (btn) btn.classList.add('active');
+
+            document.querySelectorAll('.support-module-pane').forEach(p => p.style.display = 'none');
+
+            if (moduleName === 'tickets') {
+                const pane = document.getElementById('supportPaneTickets');
+                if (pane) pane.style.display = 'block';
+                loadTickets();
+            } else if (moduleName === 'reports') {
+                const pane = document.getElementById('supportPaneReports');
+                if (pane) pane.style.display = 'block';
+                loadItemReports();
+            } else if (moduleName === 'appeals') {
+                const pane = document.getElementById('supportPaneAppeals');
+                if (pane) pane.style.display = 'block';
+                loadItemAppeals();
+            }
+        }
+
+        async function loadItemReports() {
+            const status = document.getElementById('reportFilterStatus')?.value || 'All';
+            const tbody = document.getElementById('itemReportsTableBody');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=get_item_reports&status=${encodeURIComponent(status)}`);
+                const data = await res.json();
+
+                const rBadge = document.getElementById('adminReportsBadge');
+                if (rBadge) {
+                    const pCnt = parseInt(data.pending_count || 0);
+                    if (pCnt > 0) {
+                        rBadge.innerText = pCnt;
+                        rBadge.style.display = 'inline-block';
+                    } else {
+                        rBadge.style.display = 'none';
+                    }
+                }
+
+                if (data.success && data.reports && data.reports.length > 0) {
+                    tbody.innerHTML = data.reports.map(r => {
+                        const strikes = parseInt(r.approved_reports_count || 0);
+                        const isTerminated = (r.item_status === 'TERMINATED');
+                        const isOwnerSuspended = (r.owner_account_status === 'SUSPENDED');
+                        const safeItemName = (r.item_name || 'Equipment').replace(/'/g, "\\'");
+                        const safeOwnerName = (r.owner_name || 'Owner').replace(/'/g, "\\'");
+
+                        return `
+                            <tr>
+                                <td class="fw-bold text-muted">#RPT-${r.id}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="${r.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=80&q=80'}" class="rounded-2 border" style="width:38px; height:38px; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&q=80'">
+                                        <div>
+                                            <div class="fw-bold text-dark fs-8">${r.item_name}</div>
+                                            <div class="fs-9 text-muted">ID: ${r.item_id}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark fs-8">${r.owner_name}</div>
+                                    <div class="fs-9 text-muted">ID: ${r.owner_id}</div>
+                                    ${isOwnerSuspended ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-9 fw-bold">Suspended</span>' : '<span class="badge bg-success-subtle text-success border border-success-subtle fs-9">Active</span>'}
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark fs-8">${r.reporter_name}</div>
+                                    <div class="fs-9 text-muted">ID: ${r.reporter_id}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-danger fs-8">${r.reason}</div>
+                                    <div class="fs-9 text-dark" style="max-width:240px; word-break:break-word;">${r.details}</div>
+                                    ${r.evidence_photo ? `<a href="${r.evidence_photo}" target="_blank" class="badge bg-danger-subtle text-danger fs-9 mt-1 text-decoration-none d-inline-block"><i class="fa-solid fa-camera me-1"></i>View Evidence Photo</a>` : ''}
+                                </td>
+                                <td>
+                                    ${isTerminated 
+                                        ? '<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>TERMINATED (3 Strikes)</span>'
+                                        : (strikes > 0 
+                                            ? `<span class="badge bg-warning text-dark border border-warning-subtle fs-9 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>${strikes}/3 Strikes</span>`
+                                            : '<span class="badge bg-light text-muted border fs-9">0/3 Strikes</span>'
+                                          )
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge ${r.status === 'APPROVED' ? 'bg-danger-subtle text-danger' : (r.status === 'DISMISSED' ? 'bg-light text-muted border' : 'bg-warning-subtle text-warning')} fs-9">
+                                        ${r.status}
+                                    </span>
+                                </td>
+                                <td>
+                                    ${r.status === 'PENDING' ? `
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <button class="btn btn-sm btn-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="adminApproveReport(${r.id}, ${r.item_id}, ${r.owner_id}, '${safeItemName}', '${safeOwnerName}')">
+                                                <i class="fa-solid fa-gavel me-1"></i>Approve Strike
+                                            </button>
+                                            <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 fs-9 text-secondary" onclick="adminDismissReport(${r.id})">
+                                                <i class="fa-solid fa-xmark me-1"></i>Dismiss
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <span class="fs-9 text-muted"><i class="fa-solid fa-check-double me-1"></i>Reviewed</span>
+                                    `}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No item violation reports found.</td></tr>';
+                }
+            } catch (e) {
+                console.error("loadItemReports error:", e);
+            }
+        }
+
+        async function adminApproveReport(reportId, itemId, ownerId, itemName, ownerName) {
+            const reason = prompt(`Approve violation strike for "${itemName}" (Owner: ${ownerName})?\n\nRENT-EASE 3-STRIKE POLICY:\n• Approving adds 1 strike to this equipment post.\n• If this item reaches 3 strikes, the listing will be TERMINATED immediately and the owner SUSPENDED.\n\nEnter admin notes or confirm:`, 'Violation verified by moderation team.');
+            if (reason === null) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=approve_item_report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ report_id: reportId, admin_notes: reason })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Report approved as violation strike.');
+                    loadItemReports();
+                    loadProducts();
+                    loadDashboardStats();
+                } else {
+                    alert('❌ ' + (data.message || 'Failed to approve report.'));
+                }
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+            }
+        }
+
+        async function adminDismissReport(reportId) {
+            if (!confirm('Dismiss this violation report? No strike will be applied.')) return;
+            try {
+                const res = await fetch(`${API_URL}?action=dismiss_item_report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ report_id: reportId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('✅ Report dismissed.');
+                    loadItemReports();
+                }
+            } catch (e) {}
+        }
+
+        async function loadItemAppeals() {
+            const status = document.getElementById('appealFilterStatus')?.value || 'All';
+            const tbody = document.getElementById('itemAppealsTableBody');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=get_item_appeals&status=${encodeURIComponent(status)}`);
+                const data = await res.json();
+
+                const aBadge = document.getElementById('adminAppealsBadge');
+                if (aBadge) {
+                    const pCnt = parseInt(data.pending_count || 0);
+                    if (pCnt > 0) {
+                        aBadge.innerText = pCnt;
+                        aBadge.style.display = 'inline-block';
+                    } else {
+                        aBadge.style.display = 'none';
+                    }
+                }
+
+                if (data.success && data.appeals && data.appeals.length > 0) {
+                    tbody.innerHTML = data.appeals.map(a => {
+                        const safeItemName = (a.item_name || 'Equipment').replace(/'/g, "\\'");
+                        const safeOwnerName = (a.owner_name || 'Owner').replace(/'/g, "\\'");
+                        const isSuspended = (a.owner_account_status === 'SUSPENDED');
+
+                        return `
+                            <tr>
+                                <td class="fw-bold text-muted">#APL-${a.id}</td>
+                                <td>
+                                    <div class="fw-bold text-dark fs-8">${a.item_name}</div>
+                                    <div class="fs-9 text-muted">Item ID: ${a.item_id}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark fs-8">${a.owner_name}</div>
+                                    <div class="fs-9 text-muted">${a.owner_email || ''}</div>
+                                    ${isSuspended ? '<span class="badge bg-danger text-white fs-9 mt-0.5">Account Suspended</span>' : '<span class="badge bg-success-subtle text-success fs-9 mt-0.5">Verified</span>'}
+                                </td>
+                                <td>
+                                    <div class="fs-8 text-dark fw-semibold" style="max-width:280px; word-break:break-word;">
+                                        <i class="fa-solid fa-quote-left text-muted me-1"></i>${a.appeal_reason}
+                                    </div>
+                                    ${a.evidence_photo ? `<a href="${a.evidence_photo}" target="_blank" class="badge bg-primary-subtle text-primary fs-9 mt-1 text-decoration-none d-inline-block"><i class="fa-solid fa-image me-1"></i>View Counter-Proof</a>` : ''}
+                                    ${a.admin_decision_notes ? `<div class="fs-9 text-muted mt-1">Admin note: ${a.admin_decision_notes}</div>` : ''}
+                                </td>
+                                <td>
+                                    <span class="badge ${a.item_status === 'TERMINATED' ? 'bg-danger text-white' : 'bg-warning text-dark'} fs-9">
+                                        ${a.item_status || 'Under Review'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge ${a.status === 'ACCEPTED' ? 'bg-success text-white' : (a.status === 'REJECTED' ? 'bg-danger text-white' : 'bg-warning text-dark')} fs-9">
+                                        ${a.status}
+                                    </span>
+                                </td>
+                                <td>
+                                    ${a.status === 'PENDING' ? `
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <button class="btn btn-sm btn-success rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="adminDecideAppeal(${a.id}, 'ACCEPT', '${safeItemName}', '${safeOwnerName}')">
+                                                <i class="fa-solid fa-rotate-left me-1"></i>Accept & Reinstate
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 fs-9 fw-bold" onclick="adminDecideAppeal(${a.id}, 'REJECT', '${safeItemName}', '${safeOwnerName}')">
+                                                <i class="fa-solid fa-ban me-1"></i>Reject
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <span class="fs-9 text-muted"><i class="fa-solid fa-gavel me-1"></i>Closed</span>
+                                    `}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No listing appeals found.</td></tr>';
+                }
+            } catch (e) {
+                console.error("loadItemAppeals error:", e);
+            }
+        }
+
+        async function adminDecideAppeal(appealId, decision, itemName, ownerName) {
+            const promptMsg = (decision === 'ACCEPT') 
+                ? `Accept appeal for "${itemName}"?\n\nThis will:\n1. Clear all strikes on this listing.\n2. Reinstate post to ACTIVE status in the catalog.\n3. Unsuspend owner "${ownerName}" and restore their account to Verified.`
+                : `Reject appeal for "${itemName}"?\n\nThe listing termination and account suspension will remain in place.`;
+
+            if (!confirm(promptMsg)) return;
+
+            const notes = prompt(`Admin reason/notes for this decision:`, decision === 'ACCEPT' ? 'Appeal approved: verified valid explanation and evidence.' : 'Appeal rejected: insufficient evidence.');
+            if (notes === null) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=decide_item_appeal`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ appeal_id: appealId, decision: decision, admin_notes: notes })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Appeal decision recorded.');
+                    loadItemAppeals();
+                    loadItemReports();
+                    loadProducts();
+                    loadCustomers();
+                    loadDashboardStats();
+                } else {
+                    alert('❌ ' + (data.message || 'Failed to record decision.'));
+                }
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+            }
         }
 
         // ----------------------------------------------------------

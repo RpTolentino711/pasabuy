@@ -956,6 +956,9 @@
                 </button>
                 <div class="fw-extrabold text-dark fs-7" id="detailHeaderTitle" style="letter-spacing: -0.2px;">Equipment Details</div>
                 <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#fef2f2; border:1.5px solid #fee2e2; color:#ef4444; transition: transform 0.15s ease;" onclick="openReportItemModal()" title="Report Listing to Admin">
+                        <i class="fa-solid fa-flag fs-7 text-danger"></i>
+                    </button>
                     <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="toggleWishlist(this, currentDetailProductId)" title="Wishlist">
                         <i class="fa-regular fa-heart text-dark fs-7" id="detailWishlistIcon"></i>
                     </button>
@@ -1159,6 +1162,16 @@
                     </div>
                 </div>
 
+                <!-- Report Listing & Community Safety Link -->
+                <div class="d-flex align-items-center justify-content-between pt-2.5 pb-1 border-top mt-2">
+                    <span class="text-muted fs-9 d-flex align-items-center gap-1">
+                        <i class="fa-solid fa-shield-halved text-success"></i> Campus Safety (3-Strike Policy)
+                    </span>
+                    <button type="button" class="btn btn-link text-danger p-0 fs-9 text-decoration-none fw-bold d-flex align-items-center gap-1" onclick="openReportItemModal()">
+                        <i class="fa-regular fa-flag"></i> Report this Item
+                    </button>
+                </div>
+
             </div>
 
             <!-- Bottom Sticky Action Bar: [Chat Owner] + [Add to Cart] + [Rent Now] -->
@@ -1184,6 +1197,147 @@
     </div>
 </div>
 
+<!-- ==========================================================
+     REPORT EQUIPMENT LISTING MODAL (3-STRIKE SYSTEM)
+     ========================================================== -->
+<div class="modal fade" id="reportItemModal" tabindex="-1" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger" style="width:38px; height:38px;">
+                        <i class="fa-solid fa-flag fs-6"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-extrabold text-dark fs-7 mb-0">Report Equipment Listing</h6>
+                        <span class="fs-9 text-muted">Admin Moderation &amp; Policy Enforcement</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body pt-1">
+                <!-- Reported Item Summary Card -->
+                <div class="p-2.5 rounded-3 bg-light border mb-3 d-flex align-items-center gap-2.5">
+                    <img id="reportItemThumb" src="https://images.unsplash.com/photo-1519741497674-611481863552?w=100&q=80" class="rounded-2 border" style="width:44px; height:44px; object-fit:cover;">
+                    <div class="min-w-0 flex-grow-1">
+                        <div class="fw-bold text-dark fs-8 text-truncate" id="reportItemName">POSPT</div>
+                        <div class="fs-9 text-muted">Owner: <span class="fw-semibold text-secondary" id="reportItemOwner">Pogilameg Tester</span></div>
+                    </div>
+                    <span class="badge bg-danger-subtle text-danger fs-9 fw-bold">Item #<span id="reportItemId">0</span></span>
+                </div>
+
+                <!-- 3-Strike Rule Alert Notice -->
+                <div class="p-2.5 rounded-3 bg-warning bg-opacity-15 border border-warning-subtle mb-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-gavel text-warning fs-7 mt-0.5"></i>
+                        <div class="fs-9 text-dark">
+                            <strong>RentEase 3-Strike Policy:</strong> If this listing accumulates <strong>3 approved violation reports</strong>, the post will be terminated and the poster will be suspended. The owner can submit an appeal.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Violation Reason Dropdown -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold fs-8 mb-1 text-dark">Reason for Report <span class="text-danger">*</span></label>
+                    <select class="form-select rounded-3 fs-8" id="reportReasonSelect">
+                        <option value="" disabled selected>-- Select violation reason --</option>
+                        <option value="Prohibited or Hazardous Equipment">🚫 Prohibited or Hazardous Equipment (Weapons, illegal, dangerous)</option>
+                        <option value="Scam or Fraudulent Listing">⚠️ Scam or Fraudulent Listing (Demanding off-platform deposits, fake)</option>
+                        <option value="Damaged or Broken Equipment">🛠️ Damaged / Broken Item Misrepresented as Working</option>
+                        <option value="Misleading Pricing or Hidden Fees">💸 Misleading Pricing or Extortionate Hidden Fees</option>
+                        <option value="Impersonation or Stolen Property">👤 Impersonation or Stolen Equipment</option>
+                        <option value="Inappropriate Content or Harassment">🔞 Inappropriate Content, Offensive Photos, or Harassment</option>
+                        <option value="Other Policy Violation">⚖️ Other Campus Policy Violation</option>
+                    </select>
+                </div>
+
+                <!-- Details / Explanation Textarea -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold fs-8 mb-1 text-dark">Why are you reporting this item? <span class="text-danger">*</span></label>
+                    <textarea class="form-control rounded-3 fs-8" id="reportDetailsText" rows="3" placeholder="Please provide specific details explaining what is wrong with this listing so the admin can review it..."></textarea>
+                </div>
+
+                <!-- Optional Evidence Photo Upload -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold fs-8 mb-1 text-dark">Evidence Photo / Screenshot (Optional)</label>
+                    <input type="file" class="form-control form-control-sm rounded-3 fs-9" id="reportEvidenceFile" accept="image/*" onchange="previewReportEvidence(this)">
+                    <div id="reportEvidencePreviewContainer" class="mt-2 text-center" style="display:none;">
+                        <img id="reportEvidencePreviewImg" class="rounded-3 border shadow-2xs" style="max-height:120px; max-width:100%; object-fit:contain;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                <button type="button" class="btn btn-light rounded-pill px-3 fs-8 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4 fs-8 fw-bold flex-grow-1 shadow-xs" id="btnSubmitItemReport" onclick="submitItemReport()">
+                    <i class="fa-solid fa-flag me-1"></i> Submit Report to Admin
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================
+     OWNER APPEAL MODAL (APPEAL VIOLATION / TERMINATION)
+     ========================================================== -->
+<div class="modal fade" id="appealItemModal" tabindex="-1" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width:38px; height:38px;">
+                        <i class="fa-solid fa-scale-balanced fs-6"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-extrabold text-dark fs-7 mb-0">Appeal Listing Violation / Termination</h6>
+                        <span class="fs-9 text-muted">Owner Reinstatement Request</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body pt-1">
+                <!-- Item Summary -->
+                <div class="p-2.5 rounded-3 bg-light border mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="fw-extrabold text-dark fs-8" id="appealItemTitle">POSPT</span>
+                        <span class="badge bg-danger text-white fs-9" id="appealItemStatusBadge">Strike Status</span>
+                    </div>
+                    <div class="fs-9 text-secondary" id="appealViolationReason">Reason: Violation report approved by moderation.</div>
+                </div>
+
+                <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 border border-primary-subtle mb-3">
+                    <div class="fs-9 text-primary-emphasis">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        <strong>How Appeals Work:</strong> Explain why the violation was mistaken or unjustified. Provide proof of authenticity or equipment compliance. If approved by Admin, strikes will be cleared, your listing restored, and your account unsuspended.
+                    </div>
+                </div>
+
+                <input type="hidden" id="appealItemId" value="0">
+
+                <!-- Appeal Explanation -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold fs-8 mb-1 text-dark">Your Defense / Explanation <span class="text-danger">*</span></label>
+                    <textarea class="form-control rounded-3 fs-8" id="appealReasonText" rows="3" placeholder="Explain why your equipment complies with campus rental rules, address the violation claims, or explain corrective actions taken..."></textarea>
+                </div>
+
+                <!-- Proof / Counter-Evidence -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold fs-8 mb-1 text-dark">Proof of Authenticity / Working Condition (Optional)</label>
+                    <input type="file" class="form-control form-control-sm rounded-3 fs-9" id="appealEvidenceFile" accept="image/*" onchange="previewAppealEvidence(this)">
+                    <div id="appealEvidencePreviewContainer" class="mt-2 text-center" style="display:none;">
+                        <img id="appealEvidencePreviewImg" class="rounded-3 border shadow-2xs" style="max-height:120px; max-width:100%; object-fit:contain;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                <button type="button" class="btn btn-light rounded-pill px-3 fs-8 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold flex-grow-1 shadow-xs" style="background:linear-gradient(135deg, #6C5CE7, #5B3FA8); border:none;" id="btnSubmitItemAppeal" onclick="submitItemAppeal()">
+                    <i class="fa-solid fa-paper-plane me-1"></i> Submit Appeal to Admin
+                </button>
+            </div>
         </div>
     </div>
 </div>

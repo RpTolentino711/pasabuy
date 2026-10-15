@@ -115,6 +115,48 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `priority` ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `assigned_to` VARCHAR(150) DEFAULT 'Support Team'"); } catch (Exception $e) {}
 
+    // Moderation & 3-Strike System: Item Violation Reports & Appeals
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `status` VARCHAR(50) DEFAULT 'ACTIVE'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `approved_reports_count` INT DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `termination_reason` TEXT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `terminated_at` DATETIME NULL"); } catch (Exception $e) {}
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_item_reports` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `item_id` INT NOT NULL,
+            `item_name` VARCHAR(255) NOT NULL,
+            `owner_id` INT NOT NULL,
+            `owner_name` VARCHAR(150) NOT NULL,
+            `reporter_id` INT NOT NULL,
+            `reporter_name` VARCHAR(150) NOT NULL,
+            `reason` VARCHAR(150) NOT NULL,
+            `details` TEXT NOT NULL,
+            `evidence_photo` LONGTEXT DEFAULT NULL,
+            `status` ENUM('PENDING', 'APPROVED', 'DISMISSED') DEFAULT 'PENDING',
+            `admin_notes` TEXT DEFAULT NULL,
+            `reviewed_at` DATETIME DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_item_appeals` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `item_id` INT NOT NULL,
+            `item_name` VARCHAR(255) NOT NULL,
+            `owner_id` INT NOT NULL,
+            `owner_name` VARCHAR(150) NOT NULL,
+            `owner_email` VARCHAR(150) DEFAULT NULL,
+            `appeal_reason` TEXT NOT NULL,
+            `evidence_photo` LONGTEXT DEFAULT NULL,
+            `status` ENUM('PENDING', 'ACCEPTED', 'REJECTED') DEFAULT 'PENDING',
+            `admin_decision_notes` TEXT DEFAULT NULL,
+            `reviewed_at` DATETIME DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
+
     // Automatically purge legacy demo packages and test orders
     try {
         $db->exec("DELETE FROM `rental_packages` WHERE `name` IN ('Birthday Celebration Package', 'Grand Wedding Package', 'Weekend Social Gathering Package')");
@@ -521,7 +563,7 @@ if ($action === 'get_inventory') {
         exit;
     }
 
-    $sql = "SELECT * FROM `rental_inventory` WHERE 1=1";
+    $sql = "SELECT * FROM `rental_inventory` WHERE (`status` != 'TERMINATED' OR `status` IS NULL)";
     $params = [];
 
     if ($category !== '' && $category !== 'All') {
@@ -2485,6 +2527,144 @@ if ($action === 'notify_owner_rental_intent') {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         exit;
     }
+}
+
+// ----------------------------------------------------------
+// REPORT EQUIPMENT ITEM & 3-STRIKE VIOLATION MODULE
+// ----------------------------------------------------------
+if ($action === 'submit_item_report') {
+    $itemId = (int)($data['item_id'] ?? 0);
+    $reason = trim((string)($data['reason'] ?? ''));
+    $details = trim((string)($data['details'] ?? ''));
+    $evidencePhoto = $data['evidence_photo'] ?? null;
+    $reporterId = (int)($data['reporter_id'] ?? 105);
+    $reporterName = trim((string)($data['reporter_name'] ?? 'Student Reporter'));
+
+    if (!$itemId || empty($reason) || empty($details)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Please select a reason and provide detailed explanation for reporting.']);
+        exit;
+    }
+
+    if (!$db) {
+        echo json_encode(['success' => true, 'message' => 'Report recorded locally.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE `id` = ?");
+    $stmt->execute([$itemId]);
+    $item = $stmt->fetch();
+    if (!$item) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Equipment item not found.']);
+        exit;
+    }
+
+    $itemName = $item['name'];
+    $ownerId = (int)($item['owner_id'] ?? 105);
+    $ownerName = $item['owner_name'] ?? 'Equipment Owner';
+
+    $ins = $db->prepare("INSERT INTO `rental_item_reports` 
+        (`item_id`, `item_name`, `owner_id`, `owner_name`, `reporter_id`, `reporter_name`, `reason`, `details`, `evidence_photo`, `status`) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')");
+    $ins->execute([$itemId, $itemName, $ownerId, $ownerName, $reporterId, $reporterName, $reason, $details, $evidencePhoto]);
+
+    try {
+        $ticketCode = '#RPT-' . rand(1000, 9999);
+        $db->prepare("INSERT INTO `rental_issues` (`ticket_number`, `customer_name`, `issue_title`, `priority`, `status`, `assigned_to`, `description`, `stage`) 
+            VALUES (?, ?, ?, 'HIGH', 'Open', 'Moderation Team', ?, 'LISTING_REPORT')")
+            ->execute([$ticketCode, $reporterName, "Report on Listing: {$itemName} ({$reason})", "Reason: {$reason}\nDetails: {$details}\nItem ID: {$itemId}\nOwner: {$ownerName} (#{$ownerId})"]);
+    } catch (Exception $eTkt) {}
+
+    echo json_encode([
+        'success' => true, 
+        'message' => '✅ Report submitted successfully. Our Admin moderation team will review this listing shortly.'
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// SUBMIT APPEAL ON REPORTED / TERMINATED LISTING
+// ----------------------------------------------------------
+if ($action === 'submit_item_appeal') {
+    $itemId = (int)($data['item_id'] ?? 0);
+    $appealReason = trim((string)($data['appeal_reason'] ?? $data['details'] ?? ''));
+    $evidencePhoto = $data['evidence_photo'] ?? null;
+    $ownerId = (int)($data['owner_id'] ?? 0);
+    $ownerName = trim((string)($data['owner_name'] ?? ''));
+    $ownerEmail = trim((string)($data['owner_email'] ?? ''));
+
+    if (!$itemId || empty($appealReason)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Please provide an appeal explanation.']);
+        exit;
+    }
+
+    if (!$db) {
+        echo json_encode(['success' => true, 'message' => 'Appeal submitted.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE `id` = ?");
+    $stmt->execute([$itemId]);
+    $item = $stmt->fetch();
+    $itemName = $item ? $item['name'] : "Equipment #{$itemId}";
+    if (!$ownerId && $item) $ownerId = (int)$item['owner_id'];
+    if (!$ownerName && $item) $ownerName = $item['owner_name'];
+    if (!$ownerEmail && $item) $ownerEmail = $item['owner_email'];
+
+    $ins = $db->prepare("INSERT INTO `rental_item_appeals` 
+        (`item_id`, `item_name`, `owner_id`, `owner_name`, `owner_email`, `appeal_reason`, `evidence_photo`, `status`) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')");
+    $ins->execute([$itemId, $itemName, $ownerId, $ownerName, $ownerEmail, $appealReason, $evidencePhoto]);
+
+    try {
+        $ticketCode = '#APL-' . rand(1000, 9999);
+        $db->prepare("INSERT INTO `rental_issues` (`ticket_number`, `customer_name`, `issue_title`, `priority`, `status`, `assigned_to`, `description`, `stage`) 
+            VALUES (?, ?, ?, 'CRITICAL', 'Open', 'Moderation Team', ?, 'LISTING_APPEAL')")
+            ->execute([$ticketCode, $ownerName, "Listing Appeal: {$itemName}", "Owner {$ownerName} (ID: {$ownerId}) submitted an appeal for {$itemName}.\nAppeal: {$appealReason}"]);
+    } catch (Exception $eTkt) {}
+
+    echo json_encode([
+        'success' => true, 
+        'message' => '✅ Appeal submitted successfully! Admin will review your explanation and evidence.'
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// GET OWNER'S VIOLATIONS & APPEALS STATUS
+// ----------------------------------------------------------
+if ($action === 'get_my_item_violations') {
+    $ownerId = (int)($data['owner_id'] ?? $_GET['owner_id'] ?? 0);
+    $ownerEmail = trim((string)($data['owner_email'] ?? $_GET['owner_email'] ?? ''));
+
+    if (!$db) {
+        echo json_encode(['success' => true, 'reports' => [], 'appeals' => [], 'is_suspended' => false]);
+        exit;
+    }
+
+    $reportsStmt = $db->prepare("SELECT * FROM `rental_item_reports` WHERE `owner_id` = ? ORDER BY `id` DESC");
+    $reportsStmt->execute([$ownerId]);
+    $reports = $reportsStmt->fetchAll();
+
+    $appealsStmt = $db->prepare("SELECT * FROM `rental_item_appeals` WHERE `owner_id` = ? ORDER BY `id` DESC");
+    $appealsStmt->execute([$ownerId]);
+    $appeals = $appealsStmt->fetchAll();
+
+    $isSuspended = false;
+    $suspStmt = $db->prepare("SELECT `Status` FROM `Users` WHERE `Id` = ? LIMIT 1");
+    $suspStmt->execute([$ownerId]);
+    $uStatus = $suspStmt->fetchColumn();
+    if ($uStatus === 'SUSPENDED') $isSuspended = true;
+
+    echo json_encode([
+        'success' => true,
+        'reports' => $reports,
+        'appeals' => $appeals,
+        'is_suspended' => $isSuspended
+    ]);
+    exit;
 }
 
 // Fallback

@@ -85,8 +85,54 @@ if ($db) {
     } catch (Exception $e) {}
 
     // Ensure POSPT is owned by Pogilameg Tester and marked as featured
+    // Moderation and 3-strike schema migrations
     try {
-        $db->exec("UPDATE `rental_inventory` SET `owner_id` = 105, `owner_name` = 'Pogilameg Tester', `owner_email` = 'pogilameg@gmail.com', `owner_contact` = '09171234567', `is_featured` = 1 WHERE `name` LIKE '%POSPT%' OR `name` = 'POSPT'");
+        $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `status` VARCHAR(50) DEFAULT 'ACTIVE'");
+    } catch (Exception $e) {}
+    try {
+        $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `approved_reports_count` INT DEFAULT 0");
+    } catch (Exception $e) {}
+    try {
+        $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `termination_reason` TEXT DEFAULT NULL");
+    } catch (Exception $e) {}
+    try {
+        $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `terminated_at` DATETIME DEFAULT NULL");
+    } catch (Exception $e) {}
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_item_reports` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `item_id` INT NOT NULL,
+            `item_name` VARCHAR(255) NOT NULL,
+            `owner_id` INT NOT NULL,
+            `owner_name` VARCHAR(150) NOT NULL,
+            `reporter_id` INT NOT NULL,
+            `reporter_name` VARCHAR(150) NOT NULL,
+            `reason` VARCHAR(255) NOT NULL,
+            `details` TEXT NOT NULL,
+            `evidence_photo` LONGTEXT DEFAULT NULL,
+            `status` ENUM('PENDING', 'APPROVED', 'DISMISSED') DEFAULT 'PENDING',
+            `admin_notes` TEXT DEFAULT NULL,
+            `reviewed_at` DATETIME DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_item_appeals` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `item_id` INT NOT NULL,
+            `item_name` VARCHAR(255) NOT NULL,
+            `owner_id` INT NOT NULL,
+            `owner_name` VARCHAR(150) NOT NULL,
+            `owner_email` VARCHAR(150) DEFAULT NULL,
+            `appeal_reason` TEXT NOT NULL,
+            `evidence_photo` LONGTEXT DEFAULT NULL,
+            `status` ENUM('PENDING', 'ACCEPTED', 'REJECTED') DEFAULT 'PENDING',
+            `admin_decision_notes` TEXT DEFAULT NULL,
+            `reviewed_at` DATETIME DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $e) {}
 
     // 2. Transactions table
@@ -1409,6 +1455,215 @@ if ($action === 'save_settings') {
     exit;
 }
 
+// ----------------------------------------------------------
+// 12. ITEM VIOLATION REPORTS & 3-STRIKE TERMINATION MODULE
+// ----------------------------------------------------------
+if ($action === 'get_item_reports') {
+    if (!$db) { echo json_encode(['success' => true, 'reports' => []]); exit; }
+    
+    $status = trim((string)($req['status'] ?? 'All'));
+    $sql = "SELECT r.*, i.name as current_item_name, i.status as item_status, i.approved_reports_count, i.image_url, u.Status as owner_account_status 
+            FROM `rental_item_reports` r 
+            LEFT JOIN `rental_inventory` i ON r.item_id = i.id 
+            LEFT JOIN `Users` u ON r.owner_id = u.Id 
+            WHERE 1=1";
+    $params = [];
+    if ($status !== 'All' && $status !== '') {
+        $sql .= " AND r.`status` = ?";
+        $params[] = strtoupper($status);
+    }
+    $sql .= " ORDER BY r.`id` DESC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $reports = $stmt->fetchAll();
+
+    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_item_reports` WHERE `status` = 'PENDING'")->fetchColumn();
+
+    echo json_encode([
+        'success' => true,
+        'count' => count($reports),
+        'pending_count' => $pendingCount,
+        'reports' => $reports
+    ]);
+    exit;
+}
+
+if ($action === 'approve_item_report') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $reportId = (int)($req['report_id'] ?? $req['id'] ?? 0);
+    $notes = trim((string)($req['admin_notes'] ?? 'Violation approved by admin moderation team.'));
+
+    $stmt = $db->prepare("SELECT * FROM `rental_item_reports` WHERE `id` = ?");
+    $stmt->execute([$reportId]);
+    $report = $stmt->fetch();
+    if (!$report) {
+        echo json_encode(['success' => false, 'message' => 'Report not found.']);
+        exit;
+    }
+
+    $itemId = (int)$report['item_id'];
+    $ownerId = (int)$report['owner_id'];
+    $itemName = $report['item_name'];
+    $ownerName = $report['owner_name'];
+    $reason = $report['reason'];
+
+    // 1. Mark report as APPROVED
+    $upReport = $db->prepare("UPDATE `rental_item_reports` SET `status` = 'APPROVED', `admin_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ?");
+    $upReport->execute([$notes, $reportId]);
+
+    // 2. Increment approved reports count on inventory item
+    $upItem = $db->prepare("UPDATE `rental_inventory` SET `approved_reports_count` = COALESCE(`approved_reports_count`, 0) + 1 WHERE `id` = ?");
+    $upItem->execute([$itemId]);
+
+    // 3. Check updated strike count
+    $stmtCount = $db->prepare("SELECT `approved_reports_count`, `qty_total`, `status` FROM `rental_inventory` WHERE `id` = ?");
+    $stmtCount->execute([$itemId]);
+    $itemRow = $stmtCount->fetch();
+    $strikes = $itemRow ? (int)$itemRow['approved_reports_count'] : 1;
+
+    $terminated = false;
+    if ($strikes >= 3) {
+        $terminated = true;
+        // Post will be terminated
+        $termStmt = $db->prepare("UPDATE `rental_inventory` SET `status` = 'TERMINATED', `qty_available` = 0, `termination_reason` = ?, `terminated_at` = NOW() WHERE `id` = ?");
+        $termStmt->execute(["TERMINATED: Reached 3 approved violation reports. Latest violation: {$reason}", $itemId]);
+
+        // Poster who posted the item will be suspended
+        if ($ownerId > 0) {
+            $db->prepare("UPDATE `Users` SET `Status` = 'SUSPENDED' WHERE `Id` = ?")->execute([$ownerId]);
+            $db->prepare("UPDATE `StudentProfiles` SET `VerificationStatus` = 'SUSPENDED' WHERE `UserId` = ?")->execute([$ownerId]);
+
+            // Notify owner in rental_issues log
+            try {
+                $db->prepare("INSERT INTO `rental_issues` (`ticket_number`, `customer_name`, `issue_title`, `priority`, `status`, `assigned_to`, `description`, `stage`) 
+                    VALUES (?, ?, ?, 'CRITICAL', 'Open', 'Security Team', ?, 'ACCOUNT_SUSPENSION')")
+                    ->execute([
+                        '#SUSP-' . rand(1000, 9999),
+                        $ownerName,
+                        "3 Strikes: Account Suspended & Listing Terminated ({$itemName})",
+                        "Listing '{$itemName}' (ID: {$itemId}) received 3 approved violation strikes and has been TERMINATED.\nOwner account #{$ownerId} ({$ownerName}) is now SUSPENDED.\nThe owner may submit an official appeal with evidence."
+                    ]);
+            } catch (Exception $eT) {}
+        }
+
+        echo json_encode([
+            'success' => true,
+            'terminated' => true,
+            'strikes' => $strikes,
+            'message' => "⚠️ Report approved as STRIKE 3/3! Listing '{$itemName}' has been TERMINATED and owner '{$ownerName}' (#{$ownerId}) has been SUSPENDED."
+        ]);
+        exit;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'terminated' => false,
+        'strikes' => $strikes,
+        'message' => "✅ Report approved. Listing '{$itemName}' now has {$strikes}/3 strikes. (Reaching 3 strikes will terminate the post and suspend the poster)."
+    ]);
+    exit;
+}
+
+if ($action === 'dismiss_item_report') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $reportId = (int)($req['report_id'] ?? $req['id'] ?? 0);
+    $notes = trim((string)($req['admin_notes'] ?? 'Report reviewed and dismissed as non-violating.'));
+
+    $stmt = $db->prepare("UPDATE `rental_item_reports` SET `status` = 'DISMISSED', `admin_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ?");
+    $stmt->execute([$notes, $reportId]);
+
+    echo json_encode(['success' => true, 'message' => 'Report dismissed successfully.']);
+    exit;
+}
+
+// ----------------------------------------------------------
+// 13. LISTING APPEALS MODULE
+// ----------------------------------------------------------
+if ($action === 'get_item_appeals') {
+    if (!$db) { echo json_encode(['success' => true, 'appeals' => []]); exit; }
+    
+    $status = trim((string)($req['status'] ?? 'All'));
+    $sql = "SELECT a.*, i.name as current_item_name, i.status as item_status, i.approved_reports_count, i.image_url, u.Status as owner_account_status 
+            FROM `rental_item_appeals` a 
+            LEFT JOIN `rental_inventory` i ON a.item_id = i.id 
+            LEFT JOIN `Users` u ON a.owner_id = u.Id 
+            WHERE 1=1";
+    $params = [];
+    if ($status !== 'All' && $status !== '') {
+        $sql .= " AND a.`status` = ?";
+        $params[] = strtoupper($status);
+    }
+    $sql .= " ORDER BY a.`id` DESC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $appeals = $stmt->fetchAll();
+
+    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_item_appeals` WHERE `status` = 'PENDING'")->fetchColumn();
+
+    echo json_encode([
+        'success' => true,
+        'count' => count($appeals),
+        'pending_count' => $pendingCount,
+        'appeals' => $appeals
+    ]);
+    exit;
+}
+
+if ($action === 'decide_item_appeal') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $appealId = (int)($req['appeal_id'] ?? $req['id'] ?? 0);
+    $decision = strtoupper(trim((string)($req['decision'] ?? 'ACCEPT'))); // ACCEPT or REJECT
+    $notes = trim((string)($req['admin_notes'] ?? ($decision === 'ACCEPT' ? 'Appeal accepted by admin: strikes cleared and account reinstated.' : 'Appeal rejected by admin.')));
+
+    $stmt = $db->prepare("SELECT * FROM `rental_item_appeals` WHERE `id` = ?");
+    $stmt->execute([$appealId]);
+    $appeal = $stmt->fetch();
+    if (!$appeal) {
+        echo json_encode(['success' => false, 'message' => 'Appeal not found.']);
+        exit;
+    }
+
+    $itemId = (int)$appeal['item_id'];
+    $ownerId = (int)$appeal['owner_id'];
+    $itemName = $appeal['item_name'];
+    $ownerName = $appeal['owner_name'];
+
+    if ($decision === 'ACCEPT') {
+        // Mark appeal ACCEPTED
+        $db->prepare("UPDATE `rental_item_appeals` SET `status` = 'ACCEPTED', `admin_decision_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ?")
+            ->execute([$notes, $appealId]);
+
+        // Clear strikes and restore item to ACTIVE
+        $db->prepare("UPDATE `rental_inventory` SET `status` = 'ACTIVE', `approved_reports_count` = 0, `termination_reason` = NULL, `terminated_at` = NULL, `qty_available` = GREATEST(`qty_total`, 1) WHERE `id` = ?")
+            ->execute([$itemId]);
+
+        // Unsuspend owner if suspended
+        if ($ownerId > 0) {
+            $db->prepare("UPDATE `Users` SET `Status` = 'VERIFIED' WHERE `Id` = ?")->execute([$ownerId]);
+            $db->prepare("UPDATE `StudentProfiles` SET `VerificationStatus` = 'VERIFIED' WHERE `UserId` = ?")->execute([$ownerId]);
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => "✅ Appeal ACCEPTED! Listing '{$itemName}' has been reinstated to ACTIVE, strikes cleared, and owner '{$ownerName}' has been unsuspended."
+        ]);
+        exit;
+    } else {
+        // Mark appeal REJECTED
+        $db->prepare("UPDATE `rental_item_appeals` SET `status` = 'REJECTED', `admin_decision_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ?")
+            ->execute([$notes, $appealId]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => "❌ Appeal for '{$itemName}' was REJECTED."
+        ]);
+        exit;
+    }
+}
+
 // Fallback unknown action
 echo json_encode(['success' => false, 'message' => "Unknown action '{$action}'."]);
 exit;
+

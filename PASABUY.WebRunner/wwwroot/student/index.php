@@ -3316,22 +3316,44 @@
                             const isRomeo = myEmail.includes('romeo') || myFirstName.includes('romeo') || myLastName.includes('tolentino') || currentUserId === 104;
                             const isPogilameg = myEmail.includes('pogilameg') || currentUserId === 105;
 
-                            if (sId === currentUserId || (currentUserId === 104 && (sId === 1 || sId === 104)) ||
+                            let targetSellerId = sId;
+                            let targetSellerName = sellerName || 'Verified Student';
+                            const isSelf = (sId === currentUserId || (currentUserId === 104 && (sId === 1 || sId === 104)) ||
                                 (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) ||
                                 (isPogilameg && pName.includes('pogilameg')) ||
-                                (myFullName && pName === myFullName)) {
-                                alert("ℹ️ You cannot send a chat message to your own item listing.");
-                                return;
+                                (myFullName && pName === myFullName));
+
+                            if (isSelf) {
+                                // Seamless test / inquiry mode: connect to counter-party student
+                                if (currentUserId === 104) {
+                                    targetSellerId = 105;
+                                    targetSellerName = 'Pogilameg Tester';
+                                } else {
+                                    targetSellerId = 104;
+                                    targetSellerName = 'Romeo Paolo Tolentino';
+                                }
                             }
 
-                            currentActiveChatSellerId = sId;
+                            // Cleanly dismiss any open modals and backdrops
+                            document.querySelectorAll('.modal.show').forEach(m => {
+                                try {
+                                    const inst = bootstrap.Modal.getInstance(m);
+                                    if (inst) inst.hide();
+                                } catch(e) {}
+                            });
+                            document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+                            document.body.classList.remove('modal-open');
+                            document.body.style.removeProperty('overflow');
+                            document.body.style.removeProperty('padding-right');
+
+                            currentActiveChatSellerId = targetSellerId;
 
                             const partnerNameEl = document.getElementById('chatPartnerName') || document.getElementById('chatRecipientName');
-                            if (partnerNameEl) partnerNameEl.innerText = sellerName;
+                            if (partnerNameEl) partnerNameEl.innerText = targetSellerName;
 
                             let finalAvatar = partnerAvatar || '';
                             if (!finalAvatar || finalAvatar === '') {
-                                finalAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(sellerName)}`;
+                                finalAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(targetSellerName)}`;
                             }
 
                             const headerAvatarEl = document.getElementById('chatHeaderAvatar');
