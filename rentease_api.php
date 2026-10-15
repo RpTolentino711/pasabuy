@@ -136,26 +136,7 @@ if ($db) {
             $db->exec("INSERT INTO `rental_settings` (`setting_key`, `setting_value`) VALUES ('stock_purged_zero', '1') ON DUPLICATE KEY UPDATE `setting_value` = '1'");
         }
 
-        // Auto-seed rental_inventory from local fallback so items are never empty
-        $countItems = (int)$db->query("SELECT COUNT(*) FROM `rental_inventory`")->fetchColumn();
-        if ($countItems === 0) {
-            $fb = getRentEaseItemsFallback();
-            if (!empty($fb)) {
-                $seedStmt = $db->prepare("INSERT INTO `rental_inventory` 
-                    (`name`, `category`, `material_tag`, `price_per_day`, `posting_fee`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `photos`, `video_url`, `description`, `item_condition`, `location`, `owner_id`, `owner_name`, `owner_email`, `owner_contact`, `rating`, `reviews_count`, `min_rental_days`, `is_featured`) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 1, 1, 1)");
-                foreach ($fb as $it) {
-                    $seedStmt->execute([
-                        $it['name'], $it['category'], $it['material_tag'] ?? 'All', $it['price_per_day'], $it['posting_fee'] ?? 15,
-                        $it['qty_total'] ?? 1, $it['qty_available'] ?? $it['qty_total'] ?? 1,
-                        $it['image_url'], is_array($it['photos'] ?? null) ? json_encode($it['photos']) : ($it['photos'] ?? null),
-                        $it['video_url'] ?? '', $it['description'] ?? '', $it['item_condition'] ?? 'Good', $it['location'] ?? 'San Pablo, Laguna',
-                        $it['owner_id'] ?? 105, $it['owner_name'] ?? 'Pogilameg Tester', $it['owner_email'] ?? 'pogilameg@gmail.com',
-                        $it['owner_contact'] ?? '09171234567'
-                    ]);
-                }
-            }
-        }
+        // Clean slate: do not auto-seed dummy equipment
     } catch (Exception $ePurge) {}
 }
 
@@ -564,27 +545,6 @@ if ($action === 'get_inventory') {
     $stmt->execute($params);
     $items = $stmt->fetchAll();
 
-    $fb = getRentEaseItemsFallback();
-    if (!empty($fb)) {
-        $existingIds = array_map('intval', array_column($items, 'id'));
-        foreach ($fb as $fbItem) {
-            if (!in_array((int)$fbItem['id'], $existingIds, true)) {
-                $matches = true;
-                if ($category !== '' && $category !== 'All') {
-                    if (strcasecmp($fbItem['category'], $category) !== 0) $matches = false;
-                }
-                if ($materialTag !== '' && $materialTag !== 'All') {
-                    if (strcasecmp($fbItem['material_tag'], $materialTag) !== 0) $matches = false;
-                }
-                if ($search !== '') {
-                    if (stripos($fbItem['name'], $search) === false && stripos($fbItem['description'], $search) === false) $matches = false;
-                }
-                if ($matches) {
-                    $items[] = $fbItem;
-                }
-            }
-        }
-    }
 
     echo json_encode([
         'success' => true,
