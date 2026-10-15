@@ -8,21 +8,47 @@ if (!defined('PASABUY_INCLUDED')) {
 }
 ?>
 
+<style>
+@keyframes splashSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+@keyframes splashSpinRev {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+}
+</style>
+
 <!-- 1. 5-SECOND SPLASH SCREEN (PHP COMPONENT) -->
 <div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #5B3FA8 0%, #341F97 50%, #1E1B4B 100%); color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden; cursor:pointer;" onclick="hideSplashScreen()">
-    <!-- Main Branding Logo -->
+    <!-- Main Branding Logo with Rotating White Loading Spinner Ring -->
     <div class="my-auto d-flex flex-column align-items-center">
-        <div class="bg-white rounded-4 p-3 shadow-lg d-inline-flex align-items-center justify-content-center mb-3" style="width:88px; height:88px;">
-            <img src="LOGO.png" alt="RentEase Logo" style="width:60px; height:60px; object-fit:contain;" onerror="this.onerror=null; this.parentNode.innerHTML='<i class=\'fa-solid fa-chair display-4\' style=\'color:#5B3FA8;\'></i>';">
-        </div>
-        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.4rem; letter-spacing: -0.5px;">RentEase</h1>
-        <p class="text-white-50 fs-7 mb-4">Easy Rentals. Seamless Events.</p>
+        <!-- Circular Loading Animation with LOGO.png -->
+        <div class="position-relative d-flex align-items-center justify-content-center mb-4" style="width: 140px; height: 140px;">
+            <!-- Outer Spinning White Loading Ring -->
+            <div class="splash-spinner-ring position-absolute" 
+                 style="width: 140px; height: 140px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.15); border-top: 4px solid #ffffff; border-right: 4px solid rgba(255, 255, 255, 0.85); animation: splashSpin 1.1s cubic-bezier(0.5, 0, 0.5, 1) infinite; box-shadow: 0 0 20px rgba(255, 255, 255, 0.35); pointer-events: none;"></div>
+            
+            <!-- Secondary Ambient Pulsing Ring -->
+            <div class="position-absolute" 
+                 style="width: 154px; height: 154px; border-radius: 50%; border: 1.5px dashed rgba(255, 255, 255, 0.25); animation: splashSpinRev 8s linear infinite; pointer-events: none;"></div>
 
-        <!-- Event Rental Illustration -->
-        <div class="my-3 px-2 w-100">
-            <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80" 
-                class="img-fluid rounded-4 shadow-lg border border-2 border-white border-opacity-25" 
-                style="max-height: 200px; width:100%; object-fit:cover;">
+            <!-- Central Clean White Circular Base for Logo -->
+            <div class="rounded-circle bg-white d-flex align-items-center justify-content-center shadow-lg" 
+                 style="width: 112px; height: 112px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); z-index: 2;">
+                <img src="LOGO.png" alt="RentEase Logo" 
+                     style="width: 76px; height: 76px; object-fit: contain;" 
+                     onerror="if (this.src.indexOf('../LOGO.png') === -1) { this.src='../LOGO.png'; } else { this.onerror=null; this.parentNode.innerHTML='<i class=\'fa-solid fa-chair display-5\' style=\'color:#5B3FA8;\'></i>'; }">
+            </div>
+        </div>
+
+        <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.3rem; letter-spacing: -0.5px;">RentEase</h1>
+        <p class="text-white-50 fs-7 mb-3">Easy Rentals. Seamless Events.</p>
+
+        <!-- Dynamic Status Indicator -->
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(8px);">
+            <span class="spinner-grow spinner-grow-sm text-white" role="status" style="width: 7px; height: 7px; animation-duration: 0.9s;"></span>
+            <span class="text-white fs-9 fw-semibold" style="letter-spacing: 0.3px;">Loading Campus Hub...</span>
         </div>
     </div>
 
