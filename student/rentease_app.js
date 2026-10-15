@@ -765,6 +765,7 @@ function openEquipmentDetail(id) {
         if (ownerSection) ownerSection.style.setProperty('display', 'none', 'important');
 
         if (footerActions) {
+            const inCart = rentEaseCart.some(i => (i.id && i.id == item.id) || (i.listingId && i.listingId == item.id) || (item.name && (i.title === item.name || i.name === item.name)));
             footerActions.innerHTML = `
                 <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 text-nowrap" 
                         style="background:#F8FAFC; border: 1.5px solid #E2E8F0; color:#5B3FA8; height:46px;" onclick="chatWithOwnerFromDetail()" title="Chat with Owner">
@@ -772,9 +773,12 @@ function openEquipmentDetail(id) {
                     <span>Chat</span>
                 </button>
                 <button type="button" class="btn rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-2 shadow-2xs text-nowrap" 
-                        style="border: 2px solid #5B3FA8; color: #5B3FA8; background: #FAF5FF; height:46px; transition: all 0.2s ease;" id="detailAddToCartBtn" onclick="confirmAddDetailToCart(this)">
-                    <i class="fa-solid fa-cart-plus fs-6"></i>
-                    <span>Add to Cart</span>
+                        style="${inCart 
+                            ? 'background: #10B981; border: 2px solid #10B981; color: #FFFFFF;' 
+                            : 'border: 2px solid #5B3FA8; color: #5B3FA8; background: #FAF5FF;'} height:46px; transition: all 0.2s ease;" 
+                        id="detailAddToCartBtn" onclick="confirmAddDetailToCart(this)" title="${inCart ? 'Click to Remove from Cart' : 'Add to Cart'}">
+                    <i class="fa-solid ${inCart ? 'fa-check' : 'fa-cart-plus'} fs-6"></i>
+                    <span>${inCart ? 'In Cart (Click to Remove)' : 'Add to Cart'}</span>
                 </button>
                 <button type="button" class="btn btn-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-2 shadow-sm text-nowrap" 
                         style="background: linear-gradient(135deg, #6C5CE7, #5B3FA8); border: none; color: #fff; height:46px; box-shadow: 0 4px 14px rgba(91, 63, 168, 0.35);" id="detailRentNowBtn" onclick="confirmRentNowDetail()">
@@ -1133,29 +1137,57 @@ function confirmAddDetailToCart(btnEl) {
         alert("ℹ️ You cannot rent or add your own equipment to the cart.");
         return;
     }
+
+    const alreadyInCartIndex = rentEaseCart.findIndex(i => 
+        (i.id && i.id == currentDetailProduct.id) || 
+        (i.listingId && i.listingId == currentDetailProduct.id) || 
+        (currentDetailProduct.name && (i.title === currentDetailProduct.name || i.name === currentDetailProduct.name))
+    );
+
+    const btn = btnEl || document.getElementById('detailAddToCartBtn');
+
+    if (alreadyInCartIndex > -1) {
+        // UN-CART: Remove from cart!
+        rentEaseCart.splice(alreadyInCartIndex, 1);
+        saveRentEaseCart();
+
+        if (btn) {
+            btn.style.background = '#FAF5FF';
+            btn.style.borderColor = '#5B3FA8';
+            btn.style.color = '#5B3FA8';
+            btn.innerHTML = '<i class="fa-solid fa-cart-plus fs-6"></i> <span>Add to Cart</span>';
+            btn.title = 'Add to Cart';
+        }
+
+        const modalCartBtn = document.getElementById('modalHeaderCartBtn') || document.getElementById('headerCartBtn');
+        if (modalCartBtn) {
+            modalCartBtn.classList.remove('cart-bounce-pop');
+            void modalCartBtn.offsetWidth;
+            modalCartBtn.classList.add('cart-bounce-pop');
+            setTimeout(() => modalCartBtn.classList.remove('cart-bounce-pop'), 500);
+        }
+
+        showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, 0, false, true);
+        renderExploreCatalog();
+        renderFeaturedRentals();
+        return;
+    }
+
+    // OTHERWISE: ADD TO CART
     const avail = parseInt(currentDetailProduct.qty_available ?? currentDetailProduct.qty_total ?? 1);
     if (avail <= 0) {
         alert("⚠️ Sorry, this equipment is currently out of stock.");
         return;
     }
-    const alreadyInCart = rentEaseCart.some(i => i.id == currentDetailProduct.id);
     const qty = currentDetailQty || 1;
     addRentEaseCartItem(currentDetailProduct, qty);
 
-    const btn = btnEl || document.getElementById('detailAddToCartBtn');
     if (btn) {
-        const origHtml = btn.innerHTML;
-        const origStyle = btn.getAttribute('style') || '';
         btn.style.background = '#10B981';
         btn.style.borderColor = '#10B981';
         btn.style.color = '#FFFFFF';
-        btn.innerHTML = '<i class="fa-solid fa-check fs-6"></i> Added to Cart!';
-        setTimeout(() => {
-            if (btn) {
-                btn.setAttribute('style', origStyle);
-                btn.innerHTML = origHtml;
-            }
-        }, 1800);
+        btn.innerHTML = '<i class="fa-solid fa-check fs-6"></i> <span>In Cart (Click to Remove)</span>';
+        btn.title = 'Click to Remove from Cart';
     }
 
     if (typeof window.animateFlyToCart === 'function') {
@@ -1163,7 +1195,7 @@ function confirmAddDetailToCart(btnEl) {
         window.animateFlyToCart(source, currentDetailProduct.image_url);
     }
 
-    showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, qty, alreadyInCart);
+    showCartToastNotification(currentDetailProduct.name || currentDetailProduct.title, qty, false, false);
     renderExploreCatalog();
     renderFeaturedRentals();
 }
@@ -1177,13 +1209,39 @@ function quickAddRentEaseItem(id, clickedEl) {
         alert("ℹ️ You cannot rent or add your own equipment to the cart.");
         return;
     }
+
+    const alreadyInCartIndex = rentEaseCart.findIndex(i => 
+        (i.id && i.id == item.id) || 
+        (i.listingId && i.listingId == item.id) || 
+        (item.name && (i.title === item.name || i.name === item.name))
+    );
+
+    if (alreadyInCartIndex > -1) {
+        // UN-CART / Remove from cart
+        rentEaseCart.splice(alreadyInCartIndex, 1);
+        saveRentEaseCart();
+
+        // Bounce cart header button
+        const target = document.getElementById('headerCartBtn') || document.getElementById('cartCountBadge');
+        if (target) {
+            target.classList.remove('cart-bounce-pop');
+            void target.offsetWidth;
+            target.classList.add('cart-bounce-pop');
+            setTimeout(() => target.classList.remove('cart-bounce-pop'), 500);
+        }
+
+        showCartToastNotification(item.name || item.title, 0, false, true);
+        renderExploreCatalog();
+        renderFeaturedRentals();
+        return;
+    }
+
+    // OTHERWISE: ADD TO CART
     const avail = parseInt(item.qty_available ?? item.qty_total ?? 1);
     if (avail <= 0) {
         alert("⚠️ Sorry, this equipment is currently out of stock.");
         return;
     }
-
-    const alreadyInCart = rentEaseCart.some(i => i.id == item.id);
 
     addRentEaseCartItem(item, 1);
 
@@ -1191,7 +1249,7 @@ function quickAddRentEaseItem(id, clickedEl) {
     if (typeof window.animateFlyToCart === 'function') {
         window.animateFlyToCart(triggerEl, item.image_url);
     }
-    showCartToastNotification(item.name || item.title, 1, alreadyInCart);
+    showCartToastNotification(item.name || item.title, 1, false, false);
     renderExploreCatalog();
     renderFeaturedRentals();
 }
@@ -1736,7 +1794,7 @@ window.openChatWithRenter = function (customerName, customerPhone, orderCode) {
     }, 400);
 };
 
-function showCartToastNotification(name, qty = 1, alreadyInCart = false) {
+function showCartToastNotification(name, qty = 1, alreadyInCart = false, isRemoved = false) {
     let toast = document.getElementById('renteaseCartToast');
     if (!toast) {
         toast = document.createElement('div');
@@ -1744,8 +1802,15 @@ function showCartToastNotification(name, qty = 1, alreadyInCart = false) {
         toast.style.cssText = 'position:fixed; bottom:78px; left:50%; transform:translateX(-50%); z-index:99999; min-width:280px; max-width:92%; background:#1E293B; color:#fff; border-radius:30px; padding:10px 16px; box-shadow:0 10px 25px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:between; gap:12px; font-size:12px; font-weight:600;';
         document.body.appendChild(toast);
     }
-    const msg = alreadyInCart ? `Already in cart (${name})` : `Added ${qty}x ${name} to cart`;
-    const icon = alreadyInCart ? 'fa-circle-info text-info' : 'fa-circle-check text-success';
+    let msg = `Added ${qty}x ${name} to cart`;
+    let icon = 'fa-circle-check text-success';
+    if (isRemoved) {
+        msg = `Removed ${name} from cart`;
+        icon = 'fa-trash-can text-warning';
+    } else if (alreadyInCart) {
+        msg = `Already in cart (${name})`;
+        icon = 'fa-circle-info text-info';
+    }
     toast.innerHTML = `
         <div class="d-flex align-items-center gap-2 text-truncate">
             <i class="fa-solid ${icon} fs-6"></i>
