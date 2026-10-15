@@ -681,7 +681,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
                         <h4 class="fw-extrabold mb-1 text-dark">Equipment Catalog</h4>
-                        <p class="text-muted fs-8 mb-0">Equipment listings posted by verified student lenders.</p>
+                        <p class="text-muted fs-8 mb-0" id="productsCatalogSubtitle">Equipment listings posted by verified student lenders.</p>
+                    </div>
+                    <div id="productsCountBadge" class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1.5 rounded-pill fw-bold fs-9 shadow-2xs">
+                        <i class="fa-solid fa-boxes-stacked me-1"></i> <span id="productsListingCount">0</span> Listings · <span id="productsUnitsCount">0</span> Stock Units
                     </div>
                 </div>
 
@@ -2269,7 +2272,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     document.getElementById('dashMetricRevenue').innerText = '₱ ' + Number(s.total_revenue).toLocaleString();
                     document.getElementById('dashMetricOrders').innerText = s.total_orders;
                     document.getElementById('dashMetricStock').innerText = s.total_stock;
-                    document.getElementById('dashMetricLowStockText').innerText = `${s.low_stock_items} items low stock`;
+                    const prodCount = (typeof s.total_products !== 'undefined') ? s.total_products : 2;
+                    document.getElementById('dashMetricLowStockText').innerText = `Across ${prodCount} listings (${s.low_stock_items} low stock)`;
                     document.getElementById('dashMetricTickets').innerText = s.active_tickets;
                     const ticketSub = document.getElementById('dashMetricTicketSubtext');
                     if (ticketSub) {
@@ -2331,8 +2335,15 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const res = await fetch(`${API_URL}?action=get_products&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&availability=${encodeURIComponent(availability)}`);
                 const data = await res.json();
                 const tbody = document.getElementById('productsTableBody');
+                const listingCountEl = document.getElementById('productsListingCount');
+                const unitsCountEl = document.getElementById('productsUnitsCount');
 
                 if (data.success && data.products.length > 0) {
+                    if (listingCountEl) listingCountEl.innerText = data.products.length;
+                    if (unitsCountEl) {
+                        const totalUnits = data.products.reduce((acc, p) => acc + (parseInt(p.qty_total) || 0), 0);
+                        unitsCountEl.innerText = totalUnits;
+                    }
                     tbody.innerHTML = data.products.map(p => `
                         <tr>
                             <td><input type="checkbox" class="form-check-input"></td>

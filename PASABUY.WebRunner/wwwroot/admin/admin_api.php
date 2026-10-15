@@ -325,6 +325,7 @@ if ($action === 'get_dashboard') {
     $activeDeliveries = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `order_status` IN ('CONFIRMED', 'PREPARING', 'MEETUP', 'PROCESSING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY')")->fetchColumn();
     
     $totalStock = (int)$db->query("SELECT COALESCE(SUM(qty_total), 0) FROM `rental_inventory`")->fetchColumn();
+    $totalProducts = (int)$db->query("SELECT COUNT(*) FROM `rental_inventory`")->fetchColumn();
     $lowStock = (int)$db->query("SELECT COUNT(*) FROM `rental_inventory` WHERE `qty_available` > 0 AND `qty_available` <= 5")->fetchColumn();
     $outOfStock = (int)$db->query("SELECT COUNT(*) FROM `rental_inventory` WHERE `qty_available` = 0")->fetchColumn();
     $stockValue = (float)$db->query("SELECT COALESCE(SUM(price_per_day * qty_total), 0) FROM `rental_inventory`")->fetchColumn();
@@ -367,6 +368,7 @@ if ($action === 'get_dashboard') {
             'total_orders' => $totalOrders,
             'active_deliveries' => $activeDeliveries,
             'total_stock' => $totalStock,
+            'total_products' => $totalProducts,
             'low_stock_items' => $lowStock,
             'out_of_stock_items' => $outOfStock,
             'stock_value' => $stockValue,
