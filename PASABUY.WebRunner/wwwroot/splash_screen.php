@@ -25,10 +25,13 @@ if (!defined('PASABUY_INCLUDED')) {
 
 <!-- 1. 5-SECOND SPLASH SCREEN (PHP COMPONENT) -->
 <div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #5B3FA8 0%, #341F97 45%, #1E1B4B 100%) !important; color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden; cursor:pointer;" onclick="hideSplashScreen()">
-    <!-- Main Branding Logo with Rotating White Loading Spinner Ring -->
-    <div class="my-auto d-flex flex-column align-items-center">
+    <!-- Top Spacer to achieve true vertical centering -->
+    <div style="height: 30px; width: 100%;"></div>
+
+    <!-- Center Hero Branding (Dead Middle) -->
+    <div class="d-flex flex-column align-items-center justify-content-center my-auto">
         <!-- Circular Loading Animation with LOGO.png -->
-        <div class="position-relative d-flex align-items-center justify-content-center mb-4" style="width: 150px; height: 150px;">
+        <div class="position-relative d-flex align-items-center justify-content-center mb-3" style="width: 150px; height: 150px;">
             <!-- Outer Spinning White Loading Ring -->
             <div class="splash-spinner-ring position-absolute" 
                  style="width: 146px; height: 146px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.2); border-top: 4px solid #ffffff; border-right: 4px solid #ffffff; animation: splashSpin 1.1s linear infinite; box-shadow: 0 0 25px rgba(255, 255, 255, 0.45); pointer-events: none;"></div>
@@ -47,19 +50,13 @@ if (!defined('PASABUY_INCLUDED')) {
         </div>
 
         <h1 class="fw-extrabold text-white mb-1" style="font-size: 2.3rem; letter-spacing: -0.5px;">RentEase</h1>
-        <p class="text-white-50 fs-7 mb-3">Easy Rentals. Seamless Events.</p>
-
-        <!-- Dynamic Status Indicator -->
-        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill" style="background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.22); backdrop-filter: blur(8px);">
-            <span class="spinner-grow spinner-grow-sm text-white" role="status" style="width: 7px; height: 7px; animation-duration: 0.9s;"></span>
-            <span class="text-white fs-9 fw-semibold" style="letter-spacing: 0.3px;">Loading Campus Hub...</span>
-        </div>
+        <p class="text-white-50 fs-7 mb-0">Easy Rentals. Seamless Events.</p>
     </div>
 
     <!-- Bottom Tagline -->
-    <div class="w-100 mt-auto pb-2 text-center">
-        <h5 class="fw-extrabold text-white mb-1">Rent. Book. Celebrate.</h5>
-        <p class="text-white-50 fs-7 mb-0">Quality Equipment for Every Occasion.</p>
+    <div class="w-100 pb-2 text-center" style="opacity: 0.85;">
+        <h6 class="fw-bold text-white mb-0.5" style="font-size: 0.88rem;">Rent. Book. Celebrate.</h6>
+        <p class="text-white-50 mb-0" style="font-size: 0.72rem;">Quality Equipment for Every Occasion.</p>
     </div>
 </div>
 
@@ -69,23 +66,38 @@ if (!defined('PASABUY_INCLUDED')) {
 
     window.hideSplashScreen = function() {
         if (splashTimeout) clearTimeout(splashTimeout);
+
+        // If standalone splash_screen.php, immediately forward to student index.php
+        if (window.location.pathname.indexOf('splash_screen.php') !== -1) {
+            window.location.href = 'index.php';
+            return;
+        }
+
         const splash = document.getElementById('splashScreen');
         const auth = document.getElementById('authScreen');
         const isLoggedIn = localStorage.getItem('pasabuy_student_logged_in') === 'true';
 
         if (splash) {
             splash.style.opacity = '0';
-            splash.style.transition = 'opacity 0.35s ease';
+            splash.style.transition = 'opacity 0.3s ease';
             setTimeout(function() {
-                splash.style.display = 'none';
-                if (typeof window.checkAuthState === 'function') {
-                    window.checkAuthState();
+                splash.style.setProperty('display', 'none', 'important');
+                if (typeof window.checkStudentSessionOnLoad === 'function') {
+                    window.checkStudentSessionOnLoad();
                 } else if (auth && !isLoggedIn) {
                     auth.style.display = 'block';
                 }
-            }, 350);
-        } else if (typeof window.checkAuthState === 'function') {
-            window.checkAuthState();
+                if (typeof switchTab === 'function') {
+                    switchTab('home');
+                }
+            }, 300);
+        } else {
+            if (typeof window.checkStudentSessionOnLoad === 'function') {
+                window.checkStudentSessionOnLoad();
+            }
+            if (typeof switchTab === 'function') {
+                switchTab('home');
+            }
         }
     };
 
@@ -96,15 +108,17 @@ if (!defined('PASABUY_INCLUDED')) {
         splash.style.display = 'flex';
         splash.style.opacity = '1';
 
-        <?php if (!$is_standalone): ?>
         if (splashTimeout) clearTimeout(splashTimeout);
         splashTimeout = setTimeout(function() {
             hideSplashScreen();
-        }, 2800);
-        <?php endif; ?>
+        }, 1800);
     };
 
-    setTimeout(initSplashScreen, 10);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSplashScreen);
+    } else {
+        setTimeout(initSplashScreen, 10);
+    }
 })();
 </script>
 
