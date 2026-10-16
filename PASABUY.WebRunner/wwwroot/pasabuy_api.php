@@ -785,14 +785,16 @@ if ($action === 'check_active_transaction') {
 
             if ($uEmail && $pEmail) {
                 $rSql = "SELECT order_code, order_status FROM rental_orders 
-                         WHERE ((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
-                            OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
+                         WHERE (((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
+                             OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
+                            OR ((renter_id = ? AND owner_id = ?) 
+                             OR (renter_id = ? AND owner_id = ?)))
                            AND order_code NOT IN ('#RE-10245', '#RE-10234')
                            AND order_code NOT LIKE '%10234%'
                            AND UPPER(order_status) NOT IN ('RETURNED', 'CANCELLED', 'COMPLETED', 'REJECTED')
                          LIMIT 1";
                 $rStmt = $db->prepare($rSql);
-                $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail]);
+                $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId]);
                 $rOrd = $rStmt->fetch();
                 if ($rOrd) {
                     $hasActive = true;
@@ -867,14 +869,16 @@ if ($action === 'delete_conversation') {
 
             if ($uEmail && $pEmail) {
                 $rSql = "SELECT order_code, order_status FROM rental_orders 
-                         WHERE ((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
-                            OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
+                         WHERE (((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
+                             OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
+                            OR ((renter_id = ? AND owner_id = ?) 
+                             OR (renter_id = ? AND owner_id = ?)))
                            AND order_code NOT IN ('#RE-10245', '#RE-10234')
                            AND order_code NOT LIKE '%10234%'
                            AND UPPER(order_status) NOT IN ('RETURNED', 'CANCELLED', 'COMPLETED', 'REJECTED')
                          LIMIT 1";
                 $rStmt = $db->prepare($rSql);
-                $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail]);
+                $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId]);
                 $rOrd = $rStmt->fetch();
                 if ($rOrd) {
                     $hasActive = true;

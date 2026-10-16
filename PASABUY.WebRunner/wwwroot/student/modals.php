@@ -1107,6 +1107,28 @@
                     </div>
                 </div>
 
+                <!-- Rental Dates & Duration (Screen 3 - Non-Owner View) -->
+                <div class="card border-0 rounded-4 p-3 mb-3" id="detailDatesContainer" style="background: #F8FAFC; border: 1.5px solid #E2E8F0 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-extrabold text-dark fs-8"><i class="fa-regular fa-calendar-days text-primary me-1" style="color:#5B3FA8;"></i> Rental Schedule</span>
+                        <span class="badge bg-primary-subtle text-primary fw-bold fs-9" id="detailDurationBadge">1 Day Rent</span>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label fs-9 text-muted mb-1 fw-bold">Start Date</label>
+                            <input type="date" class="form-control form-control-sm rounded-3 fs-8 fw-semibold" id="detailStartDateInput" onchange="onDetailDatesChanged()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fs-9 text-muted mb-1 fw-bold">End Date</label>
+                            <input type="date" class="form-control form-control-sm rounded-3 fs-8 fw-semibold" id="detailEndDateInput" onchange="onDetailDatesChanged()">
+                        </div>
+                    </div>
+                    <div class="p-2 rounded-3 bg-white border text-muted fs-9 d-flex align-items-center justify-content-between">
+                        <span><i class="fa-solid fa-coins text-warning me-1"></i> Total Rental Cost:</span>
+                        <strong class="text-primary fs-7" id="detailComputedTotalText" style="color:#5B3FA8 !important;">₱0.00</strong>
+                    </div>
+                </div>
+
                 <!-- Owner Controls & Management Section (Visible ONLY when logged-in user is Owner) -->
                 <div id="detailOwnerControlSection" style="display:none;" class="mb-2">
                     <!-- Owner Alert Banner with Take Down & Refund Warning -->
@@ -1845,5 +1867,129 @@
         </div>
     </div>
 </div>
+
+<!-- ==========================================================
+     REPORT UNRETURNED EQUIPMENT MODAL (Owner -> Admin)
+     ========================================================== -->
+<div class="modal fade" id="reportUnreturnedModal" tabindex="-1" style="z-index: 1080;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-white">
+            <div class="modal-header border-0 pb-2 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger" style="width:38px; height:38px;">
+                        <i class="fa-solid fa-flag fs-6"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-extrabold text-dark mb-0 fs-7">Report Unreturned Item</h6>
+                        <span class="fs-9 text-muted">Submit case with photo proof to Admin</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close fs-9" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2">
+                <div class="p-2.5 rounded-3 bg-light border mb-2.5 fs-8">
+                    <div class="d-flex justify-content-between text-muted fs-9 mb-1">
+                        <span>Order Code:</span>
+                        <strong class="text-dark" id="unretModalOrderCode">#RE-10000</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted fs-9 mb-1">
+                        <span>Equipment:</span>
+                        <strong class="text-dark" id="unretModalItemName">POSPT</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted fs-9">
+                        <span>Renter:</span>
+                        <strong class="text-danger" id="unretModalRenterName">Pogilameg Tester</strong>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning border-0 rounded-3 p-2 fs-9 mb-2.5 text-secondary">
+                    <i class="fa-solid fa-circle-exclamation text-warning me-1"></i> If approved by Admin, the renter will be penalized with a <strong>5-day rental suspension</strong>.
+                </div>
+
+                <div class="mb-2.5">
+                    <label class="form-label fs-9 fw-bold text-dark mb-1">Reason for Report</label>
+                    <input type="text" class="form-control rounded-3 fs-8" id="unretReportReason" value="Item not returned after rental period" readonly style="background:#F1F5F9;">
+                </div>
+
+                <div class="mb-2.5">
+                    <label class="form-label fs-9 fw-bold text-dark mb-1">Incident Details & Communication <span class="text-danger">*</span></label>
+                    <textarea class="form-control rounded-3 fs-8" id="unretReportDetails" rows="3" placeholder="Provide details: meetup location attempts, lack of response, or unreturned condition..."></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fs-9 fw-bold text-dark mb-1"><i class="fa-solid fa-camera text-primary me-1"></i> Photo Proof <span class="text-danger">*</span></label>
+                    <input type="file" class="form-control rounded-3 fs-8" id="unretPhotoFileInput" accept="image/*" onchange="previewUnretReportPhoto(event)">
+                    <input type="hidden" id="unretPhotoDataUrl">
+                    <div id="unretPhotoPreviewBox" class="mt-2 text-center" style="display:none;">
+                        <img id="unretPhotoPreview" class="img-fluid rounded-3 border shadow-xs" style="max-height: 140px; object-fit: contain;">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light rounded-pill w-50 fw-bold py-2 fs-8" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger rounded-pill w-50 fw-bold py-2 fs-8 shadow-xs" id="btnSubmitUnretReport" onclick="executeSubmitUnreturnedReport()">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Submit Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================
+     RENTAL SUSPENSION NOTICE & APPEAL MODAL (Renter -> Admin)
+     ========================================================== -->
+<div class="modal fade" id="rentalSuspensionAppealModal" tabindex="-1" style="z-index: 1085;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-white">
+            <div class="modal-header border-0 pb-2 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger" style="width:40px; height:40px;">
+                        <i class="fa-solid fa-ban fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-extrabold text-danger mb-0 fs-7">Rental Privileges Suspended</h6>
+                        <span class="fs-9 text-muted">5-Day Penalty Active</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close fs-9" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2">
+                <div class="alert alert-danger border-0 rounded-4 p-3 mb-2.5" style="background:#FEF2F2; border:1px solid #FEE2E2 !important;">
+                    <div class="fw-bold text-dark fs-8 mb-1"><i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> You cannot rent equipment</div>
+                    <p class="text-secondary mb-2 fs-9" id="suspensionNoticeReason">An unreturned equipment report against your account was approved by Admin.</p>
+                    <div class="p-2 rounded-3 bg-white border text-dark fs-9 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Suspension Active Until:</span>
+                        <strong class="text-danger" id="suspensionNoticeEndDate">--</strong>
+                    </div>
+                </div>
+
+                <div class="card border-0 rounded-4 p-3 bg-light mb-2">
+                    <h6 class="fw-extrabold text-dark fs-8 mb-1"><i class="fa-solid fa-gavel text-primary me-1" style="color:#5B3FA8;"></i> File an Appeal</h6>
+                    <p class="text-muted fs-9 mb-2.5">If you have returned the item or believe this is an error, submit your appeal with proof for Admin review.</p>
+
+                    <div class="mb-2">
+                        <label class="form-label fs-9 fw-bold text-dark mb-1">Your Explanation / Reason <span class="text-danger">*</span></label>
+                        <textarea class="form-control rounded-3 fs-8" id="appealReasonText" rows="3" placeholder="Explain the return handover, communication with owner, or why suspension should be lifted..."></textarea>
+                    </div>
+
+                    <div class="mb-2.5">
+                        <label class="form-label fs-9 fw-bold text-dark mb-1"><i class="fa-solid fa-camera text-primary me-1"></i> Proof / Photo (Receipt or Chat screenshot)</label>
+                        <input type="file" class="form-control rounded-3 fs-8" id="appealPhotoFileInput" accept="image/*" onchange="previewAppealPhoto(event)">
+                        <input type="hidden" id="appealPhotoDataUrl">
+                        <div id="appealPhotoPreviewBox" class="mt-2 text-center" style="display:none;">
+                            <img id="appealPhotoPreview" class="img-fluid rounded-3 border shadow-xs" style="max-height: 120px; object-fit: contain;">
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary rounded-pill w-100 py-2 fw-bold fs-8 shadow-xs" style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" id="btnSubmitSuspensionAppeal" onclick="executeSubmitSuspensionAppeal()">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Submit Appeal to Admin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 

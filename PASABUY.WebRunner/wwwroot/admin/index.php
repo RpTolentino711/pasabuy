@@ -1152,6 +1152,14 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <i class="fa-solid fa-scale-balanced text-primary me-1"></i> Listing Appeals 
                         <span class="badge rounded-pill bg-warning text-dark ms-1" id="adminAppealsBadge" style="display:none; font-size:0.65rem;">0</span>
                     </button>
+                    <button class="subtab-btn" id="btnSupportModuleUnreturned" onclick="switchSupportModule('unreturned', this)">
+                        <i class="fa-solid fa-clock-rotate-left text-danger me-1"></i> Unreturned Gear (Overdue)
+                        <span class="badge rounded-pill bg-danger ms-1" id="adminUnreturnedBadge" style="display:none; font-size:0.65rem;">0</span>
+                    </button>
+                    <button class="subtab-btn" id="btnSupportModuleRentalAppeals" onclick="switchSupportModule('suspensionAppeals', this)">
+                        <i class="fa-solid fa-user-shield text-info me-1"></i> 5-Day Ban Appeals
+                        <span class="badge rounded-pill bg-primary ms-1" id="adminSuspensionAppealsBadge" style="display:none; font-size:0.65rem;">0</span>
+                    </button>
                 </div>
 
                 <!-- PANE 1: SUPPORT TICKETS -->
@@ -1285,6 +1293,86 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 </thead>
                                 <tbody id="itemAppealsTableBody">
                                     <tr><td colspan="7" class="text-center py-4 text-muted">Loading appeals...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 4: UNRETURNED EQUIPMENT REPORTS & 5-DAY SUSPENSIONS -->
+                <div id="supportPaneUnreturned" class="support-module-pane" style="display:none;">
+                    <div class="admin-table-card p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-extrabold text-dark mb-0"><i class="fa-solid fa-triangle-exclamation text-danger me-1.5"></i>Unreturned Equipment Reports</h6>
+                                <p class="text-muted fs-9 mb-0">Equipment owners submit photo proof when a renter fails to return items on time. <strong>Approving applies a strict 5-day rental suspension</strong> on the renter across campus.</p>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select form-select-sm" id="unreturnedFilterStatus" style="width:160px;" onchange="loadUnreturnedReports()">
+                                    <option value="All">All Reports</option>
+                                    <option value="PENDING" selected>Pending Review</option>
+                                    <option value="APPROVED">Approved (5-Day Ban)</option>
+                                    <option value="DISMISSED">Dismissed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-custom mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Report #</th>
+                                        <th>Order Ref</th>
+                                        <th>Equipment Item</th>
+                                        <th>Equipment Owner</th>
+                                        <th>Reported Renter</th>
+                                        <th>Incident &amp; Photo Proof</th>
+                                        <th>5-Day Ban Status</th>
+                                        <th>Status</th>
+                                        <th width="190">Moderation Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="unreturnedReportsTableBody">
+                                    <tr><td colspan="9" class="text-center py-4 text-muted">Loading unreturned reports...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 5: 5-DAY RENTAL SUSPENSION APPEALS -->
+                <div id="supportPaneSuspensionAppeals" class="support-module-pane" style="display:none;">
+                    <div class="admin-table-card p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-extrabold text-dark mb-0"><i class="fa-solid fa-user-shield text-info me-1.5"></i>5-Day Rental Suspension Appeals</h6>
+                                <p class="text-muted fs-9 mb-0">Renters suspended for unreturned gear can appeal with explanation and photo proof. <strong>Approving an appeal immediately lifts their 5-day suspension</strong>.</p>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select form-select-sm" id="suspensionAppealFilterStatus" style="width:160px;" onchange="loadSuspensionAppeals()">
+                                    <option value="All">All Appeals</option>
+                                    <option value="PENDING" selected>Pending Review</option>
+                                    <option value="APPROVED">Approved (Ban Lifted)</option>
+                                    <option value="REJECTED">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-custom mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Appeal #</th>
+                                        <th>Report Ref</th>
+                                        <th>Renter Member</th>
+                                        <th>Explanation &amp; Evidence</th>
+                                        <th>Suspension Status</th>
+                                        <th>Decision Status</th>
+                                        <th width="190">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="suspensionAppealsTableBody">
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">Loading suspension appeals...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -2260,6 +2348,36 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     }
                 }
             } catch (e) {}
+
+            try {
+                const res = await fetch(`${API_URL}?action=get_unreturned_reports&status=PENDING`);
+                const data = await res.json();
+                const uBadge = document.getElementById('adminUnreturnedBadge');
+                if (uBadge) {
+                    const pCnt = parseInt(data.pending_count || 0);
+                    if (pCnt > 0) {
+                        uBadge.innerText = pCnt;
+                        uBadge.style.display = 'inline-block';
+                    } else {
+                        uBadge.style.display = 'none';
+                    }
+                }
+            } catch (e) {}
+
+            try {
+                const res = await fetch(`${API_URL}?action=get_suspension_appeals&status=PENDING`);
+                const data = await res.json();
+                const saBadge = document.getElementById('adminSuspensionAppealsBadge');
+                if (saBadge) {
+                    const pCnt = parseInt(data.pending_count || 0);
+                    if (pCnt > 0) {
+                        saBadge.innerText = pCnt;
+                        saBadge.style.display = 'inline-block';
+                    } else {
+                        saBadge.style.display = 'none';
+                    }
+                }
+            } catch (e) {}
         }
 
         let liveAdminPollingInterval = null;
@@ -2286,6 +2404,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     if (currentSupportModule === 'tickets') loadTickets();
                     else if (currentSupportModule === 'reports') loadItemReports();
                     else if (currentSupportModule === 'appeals') loadItemAppeals();
+                    else if (currentSupportModule === 'unreturned') loadUnreturnedReports();
+                    else if (currentSupportModule === 'suspensionAppeals') loadSuspensionAppeals();
                 }
             }, 3000);
         }
@@ -2330,6 +2450,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     if (currentSupportModule === 'tickets') loadTickets();
                     else if (currentSupportModule === 'reports') loadItemReports();
                     else if (currentSupportModule === 'appeals') loadItemAppeals();
+                    else if (currentSupportModule === 'unreturned') loadUnreturnedReports();
+                    else if (currentSupportModule === 'suspensionAppeals') loadSuspensionAppeals();
                     break;
                 case 'transactions': loadTransactions(); break;
                 case 'reports': loadReports(); break;
@@ -3982,6 +4104,14 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const pane = document.getElementById('supportPaneAppeals');
                 if (pane) pane.style.display = 'block';
                 loadItemAppeals();
+            } else if (moduleName === 'unreturned') {
+                const pane = document.getElementById('supportPaneUnreturned');
+                if (pane) pane.style.display = 'block';
+                loadUnreturnedReports();
+            } else if (moduleName === 'suspensionAppeals') {
+                const pane = document.getElementById('supportPaneSuspensionAppeals');
+                if (pane) pane.style.display = 'block';
+                loadSuspensionAppeals();
             }
         }
 
@@ -4220,6 +4350,244 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     loadItemAppeals();
                     loadItemReports();
                     loadProducts();
+                    loadCustomers();
+                    loadDashboardStats();
+                } else {
+                    alert('❌ ' + (data.message || 'Failed to record decision.'));
+                }
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+            }
+        }
+
+        // ----------------------------------------------------------
+        // UNRETURNED EQUIPMENT REPORTS & 5-DAY SUSPENSIONS
+        // ----------------------------------------------------------
+        async function loadUnreturnedReports() {
+            const status = document.getElementById('unreturnedFilterStatus')?.value || 'All';
+            const tbody = document.getElementById('unreturnedReportsTableBody');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=get_unreturned_reports&status=${encodeURIComponent(status)}`);
+                const data = await res.json();
+
+                const uBadge = document.getElementById('adminUnreturnedBadge');
+                if (uBadge) {
+                    const pCnt = parseInt(data.pending_count || 0);
+                    if (pCnt > 0) {
+                        uBadge.innerText = pCnt;
+                        uBadge.style.display = 'inline-block';
+                    } else {
+                        uBadge.style.display = 'none';
+                    }
+                }
+
+                if (data.success && data.reports && data.reports.length > 0) {
+                    tbody.innerHTML = data.reports.map(r => {
+                        const safeRenterName = (r.renter_name || 'Renter').replace(/'/g, "\\'");
+                        const safeItemName = (r.item_name || 'Equipment').replace(/'/g, "\\'");
+
+                        let banBadge = '<span class="badge bg-light text-muted border fs-9">No Ban</span>';
+                        if (r.status === 'APPROVED') {
+                            banBadge = `<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>SUSPENDED (5 Days)</span><div class="fs-9 text-muted mt-0.5">Until ${r.suspended_until || '5 days'}</div>`;
+                        } else if (r.status === 'PENDING') {
+                            banBadge = '<span class="badge bg-warning text-dark fs-9 fw-bold"><i class="fa-solid fa-clock me-1"></i>Pending Review</span>';
+                        }
+
+                        return `
+                            <tr>
+                                <td class="fw-bold text-muted">#UNR-${r.id}</td>
+                                <td><span class="badge bg-light text-primary border font-monospace fs-9 fw-bold">${r.order_code || 'N/A'}</span></td>
+                                <td>
+                                    <div class="fw-bold text-dark fs-8">${r.item_name || 'Equipment'}</div>
+                                    <div class="fs-9 text-muted">Item ID: ${r.item_id || 'N/A'}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark fs-8">${r.owner_name}</div>
+                                    <div class="fs-9 text-muted">${r.owner_email || ''}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark fs-8">${r.renter_name}</div>
+                                    <div class="fs-9 text-muted">${r.renter_email || ''}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-danger fs-8">${r.reason || 'Unreturned'}</div>
+                                    <div class="fs-9 text-dark" style="max-width:220px; word-break:break-word;">${r.details || 'No additional details.'}</div>
+                                    ${r.photo_url ? `<a href="${r.photo_url}" target="_blank" class="badge bg-danger-subtle text-danger fs-9 mt-1 text-decoration-none d-inline-flex align-items-center gap-1"><i class="fa-solid fa-camera"></i> View Photo Proof</a>` : ''}
+                                </td>
+                                <td>${banBadge}</td>
+                                <td>
+                                    <span class="badge ${r.status === 'APPROVED' ? 'bg-danger-subtle text-danger' : (r.status === 'DISMISSED' ? 'bg-light text-muted border' : 'bg-warning-subtle text-warning')} fs-9">
+                                        ${r.status}
+                                    </span>
+                                </td>
+                                <td>
+                                    ${r.status === 'PENDING' ? `
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <button class="btn btn-sm btn-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="adminApproveUnreturned(${r.id}, '${safeRenterName}', '${safeItemName}')">
+                                                <i class="fa-solid fa-gavel me-1"></i>Approve & Suspend (5d)
+                                            </button>
+                                            <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 fs-9 text-secondary" onclick="adminDismissUnreturned(${r.id})">
+                                                <i class="fa-solid fa-xmark me-1"></i>Dismiss
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <span class="fs-9 text-muted"><i class="fa-solid fa-check-double me-1"></i>Reviewed</span>
+                                    `}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No unreturned equipment reports found.</td></tr>';
+                }
+            } catch (e) {
+                console.error("loadUnreturnedReports error:", e);
+            }
+        }
+
+        async function adminApproveUnreturned(reportId, renterName, itemName) {
+            const promptMsg = `Approve unreturned item report for "${itemName}" against "${renterName}"?\n\nRENT-EASE POLICY:\n• Renter "${renterName}" will be IMMEDIATELY SUSPENDED from renting any items on campus for 5 DAYS.\n• The renter can submit an appeal if they have proof of return.\n\nEnter admin notes or confirmation:`;
+            const notes = prompt(promptMsg, 'Unreturned equipment confirmed with owner photo proof. 5-day rental suspension enforced.');
+            if (notes === null) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=approve_unreturned_report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ report_id: reportId, admin_notes: notes })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Report approved and 5-day suspension enforced.');
+                    loadUnreturnedReports();
+                    loadCustomers();
+                    loadDashboardStats();
+                } else {
+                    alert('❌ ' + (data.message || 'Failed to approve report.'));
+                }
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+            }
+        }
+
+        async function adminDismissUnreturned(reportId) {
+            if (!confirm('Dismiss this unreturned report without applying a suspension?')) return;
+            try {
+                const res = await fetch(`${API_URL}?action=dismiss_unreturned_report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ report_id: reportId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('✅ Report dismissed.');
+                    loadUnreturnedReports();
+                }
+            } catch (e) {}
+        }
+
+        // ----------------------------------------------------------
+        // 5-DAY RENTAL SUSPENSION APPEALS
+        // ----------------------------------------------------------
+        async function loadSuspensionAppeals() {
+            const status = document.getElementById('suspensionAppealFilterStatus')?.value || 'All';
+            const tbody = document.getElementById('suspensionAppealsTableBody');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=get_suspension_appeals&status=${encodeURIComponent(status)}`);
+                const data = await res.json();
+
+                const saBadge = document.getElementById('adminSuspensionAppealsBadge');
+                if (saBadge) {
+                    const pCnt = parseInt(data.pending_count || 0);
+                    if (pCnt > 0) {
+                        saBadge.innerText = pCnt;
+                        saBadge.style.display = 'inline-block';
+                    } else {
+                        saBadge.style.display = 'none';
+                    }
+                }
+
+                if (data.success && data.appeals && data.appeals.length > 0) {
+                    tbody.innerHTML = data.appeals.map(a => {
+                        const safeRenterName = (a.user_name || 'Renter').replace(/'/g, "\\'");
+                        const isBanActive = a.rental_suspended_until && (new Date(a.rental_suspended_until) > new Date());
+
+                        return `
+                            <tr>
+                                <td class="fw-bold text-muted">#APP-${a.id}</td>
+                                <td><span class="badge bg-light text-muted border font-monospace fs-9">#UNR-${a.report_id || 'N/A'}</span></td>
+                                <td>
+                                    <div class="fw-bold text-dark fs-8">${a.user_name}</div>
+                                    <div class="fs-9 text-muted">${a.user_email || ''}</div>
+                                </td>
+                                <td>
+                                    <div class="fs-8 text-dark fw-semibold" style="max-width:280px; word-break:break-word;">
+                                        <i class="fa-solid fa-quote-left text-muted me-1"></i>${a.appeal_reason}
+                                    </div>
+                                    ${a.photo_url ? `<a href="${a.photo_url}" target="_blank" class="badge bg-primary-subtle text-primary fs-9 mt-1 text-decoration-none d-inline-flex align-items-center gap-1"><i class="fa-solid fa-image"></i> View Counter-Proof</a>` : ''}
+                                    ${a.admin_decision_notes ? `<div class="fs-9 text-muted mt-1">Admin note: ${a.admin_decision_notes}</div>` : ''}
+                                </td>
+                                <td>
+                                    ${isBanActive 
+                                        ? `<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>Active Ban</span><div class="fs-9 text-muted mt-0.5">Until ${a.rental_suspended_until}</div>`
+                                        : '<span class="badge bg-success-subtle text-success fs-9 fw-semibold"><i class="fa-solid fa-check me-1"></i>Ban Lifted</span>'
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge ${a.status === 'APPROVED' ? 'bg-success text-white' : (a.status === 'REJECTED' ? 'bg-danger text-white' : 'bg-warning text-dark')} fs-9">
+                                        ${a.status}
+                                    </span>
+                                </td>
+                                <td>
+                                    ${a.status === 'PENDING' ? `
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <button class="btn btn-sm btn-success rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="adminDecideSuspensionAppeal(${a.id}, 'APPROVED', '${safeRenterName}')">
+                                                <i class="fa-solid fa-check me-1"></i>Approve & Lift Ban
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 fs-9 fw-bold" onclick="adminDecideSuspensionAppeal(${a.id}, 'REJECTED', '${safeRenterName}')">
+                                                <i class="fa-solid fa-ban me-1"></i>Reject
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <span class="fs-9 text-muted"><i class="fa-solid fa-gavel me-1"></i>Decided</span>
+                                    `}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No suspension appeals found.</td></tr>';
+                }
+            } catch (e) {
+                console.error("loadSuspensionAppeals error:", e);
+            }
+        }
+
+        async function adminDecideSuspensionAppeal(appealId, decision, renterName) {
+            const promptMsg = (decision === 'APPROVED') 
+                ? `Approve appeal for "${renterName}"?\n\nThis will:\n1. Immediately LIFT the 5-day rental suspension on their account.\n2. Allow "${renterName}" to rent equipment on campus again.`
+                : `Reject appeal for "${renterName}"?\n\nThe 5-day rental suspension will remain in effect.`;
+
+            if (!confirm(promptMsg)) return;
+
+            const notes = prompt(`Admin reason/notes for this decision:`, decision === 'APPROVED' ? 'Appeal approved: verified valid explanation and evidence of return.' : 'Appeal rejected: insufficient evidence.');
+            if (notes === null) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=decide_suspension_appeal`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ appeal_id: appealId, decision: decision, admin_notes: notes })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Suspension appeal decision recorded.');
+                    loadSuspensionAppeals();
+                    loadUnreturnedReports();
                     loadCustomers();
                     loadDashboardStats();
                 } else {

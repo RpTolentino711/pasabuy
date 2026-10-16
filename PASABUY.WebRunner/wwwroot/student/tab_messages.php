@@ -44,6 +44,64 @@
         <i class="fa-solid fa-shield-halved me-1"></i> Meet in a safe public location and inspect the item before paying cash.
     </div>
 
+    <!-- ACTIVE RENTAL REQUEST & ACTION BANNER (Dynamic) -->
+    <div id="chatRentalRequestBanner" class="alert alert-info border-0 rounded-4 shadow-sm p-3 mb-2 flex-shrink-0" style="display:none; background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border: 1.5px solid #C7D2FE !important;">
+        <div class="d-flex align-items-center justify-content-between mb-1.5">
+            <span class="fw-extrabold fs-8 text-primary"><i class="fa-solid fa-handshake-simple me-1"></i> Rental Agreement Request</span>
+            <span class="badge bg-warning text-dark fw-bold fs-9" id="chatRentalReqStatusBadge">Pending Approval</span>
+        </div>
+        <div class="p-2 rounded-3 bg-white border mb-2 fs-9 text-dark">
+            <div class="d-flex justify-content-between mb-0.5">
+                <span class="text-muted">Order:</span>
+                <strong id="chatReqOrderCode">#RE-10000</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-0.5">
+                <span class="text-muted">Schedule:</span>
+                <span id="chatReqDatesText">Oct 16 - Oct 17 (1 day)</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">Total:</span>
+                <strong class="text-primary fw-bold" id="chatReqTotalText">₱0.00</strong>
+            </div>
+        </div>
+        <!-- Owner Action Row (Visible to Romeo) -->
+        <div id="chatOwnerActionRow" style="display:none;">
+            <button type="button" class="btn btn-success btn-sm rounded-pill w-100 py-1.5 fw-bold fs-8 shadow-xs d-flex align-items-center justify-content-center gap-1.5" 
+                    id="btnAgreeStartTimer" onclick="executeAgreeAndStartTimer()">
+                <i class="fa-solid fa-play fs-9"></i> Agree to Rent & Start Timer
+            </button>
+        </div>
+        <!-- Renter Waiting Notice (Visible to Pogilameg) -->
+        <div id="chatRenterWaitingRow" style="display:none;" class="text-center text-muted fs-9">
+            <i class="fa-solid fa-hourglass-half text-warning me-1"></i> Waiting for owner (<span id="chatReqOwnerName">Romeo</span>) to agree and start timer.
+        </div>
+    </div>
+
+    <!-- ACTIVE RENTAL LIVE COUNTDOWN TIMER BANNER -->
+    <div id="chatRentalTimerBanner" class="card border-0 rounded-4 shadow-sm p-2.5 mb-2 flex-shrink-0 text-white" style="display:none; background: linear-gradient(135deg, #4F46E5 0%, #312E81 100%);">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="fs-9 fw-bold text-white-50"><i class="fa-solid fa-stopwatch me-1 text-warning"></i> RENTAL IN PROGRESS</span>
+            <span class="badge bg-success text-white fw-bold fs-9" id="chatLiveTimerBadge">Timer Active</span>
+        </div>
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <div class="fw-bold fs-8 text-white text-truncate" style="max-width:180px;" id="chatTimerItemTitle">POSPT (#RE-10000)</div>
+                <div class="fs-9 text-white-50">Ends: <span id="chatTimerEndDisplay">Oct 17, 2026, 3:45 PM</span></div>
+            </div>
+            <div class="text-end">
+                <div class="fs-6 fw-extrabold text-warning font-monospace" id="chatLiveCountdownText">00:00:00</div>
+                <div class="fs-9 text-white-50" id="chatCountdownLabel">Time Remaining</div>
+            </div>
+        </div>
+        <!-- Owner Report Unreturned Item Button (Visible for Romeo) -->
+        <div id="chatTimerOwnerReportRow" style="display:none;" class="pt-2 mt-2 border-top border-white border-opacity-20 d-flex align-items-center justify-content-between">
+            <span class="fs-9 text-white-50">Not returned on time?</span>
+            <button type="button" class="btn btn-danger btn-sm rounded-pill px-3 py-1 fs-9 fw-bold shadow-xs d-flex align-items-center gap-1" onclick="openReportUnreturnedModalFromChat()">
+                <i class="fa-solid fa-flag fs-9"></i> Report Unreturned Item
+            </button>
+        </div>
+    </div>
+
     <!-- Chat Stream -->
     <div id="chatStream" style="flex:1; overflow-y:auto; padding-right:4px;" class="mb-2">
     </div>

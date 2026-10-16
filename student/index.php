@@ -3294,7 +3294,351 @@
                                     }
                                 }
                             } catch (e) { }
+
+                            // Render and update live rental agreement banner & timer
+                            try {
+                                await checkAndRenderChatRentalTimer();
+                            } catch (eTimer) {}
                         }
+
+                        let currentChatRentalOrder = null;
+                        let chatRentalTimerInterval = null;
+
+                        async function checkAndRenderChatRentalTimer() {
+                            if (!currentActiveChatSellerId) return;
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                const res = await fetch(`/student/rentease_api.php?action=get_active_chat_rental&user_id=${currentUserId}&partner_id=${currentActiveChatSellerId}`);
+                                const data = await res.json();
+
+                                const reqBanner = document.getElementById('chatRentalRequestBanner');
+                                const timerBanner = document.getElementById('chatRentalTimerBanner');
+
+                                if (!data || !data.success || !data.has_rental) {
+                                    if (reqBanner) reqBanner.style.display = 'none';
+                                    if (timerBanner) timerBanner.style.display = 'none';
+                                    if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
+                                    currentChatRentalOrder = null;
+                                    return;
+                                }
+
+                                const ord = data.order;
+                                currentChatRentalOrder = ord;
+
+                                // 1. If timer is running or overdue, show TIMER BANNER
+                                if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
+                                    if (reqBanner) reqBanner.style.display = 'none';
+                                    if (timerBanner) timerBanner.style.display = 'block';
+
+                                    const titleEl = document.getElementById('chatTimerItemTitle');
+                                    if (titleEl) titleEl.innerText = `${ord.item_name} (${ord.order_code})`;
+                                    const endText = ord.rental_timer_end ? new Date(ord.rental_timer_end).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ord.rental_end_date;
+                                    const endEl = document.getElementById('chatTimerEndDisplay');
+                                    if (endEl) endEl.innerText = endText;
+
+                                    const ownerReportRow = document.getElementById('chatTimerOwnerReportRow');
+                                    if (ownerReportRow) {
+                                        // Romeo (Owner) sees Report Unreturned Item button
+                                        ownerReportRow.style.display = ord.is_owner ? 'flex' : 'none';
+                                    }
+
+                                    // Start or sync local live countdown
+                                    startChatTimerCountdown(ord.rental_timer_end);
+                                } 
+                                // 2. If status is REQUESTED or CONFIRMED (Awaiting Romeo to start timer)
+                                else if (ord.order_status === 'REQUESTED' || ord.order_status === 'CONFIRMED' || ord.timer_status === 'NOT_STARTED') {
+                                    if (timerBanner) timerBanner.style.display = 'none';
+                                    if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
+                                    if (reqBanner) reqBanner.style.display = 'block';
+
+                                    const codeEl = document.getElementById('chatReqOrderCode');
+                                    if (codeEl) codeEl.innerText = ord.order_code;
+                                    const datesEl = document.getElementById('chatReqDatesText');
+                                    if (datesEl) datesEl.innerText = `${ord.rental_start_date} to ${ord.rental_end_date} (${ord.rental_days} day(s))`;
+                                    const totEl = document.getElementById('chatReqTotalText');
+                                    if (totEl) totEl.innerText = `₱${parseFloat(ord.total_amount || 0).toFixed(2)}`;
+
+                                    const ownerRow = document.getElementById('chatOwnerActionRow');
+                                    const renterRow = document.getElementById('chatRenterWaitingRow');
+
+                                    if (ord.is_owner) {
+                                        // Romeo sees the "Agree to Rent & Start Timer" button
+                                        if (ownerRow) ownerRow.style.display = 'block';
+                                        if (renterRow) renterRow.style.display = 'none';
+                                    } else {
+                                        // Pogilameg sees waiting notice
+                                        if (ownerRow) ownerRow.style.display = 'none';
+                                        if (renterRow) renterRow.style.display = 'block';
+                                        const ownerNameEl = document.getElementById('chatReqOwnerName');
+                                        if (ownerNameEl) ownerNameEl.innerText = ord.owner_name || 'Romeo';
+                                    }
+                                }
+                            } catch(e) {
+                                console.error("Error fetching chat rental state:", e);
+                            }
+                        }
+
+                        function startChatTimerCountdown(endIsoString) {
+                            if (chatRentalTimerInterval) clearInterval(chatRentalTimerInterval);
+
+                            const updateDisplay = () => {
+                                const cdText = document.getElementById('chatLiveCountdownText');
+                                const badge = document.getElementById('chatLiveTimerBadge');
+                                const cdLabel = document.getElementById('chatCountdownLabel');
+                                if (!cdText) return;
+
+                                if (!endIsoString) {
+                                    cdText.innerText = '00:00:00';
+                                    return;
+                                }
+
+                                const endTime = new Date(endIsoString).getTime();
+                                const now = Date.now();
+                                const diffMs = endTime - now;
+
+                                if (diffMs <= 0) {
+                                    cdText.innerText = '⚠️ OVERDUE';
+                                    cdText.className = 'fs-6 fw-extrabold text-danger font-monospace';
+                                    if (badge) {
+                                        badge.innerText = 'Overdue / Return Required';
+                                        badge.className = 'badge bg-danger text-white fw-bold fs-9';
+                                    }
+                                    if (cdLabel) cdLabel.innerText = 'Time Expired';
+                                    return;
+                                }
+
+                                const totalSecs = Math.floor(diffMs / 1000);
+                                const hours = Math.floor(totalSecs / 3600);
+                                const mins = Math.floor((totalSecs % 3600) / 60);
+                                const secs = totalSecs % 60;
+
+                                const hStr = hours < 10 ? '0' + hours : hours;
+                                const mStr = mins < 10 ? '0' + mins : mins;
+                                const sStr = secs < 10 ? '0' + secs : secs;
+
+                                cdText.innerText = `${hStr}h ${mStr}m ${sStr}s`;
+                                cdText.className = 'fs-6 fw-extrabold text-warning font-monospace';
+                                if (badge) {
+                                    badge.innerText = 'Timer Running';
+                                    badge.className = 'badge bg-success text-white fw-bold fs-9';
+                                }
+                                if (cdLabel) cdLabel.innerText = 'Time Remaining';
+                            };
+
+                            updateDisplay();
+                            chatRentalTimerInterval = setInterval(updateDisplay, 1000);
+                        }
+
+                        window.executeAgreeAndStartTimer = async function () {
+                            if (!currentChatRentalOrder) return;
+                            const btn = document.getElementById('btnAgreeStartTimer');
+                            if (btn) {
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Starting Timer...';
+                            }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                const res = await fetch('/student/rentease_api.php?action=agree_and_start_rental_timer', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        order_code: currentChatRentalOrder.order_code,
+                                        owner_id: ownerId
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    await checkAndRenderChatRentalTimer();
+                                    await refreshActiveChatStream();
+                                } else {
+                                    alert(data.message || 'Failed to start timer');
+                                }
+                            } catch(e) {
+                                console.error("Timer start error:", e);
+                            } finally {
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = '<i class="fa-solid fa-play fs-9"></i> Agree to Rent & Start Timer';
+                                }
+                            }
+                        };
+
+                        window.openReportUnreturnedModalFromChat = function () {
+                            if (!currentChatRentalOrder) return;
+                            const codeEl = document.getElementById('unretModalOrderCode');
+                            if (codeEl) codeEl.innerText = currentChatRentalOrder.order_code;
+                            const nameEl = document.getElementById('unretModalItemName');
+                            if (nameEl) nameEl.innerText = currentChatRentalOrder.item_name;
+                            const renterEl = document.getElementById('unretModalRenterName');
+                            if (renterEl) renterEl.innerText = `${currentChatRentalOrder.customer_name} (${currentChatRentalOrder.customer_email})`;
+                            const detEl = document.getElementById('unretReportDetails');
+                            if (detEl) detEl.value = '';
+                            const photoEl = document.getElementById('unretPhotoDataUrl');
+                            if (photoEl) photoEl.value = '';
+                            const previewBox = document.getElementById('unretPhotoPreviewBox');
+                            if (previewBox) previewBox.style.display = 'none';
+
+                            const modalEl = document.getElementById('reportUnreturnedModal');
+                            if (modalEl) new bootstrap.Modal(modalEl).show();
+                        };
+
+                        window.previewUnretReportPhoto = function (event) {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                const hidden = document.getElementById('unretPhotoDataUrl');
+                                if (hidden) hidden.value = e.target.result;
+                                const img = document.getElementById('unretPhotoPreview');
+                                const box = document.getElementById('unretPhotoPreviewBox');
+                                if (img) img.src = e.target.result;
+                                if (box) box.style.display = 'block';
+                            };
+                            reader.readAsDataURL(file);
+                        };
+
+                        window.executeSubmitUnreturnedReport = async function () {
+                            if (!currentChatRentalOrder) return;
+                            const details = document.getElementById('unretReportDetails')?.value.trim();
+                            const photoUrl = document.getElementById('unretPhotoDataUrl')?.value || '';
+                            if (!details) {
+                                alert('Please describe the incident / unreturned situation.');
+                                return;
+                            }
+
+                            const btn = document.getElementById('btnSubmitUnretReport');
+                            if (btn) {
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Submitting...';
+                            }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                const res = await fetch('/student/rentease_api.php?action=report_unreturned_item', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        order_code: currentChatRentalOrder.order_code,
+                                        owner_id: ownerId,
+                                        reason: document.getElementById('unretReportReason')?.value || 'Item not returned after rental period',
+                                        details: details,
+                                        photo_url: photoUrl
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert("🚨 Report submitted to Admin with photo proof!\nAdmin will review the case. If approved, the renter's account will be suspended from renting for 5 days.");
+                                    const modalEl = document.getElementById('reportUnreturnedModal');
+                                    if (modalEl) {
+                                        const bs = bootstrap.Modal.getInstance(modalEl);
+                                        if (bs) bs.hide();
+                                    }
+                                    await checkAndRenderChatRentalTimer();
+                                    await refreshActiveChatStream();
+                                } else {
+                                    alert(data.message || 'Failed to submit report');
+                                }
+                            } catch(e) {
+                                console.error("Report submit error:", e);
+                            } finally {
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Submit Report';
+                                }
+                            }
+                        };
+
+                        window.showRentalSuspensionModal = function (suspData) {
+                            const rEl = document.getElementById('suspensionNoticeReason');
+                            if (rEl) rEl.innerText = suspData.reason || 'Unreturned equipment report approved by admin.';
+                            const endEl = document.getElementById('suspensionNoticeEndDate');
+                            if (endEl) endEl.innerText = suspData.suspended_until || '5 Days';
+                            const reasonIn = document.getElementById('appealReasonText');
+                            if (reasonIn) reasonIn.value = '';
+                            const photoIn = document.getElementById('appealPhotoDataUrl');
+                            if (photoIn) photoIn.value = '';
+                            const box = document.getElementById('appealPhotoPreviewBox');
+                            if (box) box.style.display = 'none';
+
+                            const modalEl = document.getElementById('rentalSuspensionAppealModal');
+                            if (modalEl) new bootstrap.Modal(modalEl).show();
+                        };
+
+                        window.previewAppealPhoto = function (event) {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                const hidden = document.getElementById('appealPhotoDataUrl');
+                                if (hidden) hidden.value = e.target.result;
+                                const img = document.getElementById('appealPhotoPreview');
+                                const box = document.getElementById('appealPhotoPreviewBox');
+                                if (img) img.src = e.target.result;
+                                if (box) box.style.display = 'block';
+                            };
+                            reader.readAsDataURL(file);
+                        };
+
+                        window.executeSubmitSuspensionAppeal = async function () {
+                            const reason = document.getElementById('appealReasonText')?.value.trim();
+                            const photoUrl = document.getElementById('appealPhotoDataUrl')?.value || '';
+                            if (!reason) {
+                                alert('Please explain the circumstances or proof for your appeal.');
+                                return;
+                            }
+
+                            const btn = document.getElementById('btnSubmitSuspensionAppeal');
+                            if (btn) {
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Submitting Appeal...';
+                            }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const user = storedUser || {};
+
+                            try {
+                                const res = await fetch('/student/rentease_api.php?action=submit_rental_suspension_appeal', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        user_id: user.id || user.userId || 105,
+                                        user_name: user.name || (user.firstName ? (user.firstName + ' ' + (user.lastName || '')).trim() : 'Pogilameg Tester'),
+                                        user_email: user.email || 'pogilameg@gmail.com',
+                                        appeal_reason: reason,
+                                        photo_url: photoUrl
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('✅ Appeal submitted to Admin!\nAdmin will review your appeal and evidence. If approved, your 5-day suspension will be lifted immediately.');
+                                    const modalEl = document.getElementById('rentalSuspensionAppealModal');
+                                    if (modalEl) {
+                                        const bs = bootstrap.Modal.getInstance(modalEl);
+                                        if (bs) bs.hide();
+                                    }
+                                } else {
+                                    alert(data.message || 'Failed to submit appeal');
+                                }
+                            } catch(e) {
+                                console.error("Appeal error:", e);
+                            } finally {
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Submit Appeal to Admin';
+                                }
+                            }
+                        };
 
                         function openChat(partnerId, partnerName, itemTitle, itemPrice) {
                             const pId = parseInt(partnerId) || 0;

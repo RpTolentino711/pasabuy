@@ -135,6 +135,62 @@ if ($db) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $e) {}
 
+    // Auto-migrate rental timer, unreturned reports, and 5-day suspension system
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspended_until` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspension_reason` TEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspension_report_id` INT DEFAULT NULL"); } catch (Exception $e) {}
+
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_id` INT DEFAULT 104"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_id` INT DEFAULT 105"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `item_id` INT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `item_name` VARCHAR(255) DEFAULT 'Campus Equipment'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rental_timer_start` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rental_timer_end` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `timer_status` VARCHAR(50) DEFAULT 'NOT_STARTED'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_agreed` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_agreed_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `unreturned_reported` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_unreturned_reports` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `order_code` VARCHAR(50) NOT NULL,
+            `item_id` INT DEFAULT NULL,
+            `item_name` VARCHAR(255) NOT NULL,
+            `owner_id` INT NOT NULL,
+            `owner_name` VARCHAR(150) NOT NULL,
+            `owner_email` VARCHAR(150) NOT NULL,
+            `renter_id` INT NOT NULL,
+            `renter_name` VARCHAR(150) NOT NULL,
+            `renter_email` VARCHAR(150) NOT NULL,
+            `reason` VARCHAR(255) NOT NULL DEFAULT 'Item not returned after rental period',
+            `details` TEXT DEFAULT NULL,
+            `photo_url` LONGTEXT DEFAULT NULL,
+            `status` ENUM('PENDING', 'APPROVED', 'DISMISSED') DEFAULT 'PENDING',
+            `admin_notes` TEXT DEFAULT NULL,
+            `suspension_days` INT DEFAULT 5,
+            `suspended_until` DATETIME DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            `reviewed_at` DATETIME DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_suspension_appeals` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `report_id` INT DEFAULT NULL,
+            `user_id` INT NOT NULL,
+            `user_email` VARCHAR(150) NOT NULL,
+            `user_name` VARCHAR(150) NOT NULL,
+            `appeal_reason` TEXT NOT NULL,
+            `photo_url` LONGTEXT DEFAULT NULL,
+            `status` ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+            `admin_decision_notes` TEXT DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            `reviewed_at` DATETIME DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
+
     // 2. Transactions table
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_transactions` (
@@ -1658,6 +1714,190 @@ if ($action === 'decide_item_appeal') {
         echo json_encode([
             'success' => true,
             'message' => "❌ Appeal for '{$itemName}' was REJECTED."
+        ]);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------
+// 12. UNRETURNED EQUIPMENT REPORTS & 5-DAY SUSPENSIONS
+// ----------------------------------------------------------
+if ($action === 'get_unreturned_reports') {
+    if (!$db) { echo json_encode(['success' => true, 'reports' => []]); exit; }
+    
+    $status = trim((string)($req['status'] ?? 'All'));
+    $sql = "SELECT r.*, u.rental_suspended_until, u.Status as renter_account_status 
+            FROM `rental_unreturned_reports` r 
+            LEFT JOIN `Users` u ON r.renter_id = u.Id 
+            WHERE 1=1";
+    $params = [];
+    if ($status !== 'All' && $status !== '') {
+        $sql .= " AND r.`status` = ?";
+        $params[] = strtoupper($status);
+    }
+    $sql .= " ORDER BY r.`id` DESC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $reports = $stmt->fetchAll();
+
+    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'PENDING'")->fetchColumn();
+
+    echo json_encode([
+        'success' => true,
+        'count' => count($reports),
+        'pending_count' => $pendingCount,
+        'reports' => $reports
+    ]);
+    exit;
+}
+
+if ($action === 'approve_unreturned_report') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $reportId = (int)($req['report_id'] ?? $req['id'] ?? 0);
+    $notes = trim((string)($req['admin_notes'] ?? 'Unreturned equipment confirmed. 5-day rental suspension enforced.'));
+
+    $stmt = $db->prepare("SELECT * FROM `rental_unreturned_reports` WHERE `id` = ?");
+    $stmt->execute([$reportId]);
+    $report = $stmt->fetch();
+    if (!$report) {
+        echo json_encode(['success' => false, 'message' => 'Report not found.']);
+        exit;
+    }
+
+    $renterId = (int)$report['renter_id'];
+    $renterEmail = $report['renter_email'];
+    $renterName = $report['renter_name'];
+    $itemName = $report['item_name'];
+    $orderCode = $report['order_code'];
+
+    // 5-Day suspension timestamp
+    $suspUntil = date('Y-m-d H:i:s', strtotime('+5 days'));
+    $suspReason = "Unreturned Equipment: '{$itemName}' ({$orderCode}) - 5-day suspension approved by Admin";
+
+    // 1. Update report
+    $upRpt = $db->prepare("UPDATE `rental_unreturned_reports` SET `status` = 'APPROVED', `admin_notes` = ?, `suspended_until` = ?, `reviewed_at` = NOW() WHERE `id` = ?");
+    $upRpt->execute([$notes, $suspUntil, $reportId]);
+
+    // 2. Suspend renter in Users table
+    $upUser = $db->prepare("UPDATE `Users` SET `rental_suspended_until` = ?, `rental_suspension_reason` = ?, `rental_suspension_report_id` = ? WHERE `Id` = ? OR LOWER(`Email`) = LOWER(?)");
+    $upUser->execute([$suspUntil, $suspReason, $reportId, $renterId, $renterEmail]);
+
+    // 3. Update order status
+    $db->prepare("UPDATE `rental_orders` SET `order_status` = 'REPORTED_UNRETURNED' WHERE `order_code` = ?")
+        ->execute([$orderCode]);
+
+    // 4. Update corresponding rental_issues ticket if exists
+    try {
+        $db->prepare("UPDATE `rental_issues` SET `status` = 'RESOLVED', `status_display` = 'Approved & Suspended (5 Days)', `resolution_notes` = ? WHERE `order_code` = ?")
+            ->execute([$notes, $orderCode]);
+    } catch (Exception $eIss) {}
+
+    // 5. Post notification message in ChatMessages
+    try {
+        $notif = "🚨 ADMIN DECISION: Unreturned equipment report against {$renterName} for '{$itemName}' was APPROVED by Admin. Renter is SUSPENDED from renting any items for 5 days (until " . date('M d, Y h:i A', strtotime($suspUntil)) . "). An appeal may be submitted.";
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`) VALUES (100, ?, 'RentEase Admin Moderation', ?, ?)")
+            ->execute([$renterId, $notif, $itemName]);
+    } catch (Exception $eC) {}
+
+    echo json_encode([
+        'success' => true,
+        'suspended_until' => date('M d, Y h:i A', strtotime($suspUntil)),
+        'message' => "✅ Report APPROVED! Renter '{$renterName}' has been suspended from renting items for 5 days (until " . date('M d, Y h:i A', strtotime($suspUntil)) . ")."
+    ]);
+    exit;
+}
+
+if ($action === 'dismiss_unreturned_report') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $reportId = (int)($req['report_id'] ?? $req['id'] ?? 0);
+    $notes = trim((string)($req['admin_notes'] ?? 'Reviewed and dismissed by admin.'));
+
+    $stmt = $db->prepare("UPDATE `rental_unreturned_reports` SET `status` = 'DISMISSED', `admin_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ?");
+    $stmt->execute([$notes, $reportId]);
+
+    echo json_encode(['success' => true, 'message' => 'Report dismissed successfully.']);
+    exit;
+}
+
+// ----------------------------------------------------------
+// 13. RENTAL SUSPENSION APPEALS (Admin Review & Lift Ban)
+// ----------------------------------------------------------
+if ($action === 'get_suspension_appeals') {
+    if (!$db) { echo json_encode(['success' => true, 'appeals' => []]); exit; }
+
+    $status = trim((string)($req['status'] ?? 'All'));
+    $sql = "SELECT a.*, u.rental_suspended_until, u.rental_suspension_reason 
+            FROM `rental_suspension_appeals` a 
+            LEFT JOIN `Users` u ON a.user_id = u.Id 
+            WHERE 1=1";
+    $params = [];
+    if ($status !== 'All' && $status !== '') {
+        $sql .= " AND a.`status` = ?";
+        $params[] = strtoupper($status);
+    }
+    $sql .= " ORDER BY a.`id` DESC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $appeals = $stmt->fetchAll();
+
+    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_suspension_appeals` WHERE `status` = 'PENDING'")->fetchColumn();
+
+    echo json_encode([
+        'success' => true,
+        'count' => count($appeals),
+        'pending_count' => $pendingCount,
+        'appeals' => $appeals
+    ]);
+    exit;
+}
+
+if ($action === 'decide_suspension_appeal') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $appealId = (int)($req['appeal_id'] ?? $req['id'] ?? 0);
+    $decision = strtoupper(trim((string)($req['decision'] ?? 'APPROVED'))); // APPROVED or REJECTED
+    $notes = trim((string)($req['admin_notes'] ?? ''));
+
+    $stmt = $db->prepare("SELECT * FROM `rental_suspension_appeals` WHERE `id` = ?");
+    $stmt->execute([$appealId]);
+    $appeal = $stmt->fetch();
+    if (!$appeal) {
+        echo json_encode(['success' => false, 'message' => 'Appeal not found.']);
+        exit;
+    }
+
+    $userId = (int)$appeal['user_id'];
+    $userEmail = $appeal['user_email'];
+    $userName = $appeal['user_name'];
+
+    if ($decision === 'APPROVED') {
+        // Approve appeal & lift suspension immediately!
+        $db->prepare("UPDATE `rental_suspension_appeals` SET `status` = 'APPROVED', `admin_decision_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ?")
+            ->execute([$notes, $appealId]);
+
+        $db->prepare("UPDATE `Users` SET `rental_suspended_until` = NULL, `rental_suspension_reason` = NULL WHERE `Id` = ? OR LOWER(`Email`) = LOWER(?)")
+            ->execute([$userId, $userEmail]);
+
+        // Post chat notice
+        try {
+            $notif = "✅ APPEAL APPROVED: Your appeal was reviewed and APPROVED by Admin. Your 5-day rental suspension has been lifted immediately. You may now rent equipment again.";
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`) VALUES (100, ?, 'RentEase Admin Moderation', ?, 'Rental Reinstated')")
+                ->execute([$userId, $notif]);
+        } catch (Exception $eC) {}
+
+        echo json_encode([
+            'success' => true,
+            'message' => "✅ Appeal APPROVED! 5-day suspension for '{$userName}' has been lifted immediately."
+        ]);
+        exit;
+    } else {
+        $db->prepare("UPDATE `rental_suspension_appeals` SET `status` = 'REJECTED', `admin_decision_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ?")
+            ->execute([$notes, $appealId]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => "❌ Appeal for '{$userName}' was REJECTED. The 5-day suspension remains in effect."
         ]);
         exit;
     }

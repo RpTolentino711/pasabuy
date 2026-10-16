@@ -724,10 +724,26 @@ function openEquipmentDetail(id) {
     const ownerSection = document.getElementById('detailOwnerControlSection');
     const ownerNotice = document.getElementById('detailOwnerNoticeContainer');
     const footerActions = document.getElementById('detailFooterActions');
+    const datesContainer = document.getElementById('detailDatesContainer');
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
+
+    // Initialize rental schedule dates (today to tomorrow)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const sDateInput = document.getElementById('detailStartDateInput');
+    const eDateInput = document.getElementById('detailEndDateInput');
+    if (sDateInput) {
+        sDateInput.min = todayStr;
+        sDateInput.value = todayStr;
+    }
+    if (eDateInput) {
+        eDateInput.min = todayStr;
+        eDateInput.value = tomorrowStr;
+    }
 
     if (isOwner) {
         if (qtyContainer) qtyContainer.style.setProperty('display', 'none', 'important');
+        if (datesContainer) datesContainer.style.setProperty('display', 'none', 'important');
         if (ownerNotice) ownerNotice.style.setProperty('display', 'none', 'important');
         if (ownerSection) ownerSection.style.setProperty('display', 'block', 'important');
 
@@ -765,8 +781,12 @@ function openEquipmentDetail(id) {
         }
     } else {
         if (qtyContainer) qtyContainer.style.removeProperty('display');
+        if (datesContainer) datesContainer.style.removeProperty('display');
         if (ownerNotice) ownerNotice.style.setProperty('display', 'none', 'important');
         if (ownerSection) ownerSection.style.setProperty('display', 'none', 'important');
+
+        // Update real-time total computation
+        window.onDetailDatesChanged();
 
         if (footerActions) {
             const inCart = rentEaseCart.some(i => (i.id && i.id == item.id) || (i.listingId && i.listingId == item.id) || (item.name && (i.title === item.name || i.name === item.name)));
@@ -804,6 +824,32 @@ function openEquipmentDetail(id) {
 window.openRentalDetail = openEquipmentDetail;
 window.openEquipmentDetail = openEquipmentDetail;
 
+window.onDetailDatesChanged = function () {
+    const sInput = document.getElementById('detailStartDateInput');
+    const eInput = document.getElementById('detailEndDateInput');
+    const badge = document.getElementById('detailDurationBadge');
+    const totalEl = document.getElementById('detailComputedTotalText');
+    if (!sInput || !eInput || !currentDetailProduct) return;
+
+    const sVal = sInput.value;
+    const eVal = eInput.value;
+    if (!sVal || !eVal) return;
+
+    const sDate = new Date(sVal);
+    const eDate = new Date(eVal);
+    let days = Math.round((eDate - sDate) / (1000 * 60 * 60 * 24));
+    if (isNaN(days) || days < 1) {
+        days = 1;
+        const nextDay = new Date(sDate.getTime() + 86400000);
+        eInput.value = nextDay.toISOString().split('T')[0];
+    }
+    if (badge) badge.innerText = `${days} Day${days > 1 ? 's' : ''} Rent`;
+
+    const rate = parseFloat(currentDetailProduct.price_per_day || currentDetailProduct.price || 0);
+    const total = rate * currentDetailQty * days;
+    if (totalEl) totalEl.innerText = `₱${total.toFixed(2)}`;
+};
+
 function adjustDetailQty(delta) {
     const maxStock = (currentDetailProduct && (currentDetailProduct.qty_available ?? currentDetailProduct.qty_total)) 
         ? parseInt(currentDetailProduct.qty_available ?? currentDetailProduct.qty_total) 
@@ -811,9 +857,10 @@ function adjustDetailQty(delta) {
     currentDetailQty = Math.max(1, Math.min(maxStock, currentDetailQty + delta));
     const el = document.getElementById('detailQtyVal');
     if (el) el.innerText = currentDetailQty;
+    if (typeof window.onDetailDatesChanged === 'function') window.onDetailDatesChanged();
 }
 
-// RENT NOW ACTION: Adds item to cart, notifies stock owner, and jumps straight to Checkout!
+// RENT NOW ACTION: Checks 5-day suspension, books rental, and auto-redirects directly to 1-on-1 Chat!
 window.confirmRentNowDetail = async function () {
     if (!currentDetailProduct) return;
     if (isCurrentUserOwnerOfItem(currentDetailProduct)) {
@@ -826,36 +873,108 @@ window.confirmRentNowDetail = async function () {
         return;
     }
 
-    // Add to cart with current selected quantity
-    addRentEaseCartItem(currentDetailProduct, currentDetailQty);
+    const btn = document.getElementById('detailRentNowBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Processing Booking...';
+    }
 
-    // Notify the stock owner immediately via backend API
+    let currentUser = getRentEaseCurrentUser();
+    const renterId = currentUser.id || currentUser.userId || 105;
+    const renterEmail = currentUser.email || 'pogilameg@gmail.com';
+    const renterName = currentUser.name || (currentUser.firstName ? (currentUser.firstName + ' ' + (currentUser.lastName || '')).trim() : 'Pogilameg Tester');
+
+    // 1. Guard against 5-Day suspension
     try {
-        const currentUser = getRentEaseCurrentUser();
-        fetch(getRentEaseApiUrl('notify_owner_rental_intent'), {
+        const suspRes = await fetch(`/student/rentease_api.php?action=check_rental_suspension&user_id=${renterId}&email=${encodeURIComponent(renterEmail)}`);
+        const suspData = await suspRes.json();
+        if (suspData && suspData.is_suspended) {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-bolt fs-6 text-warning"></i> <span>Rent Now</span>';
+            }
+            if (typeof window.showRentalSuspensionModal === 'function') {
+                window.showRentalSuspensionModal(suspData);
+            } else {
+                alert(`⛔ RENTAL SUSPENDED: Your rental privileges are suspended until ${suspData.suspended_until} due to an approved unreturned equipment report.`);
+            }
+            return;
+        }
+    } catch (e) {
+        console.error("Suspension check error:", e);
+    }
+
+    // 2. Read selected dates
+    const sInput = document.getElementById('detailStartDateInput');
+    const eInput = document.getElementById('detailEndDateInput');
+    const startDate = sInput ? sInput.value : new Date().toISOString().split('T')[0];
+    const endDate = eInput ? eInput.value : new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const sDate = new Date(startDate);
+    const eDate = new Date(endDate);
+    let diffDays = Math.max(1, Math.round((eDate - sDate) / (1000 * 60 * 60 * 24)));
+    if (isNaN(diffDays)) diffDays = 1;
+
+    // 3. Create Rental Booking in backend
+    try {
+        const res = await fetch('/student/rentease_api.php?action=create_rental_booking', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 product_id: currentDetailProduct.id,
-                product_name: currentDetailProduct.name || currentDetailProduct.title,
-                customer_name: currentUser.name || 'Campus Student',
-                customer_id: currentUser.id || 105,
-                qty: currentDetailQty,
-                owner_id: currentDetailProduct.owner_id || currentDetailProduct.seller_id || 104
+                quantity: currentDetailQty,
+                start_date: startDate,
+                end_date: endDate,
+                days: diffDays,
+                renter_id: renterId,
+                renter_name: renterName,
+                renter_email: renterEmail
             })
-        }).catch(e => console.error("Rent now notify error:", e));
-    } catch (e) {}
+        });
+        const data = await res.json();
 
-    // Hide product detail modal
-    const modalEl = document.getElementById('productDetailModal');
-    if (modalEl) {
-        const bs = bootstrap.Modal.getInstance(modalEl);
-        if (bs) bs.hide();
+        if (data.success) {
+            // Dismiss product detail modal
+            const modalEl = document.getElementById('productDetailModal');
+            if (modalEl) {
+                const bs = bootstrap.Modal.getInstance(modalEl);
+                if (bs) bs.hide();
+            }
+
+            // Auto-redirect directly into 1-on-1 Chat with owner (Romeo Paolo Tolentino - ID 104)
+            const targetOwnerId = data.owner_id || 104;
+            const targetOwnerName = data.owner_name || 'Romeo Paolo Tolentino';
+            const itemTitle = currentDetailProduct.name || currentDetailProduct.title || 'Campus Equipment';
+            const itemPrice = '₱' + (parseFloat(currentDetailProduct.price_per_day || currentDetailProduct.price || 0)).toFixed(2);
+
+            if (typeof window.checkAndOpenChat === 'function') {
+                window.checkAndOpenChat(targetOwnerId, targetOwnerName, itemTitle, itemPrice, '');
+            } else if (typeof checkAndOpenChat === 'function') {
+                checkAndOpenChat(targetOwnerId, targetOwnerName, itemTitle, itemPrice, '');
+            }
+        } else {
+            if (data.is_suspended && typeof window.showRentalSuspensionModal === 'function') {
+                window.showRentalSuspensionModal(data);
+            } else {
+                alert(data.message || 'Rental booking could not be completed.');
+            }
+        }
+    } catch (e) {
+        console.error("Rental booking error:", e);
+        alert('Booking request sent! Redirecting to chat...');
+        const modalEl = document.getElementById('productDetailModal');
+        if (modalEl) {
+            const bs = bootstrap.Modal.getInstance(modalEl);
+            if (bs) bs.hide();
+        }
+        if (typeof checkAndOpenChat === 'function') {
+            checkAndOpenChat(104, 'Romeo Paolo Tolentino', currentDetailProduct.name || 'Campus Equipment', '₱' + (currentDetailProduct.price_per_day || 0), '');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-bolt fs-6 text-warning"></i> <span>Rent Now</span>';
+        }
     }
-
-    // Switch to cart tab and open checkout screen directly!
-    switchTab('cart');
-    openCheckoutScreen();
 };
 
 // OWNER ACTIONS: Save live stock and rental price

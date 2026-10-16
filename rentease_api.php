@@ -157,6 +157,62 @@ if ($db) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $e) {}
 
+    // Auto-migrate rental timer, unreturned reports, and 5-day suspension system
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspended_until` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspension_reason` TEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspension_report_id` INT DEFAULT NULL"); } catch (Exception $e) {}
+
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_id` INT DEFAULT 104"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_id` INT DEFAULT 105"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `item_id` INT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `item_name` VARCHAR(255) DEFAULT 'Campus Equipment'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rental_timer_start` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rental_timer_end` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `timer_status` VARCHAR(50) DEFAULT 'NOT_STARTED'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_agreed` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_agreed_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `unreturned_reported` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_unreturned_reports` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `order_code` VARCHAR(50) NOT NULL,
+            `item_id` INT DEFAULT NULL,
+            `item_name` VARCHAR(255) NOT NULL,
+            `owner_id` INT NOT NULL,
+            `owner_name` VARCHAR(150) NOT NULL,
+            `owner_email` VARCHAR(150) NOT NULL,
+            `renter_id` INT NOT NULL,
+            `renter_name` VARCHAR(150) NOT NULL,
+            `renter_email` VARCHAR(150) NOT NULL,
+            `reason` VARCHAR(255) NOT NULL DEFAULT 'Item not returned after rental period',
+            `details` TEXT DEFAULT NULL,
+            `photo_url` LONGTEXT DEFAULT NULL,
+            `status` ENUM('PENDING', 'APPROVED', 'DISMISSED') DEFAULT 'PENDING',
+            `admin_notes` TEXT DEFAULT NULL,
+            `suspension_days` INT DEFAULT 5,
+            `suspended_until` DATETIME DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            `reviewed_at` DATETIME DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_suspension_appeals` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `report_id` INT DEFAULT NULL,
+            `user_id` INT NOT NULL,
+            `user_email` VARCHAR(150) NOT NULL,
+            `user_name` VARCHAR(150) NOT NULL,
+            `appeal_reason` TEXT NOT NULL,
+            `photo_url` LONGTEXT DEFAULT NULL,
+            `status` ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+            `admin_decision_notes` TEXT DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            `reviewed_at` DATETIME DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
+
     // Automatically purge legacy demo packages and test orders
     try {
         $db->exec("DELETE FROM `rental_packages` WHERE `name` IN ('Birthday Celebration Package', 'Grand Wedding Package', 'Weekend Social Gathering Package')");
@@ -713,6 +769,31 @@ if ($action === 'calculate_charges') {
 if ($action === 'create_order') {
     $customerName = trim((string)($data['customer_name'] ?? 'Pogilameg Tester'));
     $customerEmail = trim((string)($data['customer_email'] ?? 'pogilameg@gmail.com'));
+    $customerId = (int)($data['customer_id'] ?? 0);
+
+    // Check if customer is suspended from renting
+    if ($db) {
+        try {
+            $suspStmt = $db->prepare("SELECT `rental_suspended_until`, `rental_suspension_reason` FROM `Users` WHERE LOWER(`Email`) = LOWER(?) OR `Id` = ?");
+            $suspStmt->execute([$customerEmail, $customerId]);
+            $suspUser = $suspStmt->fetch();
+            if ($suspUser && !empty($suspUser['rental_suspended_until'])) {
+                $suspTime = strtotime($suspUser['rental_suspended_until']);
+                if ($suspTime > time()) {
+                    $readableEnd = date('M d, Y h:i A', $suspTime);
+                    echo json_encode([
+                        'success' => false,
+                        'is_suspended' => true,
+                        'suspended_until' => $readableEnd,
+                        'reason' => $suspUser['rental_suspension_reason'] ?: 'Unreturned equipment report approved by admin',
+                        'message' => "⛔ Your rental privileges are temporarily suspended until {$readableEnd} due to an approved unreturned equipment report. You may submit an appeal."
+                    ]);
+                    exit;
+                }
+            }
+        } catch (Exception $eSusp) {}
+    }
+
     $customerPhone = trim((string)($data['customer_phone'] ?? '0917-123-4567'));
     $deliveryOption = 'MEETUP';
     $deliveryAddress = trim((string)($data['delivery_address'] ?? 'San Pablo, Laguna'));
@@ -2663,6 +2744,436 @@ if ($action === 'get_my_item_violations') {
         'reports' => $reports,
         'appeals' => $appeals,
         'is_suspended' => $isSuspended
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// CHECK RENTAL SUSPENSION (5-Day Ban Policy)
+// ----------------------------------------------------------
+if ($action === 'check_rental_suspension') {
+    $userId = (int)($data['user_id'] ?? $_GET['user_id'] ?? 0);
+    $userEmail = trim((string)($data['email'] ?? $_GET['email'] ?? ''));
+
+    if (!$db) {
+        echo json_encode(['success' => true, 'is_suspended' => false]);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT `Id`, `Email`, `rental_suspended_until`, `rental_suspension_reason` FROM `Users` WHERE (`Id` = ? AND `Id` > 0) OR (LOWER(`Email`) = LOWER(?) AND `Email` != '') LIMIT 1");
+    $stmt->execute([$userId, $userEmail]);
+    $user = $stmt->fetch();
+
+    $isSuspended = false;
+    $suspendedUntil = null;
+    $reason = '';
+    $secondsRemaining = 0;
+    $daysLeft = 0;
+    $hoursLeft = 0;
+
+    if ($user && !empty($user['rental_suspended_until'])) {
+        $suspTime = strtotime($user['rental_suspended_until']);
+        $now = time();
+        if ($suspTime > $now) {
+            $isSuspended = true;
+            $secondsRemaining = $suspTime - $now;
+            $daysLeft = floor($secondsRemaining / 86400);
+            $hoursLeft = floor(($secondsRemaining % 86400) / 3600);
+            $suspendedUntil = date('M d, Y h:i A', $suspTime);
+            $reason = $user['rental_suspension_reason'] ?: 'Unreturned equipment report approved by admin';
+        }
+    }
+
+    // Check if an appeal is pending
+    $hasPendingAppeal = false;
+    if ($isSuspended) {
+        try {
+            $appStmt = $db->prepare("SELECT COUNT(*) FROM `rental_suspension_appeals` WHERE (`user_id` = ? OR LOWER(`user_email`) = LOWER(?)) AND `status` = 'PENDING'");
+            $appStmt->execute([$userId, $userEmail]);
+            $hasPendingAppeal = ((int)$appStmt->fetchColumn() > 0);
+        } catch (Exception $eApp) {}
+    }
+
+    echo json_encode([
+        'success' => true,
+        'is_suspended' => $isSuspended,
+        'suspended_until' => $suspendedUntil,
+        'reason' => $reason,
+        'seconds_remaining' => $secondsRemaining,
+        'days_left' => $daysLeft,
+        'hours_left' => $hoursLeft,
+        'has_pending_appeal' => $hasPendingAppeal
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// CREATE RENTAL BOOKING (Auto-redirect to chat & notify owner)
+// ----------------------------------------------------------
+if ($action === 'create_rental_booking') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+
+    $productId = (int)($data['product_id'] ?? 0);
+    $qty = max(1, (int)($data['quantity'] ?? 1));
+    $startDate = trim((string)($data['start_date'] ?? date('Y-m-d')));
+    $endDate = trim((string)($data['end_date'] ?? date('Y-m-d', strtotime('+1 day'))));
+    $days = max(1, (int)($data['days'] ?? 1));
+    $renterId = (int)($data['renter_id'] ?? 105);
+    $renterName = trim((string)($data['renter_name'] ?? 'Pogilameg Tester'));
+    $renterEmail = trim((string)($data['renter_email'] ?? 'pogilameg@gmail.com'));
+
+    // 1. Guard against suspension
+    $suspStmt = $db->prepare("SELECT `rental_suspended_until`, `rental_suspension_reason` FROM `Users` WHERE `Id` = ? OR LOWER(`Email`) = LOWER(?) LIMIT 1");
+    $suspStmt->execute([$renterId, $renterEmail]);
+    $suspUser = $suspStmt->fetch();
+    if ($suspUser && !empty($suspUser['rental_suspended_until'])) {
+        $suspTime = strtotime($suspUser['rental_suspended_until']);
+        if ($suspTime > time()) {
+            $readableEnd = date('M d, Y h:i A', $suspTime);
+            echo json_encode([
+                'success' => false,
+                'is_suspended' => true,
+                'suspended_until' => $readableEnd,
+                'reason' => $suspUser['rental_suspension_reason'],
+                'message' => "⛔ Your rental privileges are suspended until {$readableEnd} due to an approved unreturned equipment report. You may file an appeal."
+            ]);
+            exit;
+        }
+    }
+
+    // 2. Fetch Item Details
+    $pStmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE `id` = ? LIMIT 1");
+    $pStmt->execute([$productId]);
+    $product = $pStmt->fetch();
+    if (!$product) {
+        echo json_encode(['success' => false, 'message' => 'Equipment item not found.']);
+        exit;
+    }
+
+    $productName = $product['name'] ?: $product['title'] ?: 'Campus Equipment';
+    $dailyRate = (float)($product['price_per_day'] ?: $product['price'] ?: 0);
+    $ownerId = (int)($product['owner_id'] ?: 104);
+    $ownerName = $product['owner_name'] ?: 'Romeo Paolo Tolentino';
+    $ownerEmail = $product['owner_email'] ?: 'romeopaolotolentino@gmail.com';
+    $location = $product['location'] ?: 'San Pablo, Laguna';
+
+    $totalAmount = round($dailyRate * $qty * $days, 2);
+
+    $orderCode = "#RE-" . rand(10000, 99999);
+
+    $db->beginTransaction();
+    try {
+        $ordStmt = $db->prepare("INSERT INTO `rental_orders` (
+            `order_code`, `customer_name`, `customer_email`, `customer_phone`, `renter_id`,
+            `owner_name`, `owner_email`, `owner_id`, `item_id`, `item_name`,
+            `rental_start_date`, `rental_end_date`, `rental_days`, `subtotal`, `total_amount`,
+            `payment_method`, `payment_status`, `order_status`, `timer_status`, `owner_agreed`,
+            `delivery_option`, `delivery_address`, `pickup_address`
+        ) VALUES (
+            ?, ?, ?, '0917-123-4567', ?,
+            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?,
+            'CASH_MEETUP', 'PENDING', 'REQUESTED', 'NOT_STARTED', 0,
+            'MEETUP', 'Campus Handover Meetup', ?
+        )");
+        $ordStmt->execute([
+            $orderCode, $renterName, $renterEmail, $renterId,
+            $ownerName, $ownerEmail, $ownerId, $productId, $productName,
+            $startDate, $endDate, $days, $totalAmount, $totalAmount,
+            $location
+        ]);
+        $orderId = $db->lastInsertId();
+
+        // Insert order item
+        $db->prepare("INSERT INTO `rental_order_items` (`order_id`, `product_id`, `product_name`, `price_per_day`, `quantity`, `subtotal`) VALUES (?, ?, ?, ?, ?, ?)")
+            ->execute([$orderId, $productId, $productName, $dailyRate, $qty, $totalAmount]);
+
+        // Decrement stock
+        $db->prepare("UPDATE `rental_inventory` SET `qty_available` = GREATEST(0, `qty_available` - ?), `qty_rented` = `qty_rented` + ? WHERE `id` = ?")
+            ->execute([$qty, $qty, $productId]);
+
+        // Post proposal message into Chat between Renter and Owner
+        $chatMsg = "📋 RENTAL PROPOSAL ({$orderCode}): {$renterName} wants to rent {$qty}x '{$productName}' from {$startDate} to {$endDate} ({$days} day(s)) for ₱" . number_format($totalAmount, 2) . ". Waiting for {$ownerName} to agree and start rental timer.";
+        try {
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`) VALUES (?, ?, ?, ?, ?)")
+                ->execute([$renterId, $ownerId, $renterName, $chatMsg, $productName]);
+        } catch (Exception $eChat) {}
+
+        $db->commit();
+
+        echo json_encode([
+            'success' => true,
+            'order_code' => $orderCode,
+            'order_id' => $orderId,
+            'owner_id' => $ownerId,
+            'owner_name' => $ownerName,
+            'owner_email' => $ownerEmail,
+            'renter_id' => $renterId,
+            'renter_name' => $renterName,
+            'renter_email' => $renterEmail,
+            'item_id' => $productId,
+            'item_name' => $productName,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'days' => $days,
+            'total_amount' => $totalAmount,
+            'message' => "🎉 Rental request {$orderCode} sent to {$ownerName}! Redirecting to chat..."
+        ]);
+        exit;
+    } catch (Exception $eTx) {
+        $db->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Failed to create rental: ' . $eTx->getMessage()]);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------
+// GET ACTIVE CHAT RENTAL & TIMER STATE
+// ----------------------------------------------------------
+if ($action === 'get_active_chat_rental') {
+    if (!$db) { echo json_encode(['success' => true, 'has_rental' => false]); exit; }
+
+    $userId = (int)($data['user_id'] ?? $_GET['user_id'] ?? 104);
+    $partnerId = (int)($data['partner_id'] ?? $_GET['partner_id'] ?? 105);
+
+    // Resolve emails
+    $emailStmt = $db->prepare("SELECT `Id`, `Email` FROM `Users` WHERE `Id` IN (?, ?)");
+    $emailStmt->execute([$userId, $partnerId]);
+    $rows = $emailStmt->fetchAll();
+    $emails = [];
+    foreach ($rows as $r) {
+        $emails[(int)$r['Id']] = strtolower(trim($r['Email']));
+    }
+    $uEmail = $emails[$userId] ?? ($userId == 104 ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com');
+    $pEmail = $emails[$partnerId] ?? ($partnerId == 104 ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com');
+
+    $sql = "SELECT * FROM `rental_orders` 
+            WHERE ((LOWER(`customer_email`) = ? AND LOWER(`owner_email`) = ?) 
+               OR (LOWER(`customer_email`) = ? AND LOWER(`owner_email`) = ?)
+               OR (`renter_id` = ? AND `owner_id` = ?)
+               OR (`renter_id` = ? AND `owner_id` = ?))
+              AND `order_status` NOT IN ('RETURNED', 'CANCELLED', 'REJECTED')
+            ORDER BY `id` DESC LIMIT 1";
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId]);
+    $ord = $stmt->fetch();
+
+    if (!$ord) {
+        echo json_encode(['success' => true, 'has_rental' => false]);
+        exit;
+    }
+
+    $isOwner = ($userId == $ord['owner_id'] || $uEmail == strtolower($ord['owner_email']));
+    $timerStatus = $ord['timer_status'] ?: 'NOT_STARTED';
+    $timerStart = $ord['rental_timer_start'];
+    $timerEnd = $ord['rental_timer_end'];
+    $secondsRemaining = 0;
+    $isOverdue = false;
+
+    if ($timerStatus === 'RUNNING' && $timerEnd) {
+        $endTime = strtotime($timerEnd);
+        $diff = $endTime - time();
+        if ($diff <= 0) {
+            $secondsRemaining = 0;
+            $isOverdue = true;
+            $timerStatus = 'EXPIRED';
+        } else {
+            $secondsRemaining = $diff;
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'has_rental' => true,
+        'order' => [
+            'id' => $ord['id'],
+            'order_code' => $ord['order_code'],
+            'item_id' => $ord['item_id'],
+            'item_name' => $ord['item_name'] ?: 'Campus Equipment',
+            'customer_name' => $ord['customer_name'],
+            'customer_email' => $ord['customer_email'],
+            'renter_id' => $ord['renter_id'],
+            'owner_name' => $ord['owner_name'],
+            'owner_email' => $ord['owner_email'],
+            'owner_id' => $ord['owner_id'],
+            'rental_start_date' => $ord['rental_start_date'],
+            'rental_end_date' => $ord['rental_end_date'],
+            'rental_days' => (int)$ord['rental_days'],
+            'total_amount' => (float)$ord['total_amount'],
+            'order_status' => $ord['order_status'],
+            'owner_agreed' => (int)$ord['owner_agreed'],
+            'owner_agreed_at' => $ord['owner_agreed_at'],
+            'timer_status' => $timerStatus,
+            'rental_timer_start' => $timerStart,
+            'rental_timer_end' => $timerEnd,
+            'seconds_remaining' => $secondsRemaining,
+            'is_overdue' => $isOverdue,
+            'unreturned_reported' => (int)($ord['unreturned_reported'] ?? 0),
+            'is_owner' => $isOwner
+        ]
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// OWNER AGREES & STARTS RENTAL TIMER
+// ----------------------------------------------------------
+if ($action === 'agree_and_start_rental_timer') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    $ownerId = (int)($data['owner_id'] ?? 104);
+
+    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmt->execute([$orderCode]);
+    $order = $stmt->fetch();
+    if (!$order) {
+        echo json_encode(['success' => false, 'message' => 'Rental order not found.']);
+        exit;
+    }
+
+    $days = max(1, (int)$order['rental_days']);
+    $itemName = $order['item_name'] ?: 'Equipment';
+    $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
+    $renterId = (int)$order['renter_id'];
+
+    // Start timer NOW and calculate end time
+    $now = date('Y-m-d H:i:s');
+    $timerEnd = date('Y-m-d H:i:s', strtotime("+{$days} days"));
+
+    $upStmt = $db->prepare("UPDATE `rental_orders` SET 
+        `owner_agreed` = 1,
+        `owner_agreed_at` = ?,
+        `order_status` = 'IN_PROGRESS',
+        `timer_status` = 'RUNNING',
+        `rental_timer_start` = ?,
+        `rental_timer_end` = ?
+        WHERE `id` = ?");
+    $upStmt->execute([$now, $now, $timerEnd, $order['id']]);
+
+    // Send chat system message from Owner
+    $chatMsg = "⏱️ RENTAL APPROVED: {$ownerName} agreed to rent {$itemName}! The rental countdown timer has officially started for {$days} day(s). Due end: " . date('M d, Y h:i A', strtotime($timerEnd));
+    try {
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`) VALUES (?, ?, ?, ?, ?)")
+            ->execute([$ownerId, $renterId, $ownerName, $chatMsg, $itemName]);
+    } catch (Exception $eChat) {}
+
+    echo json_encode([
+        'success' => true,
+        'message' => "✅ Rental approved! Countdown timer has started for {$days} day(s).",
+        'timer_start' => $now,
+        'timer_end' => $timerEnd,
+        'rental_days' => $days
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// OWNER REPORTS UNRETURNED ITEM WITH PHOTO PROOF
+// ----------------------------------------------------------
+if ($action === 'report_unreturned_item') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    $ownerId = (int)($data['owner_id'] ?? 104);
+    $reason = trim((string)($data['reason'] ?? 'Item not returned after rental period'));
+    $details = trim((string)($data['details'] ?? 'Renter has not returned the equipment upon timer expiration.'));
+    $photoUrl = trim((string)($data['photo_url'] ?? ''));
+
+    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmt->execute([$orderCode]);
+    $order = $stmt->fetch();
+    if (!$order) {
+        echo json_encode(['success' => false, 'message' => 'Rental order not found.']);
+        exit;
+    }
+
+    $itemName = $order['item_name'] ?: 'Equipment';
+    $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
+    $ownerEmail = $order['owner_email'] ?: 'romeopaolotolentino@gmail.com';
+    $renterName = $order['customer_name'] ?: 'Pogilameg Tester';
+    $renterEmail = $order['customer_email'] ?: 'pogilameg@gmail.com';
+    $renterId = (int)$order['renter_id'] ?: 105;
+
+    // 1. Insert into rental_unreturned_reports
+    $rStmt = $db->prepare("INSERT INTO `rental_unreturned_reports` (
+        `order_code`, `item_id`, `item_name`, `owner_id`, `owner_name`, `owner_email`,
+        `renter_id`, `renter_name`, `renter_email`, `reason`, `details`, `photo_url`, `status`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')");
+    $rStmt->execute([
+        $orderCode, $order['item_id'], $itemName, $ownerId, $ownerName, $ownerEmail,
+        $renterId, $renterName, $renterEmail, $reason, $details, $photoUrl
+    ]);
+    $reportId = $db->lastInsertId();
+
+    // 2. Insert into rental_issues for Admin support hub visibility
+    try {
+        $ticketCode = '#UNRET-' . rand(1000, 9999);
+        $db->prepare("INSERT INTO `rental_issues` (`ticket_number`, `order_code`, `customer_name`, `issue_title`, `priority`, `status`, `assigned_to`, `description`, `stage`, `evidence_photo`) 
+            VALUES (?, ?, ?, ?, 'CRITICAL', 'Open', 'Moderation Team', ?, 'UNRETURNED_EQUIPMENT', ?)")
+            ->execute([
+                $ticketCode, $orderCode, $renterName,
+                "Overdue Unreturned Equipment: {$itemName} ({$orderCode})",
+                "Owner {$ownerName} reported that renter {$renterName} ({$renterEmail}) failed to return {$itemName} ({$orderCode}).\nDetails: {$details}",
+                $photoUrl
+            ]);
+    } catch (Exception $eT) {}
+
+    // 3. Mark order as reported overdue
+    $db->prepare("UPDATE `rental_orders` SET `unreturned_reported` = 1, `order_status` = 'OVERDUE' WHERE `id` = ?")
+        ->execute([$order['id']]);
+
+    // 4. Post alert message in Chat
+    $chatMsg = "🚨 OVERDUE REPORT FILED: {$ownerName} reported {$renterName} to Admin with photo evidence for unreturned item '{$itemName}' ({$orderCode}). Case submitted for Admin review.";
+    try {
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`) VALUES (?, ?, ?, ?, ?)")
+            ->execute([$ownerId, $renterId, $ownerName, $chatMsg, $itemName]);
+    } catch (Exception $eChat) {}
+
+    echo json_encode([
+        'success' => true,
+        'report_id' => $reportId,
+        'message' => "🚨 Report filed to Admin with photo evidence. If approved by Admin, renter will receive a 5-day rental suspension."
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// RENTER FILES APPEAL AGAINST SUSPENSION
+// ----------------------------------------------------------
+if ($action === 'submit_rental_suspension_appeal') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+
+    $userId = (int)($data['user_id'] ?? 105);
+    $userEmail = trim((string)($data['user_email'] ?? 'pogilameg@gmail.com'));
+    $userName = trim((string)($data['user_name'] ?? 'Pogilameg Tester'));
+    $reason = trim((string)($data['appeal_reason'] ?? ''));
+    $photoUrl = trim((string)($data['photo_url'] ?? ''));
+
+    if (empty($reason)) {
+        echo json_encode(['success' => false, 'message' => 'Please provide an explanation for your appeal.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("INSERT INTO `rental_suspension_appeals` (`user_id`, `user_email`, `user_name`, `appeal_reason`, `photo_url`, `status`) VALUES (?, ?, ?, ?, ?, 'PENDING')");
+    $stmt->execute([$userId, $userEmail, $userName, $reason, $photoUrl]);
+
+    // Also notify in rental_issues
+    try {
+        $ticketCode = '#APPL-' . rand(1000, 9999);
+        $db->prepare("INSERT INTO `rental_issues` (`ticket_number`, `customer_name`, `issue_title`, `priority`, `status`, `assigned_to`, `description`, `stage`, `evidence_photo`) 
+            VALUES (?, ?, ?, 'HIGH', 'Open', 'Moderation Team', ?, 'SUSPENSION_APPEAL', ?)")
+            ->execute([
+                $ticketCode, $userName,
+                "5-Day Suspension Appeal: {$userName}",
+                "Suspended renter {$userName} ({$userEmail}) submitted an appeal to lift their 5-day rental suspension.\nReason: {$reason}",
+                $photoUrl
+            ]);
+    } catch (Exception $eT) {}
+
+    echo json_encode([
+        'success' => true,
+        'message' => '✅ Appeal submitted successfully! Admin will review your appeal and photo evidence.'
     ]);
     exit;
 }
