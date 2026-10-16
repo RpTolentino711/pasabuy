@@ -2560,13 +2560,19 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     if (data.recent_orders && data.recent_orders.length > 0) {
                         tbody.innerHTML = data.recent_orders.map(o => `
                             <tr>
-                                <td class="fw-bold text-primary">${o.order_code}</td>
-                                <td>${o.customer_name}</td>
-                                <td class="fw-bold">₱${Number(o.total_amount).toLocaleString()}</td>
-                                <td><span class="badge ${getStatusBadge(o.order_status)}">${o.order_status}</span></td>
-                                <td><button class="btn btn-sm btn-light border py-0 px-2 fs-9" onclick="openOrderDetailModal(${o.id})"><i class="fa-solid fa-eye"></i></button></td>
+                                <td class="fw-bold text-primary">
+                                    <span class="font-monospace">${o.order_code}</span>
+                                    ${o.item_name ? `<div class="fs-10 text-muted text-truncate" style="max-width:130px;" title="${o.item_name}">${o.item_name}</div>` : ''}
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark fs-8">${o.customer_name}</div>
+                                </td>
+                                <td class="fw-bold fs-8">₱${Number(o.total_amount).toLocaleString()}</td>
+                                <td>${renderOrderStatusBadgeWithTimer(o)}</td>
+                                <td><button class="btn btn-sm btn-light border py-1 px-2.5 fs-9 shadow-2xs" onclick="openOrderDetailModal(${o.id})" title="Inspect Order"><i class="fa-solid fa-eye text-primary"></i></button></td>
                             </tr>
                         `).join('');
+                        startAdminLiveTimers();
                     } else {
                         tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No orders found.</td></tr>';
                     }
@@ -2792,17 +2798,18 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     tbody.innerHTML = data.orders.map(o => `
                         <tr>
                             <td class="fw-bold text-primary">
-                                ${o.order_code}
+                                <span class="font-monospace">${o.order_code}</span>
                                 ${o.reported_issues_count > 0 ? `<span class="badge bg-danger-subtle text-danger ms-1" title="${o.reported_issues_count} reported issue(s)"><i class="fa-solid fa-triangle-exclamation"></i> ${o.reported_issues_count}</span>` : ''}
+                                ${o.item_name ? `<div class="fs-10 text-muted text-truncate" style="max-width:140px;" title="${o.item_name}">${o.item_name}</div>` : ''}
                             </td>
                             <td>
-                                <div class="fw-bold text-dark">${o.customer_name}</div>
+                                <div class="fw-bold text-dark fs-8">${o.customer_name}</div>
                                 <div class="fs-9 text-muted">${o.customer_phone || ''}</div>
                             </td>
-                            <td class="text-muted fs-8">${o.rental_start_date || '2026-09-18'}</td>
-                            <td class="fw-extrabold text-dark">₱${Number(o.total_amount).toLocaleString()}</td>
+                            <td class="text-muted fs-8">${o.rental_start_date || '—'}</td>
+                            <td class="fw-extrabold text-dark fs-8">₱${Number(o.total_amount).toLocaleString()}</td>
                             <td>
-                                <span class="badge ${getStatusBadge(o.order_status)}">${o.step_name || o.order_status}</span>
+                                ${renderOrderStatusBadgeWithTimer(o)}
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-light border py-1 px-2.5 fs-9 fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-2xs" onclick="openOrderDetailModal(${o.id})">
@@ -2811,6 +2818,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             </td>
                         </tr>
                     `).join('');
+                    startAdminLiveTimers();
                 } else {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No orders found.</td></tr>';
                 }
@@ -2842,8 +2850,17 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 document.getElementById('mOrderTitle').innerText = `Order ${o.order_code}`;
                 const stageBadge = document.getElementById('mOrderLiveStageBadge');
                 if (stageBadge) {
-                    stageBadge.className = `badge fs-9 fw-bold ${getStatusBadge(st)}`;
-                    stageBadge.innerText = `${st}`;
+                    if (o.timer_status === 'RUNNING' || (isHandedOver && !isReturned)) {
+                        stageBadge.className = 'badge fs-9 fw-bold text-white shadow-2xs';
+                        stageBadge.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+                        stageBadge.innerHTML = '<i class="fa-solid fa-stopwatch fa-spin-pulse me-1"></i> IN RENTER HANDS (TIMER RUNNING)';
+                    } else if (o.timer_status === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue) {
+                        stageBadge.className = 'badge fs-9 fw-bold bg-danger text-white';
+                        stageBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> OVERDUE (EXPIRED)';
+                    } else {
+                        stageBadge.className = `badge fs-9 fw-bold ${getStatusBadge(st)}`;
+                        stageBadge.innerText = `${st}`;
+                    }
                 }
                 document.getElementById('mOrderSubtitle').innerText = `Placed on ${o.created_at || 'Recently'} • Payment: ${o.payment_method || 'GCash'} (${o.payment_status || 'PAID'})`;
 
@@ -3009,14 +3026,18 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     </div>
                                 </div>
                                 ${isHandedOver ? `
-                                    <div class="mt-2 pt-2 border-top d-flex align-items-center justify-content-between">
-                                        <div class="fs-10 text-muted">
-                                            <i class="fa-solid fa-clock text-info me-1"></i> Return Deadline: <strong class="text-dark">${o.rental_timer_end || o.rental_end_date}</strong>
+                                    <div class="mt-2 pt-2 border-top d-flex align-items-center justify-content-between bg-white p-2 rounded-2 border border-success-subtle shadow-2xs">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-stopwatch text-success fs-6 fa-spin-pulse"></i>
+                                            <div class="fs-10 text-muted">
+                                                <div class="fw-bold text-dark">Active Equipment Handover</div>
+                                                Return Deadline: <strong class="text-dark font-monospace">${o.rental_timer_end || o.rental_end_date}</strong>
+                                            </div>
                                         </div>
                                         <div>
                                             ${o.is_overdue ? 
                                                 '<span class="badge bg-danger text-white fs-10 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> RENTAL OVERDUE</span>' :
-                                                `<span class="badge bg-warning-subtle text-dark border fs-10 fw-bold font-monospace"><i class="fa-solid fa-stopwatch me-1 text-warning"></i> ${Math.floor((o.seconds_remaining||0)/3600)}h ${Math.floor(((o.seconds_remaining||0)%3600)/60)}m remaining</span>`
+                                                `<span class="badge text-white fs-10 fw-bold font-monospace px-2.5 py-1.5 shadow-2xs" id="mOrderLiveTimerCountdown" data-end="${o.rental_timer_end || ''}" style="background: linear-gradient(135deg, #10B981, #059669) !important;"><i class="fa-solid fa-clock me-1"></i> ${formatAdminTimeRemaining(o.rental_timer_end)}</span>`
                                             }
                                         </div>
                                     </div>
@@ -3236,6 +3257,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 document.getElementById('mOrderDetailsBody').innerHTML = html;
                 document.getElementById('mOrderStatusSelect').value = st;
                 new bootstrap.Modal(document.getElementById('orderDetailModal')).show();
+                startAdminLiveTimers();
             } catch (e) {
                 console.error('Error opening order details modal:', e);
             }
@@ -5008,16 +5030,133 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         // ----------------------------------------------------------
         // UTILITY HELPERS
         // ----------------------------------------------------------
+        function formatAdminTimeRemaining(endTimeStr) {
+            if (!endTimeStr) return 'Active Rental';
+            const end = new Date(endTimeStr.replace(/-/g, '/')).getTime();
+            const now = Date.now();
+            const diff = end - now;
+            if (isNaN(diff)) return 'Active Rental';
+            if (diff <= 0) return 'Overdue / Expired';
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+            if (hours > 24) {
+                const days = Math.floor(hours / 24);
+                const remH = hours % 24;
+                return `${days}d ${remH}h left`;
+            }
+            return `${hours}h ${mins}m ${secs}s left`;
+        }
+
+        function renderOrderStatusBadgeWithTimer(o) {
+            const st = (o.order_status || 'CONFIRMED').toUpperCase();
+            const timerSt = (o.timer_status || 'NOT_STARTED').toUpperCase();
+            const isTimerRunning = (timerSt === 'RUNNING' || o.is_timer_running || (st === 'IN_PROGRESS' && o.rental_timer_start));
+            const isOverdue = (timerSt === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue);
+            const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED');
+            const isRequested = (st === 'REQUESTED');
+            const isPreparing = (st === 'PREPARING' || st === 'PROCESSING');
+            const isMeetup = (st === 'MEETUP' || st === 'PICKUP' || st === 'ON_THE_WAY' || st === 'LOOKING_FOR_RIDER');
+
+            if (isOverdue) {
+                return `
+                    <div>
+                        <span class="badge bg-danger text-white fw-bold px-2 py-1 d-inline-flex align-items-center gap-1 shadow-2xs" style="font-size:0.72rem;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Overdue
+                        </span>
+                        <div class="fs-11 text-danger fw-bold mt-1">Return Pending</div>
+                    </div>`;
+            }
+
+            if (isTimerRunning) {
+                const remainingStr = formatAdminTimeRemaining(o.rental_timer_end);
+                return `
+                    <div>
+                        <span class="badge text-white fw-bold px-2.5 py-1 d-inline-flex align-items-center gap-1.5 shadow-2xs" style="background: linear-gradient(135deg, #10B981, #059669) !important; font-size: 0.72rem;">
+                            <i class="fa-solid fa-stopwatch fa-spin-pulse"></i> In Hand &bull; Timer Running
+                        </span>
+                        <div class="fs-10 text-success fw-bold mt-1 d-flex align-items-center gap-1 font-monospace admin-live-timer" data-end="${o.rental_timer_end || ''}">
+                            <i class="fa-regular fa-clock"></i> <span>${remainingStr}</span>
+                        </div>
+                    </div>`;
+            }
+
+            if (isReturned) {
+                return `
+                    <div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-check-double me-1 text-success"></i> Returned
+                        </span>
+                        <div class="fs-11 text-muted mt-0.5">Restocked</div>
+                    </div>`;
+            }
+
+            if (isRequested) {
+                return `
+                    <div>
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-hourglass-start me-1"></i> Requested
+                        </span>
+                        <div class="fs-11 text-muted mt-0.5">Awaiting Owner</div>
+                    </div>`;
+            }
+
+            if (isMeetup) {
+                return `
+                    <div>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-handshake me-1"></i> Campus Meetup
+                        </span>
+                        <div class="fs-11 text-muted mt-0.5 text-truncate" style="max-width:140px;">${o.meetup_location || 'Coordinating Handover'}</div>
+                    </div>`;
+            }
+
+            if (isPreparing) {
+                return `
+                    <div>
+                        <span class="badge bg-info-subtle text-info border border-info-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-boxes-packing me-1"></i> Preparing Gear
+                        </span>
+                        <div class="fs-11 text-muted mt-0.5">Inspection Proof</div>
+                    </div>`;
+            }
+
+            return `
+                <div>
+                    <span class="badge ${getStatusBadge(st)} fw-bold px-2 py-0.5">${st}</span>
+                </div>`;
+        }
+
+        function startAdminLiveTimers() {
+            if (window._adminTimerInterval) clearInterval(window._adminTimerInterval);
+            window._adminTimerInterval = setInterval(() => {
+                document.querySelectorAll('.admin-live-timer').forEach(el => {
+                    const end = el.getAttribute('data-end');
+                    if (end) {
+                        const span = el.querySelector('span');
+                        if (span) span.innerText = formatAdminTimeRemaining(end);
+                    }
+                });
+                const modalTimer = document.getElementById('mOrderLiveTimerCountdown');
+                if (modalTimer && modalTimer.getAttribute('data-end')) {
+                    modalTimer.innerText = formatAdminTimeRemaining(modalTimer.getAttribute('data-end'));
+                }
+            }, 1000);
+        }
+
         function getStatusBadge(st) {
             switch ((st || '').toUpperCase()) {
                 case 'DELIVERED':
                 case 'RETURNED': return 'bg-success-subtle text-success';
+                case 'IN_PROGRESS':
+                case 'RENTED': return 'bg-success text-white';
                 case 'ON_THE_WAY': return 'bg-primary-subtle text-primary';
                 case 'PICKUP': return 'bg-warning-subtle text-warning';
                 case 'LOOKING_FOR_RIDER': return 'bg-warning-subtle text-dark border border-warning';
                 case 'PREPARING': return 'bg-info-subtle text-info border border-info';
                 case 'PROCESSING':
                 case 'CONFIRMED': return 'bg-info-subtle text-info';
+                case 'REQUESTED': return 'bg-warning-subtle text-warning border border-warning-subtle';
                 case 'CANCELLED': return 'bg-danger-subtle text-danger';
                 default: return 'bg-warning-subtle text-warning';
             }

@@ -528,6 +528,13 @@ if ($action === 'get_dashboard') {
     } catch (Exception $e) {}
 
     $recentOrders = $db->query("SELECT * FROM `rental_orders` ORDER BY `id` DESC LIMIT 6")->fetchAll();
+    foreach ($recentOrders as &$ro) {
+        $st = strtoupper((string)($ro['order_status'] ?? 'CONFIRMED'));
+        $timerSt = strtoupper((string)($ro['timer_status'] ?? 'NOT_STARTED'));
+        $ro['is_timer_running'] = ($timerSt === 'RUNNING' || ($st === 'IN_PROGRESS' && !empty($ro['rental_timer_start'])));
+        $ro['is_overdue'] = ($timerSt === 'EXPIRED' || $st === 'OVERDUE');
+    }
+    unset($ro);
     $recentTickets = $db->query("SELECT * FROM `rental_issues` ORDER BY `id` DESC LIMIT 6")->fetchAll();
 
     echo json_encode([
@@ -727,7 +734,7 @@ if ($action === 'get_orders') {
         $params[] = strtoupper($status);
     }
     if ($subtab === 'incoming') {
-        $sql .= " AND (o.`order_status` IN ('PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'MEETUP', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY') OR o.`order_status` IS NULL)";
+        $sql .= " AND (o.`order_status` IN ('PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'MEETUP', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'REQUESTED', 'IN_PROGRESS', 'RENTED') OR o.`order_status` IS NULL)";
     } elseif ($subtab === 'history') {
         $sql .= " AND o.`order_status` IN ('DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'COMPLETED', 'CANCELLED', 'RIDER_CANCELLED')";
     }
@@ -747,42 +754,40 @@ if ($action === 'get_orders') {
 
     foreach ($orders as &$ord) {
         $st = strtoupper((string)($ord['order_status'] ?? 'CONFIRMED'));
-        switch ($st) {
-            case 'CONFIRMED':
-                $ord['step_number'] = 1;
-                $ord['step_name'] = 'Step 1: Confirmed';
-                break;
-            case 'PREPARING':
-            case 'PROCESSING':
-                $ord['step_number'] = 2;
-                $ord['step_name'] = 'Step 2: Equipment Prepared';
-                break;
-            case 'MEETUP':
-            case 'LOOKING_FOR_RIDER':
-            case 'PICKUP':
-            case 'ON_THE_WAY':
-                $ord['step_number'] = 3;
-                $ord['step_name'] = 'Step 3: Campus Meetup & Coordination';
-                break;
-            case 'DELIVERED':
-                $ord['step_number'] = 4;
-                $ord['step_name'] = 'Step 4: Handed Over & Active';
-                break;
-            case 'RETURN_DELIVERY':
-            case 'RETURNED':
-                $ord['step_number'] = 5;
-                $ord['step_name'] = 'Step 5: Returned & Restocked';
-                break;
-            case 'RIDER_CANCELLED':
-            case 'CANCELLED':
-                $ord['step_number'] = 0;
-                $ord['step_name'] = 'Cancelled';
-                break;
-            default:
-                $ord['step_number'] = 1;
-                $ord['step_name'] = 'Step 1: Confirmed';
+        $timerSt = strtoupper((string)($ord['timer_status'] ?? 'NOT_STARTED'));
+        $isTimerActive = ($timerSt === 'RUNNING' || in_array($st, ['IN_PROGRESS', 'RENTED', 'DELIVERED']));
+        $isOverdue = ($timerSt === 'EXPIRED' || $st === 'OVERDUE');
+
+        $ord['is_timer_running'] = $isTimerActive;
+        $ord['is_overdue'] = $isOverdue;
+
+        if ($isOverdue) {
+            $ord['step_number'] = 4;
+            $ord['step_name'] = 'Step 4: Overdue (Expired)';
+        } elseif ($isTimerActive) {
+            $ord['step_number'] = 4;
+            $ord['step_name'] = 'Step 4: In Hand (Timer Running)';
+        } elseif ($st === 'RETURNED' || $st === 'RETURN_DELIVERY' || $st === 'COMPLETED') {
+            $ord['step_number'] = 5;
+            $ord['step_name'] = 'Step 5: Returned & Restocked';
+        } elseif (in_array($st, ['MEETUP', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY'])) {
+            $ord['step_number'] = 3;
+            $ord['step_name'] = 'Step 3: Campus Meetup & Coordination';
+        } elseif (in_array($st, ['PREPARING', 'PROCESSING'])) {
+            $ord['step_number'] = 2;
+            $ord['step_name'] = 'Step 2: Equipment Prepared';
+        } elseif (in_array($st, ['CANCELLED', 'RIDER_CANCELLED'])) {
+            $ord['step_number'] = 0;
+            $ord['step_name'] = 'Cancelled';
+        } elseif ($st === 'REQUESTED') {
+            $ord['step_number'] = 1;
+            $ord['step_name'] = 'Step 1: Rental Requested';
+        } else {
+            $ord['step_number'] = 1;
+            $ord['step_name'] = 'Step 1: Confirmed';
         }
     }
+    unset($ord);
 
     echo json_encode(['success' => true, 'count' => count($orders), 'orders' => $orders]);
     exit;
