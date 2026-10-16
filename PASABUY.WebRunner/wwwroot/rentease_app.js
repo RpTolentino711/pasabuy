@@ -1580,9 +1580,9 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                     let statusLabel = status;
                     let isStepActive = 1;
 
-                    if (status === 'CONFIRMED') {
+                    if (status === 'CONFIRMED' || status === 'REQUESTED' || status === 'PENDING') {
                         statusBadgeClass = 'bg-primary text-white';
-                        statusLabel = 'Step 1 • Confirmed';
+                        statusLabel = status === 'REQUESTED' ? 'Step 1 • Requested' : 'Step 1 • Confirmed';
                         isStepActive = 1;
                     } else if (status === 'PREPARING' || status === 'PROCESSING') {
                         statusBadgeClass = 'bg-warning-subtle text-dark border border-warning-subtle';
@@ -1691,9 +1691,9 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
 
                         <!-- Action Bar for Owner (Accurate by Step!) -->
                         <div class="d-flex align-items-center gap-2 pt-2 border-top">
-                            ${status === 'CONFIRMED' ? `
+                            ${(status === 'CONFIRMED' || status === 'REQUESTED' || status === 'PENDING') ? `
                                 <button class="btn btn-sm btn-outline-warning rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="updateOwnerOrderStatus(${order.id}, '${orderCode}', 'PREPARING')">
-                                    <i class="fa-solid fa-boxes-packing me-1"></i> Prepare Equipment
+                                    <i class="fa-solid fa-boxes-packing me-1"></i> Accept &amp; Prepare Equipment
                                 </button>
                                 <button class="btn btn-sm btn-light rounded-pill py-1.5 px-3 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${orderCode}')">
                                     <i class="fa-solid fa-eye me-1"></i> Details
