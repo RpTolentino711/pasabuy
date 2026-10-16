@@ -1614,9 +1614,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     <span class="fs-9 text-muted" id="backupTimestampText">Synced with Hostinger MySQL</span>
                                     <span class="badge bg-success-subtle text-success fs-9 fw-bold">Successful</span>
                                 </div>
-                                <div class="d-flex gap-2">
+                                <div class="d-flex gap-2 flex-wrap">
                                     <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold fs-9" onclick="performBackup()"><i class="fa-solid fa-download me-1"></i> Backup Now</button>
                                     <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold fs-9" onclick="alert('Database state verified healthy.')"><i class="fa-solid fa-rotate-left me-1"></i> Restore</button>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold fs-9" onclick="adminPurgeDummyData()"><i class="fa-solid fa-broom me-1"></i> Purge Dummy Data</button>
                                 </div>
                             </div>
                         </div>
@@ -4828,6 +4829,28 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         function toggleSidebar() {
             const sb = document.getElementById('adminSidebar');
             sb.classList.toggle('show');
+        }
+
+        async function adminPurgeDummyData() {
+            if (!confirm('⚠️ PURGE DUMMY DATA WARNING\n\nThis will purge all test orders, test tickets, moderation reports, test appeals, chat history, and dummy users, restoring a clean operational state.\n\nAre you sure you want to proceed?')) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=purge_dummy_data`, { method: 'POST' });
+                const data = await res.json();
+                alert(data.message || 'Database cleaned successfully!');
+                loadDashboardStats();
+                loadOrders();
+                loadTickets();
+                loadItemReports();
+                loadItemAppeals();
+                loadUnreturnedReports();
+                loadSuspensionAppeals();
+                loadCustomers();
+                loadDrivers();
+                loadTransactions();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
         }
 
         // Initialize on Load
