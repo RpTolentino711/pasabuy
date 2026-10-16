@@ -3488,27 +3488,37 @@
                             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
 
                             try {
-                                const res = await fetch(`/pasabuy_api.php?action=chat_messages&sender_id=${currentUserId}&receiver_id=${currentActiveChatSellerId}`);
+                                const partnerName = document.getElementById('chatPartnerName')?.innerText || 'Campus Contact';
+                                const itemTitle = document.getElementById('chatItemTitle')?.innerText || 'Campus Item';
+                                const itemParam = (itemTitle && itemTitle.trim() !== '') ? '&item_title=' + encodeURIComponent(itemTitle.trim()) : '';
+                                const res = await fetch(`/pasabuy_api.php?action=chat_messages&sender_id=${currentUserId}&receiver_id=${currentActiveChatSellerId}${itemParam}`);
                                 if (res.ok) {
                                     const msgs = await res.json();
                                     const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
                                     if (stream && Array.isArray(msgs)) {
-                                        const partnerName = document.getElementById('chatPartnerName')?.innerText || 'Campus Contact';
-                                        const itemTitle = document.getElementById('chatItemTitle')?.innerText || 'Campus Item';
                                         const headerAvatarEl = document.getElementById('chatHeaderAvatar');
                                         const finalAvatar = headerAvatarEl ? headerAvatarEl.src : `https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=6366F1&color=fff&bold=true&rounded=true`;
 
                                         let chatHtml = `<div class="text-center my-2"><span class="badge rounded-pill bg-white border text-secondary shadow-2xs px-3 py-1" style="font-size:0.68rem;"><i class="fa-solid fa-lock text-success me-1"></i> Connected live with <strong>${partnerName}</strong> regarding ${itemTitle}</span></div>`;
-                                        msgs.forEach(m => {
-                                            const isMine = m.SenderId == currentUserId;
+                                        if (msgs.length === 0) {
                                             chatHtml += `
-                                            <div class="d-flex ${isMine ? 'justify-content-end' : 'justify-content-start'} align-items-end gap-2 mb-2">
-                                                ${!isMine ? `<img src="${finalAvatar}" class="rounded-circle border mb-1 flex-shrink-0" width="28" height="28" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=6366F1&color=fff&bold=true&rounded=true';">` : ''}
-                                                <div class="rentchat-bubble ${isMine ? 'rentchat-bubble-mine' : 'rentchat-bubble-partner'}">
-                                                    ${m.MessageText}
-                                                </div>
+                                            <div class="text-center my-4 py-3 px-3 bg-light rounded-4 border mx-auto" style="max-width: 320px;">
+                                                <i class="fa-solid fa-comments text-primary mb-2 fs-5"></i>
+                                                <div class="fw-bold text-dark fs-8">No messages yet for ${itemTitle}</div>
+                                                <div class="text-muted fs-9 mt-1">Start a discussion, inquire about availability, or arrange rental terms!</div>
                                             </div>`;
-                                        });
+                                        } else {
+                                            msgs.forEach(m => {
+                                                const isMine = m.SenderId == currentUserId;
+                                                chatHtml += `
+                                                <div class="d-flex ${isMine ? 'justify-content-end' : 'justify-content-start'} align-items-end gap-2 mb-2">
+                                                    ${!isMine ? `<img src="${finalAvatar}" class="rounded-circle border mb-1 flex-shrink-0" width="28" height="28" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=6366F1&color=fff&bold=true&rounded=true';">` : ''}
+                                                    <div class="rentchat-bubble ${isMine ? 'rentchat-bubble-mine' : 'rentchat-bubble-partner'}">
+                                                        ${m.MessageText}
+                                                    </div>
+                                                </div>`;
+                                            });
+                                        }
                                         const isNearBottom = (stream.scrollHeight - stream.scrollTop - stream.clientHeight) < 100;
                                         stream.innerHTML = chatHtml;
                                         if (isNearBottom) stream.scrollTop = stream.scrollHeight;
@@ -4339,6 +4349,11 @@
                             const chatVw = document.getElementById('chatView');
                             if (tabMsgs) tabMsgs.style.display = 'none';
                             if (chatVw) chatVw.style.display = 'flex';
+
+                            const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
+                            if (stream) {
+                                stream.innerHTML = `<div class="text-center my-4 py-3"><div class="spinner-border spinner-border-sm text-primary me-2"></div><span class="fs-9 text-muted fw-bold">Loading ${itemTitle} discussion...</span></div>`;
+                            }
 
                             await refreshActiveChatStream();
                             startLiveChatPolling();

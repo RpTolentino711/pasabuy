@@ -778,6 +778,7 @@ if ($action === 'chat_conversations') {
 if ($action === 'chat_messages' || $action === 'get_messages') {
     $senderId = (int)($_GET['sender_id'] ?? 104);
     $receiverId = (int)($_GET['receiver_id'] ?? 104);
+    $itemTitle = trim((string)($_GET['item_title'] ?? $_GET['itemTitle'] ?? ''));
     if ($senderId <= 1) $senderId = 104;
     if ($receiverId <= 1) $receiverId = 104;
 
@@ -793,10 +794,27 @@ if ($action === 'chat_messages' || $action === 'get_messages') {
               AND SenderId != ReceiverId
               AND NOT (SenderId IN (1, 104) AND ReceiverId IN (1, 104))
               AND SenderName NOT LIKE '%Fleet Dispatch%' 
-              AND SenderName NOT LIKE '%Rider%' 
-            ORDER BY CreatedAt ASC";
-    $stmt = $db->prepare($sql);
+              AND SenderName NOT LIKE '%Rider%'";
     $params = array_merge($sList, $rList, $rList, $sList);
+
+    if ($itemTitle !== '' && strtolower($itemTitle) !== 'all' && strtolower($itemTitle) !== 'campus item') {
+        if (strtolower($itemTitle) === 'general inquiry') {
+            $sql .= " AND (ItemTitle IS NULL OR ItemTitle = '' OR LOWER(ItemTitle) = 'general inquiry' OR LOWER(ItemTitle) = 'campus item')";
+        } else {
+            $cleanTitle = strtolower($itemTitle);
+            $sql .= " AND (
+                LOWER(ItemTitle) = ? 
+                OR LOWER(ItemTitle) LIKE ? 
+                OR LOWER(MessageText) LIKE ?
+            )";
+            $params[] = $cleanTitle;
+            $params[] = "%{$cleanTitle}%";
+            $params[] = "%{$cleanTitle}%";
+        }
+    }
+
+    $sql .= " ORDER BY CreatedAt ASC";
+    $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $messages = $stmt->fetchAll();
     echo json_encode($messages);
