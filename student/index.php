@@ -3501,7 +3501,7 @@
                                     const ownerAgreed = (parseInt(ord.owner_agreed) === 1);
                                     const hasPrepPhoto = (ord.prep_photo_url && ord.prep_photo_url.trim() !== '');
                                     const renterConfirmedPrep = (parseInt(ord.prep_confirmed_by_renter) === 1);
-                                    const hasMeetupLoc = (ord.meetup_location && ord.meetup_location.trim() !== '');
+                                    const hasMeetupLoc = (ord.meetup_location && ord.meetup_location.trim() !== '' && ord.meetup_location !== 'Campus Handover Meetup' && ord.meetup_location_at && ord.meetup_location_at.trim() !== '');
 
                                     // Reset step rows
                                     if (step1Row) step1Row.style.setProperty('display', 'none', 'important');
