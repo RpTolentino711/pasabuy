@@ -686,20 +686,29 @@ if ($action === 'chat_conversations') {
         $txStatus = '';
 
         try {
-            $uList = ($userId == 104) ? [1, 104] : [$userId];
-            $pList = ($pId == 104) ? [1, 104] : [$pId];
-            $uPlace = implode(',', array_fill(0, count($uList), '?'));
-            $pPlace = implode(',', array_fill(0, count($pList), '?'));
+            $emailStmt = $db->prepare("SELECT u.Id, u.Email, sp.SchoolEmail FROM Users u LEFT JOIN StudentProfiles sp ON u.Id = sp.UserId WHERE u.Id IN (?, ?)");
+            $emailStmt->execute([$userId, $pId]);
+            $uEmail = ($userId == 104) ? 'romeopaolotolentino@gmail.com' : (($userId == 105) ? 'pogilameg@gmail.com' : '');
+            $pEmail = ($pId == 104) ? 'romeopaolotolentino@gmail.com' : (($pId == 105) ? 'pogilameg@gmail.com' : '');
+            foreach ($emailStmt->fetchAll() as $erow) {
+                $em = strtolower(trim($erow['SchoolEmail'] ?: $erow['Email']));
+                if ($erow['Id'] == $userId && $em) $uEmail = $em;
+                if ($erow['Id'] == $pId && $em) $pEmail = $em;
+            }
 
-            // Check rental_orders
+            // Check rental_orders by email OR id
             $rSql = "SELECT order_code, order_status FROM rental_orders 
-                     WHERE ((renter_id IN ($uPlace) AND owner_id IN ($pPlace)) 
-                        OR (renter_id IN ($pPlace) AND owner_id IN ($uPlace)))
+                     WHERE (((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
+                         OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
+                        OR ((renter_id = ? AND owner_id = ?) 
+                         OR (renter_id = ? AND owner_id = ?))
+                        OR ((renter_id IN (1, 104) AND owner_id = ?) 
+                         OR (owner_id IN (1, 104) AND renter_id = ?)))
                        AND order_code NOT IN ('#RE-10245', '#RE-10234')
                        AND order_code NOT LIKE '%10234%'
                      ORDER BY id DESC LIMIT 1";
             $rStmt = $db->prepare($rSql);
-            $rStmt->execute(array_merge($uList, $pList, $pList, $uList));
+            $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $pId, $pId, $userId, $pId, $pId]);
             $rOrd = $rStmt->fetch();
             if ($rOrd) {
                 $hasTx = true;
