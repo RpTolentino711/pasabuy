@@ -3493,7 +3493,19 @@
                                 const itemParam = (itemTitle && itemTitle.trim() !== '') ? '&item_title=' + encodeURIComponent(itemTitle.trim()) : '';
                                 const res = await fetch(`/pasabuy_api.php?action=chat_messages&sender_id=${currentUserId}&receiver_id=${currentActiveChatSellerId}${itemParam}`);
                                 if (res.ok) {
-                                    const msgs = await res.json();
+                                    let msgs = await res.json();
+                                    if (Array.isArray(msgs) && itemTitle && itemTitle.trim() !== '' && itemTitle !== 'Campus Item' && itemTitle !== 'General Inquiry') {
+                                        const cleanLowerTitle = itemTitle.trim().toLowerCase();
+                                        msgs = msgs.filter(m => {
+                                            const mTitle = (m.ItemTitle || '').trim().toLowerCase();
+                                            const mText = (m.MessageText || '').toLowerCase();
+                                            if (mTitle !== '' && mTitle !== 'campus item' && mTitle !== 'general inquiry') {
+                                                return mTitle === cleanLowerTitle || mTitle.includes(cleanLowerTitle) || cleanLowerTitle.includes(mTitle);
+                                            }
+                                            return mText.includes(cleanLowerTitle);
+                                        });
+                                    }
+
                                     const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
                                     if (stream && Array.isArray(msgs)) {
                                         const headerAvatarEl = document.getElementById('chatHeaderAvatar');
