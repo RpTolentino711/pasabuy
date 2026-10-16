@@ -2958,6 +2958,7 @@ if ($action === 'get_active_chat_rental') {
 
     $userId = (int)($data['user_id'] ?? $_GET['user_id'] ?? 104);
     $partnerId = (int)($data['partner_id'] ?? $_GET['partner_id'] ?? 105);
+    $itemTitle = trim((string)($data['item_title'] ?? $_GET['item_title'] ?? ''));
 
     // Resolve emails
     $emailStmt = $db->prepare("SELECT `Id`, `Email` FROM `Users` WHERE `Id` IN (?, ?)");
@@ -2977,10 +2978,18 @@ if ($action === 'get_active_chat_rental') {
                OR (LOWER(ro.`customer_email`) = ? AND LOWER(ro.`owner_email`) = ?)
                OR (ro.`renter_id` = ? AND ro.`owner_id` = ?)
                OR (ro.`renter_id` = ? AND ro.`owner_id` = ?))
-              AND ro.`order_status` NOT IN ('RETURNED', 'CANCELLED', 'REJECTED')
-            ORDER BY ro.`id` DESC LIMIT 1";
+              AND ro.`order_status` NOT IN ('RETURNED', 'CANCELLED', 'REJECTED')";
+    $params = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId];
+
+    if ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
+        $sql .= " AND (LOWER(ro.`item_name`) LIKE ? OR LOWER(ri.`name`) LIKE ?)";
+        $params[] = '%' . strtolower($itemTitle) . '%';
+        $params[] = '%' . strtolower($itemTitle) . '%';
+    }
+
+    $sql .= " ORDER BY ro.`id` DESC LIMIT 1";
     $stmt = $db->prepare($sql);
-    $stmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId]);
+    $stmt->execute($params);
     $ord = $stmt->fetch();
 
     if (!$ord) {
@@ -3045,6 +3054,64 @@ if ($action === 'get_active_chat_rental') {
             'unreturned_reported' => (int)($ord['unreturned_reported'] ?? 0),
             'is_owner' => $isOwner
         ]
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// GET CHAT PARTNER TOPICS & AVAILABLE EQUIPMENT
+// ----------------------------------------------------------
+if ($action === 'get_chat_partner_topics') {
+    if (!$db) { echo json_encode(['success' => true, 'items' => [], 'orders' => []]); exit; }
+
+    $userId = (int)($data['user_id'] ?? $_GET['user_id'] ?? 104);
+    $partnerId = (int)($data['partner_id'] ?? $_GET['partner_id'] ?? 105);
+
+    // Resolve partner details & email
+    $partnerStmt = $db->prepare("SELECT u.Id, u.Email, sp.FirstName, sp.LastName, sp.ProfileImage 
+                                 FROM Users u 
+                                 LEFT JOIN StudentProfiles sp ON u.Id = sp.UserId 
+                                 WHERE u.Id = ?");
+    $partnerStmt->execute([$partnerId]);
+    $partner = $partnerStmt->fetch();
+    $pEmail = strtolower(trim($partner['Email'] ?? ''));
+
+    // Fetch equipment posted by partner (or by owner 104 if partner is Romeo)
+    $ownerCond = "(owner_id = ? OR LOWER(owner_email) = ?)";
+    $ownerParams = [$partnerId, $pEmail];
+    if ($partnerId === 104 || str_contains($pEmail, 'romeo')) {
+        $ownerCond = "(owner_id IN (1, 104) OR LOWER(owner_email) LIKE '%romeo%')";
+        $ownerParams = [];
+    }
+    $itemStmt = $db->prepare("SELECT id, name, category, price_per_day, image_url, location, qty_available, qty_total, status 
+                              FROM rental_inventory 
+                              WHERE $ownerCond 
+                                AND (status != 'TERMINATED' OR status IS NULL)
+                              ORDER BY id DESC");
+    $itemStmt->execute($ownerParams);
+    $postedItems = $itemStmt->fetchAll();
+
+    // Fetch active / recent orders between user and partner
+    $ordStmt = $db->prepare("SELECT ro.id, ro.order_code, ro.item_name, ro.order_status, ro.rental_start_date, ro.rental_end_date, ro.total_amount, ri.image_url, ro.timer_status
+                             FROM rental_orders ro
+                             LEFT JOIN rental_inventory ri ON ro.item_id = ri.id
+                             WHERE ((ro.renter_id = ? AND ro.owner_id = ?) OR (ro.renter_id = ? AND ro.owner_id = ?)
+                                 OR (ro.renter_id IN (1, 104) AND ro.owner_id = ?)
+                                 OR (ro.owner_id IN (1, 104) AND ro.renter_id = ?))
+                               AND ro.order_status NOT IN ('CANCELLED', 'REJECTED')
+                             ORDER BY ro.id DESC");
+    $ordStmt->execute([$userId, $partnerId, $partnerId, $userId, $userId, $userId]);
+    $orders = $ordStmt->fetchAll();
+
+    echo json_encode([
+        'success' => true,
+        'partner' => [
+            'id' => $partnerId,
+            'name' => trim(($partner['FirstName'] ?? '') . ' ' . ($partner['LastName'] ?? '')) ?: 'Stock Owner',
+            'email' => $pEmail
+        ],
+        'items' => $postedItems,
+        'orders' => $orders
     ]);
     exit;
 }

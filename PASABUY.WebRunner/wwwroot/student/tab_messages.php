@@ -437,8 +437,12 @@
                 </div>
             </div>
         </div>
-        <div class="flex-shrink-0 ms-2">
-            <span class="badge rounded-pill px-2.5 py-1 fw-bold border" style="background:#F8FAFC; color:#64748B; font-size:0.68rem;">
+        <div class="flex-shrink-0 ms-2 d-flex flex-column align-items-end gap-1">
+            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 fs-9 fw-bold text-primary shadow-2xs" 
+                    onclick="openSwitchChatTopicModal()" title="Switch Equipment Topic">
+                <i class="fa-solid fa-arrows-rotate me-1 text-primary"></i> Switch Item
+            </button>
+            <span class="badge rounded-pill px-2 py-0.5 fw-bold border" style="background:#F8FAFC; color:#64748B; font-size:0.62rem;">
                 <i class="fa-solid fa-handshake me-1 text-primary"></i>In Chat
             </span>
         </div>
@@ -770,3 +774,36 @@
         </div>
     </div>
 </div>
+
+<!-- SELECT CHAT TOPIC / EQUIPMENT MODAL -->
+<div class="modal fade" id="selectChatTopicModal" tabindex="-1" aria-labelledby="selectChatTopicModalLabel" aria-hidden="true" style="z-index: 10050;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 440px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 pb-2 px-3 pt-3 d-flex align-items-center justify-content-between" style="background:#F8FAFC;">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-2xs" 
+                         style="width:36px; height:36px; background:linear-gradient(135deg, #5B3FA8, #341F97); font-size:13px;" id="topicModalPartnerAvatar">
+                        RO
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark fs-7" id="selectChatTopicModalLabel">Select Equipment Topic</h6>
+                        <span class="text-muted" style="font-size:0.7rem;" id="topicModalPartnerSub">With Romeo Paolo Tolentino</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close fs-9" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3" id="selectChatTopicModalBody">
+                <div class="text-center py-4 text-muted fs-8">
+                    <i class="fa-solid fa-spinner fa-spin fs-4 text-primary mb-2"></i>
+                    <div>Loading equipment and rental agreements...</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-3 px-3">
+                <button type="button" class="btn btn-light rounded-pill px-3 py-1.5 fs-9 fw-bold text-muted w-100" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -677,9 +677,54 @@ if ($action === 'chat_conversations') {
         } else {
             $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
             $c['PartnerName'] = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
-            $c['PartnerId'] = (int)$c['SenderId'];
-            $c['PartnerAvatar'] = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
         }
+
+        // Check if transaction has been made between user and partner
+        $pId = (int)$c['PartnerId'];
+        $hasTx = false;
+        $txCode = '';
+        $txStatus = '';
+
+        try {
+            $uList = ($userId == 104) ? [1, 104] : [$userId];
+            $pList = ($pId == 104) ? [1, 104] : [$pId];
+            $uPlace = implode(',', array_fill(0, count($uList), '?'));
+            $pPlace = implode(',', array_fill(0, count($pList), '?'));
+
+            // Check rental_orders
+            $rSql = "SELECT order_code, order_status FROM rental_orders 
+                     WHERE ((renter_id IN ($uPlace) AND owner_id IN ($pPlace)) 
+                        OR (renter_id IN ($pPlace) AND owner_id IN ($uPlace)))
+                       AND order_code NOT IN ('#RE-10245', '#RE-10234')
+                       AND order_code NOT LIKE '%10234%'
+                     ORDER BY id DESC LIMIT 1";
+            $rStmt = $db->prepare($rSql);
+            $rStmt->execute(array_merge($uList, $pList, $pList, $uList));
+            $rOrd = $rStmt->fetch();
+            if ($rOrd) {
+                $hasTx = true;
+                $txCode = $rOrd['order_code'];
+                $txStatus = $rOrd['order_status'];
+            } else {
+                // Check Orders table
+                $oSql = "SELECT Id, Status FROM Orders 
+                         WHERE ((BuyerId IN ($uPlace) AND SellerId IN ($pPlace)) 
+                            OR (BuyerId IN ($pPlace) AND SellerId IN ($uPlace)))
+                         ORDER BY Id DESC LIMIT 1";
+                $oStmt = $db->prepare($oSql);
+                $oStmt->execute(array_merge($uList, $pList, $pList, $uList));
+                $ord = $oStmt->fetch();
+                if ($ord) {
+                    $hasTx = true;
+                    $txCode = '#ORD-' . $ord['Id'];
+                    $txStatus = $ord['Status'];
+                }
+            }
+        } catch (Exception $eTx) {}
+
+        $c['HasTransaction'] = $hasTx;
+        $c['TransactionOrderCode'] = $txCode;
+        $c['TransactionStatus'] = $txStatus;
     }
 
     // Strictly filter out self-conversations and rider/fleet dispatch conversations
@@ -856,8 +901,7 @@ if ($action === 'check_active_transaction') {
                              OR (renter_id = ? AND owner_id = ?)))
                            AND order_code NOT IN ('#RE-10245', '#RE-10234')
                            AND order_code NOT LIKE '%10234%'
-                           AND UPPER(order_status) NOT IN ('RETURNED', 'CANCELLED', 'COMPLETED', 'REJECTED')
-                         LIMIT 1";
+                         ORDER BY id DESC LIMIT 1";
                 $rStmt = $db->prepare($rSql);
                 $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId]);
                 $rOrd = $rStmt->fetch();
@@ -940,8 +984,7 @@ if ($action === 'delete_conversation') {
                              OR (renter_id = ? AND owner_id = ?)))
                            AND order_code NOT IN ('#RE-10245', '#RE-10234')
                            AND order_code NOT LIKE '%10234%'
-                           AND UPPER(order_status) NOT IN ('RETURNED', 'CANCELLED', 'COMPLETED', 'REJECTED')
-                         LIMIT 1";
+                         ORDER BY id DESC LIMIT 1";
                 $rStmt = $db->prepare($rSql);
                 $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId]);
                 $rOrd = $rStmt->fetch();
@@ -957,7 +1000,7 @@ if ($action === 'delete_conversation') {
         echo json_encode([
             'success' => false,
             'blocked' => true,
-            'message' => "Cannot delete conversation: An active transaction ($activeOrderCode) is currently in progress with this user. Please complete or return the rental first."
+            'message' => "Cannot delete conversation: A rental transaction ($activeOrderCode) has been made between you and this user. Chat history is protected."
         ]);
         exit;
     }

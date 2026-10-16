@@ -2051,9 +2051,21 @@
                                 const safePartnerNameAttr = partnerName.replace(/"/g, '&quot;');
                                 const safeItemTitle = itemTitle.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                                 const safeAvatarUrl = avatarUrl.replace(/'/g, "\\'");
+                                const hasTx = !!(c.HasTransaction);
+                                const txOrder = c.TransactionOrderCode || 'Order';
 
                                 html += `
                 <div class="swipe-conv-wrapper position-relative mb-2 overflow-hidden rounded-4" style="touch-action: pan-y; -webkit-user-select: none; user-select: none;">
+                    ${hasTx ? `
+                    <div class="swipe-delete-bg position-absolute top-0 bottom-0 end-0 d-flex align-items-center justify-content-end px-3 rounded-4 text-white" 
+                         style="width: 100%; z-index: 1; cursor: not-allowed; background:#64748B !important;" 
+                         onclick="alert('Chat Deletion Blocked: You cannot delete this conversation because a rental transaction (${txOrder}) has been made with this user.'); event.stopPropagation();">
+                        <div class="d-flex flex-column align-items-center justify-content-center text-white" style="width: 75px;">
+                            <i class="fa-solid fa-lock fs-5 mb-1"></i>
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px;">PROTECTED</span>
+                        </div>
+                    </div>
+                    ` : `
                     <div class="swipe-delete-bg position-absolute top-0 bottom-0 end-0 d-flex align-items-center justify-content-end px-3 rounded-4 bg-danger text-white" 
                          style="width: 100%; z-index: 1; cursor: pointer;" 
                          onclick="initiateDeleteConversation(${partnerId}, '${safePartnerName}', event)">
@@ -2062,20 +2074,27 @@
                             <span style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;">DELETE</span>
                         </div>
                     </div>
+                    `}
                     <div class="swipe-conv-card p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center justify-content-between position-relative" 
                          style="z-index: 2; transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1); background: #ffffff; cursor: pointer;" 
                          data-partner-id="${partnerId}" 
                          data-partner-name="${safePartnerNameAttr}" 
+                         data-has-transaction="${hasTx ? '1' : '0'}"
                          onclick="handleConversationCardClick(event, this, ${partnerId}, '${safePartnerName}', '${safeItemTitle}', '₱0.00', '${safeAvatarUrl}')">
                         <div class="d-flex align-items-center gap-3" style="pointer-events: none;">
                             <div class="position-relative">
-                                <img src="${avatarUrl}" class="rounded-circle border" width="50" height="50" style="object-fit:cover; background:#f0f3f8;">
+                                <img src="${avatarUrl}" class="rounded-circle border" width="50" height="50" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true';">
                                 <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white" style="width:14px; height:14px;"></span>
                             </div>
                             <div>
-                                <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
                                     <h6 class="fw-bold mb-0 text-dark fs-7">${partnerName}</h6>
-                                    <span class="badge bg-primary-subtle text-primary rounded-pill fs-9 fw-semibold px-2 py-0.5">${itemTitle}</span>
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill fs-10 fw-semibold px-2 py-0.5">${itemTitle}</span>
+                                    ${hasTx ? `
+                                        <span class="badge rounded-pill fw-bold" style="background:#ECFDF5; color:#059669; font-size:0.62rem; padding: 2px 6px; border:1px solid #A7F3D0;" title="Protected transaction made">
+                                            <i class="fa-solid fa-shield-halved me-0.5"></i>Protected
+                                        </span>
+                                    ` : ''}
                                 </div>
                                 <div class="text-muted fs-8 text-truncate" style="max-width:200px;">${lastMsg}</div>
                             </div>
@@ -2155,6 +2174,9 @@
                                         if (e.cancelable) e.preventDefault();
                                         card.dataset.hasDragged = '1';
                                         let targetX = initialTranslateX + diffX;
+                                        if (card.dataset.hasTransaction === '1' && targetX < 0) {
+                                            targetX = 0; // Prevent swipe delete on protected transaction chats
+                                        }
                                         if (targetX > 0) {
                                             targetX = targetX * 0.15;
                                         } else if (targetX < -120) {
@@ -2197,6 +2219,9 @@
                                     if (Math.abs(diffX) > 6) {
                                         card.dataset.hasDragged = '1';
                                         let targetX = initialTranslateX + diffX;
+                                        if (card.dataset.hasTransaction === '1' && targetX < 0) {
+                                            targetX = 0; // Prevent drag
+                                        }
                                         if (targetX > 0) targetX = 0;
                                         if (targetX < -120) targetX = -120 + (targetX + 120) * 0.2;
                                         setCardTransform(targetX, false);
@@ -2250,8 +2275,184 @@
                                 card.dataset.currentX = '0';
                                 return;
                             }
-                            checkAndOpenChat(partnerId, partnerName, itemTitle, price, avatarUrl);
+                            promptOrOpenChatTopic(partnerId, partnerName, itemTitle, price, avatarUrl);
                         }
+
+                        window.promptOrOpenChatTopic = async function (partnerId, partnerName, defaultItemTitle, defaultPrice, avatarUrl) {
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            if (currentUserId <= 1) currentUserId = 104;
+
+                            const modalEl = document.getElementById('selectChatTopicModal');
+                            const modalBody = document.getElementById('selectChatTopicModalBody');
+                            const modalAvatar = document.getElementById('topicModalPartnerAvatar');
+                            const modalSub = document.getElementById('topicModalPartnerSub');
+
+                            if (modalAvatar) {
+                                const initials = (partnerName || 'ST').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'ST';
+                                modalAvatar.innerText = initials;
+                            }
+                            if (modalSub) {
+                                modalSub.innerText = `With ${partnerName}`;
+                            }
+
+                            // Show loading
+                            if (modalBody) {
+                                modalBody.innerHTML = `
+                                    <div class="text-center py-4 text-muted fs-8">
+                                        <i class="fa-solid fa-spinner fa-spin fs-4 text-primary mb-2"></i>
+                                        <div>Loading equipment and rental agreements...</div>
+                                    </div>`;
+                            }
+
+                            if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                                bsModal.show();
+                            }
+
+                            let topicsData = null;
+                            try {
+                                const res = await fetch(`/student/rentease_api.php?action=get_chat_partner_topics&user_id=${currentUserId}&partner_id=${partnerId}`);
+                                topicsData = await res.json();
+                            } catch(e) {
+                                console.error('Failed to load chat partner topics:', e);
+                            }
+
+                            const items = (topicsData && topicsData.items) ? topicsData.items : [];
+                            const orders = (topicsData && topicsData.orders) ? topicsData.orders : [];
+
+                            // If partner has no items and no orders, proceed directly
+                            if (items.length === 0 && orders.length === 0) {
+                                if (modalEl) {
+                                    try { bootstrap.Modal.getInstance(modalEl)?.hide(); } catch(e) {}
+                                }
+                                checkAndOpenChat(partnerId, partnerName, defaultItemTitle, defaultPrice, avatarUrl);
+                                return;
+                            }
+
+                            if (modalBody) {
+                                let html = '';
+
+                                if (orders.length > 0) {
+                                    html += `
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center gap-1.5 mb-2">
+                                            <i class="fa-solid fa-file-contract text-primary fs-8"></i>
+                                            <span class="fw-bold text-dark fs-8">Rental Agreements &amp; Handover</span>
+                                        </div>
+                                        <div class="d-flex flex-column gap-2">
+                                    `;
+                                    orders.forEach(ord => {
+                                        const isTimerActive = (ord.timer_status === 'RUNNING' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'DELIVERED');
+                                        const badgeColor = isTimerActive ? 'bg-success text-white' : 'bg-primary-subtle text-primary border border-primary-subtle';
+                                        const safeName = (ord.item_name || 'Equipment').replace(/'/g, "\\'");
+                                        const safeImg = (ord.image_url || '').replace(/'/g, "\\'");
+                                        html += `
+                                        <div class="p-2.5 rounded-3 border bg-white shadow-2xs d-flex align-items-center justify-content-between gap-2.5" 
+                                             style="cursor:pointer; transition:all 0.15s ease;" 
+                                             onmouseover="this.style.borderColor='#5B3FA8'; this.style.background='#FAF5FF';" 
+                                             onmouseout="this.style.borderColor='#E2E8F0'; this.style.background='#FFFFFF';"
+                                             onclick="selectTopicAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${safeName}', '₱${parseFloat(ord.total_amount || 0).toFixed(0)}', '${avatarUrl.replace(/'/g, "\\'")}', '${safeImg}')">
+                                            <div class="d-flex align-items-center gap-2.5 min-w-0">
+                                                <img src="${ord.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80'}" 
+                                                     class="rounded-3 border object-fit-cover flex-shrink-0" 
+                                                     style="width:42px; height:42px;" 
+                                                     onerror="this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80';">
+                                                <div class="min-w-0">
+                                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                        <span class="fw-bold text-dark fs-8 text-truncate">${ord.item_name || 'Equipment'}</span>
+                                                        <span class="badge ${badgeColor} rounded-pill fs-10 px-2 py-0.5 font-monospace">${ord.order_code}</span>
+                                                    </div>
+                                                    <div class="text-muted fs-10 d-flex align-items-center gap-1 mt-0.5">
+                                                        <span class="badge bg-light text-secondary border px-1.5 py-0.5">${ord.order_status}</span>
+                                                        <span>•</span>
+                                                        <span>${ord.rental_start_date || 'Today'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button class="btn btn-sm btn-primary rounded-pill px-2.5 py-1 fs-9 fw-bold flex-shrink-0" style="background:#5B3FA8; border:none;">
+                                                Open
+                                            </button>
+                                        </div>`;
+                                    });
+                                    html += `</div></div>`;
+                                }
+
+                                if (items.length > 0) {
+                                    html += `
+                                    <div class="mb-2">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <div class="d-flex align-items-center gap-1.5">
+                                                <i class="fa-solid fa-boxes-stacked text-primary fs-8"></i>
+                                                <span class="fw-bold text-dark fs-8">Listed Equipment</span>
+                                            </div>
+                                            <span class="badge bg-light text-muted border rounded-pill fs-10">${items.length} Items</span>
+                                        </div>
+                                        <div class="d-flex flex-column gap-2">
+                                    `;
+                                    items.forEach(it => {
+                                        const safeName = (it.name || 'Equipment').replace(/'/g, "\\'");
+                                        const safePrice = '₱' + parseFloat(it.price_per_day || 0).toFixed(0) + '/day';
+                                        const safeImg = (it.image_url || '').replace(/'/g, "\\'");
+                                        html += `
+                                        <div class="p-2.5 rounded-3 border bg-white shadow-2xs d-flex align-items-center justify-content-between gap-2.5" 
+                                             style="cursor:pointer; transition:all 0.15s ease;" 
+                                             onmouseover="this.style.borderColor='#5B3FA8'; this.style.background='#FAF5FF';" 
+                                             onmouseout="this.style.borderColor='#E2E8F0'; this.style.background='#FFFFFF';"
+                                             onclick="selectTopicAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${safeName}', '${safePrice}', '${avatarUrl.replace(/'/g, "\\'")}', '${safeImg}')">
+                                            <div class="d-flex align-items-center gap-2.5 min-w-0">
+                                                <img src="${it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80'}" 
+                                                     class="rounded-3 border object-fit-cover flex-shrink-0" 
+                                                     style="width:42px; height:42px;" 
+                                                     onerror="this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80';">
+                                                <div class="min-w-0">
+                                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                        <span class="fw-bold text-dark fs-8 text-truncate">${it.name}</span>
+                                                        <span class="badge bg-light text-secondary border rounded-pill fs-10 px-1.5 py-0.5">${it.category || 'Gear'}</span>
+                                                    </div>
+                                                    <div class="text-primary fw-extrabold fs-9 mt-0.5">${safePrice}</div>
+                                                </div>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fs-9 fw-bold flex-shrink-0">
+                                                Inquire
+                                            </button>
+                                        </div>`;
+                                    });
+                                    html += `</div></div>`;
+                                }
+
+                                // General inquiry option
+                                html += `
+                                <div class="pt-2 border-top">
+                                    <button type="button" class="btn btn-light rounded-pill px-3 py-2 fs-9 fw-bold text-muted w-100 d-flex align-items-center justify-content-center gap-2" 
+                                            onclick="selectTopicAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', 'General Inquiry', '₱0.00', '${avatarUrl.replace(/'/g, "\\'")}', '')">
+                                        <i class="fa-solid fa-message text-secondary"></i> Continue with General Inquiry
+                                    </button>
+                                </div>
+                                `;
+
+                                modalBody.innerHTML = html;
+                            }
+                        };
+
+                        window.selectTopicAndOpenChat = function (partnerId, partnerName, itemTitle, price, avatarUrl, itemImg) {
+                            const modalEl = document.getElementById('selectChatTopicModal');
+                            if (modalEl) {
+                                try {
+                                    const inst = bootstrap.Modal.getInstance(modalEl);
+                                    if (inst) inst.hide();
+                                } catch(e) {}
+                            }
+                            checkAndOpenChat(partnerId, partnerName, itemTitle, price, avatarUrl, itemImg);
+                        };
+
+                        window.openSwitchChatTopicModal = function () {
+                            if (!currentActiveChatSellerId) return;
+                            const partnerName = document.getElementById('chatPartnerName')?.innerText || 'Student Lender';
+                            const headerAvatar = document.getElementById('chatHeaderAvatar')?.src || '';
+                            promptOrOpenChatTopic(currentActiveChatSellerId, partnerName, 'Campus Equipment', '₱0.00', headerAvatar);
+                        };
 
                         let pendingDeletePartnerId = null;
                         let pendingDeletePartnerName = '';
@@ -3337,7 +3538,8 @@
                             }
 
                             try {
-                                const res = await fetch(`/student/rentease_api.php?action=get_active_chat_rental&user_id=${currentUserId}&partner_id=${currentActiveChatSellerId}`);
+                                const activeTitle = document.getElementById('chatItemTitle')?.innerText || '';
+                                const res = await fetch(`/student/rentease_api.php?action=get_active_chat_rental&user_id=${currentUserId}&partner_id=${currentActiveChatSellerId}&item_title=${encodeURIComponent(activeTitle)}`);
                                 const data = await res.json();
 
                                 const reqBanner = document.getElementById('chatRentalRequestBanner');
