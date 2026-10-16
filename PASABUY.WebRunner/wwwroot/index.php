@@ -3479,8 +3479,8 @@
 
                                 if (!endIsoString) {
                                     cdText.innerText = '00:00:00';
-                                    if (ownerReportRow) ownerReportRow.style.display = 'none';
-                                    if (renterOverdueRow) renterOverdueRow.style.display = 'none';
+                                    if (ownerReportRow) ownerReportRow.style.setProperty('display', 'none', 'important');
+                                    if (renterOverdueRow) renterOverdueRow.style.setProperty('display', 'none', 'important');
                                     return;
                                 }
 
@@ -3500,19 +3500,19 @@
                                     // CRITICAL: Rental is OVERDUE!
                                     // ONLY the Stock Owner can see the Report Unreturned button!
                                     if (isOwner) {
-                                        if (ownerReportRow) ownerReportRow.style.display = 'flex';
-                                        if (renterOverdueRow) renterOverdueRow.style.display = 'none';
+                                        if (ownerReportRow) ownerReportRow.style.setProperty('display', 'flex', 'important');
+                                        if (renterOverdueRow) renterOverdueRow.style.setProperty('display', 'none', 'important');
                                     } else {
-                                        if (ownerReportRow) ownerReportRow.style.display = 'none';
-                                        if (renterOverdueRow) renterOverdueRow.style.display = 'flex';
+                                        if (ownerReportRow) ownerReportRow.style.setProperty('display', 'none', 'important');
+                                        if (renterOverdueRow) renterOverdueRow.style.setProperty('display', 'flex', 'important');
                                     }
                                     return;
                                 }
 
                                 // CRITICAL: Timer is still ACTIVELY RUNNING!
                                 // The rental period has NOT expired, so Report Unreturned MUST NEVER be displayed!
-                                if (ownerReportRow) ownerReportRow.style.display = 'none';
-                                if (renterOverdueRow) renterOverdueRow.style.display = 'none';
+                                if (ownerReportRow) ownerReportRow.style.setProperty('display', 'none', 'important');
+                                if (renterOverdueRow) renterOverdueRow.style.setProperty('display', 'none', 'important');
 
                                 const totalSecs = Math.floor(diffMs / 1000);
                                 const hours = Math.floor(totalSecs / 3600);

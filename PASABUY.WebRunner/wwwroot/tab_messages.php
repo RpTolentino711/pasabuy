@@ -141,6 +141,11 @@
             justify-content: center;
             flex-shrink: 0;
         }
+        .rentchat-overdue-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
         .rentchat-badge-pending {
             background: #FEF3C7;
             color: #B45309;
@@ -504,14 +509,14 @@
             </div>
         </div>
         <!-- Owner Report Unreturned Item Button (Visible for Stock Owner ONLY when rental is overdue) -->
-        <div id="chatTimerOwnerReportRow" style="display:none;" class="pt-2 mt-2 border-top border-white border-opacity-15 d-flex align-items-center justify-content-between">
+        <div id="chatTimerOwnerReportRow" style="display:none !important;" class="pt-2 mt-2 border-top border-white border-opacity-15 rentchat-overdue-row">
             <span class="fs-9 text-white-50"><i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> Not returned on time?</span>
             <button type="button" class="btn btn-sm rentchat-report-unreturned-btn" onclick="openReportUnreturnedModalFromChat()">
                 <i class="fa-solid fa-flag me-1"></i> Report Unreturned
             </button>
         </div>
         <!-- Renter Overdue Warning (Visible for Renter ONLY when rental is overdue) -->
-        <div id="chatTimerRenterOverdueRow" style="display:none;" class="pt-2 mt-2 border-top border-white border-opacity-15 d-flex align-items-center justify-content-between">
+        <div id="chatTimerRenterOverdueRow" style="display:none !important;" class="pt-2 mt-2 border-top border-white border-opacity-15 rentchat-overdue-row">
             <span class="fs-9 text-warning"><i class="fa-solid fa-clock-rotate-left me-1"></i> Rental expired — please return gear to owner immediately</span>
         </div>
     </div>
