@@ -2431,36 +2431,56 @@
                         function previewSellPhotos(event) {
                             const files = event.target.files;
                             const grid = document.getElementById('sellPhotosPreviewGrid');
-                            grid.innerHTML = '';
-                            uploadedPhotoUrls = [];
+                            if (grid) grid.innerHTML = '';
+                            window.uploadedPhotoUrls = [];
+                            if (typeof uploadedPhotoUrls !== 'undefined') uploadedPhotoUrls = [];
 
-                            if (!files || files.length === 0) return;
+                            if (!files || files.length === 0) {
+                                if (typeof window.validateSellEquipmentForm === 'function') {
+                                    window.validateSellEquipmentForm();
+                                }
+                                return;
+                            }
 
                             Array.from(files).forEach((file, index) => {
                                 const reader = new FileReader();
                                 reader.onload = function (e) {
                                     const dataUrl = e.target.result;
-                                    uploadedPhotoUrls.push(dataUrl);
+                                    window.uploadedPhotoUrls.push(dataUrl);
+                                    if (typeof uploadedPhotoUrls !== 'undefined') uploadedPhotoUrls.push(dataUrl);
 
-                                    const div = document.createElement('div');
-                                    div.style.position = 'relative';
-                                    div.style.width = '75px';
-                                    div.style.height = '75px';
-                                    div.id = `photoThumb_${index}`;
-                                    div.innerHTML = `
+                                    if (grid) {
+                                        const div = document.createElement('div');
+                                        div.style.position = 'relative';
+                                        div.style.width = '75px';
+                                        div.style.height = '75px';
+                                        div.id = `photoThumb_${index}`;
+                                        div.innerHTML = `
                         <img src="${dataUrl}" class="rounded-3 border shadow-sm" style="width:75px; height:75px; object-fit:cover;">
                         <span class="badge bg-danger rounded-circle position-absolute top-0 end-0 p-1 shadow-sm" style="cursor:pointer; transform:translate(25%, -25%);" onclick="removePhoto(${index})"><i class="fa-solid fa-xmark"></i></span>
                     `;
-                                    grid.appendChild(div);
+                                        grid.appendChild(div);
+                                    }
+                                    if (typeof window.validateSellEquipmentForm === 'function') {
+                                        window.validateSellEquipmentForm();
+                                    }
                                 };
                                 reader.readAsDataURL(file);
                             });
                         }
 
                         function removePhoto(index) {
-                            uploadedPhotoUrls.splice(index, 1);
+                            if (window.uploadedPhotoUrls && window.uploadedPhotoUrls.length > index) {
+                                window.uploadedPhotoUrls.splice(index, 1);
+                            }
+                            if (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > index) {
+                                uploadedPhotoUrls.splice(index, 1);
+                            }
                             const el = document.getElementById(`photoThumb_${index}`);
                             if (el) el.remove();
+                            if (typeof window.validateSellEquipmentForm === 'function') {
+                                window.validateSellEquipmentForm();
+                            }
                         }
 
                         function calculateFeeLive() {

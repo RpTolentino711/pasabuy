@@ -4127,25 +4127,30 @@ window.updateSellVerificationState = function (isVerified) {
     const vBanner = document.getElementById('sellVerificationBanner');
     const warnBox = document.getElementById('sellPublishVerificationWarning');
     const btn = document.getElementById('btnPublishRentalItem');
+    const hint = document.getElementById('sellFormRequirementsHint');
 
     if (isVerified) {
         if (vBanner) vBanner.style.display = 'none';
         if (warnBox) warnBox.style.display = 'none';
-        if (btn) {
-            btn.disabled = false;
-            btn.classList.remove('disabled');
-            btn.removeAttribute('title');
-            btn.innerHTML = '<i class="fa-solid fa-clipboard-check fs-8"></i> <span>Review & Publish Equipment</span>';
+        if (typeof window.validateSellEquipmentForm === 'function') {
+            window.validateSellEquipmentForm();
         }
     } else {
         if (vBanner) vBanner.style.display = 'block';
         if (warnBox) warnBox.style.display = 'block';
         if (btn) {
-            btn.disabled = false;
+            btn.disabled = true;
             btn.classList.add('disabled');
             btn.setAttribute('title', 'Only admin-verified student accounts can list equipment for rent');
             btn.setAttribute('onclick', 'openVerificationModal()');
             btn.innerHTML = '<i class="fa-solid fa-lock fs-8 text-warning me-1"></i> <span>Verification Required to Post Equipment</span>';
+        }
+        if (hint) {
+            hint.className = 'text-center py-2 px-3 mb-2 rounded-3 shadow-2xs';
+            hint.style.background = '#FFFBEB';
+            hint.style.border = '1px solid #FDE68A';
+            hint.style.color = '#92400E';
+            hint.innerHTML = '<i class="fa-solid fa-lock text-warning me-1"></i> Account verification is required before you can list equipment.';
         }
     }
 };

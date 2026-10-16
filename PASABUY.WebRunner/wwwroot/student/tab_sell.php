@@ -234,7 +234,8 @@
                     <span class="text-muted fw-normal" style="font-size:0.68rem;">e.g. JBL PartyBox 310</span>
                 </label>
                 <input type="text" class="form-control rentout-control" id="sellTitle"
-                       placeholder="e.g. JBL PartyBox 310, White Tiffany Chairs (Set of 10)">
+                       placeholder="e.g. JBL PartyBox 310, White Tiffany Chairs (Set of 10)"
+                       oninput="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();">
             </div>
 
             <!-- Category & Material -->
@@ -243,7 +244,8 @@
                     <label class="rentout-input-label" for="sellCategory">
                         <span>Category <span class="text-danger">*</span></span>
                     </label>
-                    <select class="form-select rentout-control" id="sellCategory">
+                    <select class="form-select rentout-control" id="sellCategory" onchange="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();">
+                        <option value="" disabled selected>Select Category *</option>
                         <option value="Chairs">Chairs</option>
                         <option value="Tables">Tables</option>
                         <option value="Tents">Tents</option>
@@ -254,16 +256,16 @@
                         <option value="Stages">Stages</option>
                         <option value="Catering">Catering</option>
                         <option value="Generators">Generators</option>
-                        <option value="Others" selected>Others</option>
+                        <option value="Others">Others</option>
                     </select>
                 </div>
                 <div class="col-6">
                     <label class="rentout-input-label" for="sellMaterialTag">
-                        <span>Material / Type</span>
+                        <span>Material / Type <span class="text-danger">*</span></span>
                     </label>
-                    <select class="form-select rentout-control" id="sellMaterialTag">
-                        <option value="All">Standard</option>
-                        <option value="Plastic" selected>Plastic</option>
+                    <select class="form-select rentout-control" id="sellMaterialTag" onchange="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();">
+                        <option value="Standard" selected>Standard</option>
+                        <option value="Plastic">Plastic</option>
                         <option value="Wooden">Wooden</option>
                         <option value="Premium">Premium</option>
                         <option value="Metal">Metal / Steel</option>
@@ -276,9 +278,9 @@
             <!-- Condition (Pickup Hub removed: In-Campus Handover via In-App Chat) -->
             <div class="mb-0">
                 <label class="rentout-input-label" for="sellCondition">
-                    <span>Condition</span>
+                    <span>Condition <span class="text-danger">*</span></span>
                 </label>
-                <select class="form-select rentout-control" id="sellCondition">
+                <select class="form-select rentout-control" id="sellCondition" onchange="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();">
                     <option value="Brand New">Brand New</option>
                     <option value="Like New" selected>Like New</option>
                     <option value="Good">Good</option>
@@ -314,10 +316,10 @@
                     <div class="input-group">
                         <span class="input-group-text bg-white fw-bold border-end-0 py-1 px-2.5 fs-8" style="border-radius:10px 0 0 10px; border-color:#E2E8F0; color:#5B3FA8 !important;">₱</span>
                         <input type="number" class="form-control rentout-control border-start-0 fw-bold fs-7 text-dark py-1" 
-                               id="sellPrice" value="100" min="1" 
-                               oninput="updateSellPostingFeeTier(this.value)" 
-                               onkeyup="updateSellPostingFeeTier(this.value)" 
-                               onchange="updateSellPostingFeeTier(this.value)" 
+                               id="sellPrice" min="1" placeholder="e.g. 150"
+                               oninput="updateSellPostingFeeTier(this.value); if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();" 
+                               onkeyup="updateSellPostingFeeTier(this.value); if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();" 
+                               onchange="updateSellPostingFeeTier(this.value); if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();" 
                                style="border-radius:0 10px 10px 0;">
                     </div>
                 </div>
@@ -327,7 +329,10 @@
                     </label>
                     <div class="input-group">
                         <input type="number" class="form-control rentout-control fw-bold fs-7 text-dark py-1" 
-                               id="sellQuantity" value="10" min="1" placeholder="Qty">
+                               id="sellQuantity" min="1" placeholder="e.g. 1"
+                               oninput="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();"
+                               onkeyup="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();"
+                               onchange="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();">
                         <span class="input-group-text bg-white text-muted border-start-0 py-1 px-2" style="border-radius:0 10px 10px 0; border-color:#E2E8F0; font-size:0.7rem;">Units</span>
                     </div>
                 </div>
@@ -341,7 +346,7 @@
                 </div>
                 <span class="badge rounded-pill fw-bold px-2.5 py-1" id="sellPostingFeeBadge" 
                       style="background:#7C3AED; color:#ffffff; font-size:0.7rem;">
-                    ₱15.00 (Tier: ₱100 - ₱500)
+                    Input daily rate to view fee
                 </span>
             </div>
         </div>
@@ -353,14 +358,15 @@
                     <i class="fa-solid fa-list-check"></i>
                 </div>
                 <div>
-                    <span class="fw-bold fs-8 text-dark d-block leading-tight">Description</span>
+                    <span class="fw-bold fs-8 text-dark d-block leading-tight">Description <span class="text-danger">*</span></span>
                     <span class="text-muted" style="font-size:0.68rem;">Accessories, condition, or usage guidelines</span>
                 </div>
             </div>
 
             <div>
                 <textarea class="form-control rentout-control" id="sellDescription" rows="2" 
-                          placeholder="e.g. Includes power cords and protective carry case. Tested & disinfected."></textarea>
+                          placeholder="e.g. Includes power cords and protective carry case. Tested & disinfected."
+                          oninput="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();"></textarea>
             </div>
         </div>
 
@@ -371,8 +377,8 @@
                     <i class="fa-solid fa-camera"></i>
                 </div>
                 <div>
-                    <span class="fw-bold fs-8 text-dark d-block leading-tight">Photos & Video</span>
-                    <span class="text-muted" style="font-size:0.68rem;">Upload pictures of your equipment</span>
+                    <span class="fw-bold fs-8 text-dark d-block leading-tight">Photos & Video <span class="text-danger">*</span></span>
+                    <span class="text-muted" style="font-size:0.68rem;">Upload at least 1 picture of your equipment</span>
                 </div>
             </div>
 
@@ -385,7 +391,7 @@
                             <i class="fa-solid fa-cloud-arrow-up fs-8"></i>
                         </div>
                         <div class="text-start">
-                            <div class="fw-bold fs-8 text-dark leading-tight">Upload Equipment Photos</div>
+                            <div class="fw-bold fs-8 text-dark leading-tight">Upload Equipment Photos <span class="text-danger">*</span></div>
                             <div class="text-muted" style="font-size:0.68rem;">Tap to select PNG, JPG, or WebP</div>
                         </div>
                     </div>
@@ -403,7 +409,10 @@
                         <i class="fa-solid fa-link"></i>
                     </span>
                     <input type="text" class="form-control rentout-control border-start-0 py-1 fs-9" id="sellPhotoUrlInput" 
-                           placeholder="or paste image URL (https://...)" style="border-radius:0 10px 10px 0;">
+                           placeholder="or paste image URL (https://...)" style="border-radius:0 10px 10px 0;"
+                           oninput="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();"
+                           onkeyup="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();"
+                           onchange="if(typeof window.validateSellEquipmentForm==='function') window.validateSellEquipmentForm();">
                 </div>
 
                 <!-- Preview Grid -->
@@ -456,10 +465,18 @@
             </div>
         </div>
 
+        <!-- Real-time Form Validation Status Hint -->
+        <div id="sellFormRequirementsHint" class="text-center py-2 px-3 mb-2 rounded-3 shadow-2xs" 
+             style="font-size:0.74rem; background:#FFFBEB; border:1px solid #FDE68A; color:#92400E; transition:all 0.2s ease;">
+            <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> <strong>Complete All Fields to Enable:</strong> Title, Category, Rate, Stock, Description, &amp; Photo required.
+        </div>
+
         <!-- Final CTA Button: Triggers Review Modal -->
-        <button type="button" class="btn rentout-publish-btn w-100 d-flex align-items-center justify-content-center gap-2 mb-1" 
+        <button type="button" class="btn rentout-publish-btn w-100 d-flex align-items-center justify-content-center gap-2 mb-1 disabled" 
                 id="btnPublishRentalItem"
-                onclick="openEquipmentReviewModal()">
+                disabled
+                title="Please complete all required fields to review"
+                onclick="if(typeof window.highlightMissingSellFields==='function') window.highlightMissingSellFields();">
             <i class="fa-solid fa-clipboard-check fs-8"></i> <span>Review &amp; Publish Equipment</span>
         </button>
 
@@ -562,15 +579,20 @@
 </div>
 
 <script>
+window.uploadedPhotoUrls = window.uploadedPhotoUrls || [];
+
 window.updateSellPostingFeeTier = function(price) {
     const num = parseFloat(price);
+    const badge = document.getElementById('sellPostingFeeBadge');
+    if (isNaN(num) || num <= 0) {
+        if (badge) badge.innerText = 'Input daily rate to view fee';
+        return;
+    }
+
     let fee = 15;
     let tier = '₱100 – ₱500';
 
-    if (isNaN(num) || num <= 0) {
-        fee = 10;
-        tier = 'Under ₱100';
-    } else if (num < 100) {
+    if (num < 100) {
         fee = 10;
         tier = '₱1 – ₱99';
     } else if (num >= 100 && num <= 500) {
@@ -590,29 +612,231 @@ window.updateSellPostingFeeTier = function(price) {
         tier = 'Above ₱5,000';
     }
 
-    const badge = document.getElementById('sellPostingFeeBadge');
     if (badge) {
         badge.innerText = `₱${fee.toFixed(2)} (Tier: ${tier})`;
     }
 };
 
-(function initSellPriceListeners() {
-    function bindPrice() {
-        const priceEl = document.getElementById('sellPrice');
-        if (priceEl) {
-            ['input', 'keyup', 'change', 'paste'].forEach(evt => {
-                priceEl.addEventListener(evt, function() {
-                    window.updateSellPostingFeeTier(this.value);
+window.previewSellPhotos = function(event) {
+    const files = event.target.files;
+    const grid = document.getElementById('sellPhotosPreviewGrid');
+    if (grid) grid.innerHTML = '';
+    window.uploadedPhotoUrls = [];
+
+    if (!files || files.length === 0) {
+        if (typeof window.validateSellEquipmentForm === 'function') {
+            window.validateSellEquipmentForm();
+        }
+        return;
+    }
+
+    Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const dataUrl = e.target.result;
+            window.uploadedPhotoUrls.push(dataUrl);
+
+            if (grid) {
+                const div = document.createElement('div');
+                div.style.position = 'relative';
+                div.style.width = '75px';
+                div.style.height = '75px';
+                div.id = `photoThumb_${index}`;
+                div.innerHTML = `
+                    <img src="${dataUrl}" class="rounded-3 border shadow-sm" style="width:75px; height:75px; object-fit:cover;">
+                    <span class="badge bg-danger rounded-circle position-absolute top-0 end-0 p-1 shadow-sm" style="cursor:pointer; transform:translate(25%, -25%);" onclick="removePhoto(${index})"><i class="fa-solid fa-xmark"></i></span>
+                `;
+                grid.appendChild(div);
+            }
+            if (typeof window.validateSellEquipmentForm === 'function') {
+                window.validateSellEquipmentForm();
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
+window.removePhoto = function(index) {
+    if (window.uploadedPhotoUrls && window.uploadedPhotoUrls.length > index) {
+        window.uploadedPhotoUrls.splice(index, 1);
+    }
+    const el = document.getElementById(`photoThumb_${index}`);
+    if (el) el.remove();
+    if (typeof window.validateSellEquipmentForm === 'function') {
+        window.validateSellEquipmentForm();
+    }
+};
+
+window.validateSellEquipmentForm = function() {
+    const btn = document.getElementById('btnPublishRentalItem');
+    const hint = document.getElementById('sellFormRequirementsHint');
+    if (!btn) return false;
+
+    // Check account verification
+    let currentUser = {};
+    try {
+        if (typeof getRentEaseCurrentUser === 'function') {
+            currentUser = getRentEaseCurrentUser();
+        } else {
+            const raw = localStorage.getItem('pasabuy_student_user') || localStorage.getItem('pasabuy_user');
+            if (raw) currentUser = JSON.parse(raw);
+        }
+    } catch(e) {}
+
+    const email = (currentUser.email || currentUser.SchoolEmail || '').toLowerCase();
+    const isRomeo = (email === 'romeopaolotolentino@gmail.com' || (currentUser.id == 104));
+    const isPogilameg = (email.includes('pogilameg') || (currentUser.id == 105));
+    const isVerified = isRomeo || isPogilameg || (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED' || currentUser.Status === 'VERIFIED');
+
+    if (!isVerified) {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        btn.setAttribute('title', 'Only admin-verified student accounts can list equipment for rent');
+        btn.setAttribute('onclick', 'openVerificationModal()');
+        btn.innerHTML = '<i class="fa-solid fa-lock fs-8 text-warning me-1"></i> <span>Verification Required to Post Equipment</span>';
+        if (hint) {
+            hint.className = 'text-center py-2 px-3 mb-2 rounded-3 shadow-2xs';
+            hint.style.background = '#FFFBEB';
+            hint.style.border = '1px solid #FDE68A';
+            hint.style.color = '#92400E';
+            hint.innerHTML = '<i class="fa-solid fa-lock text-warning me-1"></i> Account verification is required before you can list equipment.';
+        }
+        return false;
+    }
+
+    const title = (document.getElementById('sellTitle')?.value || '').trim();
+    const category = (document.getElementById('sellCategory')?.value || '').trim();
+    const materialTag = (document.getElementById('sellMaterialTag')?.value || '').trim();
+    const condition = (document.getElementById('sellCondition')?.value || '').trim();
+    const priceVal = document.getElementById('sellPrice')?.value;
+    const price = priceVal !== '' ? parseFloat(priceVal) : 0;
+    const qtyVal = document.getElementById('sellQuantity')?.value;
+    const quantity = qtyVal !== '' ? parseInt(qtyVal) : 0;
+    const description = (document.getElementById('sellDescription')?.value || '').trim();
+
+    const photoUrlInput = (document.getElementById('sellPhotoUrlInput')?.value || '').trim();
+    const hasUploadedPhotos = typeof window.uploadedPhotoUrls !== 'undefined' && Array.isArray(window.uploadedPhotoUrls) && window.uploadedPhotoUrls.length > 0;
+    const hasPhoto = hasUploadedPhotos || photoUrlInput.length > 0;
+
+    const missingFields = [];
+    if (!title) missingFields.push('Title');
+    if (!category) missingFields.push('Category');
+    if (!materialTag) missingFields.push('Material');
+    if (!condition) missingFields.push('Condition');
+    if (isNaN(price) || price <= 0) missingFields.push('Daily Rate');
+    if (isNaN(quantity) || quantity < 1) missingFields.push('Stock Units');
+    if (!description) missingFields.push('Description');
+    if (!hasPhoto) missingFields.push('Equipment Photo');
+
+    const isValid = (missingFields.length === 0);
+
+    if (isValid) {
+        btn.disabled = false;
+        btn.classList.remove('disabled');
+        btn.removeAttribute('title');
+        btn.setAttribute('onclick', 'openEquipmentReviewModal()');
+        btn.innerHTML = '<i class="fa-solid fa-clipboard-check fs-8"></i> <span>Review &amp; Publish Equipment</span>';
+        if (hint) {
+            hint.className = 'text-center py-2 px-3 mb-2 rounded-3 shadow-2xs';
+            hint.style.background = '#F0FDF4';
+            hint.style.border = '1px solid #BBF7D0';
+            hint.style.color = '#15803D';
+            hint.innerHTML = '<i class="fa-solid fa-circle-check text-success me-1"></i> <strong>All fields complete!</strong> Tap button below to review &amp; publish.';
+        }
+    } else {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        btn.setAttribute('title', 'Please complete: ' + missingFields.join(', '));
+        btn.setAttribute('onclick', 'if(typeof window.highlightMissingSellFields==="function") window.highlightMissingSellFields();');
+        btn.innerHTML = '<i class="fa-solid fa-clipboard-check fs-8"></i> <span>Review &amp; Publish Equipment</span>';
+        if (hint) {
+            hint.className = 'text-center py-2 px-3 mb-2 rounded-3 shadow-2xs';
+            hint.style.background = '#FFFBEB';
+            hint.style.border = '1px solid #FDE68A';
+            hint.style.color = '#92400E';
+            hint.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> <strong>Complete All Fields to Enable:</strong> Missing ${missingFields.join(', ')}`;
+        }
+    }
+
+    return isValid;
+};
+
+window.highlightMissingSellFields = function() {
+    const title = (document.getElementById('sellTitle')?.value || '').trim();
+    const category = (document.getElementById('sellCategory')?.value || '').trim();
+    const priceVal = document.getElementById('sellPrice')?.value;
+    const price = priceVal !== '' ? parseFloat(priceVal) : 0;
+    const qtyVal = document.getElementById('sellQuantity')?.value;
+    const quantity = qtyVal !== '' ? parseInt(qtyVal) : 0;
+    const description = (document.getElementById('sellDescription')?.value || '').trim();
+    const photoUrlInput = (document.getElementById('sellPhotoUrlInput')?.value || '').trim();
+    const hasUploadedPhotos = typeof window.uploadedPhotoUrls !== 'undefined' && Array.isArray(window.uploadedPhotoUrls) && window.uploadedPhotoUrls.length > 0;
+    const hasPhoto = hasUploadedPhotos || photoUrlInput.length > 0;
+
+    if (!title) {
+        document.getElementById('sellTitle')?.focus();
+        alert('⚠️ Please enter an equipment title / name.');
+        return;
+    }
+    if (!category) {
+        document.getElementById('sellCategory')?.focus();
+        alert('⚠️ Please select an equipment category.');
+        return;
+    }
+    if (isNaN(price) || price <= 0) {
+        document.getElementById('sellPrice')?.focus();
+        alert('⚠️ Please enter a valid daily rental rate (₱).');
+        return;
+    }
+    if (isNaN(quantity) || quantity < 1) {
+        document.getElementById('sellQuantity')?.focus();
+        alert('⚠️ Please enter the available stock units (minimum 1).');
+        return;
+    }
+    if (!description) {
+        document.getElementById('sellDescription')?.focus();
+        alert('⚠️ Please provide a description of the equipment condition and guidelines.');
+        return;
+    }
+    if (!hasPhoto) {
+        document.getElementById('sellPhotoUrlInput')?.focus();
+        alert('⚠️ Please upload at least one equipment photo or paste an image URL.');
+        return;
+    }
+};
+
+(function initSellFormListeners() {
+    function bindAll() {
+        const inputIds = [
+            'sellTitle', 'sellCategory', 'sellMaterialTag', 'sellCondition',
+            'sellPrice', 'sellQuantity', 'sellDescription', 'sellPhotoUrlInput'
+        ];
+        inputIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                ['input', 'keyup', 'change', 'paste', 'blur'].forEach(evt => {
+                    el.addEventListener(evt, function() {
+                        if (id === 'sellPrice' && typeof window.updateSellPostingFeeTier === 'function') {
+                            window.updateSellPostingFeeTier(this.value);
+                        }
+                        if (typeof window.validateSellEquipmentForm === 'function') {
+                            window.validateSellEquipmentForm();
+                        }
+                    });
                 });
-            });
-            window.updateSellPostingFeeTier(priceEl.value);
+            }
+        });
+        if (typeof window.validateSellEquipmentForm === 'function') {
+            window.validateSellEquipmentForm();
         }
     }
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindPrice);
+        document.addEventListener('DOMContentLoaded', bindAll);
     } else {
-        bindPrice();
+        bindAll();
     }
+    setTimeout(bindAll, 200);
+    setTimeout(bindAll, 600);
 })();
 
 window.switchRentOutSubTab = function(mode) {
@@ -668,6 +892,9 @@ window.switchRentOutSubTab = function(mode) {
             btnPrep.style.background = 'transparent';
             btnPrep.style.boxShadow = 'none';
         }
+        if (typeof window.validateSellEquipmentForm === 'function') {
+            window.validateSellEquipmentForm();
+        }
     }
 };
 
@@ -675,26 +902,30 @@ window.updateSellVerificationState = function (isVerified) {
     const vBanner = document.getElementById('sellVerificationBanner');
     const warnBox = document.getElementById('sellPublishVerificationWarning');
     const btn = document.getElementById('btnPublishRentalItem');
+    const hint = document.getElementById('sellFormRequirementsHint');
 
     if (isVerified) {
         if (vBanner) vBanner.style.display = 'none';
         if (warnBox) warnBox.style.display = 'none';
-        if (btn) {
-            btn.disabled = false;
-            btn.classList.remove('disabled');
-            btn.removeAttribute('title');
-            btn.setAttribute('onclick', 'openEquipmentReviewModal()');
-            btn.innerHTML = '<i class="fa-solid fa-clipboard-check fs-8"></i> <span>Review & Publish Equipment</span>';
+        if (typeof window.validateSellEquipmentForm === 'function') {
+            window.validateSellEquipmentForm();
         }
     } else {
         if (vBanner) vBanner.style.display = 'block';
         if (warnBox) warnBox.style.display = 'block';
         if (btn) {
-            btn.disabled = false;
+            btn.disabled = true;
             btn.classList.add('disabled');
             btn.setAttribute('title', 'Only admin-verified student accounts can list equipment for rent');
             btn.setAttribute('onclick', 'openVerificationModal()');
             btn.innerHTML = '<i class="fa-solid fa-lock fs-8 text-warning me-1"></i> <span>Verification Required to Post Equipment</span>';
+        }
+        if (hint) {
+            hint.className = 'text-center py-2 px-3 mb-2 rounded-3 shadow-2xs';
+            hint.style.background = '#FFFBEB';
+            hint.style.border = '1px solid #FDE68A';
+            hint.style.color = '#92400E';
+            hint.innerHTML = '<i class="fa-solid fa-lock text-warning me-1"></i> Account verification is required before you can list equipment.';
         }
     }
 };
@@ -743,6 +974,16 @@ window.checkRentOutVerification = function() {
 })();
 
 window.openEquipmentReviewModal = function() {
+    if (typeof window.validateSellEquipmentForm === 'function') {
+        const isValid = window.validateSellEquipmentForm();
+        if (!isValid) {
+            if (typeof window.highlightMissingSellFields === 'function') {
+                window.highlightMissingSellFields();
+            }
+            return;
+        }
+    }
+
     let currentUser = {};
     try {
         if (typeof getRentEaseCurrentUser === 'function') {
@@ -768,32 +1009,35 @@ window.openEquipmentReviewModal = function() {
         return;
     }
 
-    const title = document.getElementById('sellTitle')?.value.trim();
-    const price = parseFloat(document.getElementById('sellPrice')?.value) || 0;
-    const quantity = parseInt(document.getElementById('sellQuantity')?.value) || 1;
-    const category = document.getElementById('sellCategory')?.value || 'Others';
-    const materialTag = document.getElementById('sellMaterialTag')?.value || 'Plastic';
-    const condition = document.getElementById('sellCondition')?.value || 'Good';
-    const description = document.getElementById('sellDescription')?.value.trim() || 'No additional guidelines specified.';
+    const title = (document.getElementById('sellTitle')?.value || '').trim();
+    const priceVal = document.getElementById('sellPrice')?.value;
+    const price = priceVal !== '' ? parseFloat(priceVal) : 0;
+    const qtyVal = document.getElementById('sellQuantity')?.value;
+    const quantity = qtyVal !== '' ? parseInt(qtyVal) : 0;
+    const category = document.getElementById('sellCategory')?.value || '';
+    const materialTag = document.getElementById('sellMaterialTag')?.value || 'Standard';
+    const condition = document.getElementById('sellCondition')?.value || 'Like New';
+    const description = (document.getElementById('sellDescription')?.value || '').trim();
 
-    if (!title) {
-        alert('⚠️ Please enter an equipment title / name before reviewing.');
-        document.getElementById('sellTitle')?.focus();
+    if (!title || !category || isNaN(price) || price <= 0 || isNaN(quantity) || quantity < 1 || !description) {
+        if (typeof window.highlightMissingSellFields === 'function') {
+            window.highlightMissingSellFields();
+        }
         return;
     }
 
-    if (price <= 0) {
-        alert('⚠️ Please enter a valid daily rental price.');
-        document.getElementById('sellPrice')?.focus();
-        return;
-    }
-
-    let photoUrl = 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
-    if (typeof uploadedPhotoUrls !== 'undefined' && uploadedPhotoUrls.length > 0) {
-        photoUrl = uploadedPhotoUrls[0];
+    let photoUrl = '';
+    if (typeof window.uploadedPhotoUrls !== 'undefined' && window.uploadedPhotoUrls.length > 0) {
+        photoUrl = window.uploadedPhotoUrls[0];
     } else {
-        const customUrl = document.getElementById('sellPhotoUrlInput')?.value.trim();
+        const customUrl = (document.getElementById('sellPhotoUrlInput')?.value || '').trim();
         if (customUrl) photoUrl = customUrl;
+    }
+
+    if (!photoUrl) {
+        alert('⚠️ Please upload at least one photo or provide an image URL.');
+        document.getElementById('sellPhotoUrlInput')?.focus();
+        return;
     }
 
     let fee = 15;
@@ -965,12 +1209,16 @@ window.executePostRentalItemLive = async function(fee) {
             alert(`🎉 Success!\n\n"${title}" has been published live for rent on RentEase!${feeInfo}\nStudents can now rent this equipment from you.`);
             
             if (document.getElementById('sellTitle')) document.getElementById('sellTitle').value = '';
+            if (document.getElementById('sellCategory')) document.getElementById('sellCategory').value = '';
+            if (document.getElementById('sellPrice')) document.getElementById('sellPrice').value = '';
+            if (document.getElementById('sellQuantity')) document.getElementById('sellQuantity').value = '';
             if (document.getElementById('sellDescription')) document.getElementById('sellDescription').value = '';
             if (document.getElementById('sellPhotoUrlInput')) document.getElementById('sellPhotoUrlInput').value = '';
             if (document.getElementById('sellVideoUrlInput')) document.getElementById('sellVideoUrlInput').value = '';
             if (document.getElementById('sellPhotosPreviewGrid')) document.getElementById('sellPhotosPreviewGrid').innerHTML = '';
             if (document.getElementById('sellVideoPreviewContainer')) document.getElementById('sellVideoPreviewContainer').style.display = 'none';
-            if (typeof uploadedPhotoUrls !== 'undefined') uploadedPhotoUrls = [];
+            if (typeof window.uploadedPhotoUrls !== 'undefined') window.uploadedPhotoUrls = [];
+            if (typeof window.validateSellEquipmentForm === 'function') window.validateSellEquipmentForm();
 
             if (typeof loadRentEaseCatalog === 'function') await loadRentEaseCatalog();
             if (typeof loadOwnerRentalDashboard === 'function') await loadOwnerRentalDashboard(true);
@@ -988,8 +1236,10 @@ window.executePostRentalItemLive = async function(fee) {
         alert('❌ Error connecting to server to post item.');
     } finally {
         if (btn) {
-            btn.disabled = false;
             btn.innerHTML = oldBtnHtml;
+            if (typeof window.validateSellEquipmentForm === 'function') {
+                window.validateSellEquipmentForm();
+            }
         }
     }
 };
