@@ -2621,15 +2621,21 @@ async function openTrackScreen(orderCode) {
             }
 
             if (isOwner) {
-                if (partnerName) partnerName.innerText = t.customer_name || 'Student Renter';
+                const cName = t.customer_name || 'Student Renter';
+                if (partnerName) partnerName.innerText = cName;
                 if (partnerRole) partnerRole.innerText = 'Student Renter • Campus Meetup Partner';
                 if (partnerPhone) partnerPhone.href = t.customer_phone ? `tel:${t.customer_phone}` : 'tel:09668257301';
-                if (partnerAvatar) partnerAvatar.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80';
+                if (partnerAvatar) {
+                    partnerAvatar.src = t.customer_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(cName)}&background=5B3FA8&color=fff&bold=true&rounded=true`;
+                }
             } else {
-                if (partnerName) partnerName.innerText = t.owner_name || 'Romeo Paolo Tolentino';
-                if (partnerRole) partnerRole.innerText = 'Equipment Stock Owner • Verified Campus Lender';
+                const oName = t.owner_name || 'Romeo Paolo Tolentino';
+                if (partnerName) partnerName.innerText = oName;
+                if (partnerRole) partnerRole.innerText = 'Equipment Owner • Verified Campus Lender';
                 if (partnerPhone) partnerPhone.href = t.owner_phone ? `tel:${t.owner_phone}` : 'tel:09668257301';
-                if (partnerAvatar) partnerAvatar.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80';
+                if (partnerAvatar) {
+                    partnerAvatar.src = t.owner_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(oName)}&background=5B3FA8&color=fff&bold=true&rounded=true`;
+                }
             }
 
             // Update Stock Owner Preparation Action Card (Only shown for Owner)
