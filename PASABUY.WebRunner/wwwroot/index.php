@@ -3416,8 +3416,28 @@
                                     // Start or sync local live countdown with strict owner role passing
                                     startChatTimerCountdown(ord.rental_timer_end, isOwner);
                                 } 
-                                // 2. If status is REQUESTED or CONFIRMED (Awaiting Romeo to start timer)
-                                else if (ord.order_status === 'REQUESTED' || ord.order_status === 'CONFIRMED' || ord.timer_status === 'NOT_STARTED') {
+                                // 1. If timer is running or overdue, show TIMER BANNER
+                                if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
+                                    if (reqBanner) reqBanner.style.display = 'none';
+                                    if (timerBanner) timerBanner.style.display = 'block';
+
+                                    // Chat input is always unlocked when rental is active
+                                    const chatInput = document.getElementById('chatInput');
+                                    const sendBtn = document.querySelector('.rentchat-send-btn');
+                                    if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'Type your message...'; }
+                                    if (sendBtn) sendBtn.disabled = false;
+
+                                    const titleEl = document.getElementById('chatTimerItemTitle');
+                                    if (titleEl) titleEl.innerText = `${ord.item_name} (${ord.order_code})`;
+                                    const endText = ord.rental_timer_end ? new Date(ord.rental_timer_end).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ord.rental_end_date;
+                                    const endEl = document.getElementById('chatTimerEndDisplay');
+                                    if (endEl) endEl.innerText = endText;
+
+                                    // Start or sync local live countdown with strict owner role passing
+                                    startChatTimerCountdown(ord.rental_timer_end, isOwner);
+                                } 
+                                // 2. Step-by-Step Lifecycle (Before Timer Starts)
+                                else {
                                     if (timerBanner) timerBanner.style.display = 'none';
                                     if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
                                     if (reqBanner) reqBanner.style.display = 'block';
@@ -3446,19 +3466,118 @@
                                     const totEl = document.getElementById('chatReqTotalText');
                                     if (totEl) totEl.innerText = `₱${parseFloat(ord.total_amount || 0).toFixed(2)}`;
 
-                                    const ownerRow = document.getElementById('chatOwnerActionRow');
-                                    const renterRow = document.getElementById('chatRenterWaitingRow');
+                                    // Step Elements
+                                    const stepPill = document.getElementById('chatLifecycleStepPill');
+                                    const step1Row = document.getElementById('chatStep1Row');
+                                    const step2Row = document.getElementById('chatStep2Row');
+                                    const step3Row = document.getElementById('chatStep3Row');
+                                    const step4Row = document.getElementById('chatStep4Row');
 
-                                    if (isOwner) {
-                                        // Romeo sees the "Agree to Rent & Start Timer" button
-                                        if (ownerRow) ownerRow.style.display = 'block';
-                                        if (renterRow) renterRow.style.display = 'none';
-                                    } else {
-                                        // Pogilameg sees waiting notice
-                                        if (ownerRow) ownerRow.style.display = 'none';
-                                        if (renterRow) renterRow.style.display = 'block';
-                                        const ownerNameEl = document.getElementById('chatReqOwnerName');
-                                        if (ownerNameEl) ownerNameEl.innerText = ord.owner_name || 'Romeo Paolo Tolentino';
+                                    const step1Owner = document.getElementById('chatStep1OwnerBox');
+                                    const step1Renter = document.getElementById('chatStep1RenterBox');
+
+                                    const step2Owner = document.getElementById('chatStep2OwnerBox');
+                                    const step2Renter = document.getElementById('chatStep2RenterBox');
+                                    const step2RenterWait = document.getElementById('chatStep2RenterWaiting');
+                                    const step2RenterAction = document.getElementById('chatStep2RenterAction');
+                                    const prepImgDisplay = document.getElementById('chatPrepPhotoDisplayRenter');
+
+                                    const step3Owner = document.getElementById('chatStep3OwnerBox');
+                                    const step3Renter = document.getElementById('chatStep3RenterBox');
+                                    const meetupNotice = document.getElementById('chatMeetupRenterNotice');
+
+                                    const step4Owner = document.getElementById('chatStep4OwnerBox');
+                                    const step4Renter = document.getElementById('chatStep4RenterBox');
+                                    const step4LocOwner = document.getElementById('chatStep4LocationDisplay');
+                                    const step4LocRenter = document.getElementById('chatStep4RenterLocationDisplay');
+
+                                    const chatInput = document.getElementById('chatInput');
+                                    const sendBtn = document.querySelector('.rentchat-send-btn');
+
+                                    // Default chat state: enabled
+                                    if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'Type your message...'; }
+                                    if (sendBtn) sendBtn.disabled = false;
+
+                                    const ownerAgreed = (parseInt(ord.owner_agreed) === 1);
+                                    const hasPrepPhoto = (ord.prep_photo_url && ord.prep_photo_url.trim() !== '');
+                                    const renterConfirmedPrep = (parseInt(ord.prep_confirmed_by_renter) === 1);
+                                    const hasMeetupLoc = (ord.meetup_location && ord.meetup_location.trim() !== '');
+
+                                    // Reset step rows
+                                    if (step1Row) step1Row.style.display = 'none';
+                                    if (step2Row) step2Row.style.display = 'none';
+                                    if (step3Row) step3Row.style.display = 'none';
+                                    if (step4Row) step4Row.style.display = 'none';
+
+                                    // STEP 1: Booking Confirmation
+                                    if (!ownerAgreed) {
+                                        if (stepPill) { stepPill.innerText = 'Step 1 of 4 • Booking Confirmation'; stepPill.style.background = '#EDE9FE'; stepPill.style.color = '#5B3FA8'; }
+                                        if (step1Row) step1Row.style.display = 'block';
+                                        if (isOwner) {
+                                            if (step1Owner) step1Owner.style.display = 'block';
+                                            if (step1Renter) step1Renter.style.display = 'none';
+                                        } else {
+                                            if (step1Owner) step1Owner.style.display = 'none';
+                                            if (step1Renter) step1Renter.style.display = 'block';
+                                        }
+                                    }
+                                    // STEP 2: Equipment Preparation & Photo Proof
+                                    else if (!renterConfirmedPrep) {
+                                        if (stepPill) { stepPill.innerText = 'Step 2 of 4 • Equipment Preparation'; stepPill.style.background = '#FEF3C7'; stepPill.style.color = '#B45309'; }
+                                        if (step2Row) step2Row.style.display = 'block';
+
+                                        if (isOwner) {
+                                            if (step2Owner) step2Owner.style.display = 'block';
+                                            if (step2Renter) step2Renter.style.display = 'none';
+                                        } else {
+                                            if (step2Owner) step2Owner.style.display = 'none';
+                                            if (step2Renter) step2Renter.style.display = 'block';
+
+                                            if (!hasPrepPhoto) {
+                                                // Renter must wait for photo proof; chat locked until owner uploads photo!
+                                                if (step2RenterWait) step2RenterWait.style.display = 'flex';
+                                                if (step2RenterAction) step2RenterAction.style.display = 'none';
+                                                if (chatInput) {
+                                                    chatInput.disabled = true;
+                                                    chatInput.placeholder = 'Chat locked: Stock owner is preparing equipment & uploading photo proof...';
+                                                }
+                                                if (sendBtn) sendBtn.disabled = true;
+                                            } else {
+                                                // Photo uploaded! Renter can view photo & click Accept
+                                                if (step2RenterWait) step2RenterWait.style.display = 'none';
+                                                if (step2RenterAction) step2RenterAction.style.display = 'block';
+                                                if (prepImgDisplay) prepImgDisplay.src = ord.prep_photo_url;
+                                            }
+                                        }
+                                    }
+                                    // STEP 3: Campus Meetup Spot
+                                    else if (!hasMeetupLoc) {
+                                        if (stepPill) { stepPill.innerText = 'Step 3 of 4 • Campus Meetup Location'; stepPill.style.background = '#E0F2FE'; stepPill.style.color = '#0369A1'; }
+                                        if (step3Row) step3Row.style.display = 'block';
+
+                                        if (isOwner) {
+                                            if (step3Owner) step3Owner.style.display = 'block';
+                                            if (step3Renter) step3Renter.style.display = 'none';
+                                        } else {
+                                            if (step3Owner) step3Owner.style.display = 'none';
+                                            if (step3Renter) step3Renter.style.display = 'block';
+                                            if (meetupNotice) meetupNotice.innerText = 'Waiting for stock owner to field campus meetup spot...';
+                                        }
+                                    }
+                                    // STEP 4: In-Person Handover & Start Timer
+                                    else {
+                                        if (stepPill) { stepPill.innerText = 'Step 4 of 4 • Handover & Start Timer'; stepPill.style.background = '#DCFCE7'; stepPill.style.color = '#15803D'; }
+                                        if (step4Row) step4Row.style.display = 'block';
+
+                                        if (isOwner) {
+                                            if (step4Owner) step4Owner.style.display = 'block';
+                                            if (step4Renter) step4Renter.style.display = 'none';
+                                            if (step4LocOwner) step4LocOwner.innerText = ord.meetup_location;
+                                        } else {
+                                            if (step4Owner) step4Owner.style.display = 'none';
+                                            if (step4Renter) step4Renter.style.display = 'block';
+                                            if (step4LocRenter) step4LocRenter.innerText = ord.meetup_location;
+                                        }
                                     }
                                 }
                             } catch(e) {
@@ -3536,12 +3655,130 @@
                             chatRentalTimerInterval = setInterval(updateDisplay, 1000);
                         }
 
-                        window.executeAgreeAndStartTimer = async function () {
+                        // STEP 1: OWNER AGREES TO RENT
+                        window.executeStep1Agree = async function () {
                             if (!currentChatRentalOrder) return;
-                            const btn = document.getElementById('btnAgreeStartTimer');
-                            if (btn) {
-                                btn.disabled = true;
-                                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Starting Timer...';
+                            const btn = document.getElementById('btnStep1Agree');
+                            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Agreeing...'; }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                const res = await fetch('/student/rentease_api.php?action=step1_owner_agree', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ order_code: currentChatRentalOrder.order_code, owner_id: ownerId })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    await checkAndRenderChatRentalTimer();
+                                    await refreshActiveChatStream();
+                                } else {
+                                    alert(data.message || 'Failed to confirm booking.');
+                                }
+                            } catch(e) {
+                                console.error('Step 1 error:', e);
+                            } finally {
+                                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-handshake-simple fs-8"></i> Agree to Rent Equipment'; }
+                            }
+                        };
+
+                        // STEP 2A: OWNER SUBMITS PREP PHOTO
+                        let currentPrepPhotoBase64 = '';
+                        window.handlePrepPhotoUpload = function (event) {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const label = document.getElementById('prepPhotoNameLabel');
+                            if (label) label.innerText = file.name;
+
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                currentPrepPhotoBase64 = e.target.result;
+                                const previewImg = document.getElementById('prepPhotoPreviewImg');
+                                const wrap = document.getElementById('prepPhotoPreviewWrap');
+                                if (previewImg) previewImg.src = e.target.result;
+                                if (wrap) wrap.style.display = 'block';
+                                const submitBtn = document.getElementById('btnSubmitPrepPhoto');
+                                if (submitBtn) submitBtn.disabled = false;
+                            };
+                            reader.readAsDataURL(file);
+                        };
+
+                        window.executeStep2SubmitPhoto = async function () {
+                            if (!currentChatRentalOrder || !currentPrepPhotoBase64) {
+                                alert('Please select or take an equipment photo first.');
+                                return;
+                            }
+                            const btn = document.getElementById('btnSubmitPrepPhoto');
+                            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Submitting Photo...'; }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                const res = await fetch('/student/rentease_api.php?action=step2_owner_submit_prep_photo', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        order_code: currentChatRentalOrder.order_code,
+                                        owner_id: ownerId,
+                                        photo_url: currentPrepPhotoBase64
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    await checkAndRenderChatRentalTimer();
+                                    await refreshActiveChatStream();
+                                } else {
+                                    alert(data.message || 'Failed to submit preparation photo.');
+                                }
+                            } catch(e) {
+                                console.error('Step 2 submit photo error:', e);
+                            } finally {
+                                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Submit Preparation Photo'; }
+                            }
+                        };
+
+                        // STEP 2B: RENTER ACCEPTS PREPARATION PHOTO
+                        window.executeStep2RenterAccept = async function () {
+                            if (!currentChatRentalOrder) return;
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const renterId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 105) : 105;
+
+                            try {
+                                const res = await fetch('/student/rentease_api.php?action=step2_renter_confirm_prep', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        order_code: currentChatRentalOrder.order_code,
+                                        renter_id: renterId
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    await checkAndRenderChatRentalTimer();
+                                    await refreshActiveChatStream();
+                                } else {
+                                    alert(data.message || 'Failed to accept preparation.');
+                                }
+                            } catch(e) {
+                                console.error('Step 2 accept error:', e);
+                            }
+                        };
+
+                        // STEP 3: OWNER SETS CAMPUS MEETUP LOCATION
+                        window.executeStep3SetLocation = async function () {
+                            if (!currentChatRentalOrder) return;
+                            const locInput = document.getElementById('chatMeetupLocationInput');
+                            const loc = locInput ? locInput.value.trim() : '';
+                            if (!loc) {
+                                alert('Please enter or select a campus meetup spot.');
+                                return;
                             }
 
                             let storedUser = null;
@@ -3549,7 +3786,39 @@
                             const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
 
                             try {
-                                const res = await fetch('/student/rentease_api.php?action=agree_and_start_rental_timer', {
+                                const res = await fetch('/student/rentease_api.php?action=step3_owner_set_meetup_location', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        order_code: currentChatRentalOrder.order_code,
+                                        owner_id: ownerId,
+                                        location: loc
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    await checkAndRenderChatRentalTimer();
+                                    await refreshActiveChatStream();
+                                } else {
+                                    alert(data.message || 'Failed to set meetup location.');
+                                }
+                            } catch(e) {
+                                console.error('Step 3 error:', e);
+                            }
+                        };
+
+                        // STEP 4: OWNER HANDS OVER ITEM & STARTS TIMER
+                        window.executeStep4StartTimer = async function () {
+                            if (!currentChatRentalOrder) return;
+                            const btn = document.getElementById('btnStep4StartTimer');
+                            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Starting Timer...'; }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            try {
+                                const res = await fetch('/student/rentease_api.php?action=step4_owner_handover_start_timer', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
@@ -3562,15 +3831,12 @@
                                     await checkAndRenderChatRentalTimer();
                                     await refreshActiveChatStream();
                                 } else {
-                                    alert(data.message || 'Failed to start timer');
+                                    alert(data.message || 'Failed to start timer. Ensure all steps are complete.');
                                 }
                             } catch(e) {
-                                console.error("Timer start error:", e);
+                                console.error('Step 4 error:', e);
                             } finally {
-                                if (btn) {
-                                    btn.disabled = false;
-                                    btn.innerHTML = '<i class="fa-solid fa-play fs-9"></i> Agree to Rent & Start Timer';
-                                }
+                                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-play me-1"></i> Hand Over Item & Start Rental Timer'; }
                             }
                         };
 
@@ -3873,6 +4139,23 @@
                             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
                             const senderName = storedUser ? (storedUser.firstName + ' ' + (storedUser.lastName || '')).trim() : 'Verified Student';
                             const itemTitle = document.getElementById('chatItemTitle')?.innerText || 'Campus Item';
+
+                            // STEP 2 GUARD: If current user is Renter, and equipment is being prepared (Step 2) but owner has not yet submitted prep photo:
+                            if (currentChatRentalOrder) {
+                                let currentUserEmail = (storedUser && storedUser.email ? storedUser.email : '').toLowerCase().trim();
+                                let currentUserName = (storedUser ? (storedUser.name || (storedUser.firstName || '') + ' ' + (storedUser.lastName || '')) : '').toLowerCase().trim();
+                                const isOwner = (currentUserId === parseInt(currentChatRentalOrder.owner_id)) ||
+                                    (currentUserEmail && currentChatRentalOrder.owner_email && currentUserEmail === currentChatRentalOrder.owner_email.toLowerCase()) ||
+                                    (currentUserName.includes('romeo') && !currentUserName.includes('pogilameg')) ||
+                                    (currentUserId === 104 && !currentUserEmail.includes('pogilameg'));
+
+                                if (!isOwner && parseInt(currentChatRentalOrder.owner_agreed) === 1 && parseInt(currentChatRentalOrder.prep_confirmed_by_renter) !== 1) {
+                                    if (!currentChatRentalOrder.prep_photo_url || currentChatRentalOrder.prep_photo_url.trim() === '') {
+                                        alert("⚠️ Equipment is currently being prepared. Chat will unlock once the stock owner uploads the preparation photo proof.");
+                                        return;
+                                    }
+                                }
+                            }
 
                             input.value = '';
                             input.style.height = 'auto';

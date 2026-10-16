@@ -2699,9 +2699,11 @@ async function openTrackScreen(orderCode) {
             }
 
             const st = t.order_status;
-            const isPrepDone = ['PREPARING', 'MEETUP', 'PICKUP', 'LOOKING_FOR_RIDER', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
-            const isHandoverReady = ['PREPARING', 'MEETUP', 'PICKUP', 'LOOKING_FOR_RIDER', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
-            const isDelivered = ['DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st);
+            const ownerAgreed = (t.owner_agreed == 1 || ['PREPARING', 'MEETUP', 'HANDOVER_READY', 'IN_PROGRESS', 'DELIVERED', 'RETURNED'].includes(st));
+            const isPrepDone = (t.prep_confirmed_by_renter == 1 || ['MEETUP', 'HANDOVER_READY', 'IN_PROGRESS', 'DELIVERED', 'RETURNED'].includes(st));
+            const isMeetupSet = (t.meetup_location && t.meetup_location.trim() !== '');
+            const isHandoverReady = (ownerAgreed && isPrepDone && isMeetupSet);
+            const isDelivered = (t.handed_over == 1 || ['IN_PROGRESS', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED'].includes(st) || t.timer_status === 'RUNNING');
             const isReturned = (st === 'RETURNED');
 
             // Synchronize Vertical Timeline Stages Dynamically
@@ -2715,12 +2717,12 @@ async function openTrackScreen(orderCode) {
                     prepCircle.style.background = '#10B981';
                     prepCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
                     if (prepLine) prepLine.style.background = '#10B981';
-                    if (prepTime) prepTime.innerText = 'Equipment Packaged & Inspected';
-                } else if (st === 'PREPARING') {
+                    if (prepTime) prepTime.innerText = 'Equipment Photo Inspected & Approved';
+                } else if (st === 'PREPARING' || ownerAgreed) {
                     prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
                     prepCircle.style.background = '#F59E0B';
                     prepCircle.innerHTML = '<i class="fa-solid fa-boxes-packing fa-beat"></i>';
-                    if (prepTime) prepTime.innerText = 'Stock owner packaging equipment';
+                    if (prepTime) prepTime.innerText = t.prep_photo_url ? 'Photo submitted • Awaiting renter review' : 'Stock owner preparing equipment & photo';
                 } else {
                     prepCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
                     prepCircle.style.background = '#fff';
@@ -2740,12 +2742,18 @@ async function openTrackScreen(orderCode) {
                     pickupCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
                     if (pickupLine) pickupLine.style.background = '#10B981';
                     if (pickupTime) pickupTime.innerText = 'Face-to-Face Handover Verified';
-                } else if (isPrepDone) {
+                } else if (isMeetupSet) {
                     pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
                     pickupCircle.style.background = '#5B3FA8';
                     pickupCircle.innerHTML = '<i class="fa-solid fa-handshake fa-beat"></i>';
                     if (pickupLine) pickupLine.style.background = '#E2E8F0';
-                    if (pickupTime) pickupTime.innerText = 'Ready for campus meetup • Chat to agree on spot';
+                    if (pickupTime) pickupTime.innerText = `Meetup Spot: ${t.meetup_location}`;
+                } else if (isPrepDone) {
+                    pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs';
+                    pickupCircle.style.background = '#5B3FA8';
+                    pickupCircle.innerHTML = '<i class="fa-solid fa-location-dot fa-beat"></i>';
+                    if (pickupLine) pickupLine.style.background = '#E2E8F0';
+                    if (pickupTime) pickupTime.innerText = 'Awaiting owner to set campus meetup spot';
                 } else {
                     pickupCircle.className = 'rounded-circle d-flex align-items-center justify-content-center border border-2 border-secondary text-secondary';
                     pickupCircle.style.background = '#fff';

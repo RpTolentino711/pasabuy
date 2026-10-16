@@ -456,28 +456,140 @@
             </div>
         </div>
 
-        <!-- Owner Action Row (Visible to Romeo) -->
-        <div id="chatOwnerActionRow" style="display:none;">
-            <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold d-flex align-items-center justify-content-center gap-2" 
-                    id="btnAgreeStartTimer" onclick="executeAgreeAndStartTimer()">
-                <i class="fa-solid fa-circle-play fs-8"></i>
-                <span>Agree to Handover &amp; Start Rental Timer</span>
-            </button>
-            <div class="text-center text-muted mt-1.5" style="font-size:0.67rem;">
-                <i class="fa-solid fa-shield-check text-success me-1"></i> Tap once in-person physical inspection is completed
+        <!-- STEP PROGRESS INDICATOR -->
+        <div class="d-flex align-items-center justify-content-between px-1 mb-2.5 pb-2 border-bottom border-indigo-subtle" style="font-size:0.68rem;">
+            <span class="fw-bold text-dark d-flex align-items-center gap-1.5">
+                <i class="fa-solid fa-list-check text-primary"></i> Handover Lifecycle
+            </span>
+            <span class="badge rounded-pill fw-bold" id="chatLifecycleStepPill" style="background:#EDE9FE; color:#5B3FA8; font-size:0.65rem;">
+                Step 1 of 4
+            </span>
+        </div>
+
+        <!-- STEP 1: BOOKING CONFIRMATION -->
+        <div id="chatStep1Row" style="display:none;" class="mb-2">
+            <!-- Owner View: Agree to Rent -->
+            <div id="chatStep1OwnerBox" style="display:none;">
+                <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold d-flex align-items-center justify-content-center gap-2" 
+                        id="btnStep1Agree" onclick="executeStep1Agree()">
+                    <i class="fa-solid fa-handshake-simple fs-8"></i>
+                    <span>Agree to Rent Equipment</span>
+                </button>
+                <div class="text-center text-muted mt-1" style="font-size:0.65rem;">
+                    Confirm request to unlock equipment preparation
+                </div>
+            </div>
+            <!-- Renter View: Waiting for Owner Agreement -->
+            <div id="chatStep1RenterBox" style="display:none;" class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-hourglass-half text-warning fs-8"></i>
+                <div style="font-size:0.72rem;">
+                    <div class="fw-bold text-dark">Awaiting Owner Confirmation</div>
+                    <div class="text-muted">Waiting for stock owner to accept your rental request.</div>
+                </div>
             </div>
         </div>
 
-        <!-- Renter Waiting Notice (Visible to Pogilameg) -->
-        <div id="chatRenterWaitingRow" style="display:none;">
-            <div class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2.5">
-                <div class="rentchat-spinner-ring">
-                    <i class="fa-solid fa-hourglass-half text-warning fs-8"></i>
+        <!-- STEP 2: EQUIPMENT PREPARATION & PHOTO PROOF -->
+        <div id="chatStep2Row" style="display:none;" class="mb-2">
+            <!-- Owner View: Upload Preparation Photo -->
+            <div id="chatStep2OwnerBox" style="display:none;">
+                <div class="p-2.5 rounded-3 border bg-light mb-2 text-start">
+                    <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-camera text-primary me-1"></i> Step 2: Equipment Preparation Photo</div>
+                    <div class="text-muted" style="font-size:0.68rem;">Inspect the equipment and upload a condition photo proof before meeting the renter:</div>
+                    <div class="mt-2 d-flex gap-2 align-items-center">
+                        <input type="file" id="prepPhotoFileInput" accept="image/*" class="d-none" onchange="handlePrepPhotoUpload(event)">
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fs-9 fw-bold" onclick="document.getElementById('prepPhotoFileInput').click()">
+                            <i class="fa-solid fa-upload me-1"></i> Choose / Take Photo
+                        </button>
+                        <span id="prepPhotoNameLabel" class="text-muted fs-9 text-truncate" style="max-width:140px;">No photo selected</span>
+                    </div>
+                    <div id="prepPhotoPreviewWrap" style="display:none;" class="mt-2 text-center">
+                        <img id="prepPhotoPreviewImg" src="" class="rounded-3 border" style="max-height:100px; max-width:100%; object-fit:contain;">
+                    </div>
                 </div>
-                <div class="flex-grow-1 text-start" style="font-size: 0.72rem;">
-                    <div class="fw-bold text-dark">Awaiting Owner Handover</div>
-                    <div class="text-muted" style="line-height:1.3;">
-                        <strong id="chatReqOwnerName">Owner</strong> will inspect the gear with you on campus and start the timer.
+                <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold" id="btnSubmitPrepPhoto" onclick="executeStep2SubmitPhoto()" disabled>
+                    <i class="fa-solid fa-paper-plane me-1"></i> Submit Preparation Photo
+                </button>
+            </div>
+
+            <!-- Renter View: Waiting or Inspecting Photo -->
+            <div id="chatStep2RenterBox" style="display:none;">
+                <!-- If photo not yet submitted by owner -->
+                <div id="chatStep2RenterWaiting" class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-screwdriver-wrench text-warning fs-8"></i>
+                    <div style="font-size:0.72rem;">
+                        <div class="fw-bold text-dark">Equipment Being Prepared</div>
+                        <div class="text-muted">Stock owner is inspecting and packaging your gear. Chat will unlock once preparation photo is submitted.</div>
+                    </div>
+                </div>
+                <!-- If photo is submitted, renter inspects and clicks "Accept" -->
+                <div id="chatStep2RenterAction" style="display:none;" class="p-2.5 rounded-3 border bg-light text-start">
+                    <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-circle-check text-success me-1"></i> Equipment Ready - Review Photo</div>
+                    <div class="text-muted mb-2" style="font-size:0.68rem;">Stock owner submitted this photo of your gear:</div>
+                    <div class="text-center mb-2">
+                        <img id="chatPrepPhotoDisplayRenter" src="" class="rounded-3 border shadow-xs" style="max-height:120px; max-width:100%; object-fit:contain;">
+                    </div>
+                    <button type="button" class="btn btn-success w-100 rounded-pill py-2 fw-bold text-white fs-8" onclick="executeStep2RenterAccept()">
+                        <i class="fa-solid fa-thumbs-up me-1"></i> Looks Good! Accept &amp; Proceed to Meetup
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: CAMPUS MEETUP LOCATION -->
+        <div id="chatStep3Row" style="display:none;" class="mb-2">
+            <!-- Owner View: Field a Location -->
+            <div id="chatStep3OwnerBox" style="display:none;">
+                <div class="p-2.5 rounded-3 border bg-light mb-2 text-start">
+                    <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Step 3: Set Campus Meetup Spot</div>
+                    <div class="text-muted mb-2" style="font-size:0.68rem;">Field where on campus you will meet the renter to hand over the gear:</div>
+                    <input type="text" id="chatMeetupLocationInput" class="form-control form-control-sm rounded-pill px-3 py-1.5 fs-8 mb-2" 
+                           placeholder="e.g. Campus Activity Center - Main Entrance">
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size:0.65rem;" onclick="document.getElementById('chatMeetupLocationInput').value='Campus Activity Center'">Activity Center</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size:0.65rem;" onclick="document.getElementById('chatMeetupLocationInput').value='Main Quadrangle'">Quadrangle</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size:0.65rem;" onclick="document.getElementById('chatMeetupLocationInput').value='Library Lobby'">Library</button>
+                    </div>
+                    <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold" onclick="executeStep3SetLocation()">
+                        <i class="fa-solid fa-map-pin me-1"></i> Confirm Meetup Location
+                    </button>
+                </div>
+            </div>
+
+            <!-- Renter View: Waiting for location or view location -->
+            <div id="chatStep3RenterBox" style="display:none;">
+                <div class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-location-crosshairs text-primary fs-8"></i>
+                    <div style="font-size:0.72rem;">
+                        <div class="fw-bold text-dark">Campus Meetup Spot</div>
+                        <div class="text-muted" id="chatMeetupRenterNotice">Waiting for stock owner to field campus meetup spot...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 4: IN-PERSON HANDOVER & START TIMER -->
+        <div id="chatStep4Row" style="display:none;" class="mb-2">
+            <!-- Owner View: Hand Over Gear & Start Timer (Only unlocked after steps 1, 2, 3) -->
+            <div id="chatStep4OwnerBox" style="display:none;">
+                <div class="p-2.5 rounded-3 border bg-light mb-2 text-start">
+                    <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-handshake text-success me-1"></i> Step 4: Face-to-Face Handover</div>
+                    <div class="text-muted mb-2" style="font-size:0.68rem;">
+                        Meet on campus at <strong id="chatStep4LocationDisplay" class="text-dark">Campus Activity Center</strong>. Once you have handed over the gear, tap below to start the rental timer:
+                    </div>
+                    <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold" id="btnStep4StartTimer" onclick="executeStep4StartTimer()">
+                        <i class="fa-solid fa-play me-1"></i> Hand Over Item &amp; Start Rental Timer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Renter View: Awaiting Handover on campus -->
+            <div id="chatStep4RenterBox" style="display:none;">
+                <div class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-person-walking text-primary fs-8"></i>
+                    <div style="font-size:0.72rem;">
+                        <div class="fw-bold text-dark">Meet Owner for Handover</div>
+                        <div class="text-muted">Meet the owner at <strong id="chatStep4RenterLocationDisplay" class="text-dark">Meetup Spot</strong> to receive the equipment. The owner will start the rental timer upon handover.</div>
                     </div>
                 </div>
             </div>
