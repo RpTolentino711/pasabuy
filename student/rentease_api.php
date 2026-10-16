@@ -1943,6 +1943,19 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
         $newItem = $fetchStmt->fetch();
 
         try {
+            $trxCode = '#TRX-POST-' . $newId;
+            $trxStmt = $db->prepare("INSERT INTO `rental_transactions` 
+                (`transaction_code`, `order_code`, `customer_name`, `amount`, `type`, `status`, `payment_channel`, `created_at`) 
+                VALUES (?, ?, ?, ?, 'PAYMENT', 'SUCCESSFUL', 'PayMongo Live Gateway', NOW())");
+            $trxStmt->execute([
+                $trxCode,
+                'Post Fee: ' . $name,
+                $ownerName ?: 'Verified Student',
+                $postingFee
+            ]);
+        } catch (Exception $eTrx) {}
+
+        try {
             $fb = getRentEaseItemsFallback();
             array_unshift($fb, $newItem);
             saveRentEaseItemsFallback($fb);

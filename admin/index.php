@@ -589,6 +589,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <div class="stat-icon-wrapper bg-primary-subtle text-primary"><i class="fa-solid fa-peso-sign"></i></div>
                             </div>
                             <h3 class="fw-extrabold text-dark mb-0" id="dashMetricRevenue">₱ 0</h3>
+                            <span class="fs-9 text-muted d-block mt-1" id="dashMetricRevenueSub">Post fees &amp; rentals</span>
                         </div>
                     </div>
                     <div class="col-6 col-xl-3">
@@ -2530,7 +2531,13 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const data = await res.json();
                 if (data.success) {
                     const s = data.stats;
-                    document.getElementById('dashMetricRevenue').innerText = '₱ ' + Number(s.total_revenue).toLocaleString();
+                    document.getElementById('dashMetricRevenue').innerText = '₱ ' + Number(s.total_revenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    const revSub = document.getElementById('dashMetricRevenueSub');
+                    if (revSub && (s.posting_fees_revenue !== undefined || s.rental_orders_revenue !== undefined)) {
+                        const postRev = Number(s.posting_fees_revenue || 0).toLocaleString();
+                        const ordRev = Number(s.rental_orders_revenue || 0).toLocaleString();
+                        revSub.innerHTML = `<span class="text-success fw-bold">₱${postRev}</span> posting fees • <span class="text-primary fw-bold">₱${ordRev}</span> rentals`;
+                    }
                     document.getElementById('dashMetricOrders').innerText = s.total_orders;
                     document.getElementById('dashMetricStock').innerText = s.total_stock;
                     const prodCount = (typeof s.total_products !== 'undefined') ? s.total_products : 2;

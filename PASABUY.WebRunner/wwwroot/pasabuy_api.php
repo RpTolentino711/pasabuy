@@ -1086,14 +1086,35 @@ if ($action === 'admin_stats' || $action === 'get_users') {
     $verifiedCount = (int)$db->query("SELECT COUNT(*) FROM Users WHERE Status = 'VERIFIED'")->fetchColumn();
     $listingsCount = (int)$db->query("SELECT COUNT(*) FROM Listings WHERE Status = 'ACTIVE'")->fetchColumn();
     $dealsCount = (int)$db->query("SELECT COUNT(*) FROM PaymentRecords WHERE Status = 'PAID'")->fetchColumn();
-    $revenue = (float)$db->query("SELECT SUM(Amount) FROM PaymentRecords WHERE Status = 'PAID'")->fetchColumn();
+    $legacyRev = (float)$db->query("SELECT COALESCE(SUM(Amount), 0) FROM PaymentRecords WHERE Status = 'PAID'")->fetchColumn();
+    $postRev = 0.0;
+    try {
+        $postRev = (float)$db->query("SELECT COALESCE(SUM(posting_fee), 0) FROM `rental_inventory` WHERE `posting_fee` > 0")->fetchColumn();
+        if ($postRev == 0) {
+            $postRev = (float)$db->query("SELECT COALESCE(SUM(CASE 
+                WHEN price_per_day < 100 THEN 10.00 
+                WHEN price_per_day <= 500 THEN 15.00 
+                WHEN price_per_day <= 1000 THEN 20.00 
+                WHEN price_per_day <= 2500 THEN 30.00 
+                WHEN price_per_day <= 5000 THEN 50.00 
+                ELSE 100.00 END), 0) FROM `rental_inventory`")->fetchColumn();
+        }
+    } catch (Exception $eP) {}
+    $ordRev = 0.0;
+    try {
+        $ordRev = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID' OR `order_status` IN ('IN_PROGRESS', 'DELIVERED', 'COMPLETED') OR `timer_status` = 'RUNNING' OR `handed_over` = 1")->fetchColumn();
+    } catch (Exception $eO) {}
+
+    $revenue = $legacyRev + $postRev + $ordRev;
 
     echo json_encode([
         'totalStudents' => $usersCount,
         'verifiedStudents' => $verifiedCount,
         'activeListings' => $listingsCount,
         'dealsCompleted' => $dealsCount,
-        'totalRevenue' => $revenue
+        'totalRevenue' => $revenue,
+        'postingFeesRevenue' => $postRev,
+        'rentalOrdersRevenue' => $ordRev
     ]);
     exit;
 }

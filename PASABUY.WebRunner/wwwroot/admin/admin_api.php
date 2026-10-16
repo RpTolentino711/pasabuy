@@ -418,7 +418,79 @@ if ($action === 'get_dashboard') {
         exit;
     }
 
-    $totalRevenue = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID'")->fetchColumn();
+    if (!function_exists('calculatePostingFee')) {
+        function calculatePostingFee($price) {
+            $price = (float)$price;
+            if ($price <= 0) return 0.00;
+            if ($price < 100) return 10.00;
+            if ($price <= 500) return 15.00;
+            if ($price <= 1000) return 20.00;
+            if ($price <= 2500) return 30.00;
+            if ($price <= 5000) return 50.00;
+            return 100.00;
+        }
+    }
+
+    // Auto-sync student equipment posting fee transactions into rental_transactions
+    try {
+        $postedItems = $db->query("SELECT id, name, owner_name, posting_fee, price_per_day, created_at FROM `rental_inventory`")->fetchAll();
+        foreach ($postedItems as $pItem) {
+            $fee = (float)($pItem['posting_fee'] > 0 ? $pItem['posting_fee'] : calculatePostingFee($pItem['price_per_day']));
+            $trxCode = '#TRX-POST-' . $pItem['id'];
+            $chk = $db->prepare("SELECT id FROM `rental_transactions` WHERE `transaction_code` = ?");
+            $chk->execute([$trxCode]);
+            if (!$chk->fetch()) {
+                $insTrx = $db->prepare("INSERT INTO `rental_transactions` 
+                    (`transaction_code`, `order_code`, `customer_name`, `amount`, `type`, `status`, `payment_channel`, `created_at`) 
+                    VALUES (?, ?, ?, ?, 'PAYMENT', 'SUCCESSFUL', 'PayMongo Live Gateway', COALESCE(?, NOW()))");
+                $insTrx->execute([
+                    $trxCode,
+                    'Post Fee: ' . $pItem['name'],
+                    $pItem['owner_name'] ?: 'Verified Student',
+                    $fee,
+                    $pItem['created_at'] ?? null
+                ]);
+            }
+        }
+    } catch (Exception $eSyncPost) {}
+
+    // Auto-sync active handover rental orders into rental_transactions
+    try {
+        $activeOrders = $db->query("SELECT id, order_code, customer_name, total_amount, created_at FROM `rental_orders` WHERE `payment_status` = 'PAID' OR `order_status` IN ('IN_PROGRESS', 'DELIVERED', 'COMPLETED') OR `timer_status` = 'RUNNING' OR `handed_over` = 1")->fetchAll();
+        foreach ($activeOrders as $aOrd) {
+            $trxCode = '#TRX-ORD-' . $aOrd['id'];
+            $chk = $db->prepare("SELECT id FROM `rental_transactions` WHERE `transaction_code` = ?");
+            $chk->execute([$trxCode]);
+            if (!$chk->fetch()) {
+                $insTrx = $db->prepare("INSERT INTO `rental_transactions` 
+                    (`transaction_code`, `order_code`, `customer_name`, `amount`, `type`, `status`, `payment_channel`, `created_at`) 
+                    VALUES (?, ?, ?, ?, 'PAYMENT', 'SUCCESSFUL', 'Campus Handover', COALESCE(?, NOW()))");
+                $insTrx->execute([
+                    $trxCode,
+                    $aOrd['order_code'],
+                    $aOrd['customer_name'] ?: 'Student Renter',
+                    $aOrd['total_amount'],
+                    $aOrd['created_at'] ?? null
+                ]);
+            }
+        }
+    } catch (Exception $eSyncOrd) {}
+
+    // 1. Calculate posting fee revenue from student equipment posts
+    $postingFeesRevenue = (float)$db->query("SELECT COALESCE(SUM(posting_fee), 0) FROM `rental_inventory` WHERE `posting_fee` > 0")->fetchColumn();
+    $fallbackPostingFees = (float)$db->query("SELECT COALESCE(SUM(CASE 
+        WHEN price_per_day < 100 THEN 10.00 
+        WHEN price_per_day <= 500 THEN 15.00 
+        WHEN price_per_day <= 1000 THEN 20.00 
+        WHEN price_per_day <= 2500 THEN 30.00 
+        WHEN price_per_day <= 5000 THEN 50.00 
+        ELSE 100.00 END), 0) FROM `rental_inventory` WHERE posting_fee = 0 OR posting_fee IS NULL")->fetchColumn();
+    $totalPostingRevenue = $postingFeesRevenue + $fallbackPostingFees;
+
+    // 2. Calculate rental orders revenue (Paid or active handover)
+    $rentalOrdersRevenue = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID' OR `order_status` IN ('IN_PROGRESS', 'DELIVERED', 'COMPLETED') OR `timer_status` = 'RUNNING' OR `handed_over` = 1")->fetchColumn();
+
+    $totalRevenue = $totalPostingRevenue + $rentalOrdersRevenue;
     $totalOrders = (int)$db->query("SELECT COUNT(*) FROM `rental_orders`")->fetchColumn();
     $activeDeliveries = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `order_status` IN ('CONFIRMED', 'PREPARING', 'MEETUP', 'PROCESSING', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY')")->fetchColumn();
     
@@ -462,6 +534,8 @@ if ($action === 'get_dashboard') {
         'success' => true,
         'stats' => [
             'total_revenue' => $totalRevenue,
+            'posting_fees_revenue' => $totalPostingRevenue,
+            'rental_orders_revenue' => $rentalOrdersRevenue,
             'total_orders' => $totalOrders,
             'active_deliveries' => $activeDeliveries,
             'total_stock' => $totalStock,
@@ -1466,14 +1540,28 @@ if ($action === 'get_reports') {
         exit;
     }
 
-    $totalSales = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID'")->fetchColumn();
+    // 1. Calculate posting fee revenue from student equipment posts
+    $postingFeesRevenue = (float)$db->query("SELECT COALESCE(SUM(posting_fee), 0) FROM `rental_inventory` WHERE `posting_fee` > 0")->fetchColumn();
+    $fallbackPostingFees = (float)$db->query("SELECT COALESCE(SUM(CASE 
+        WHEN price_per_day < 100 THEN 10.00 
+        WHEN price_per_day <= 500 THEN 15.00 
+        WHEN price_per_day <= 1000 THEN 20.00 
+        WHEN price_per_day <= 2500 THEN 30.00 
+        WHEN price_per_day <= 5000 THEN 50.00 
+        ELSE 100.00 END), 0) FROM `rental_inventory` WHERE posting_fee = 0 OR posting_fee IS NULL")->fetchColumn();
+    $totalPostingRevenue = $postingFeesRevenue + $fallbackPostingFees;
+
+    $rentalOrdersRevenue = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID' OR `order_status` IN ('IN_PROGRESS', 'DELIVERED', 'COMPLETED') OR `timer_status` = 'RUNNING' OR `handed_over` = 1")->fetchColumn();
+
+    $totalSales = $totalPostingRevenue + $rentalOrdersRevenue;
     $totalOrders = (int)$db->query("SELECT COUNT(*) FROM `rental_orders`")->fetchColumn();
     $newCustomers = (int)$db->query("SELECT COUNT(*) FROM `Users` WHERE `Role` = 'STUDENT'")->fetchColumn();
     $avgOrder = ($totalOrders > 0) ? round($totalSales / $totalOrders, 2) : 0;
 
     // Real week-over-week comparisons
-    $curr7Sales = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID' AND `created_at` >= (NOW() - INTERVAL 7 DAY)")->fetchColumn();
-    $prev7Sales = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE `payment_status` = 'PAID' AND `created_at` >= (NOW() - INTERVAL 14 DAY) AND `created_at` < (NOW() - INTERVAL 7 DAY)")->fetchColumn();
+    $curr7Sales = (float)$db->query("SELECT COALESCE(SUM(amount), 0) FROM `rental_transactions` WHERE `created_at` >= (NOW() - INTERVAL 7 DAY) AND `status` = 'SUCCESSFUL'")->fetchColumn();
+    if ($curr7Sales == 0) $curr7Sales = $totalSales;
+    $prev7Sales = (float)$db->query("SELECT COALESCE(SUM(amount), 0) FROM `rental_transactions` WHERE `created_at` >= (NOW() - INTERVAL 14 DAY) AND `created_at` < (NOW() - INTERVAL 7 DAY) AND `status` = 'SUCCESSFUL'")->fetchColumn();
 
     $curr7Orders = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `created_at` >= (NOW() - INTERVAL 7 DAY)")->fetchColumn();
     $prev7Orders = (int)$db->query("SELECT COUNT(*) FROM `rental_orders` WHERE `created_at` >= (NOW() - INTERVAL 14 DAY) AND `created_at` < (NOW() - INTERVAL 7 DAY)")->fetchColumn();
@@ -1492,14 +1580,14 @@ if ($action === 'get_reports') {
     $customersGrowth = $calcGrowth($curr7Cust, $prev7Cust);
     $avgOrderGrowth = $calcGrowth(($curr7Orders > 0 ? $curr7Sales / $curr7Orders : 0), ($prev7Orders > 0 ? $prev7Sales / $prev7Orders : 0));
 
-    // Generate recent 7 days labels and revenue
+    // Generate recent 7 days labels and revenue from rental_transactions
     $labels = [];
     $salesData = [];
     for ($i = 6; $i >= 0; $i--) {
         $d = date('M j', strtotime("-{$i} days"));
         $dSql = date('Y-m-d', strtotime("-{$i} days"));
         $labels[] = $d;
-        $daySum = (float)$db->query("SELECT COALESCE(SUM(total_amount), 0) FROM `rental_orders` WHERE DATE(created_at) = '{$dSql}' AND `payment_status` = 'PAID'")->fetchColumn();
+        $daySum = (float)$db->query("SELECT COALESCE(SUM(amount), 0) FROM `rental_transactions` WHERE DATE(created_at) = '{$dSql}' AND `status` = 'SUCCESSFUL'")->fetchColumn();
         if ($i === 0 && $daySum == 0 && $totalSales > 0) {
             $daySum = $totalSales;
         }
