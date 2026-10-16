@@ -686,15 +686,19 @@ if ($action === 'chat_conversations') {
         $txStatus = '';
 
         try {
-            $emailStmt = $db->prepare("SELECT u.Id, u.Email, sp.SchoolEmail FROM Users u LEFT JOIN StudentProfiles sp ON u.Id = sp.UserId WHERE u.Id IN (?, ?)");
-            $emailStmt->execute([$userId, $pId]);
             $uEmail = ($userId == 104) ? 'romeopaolotolentino@gmail.com' : (($userId == 105) ? 'pogilameg@gmail.com' : '');
             $pEmail = ($pId == 104) ? 'romeopaolotolentino@gmail.com' : (($pId == 105) ? 'pogilameg@gmail.com' : '');
-            foreach ($emailStmt->fetchAll() as $erow) {
-                $em = strtolower(trim($erow['SchoolEmail'] ?: $erow['Email']));
-                if ($erow['Id'] == $userId && $em) $uEmail = $em;
-                if ($erow['Id'] == $pId && $em) $pEmail = $em;
-            }
+
+            try {
+                $emailStmt = $db->prepare("SELECT `Id`, `Email` FROM `Users` WHERE `Id` IN (?, ?)");
+                $emailStmt->execute([$userId, $pId]);
+                foreach ($emailStmt->fetchAll() as $erow) {
+                    $em = strtolower(trim($erow['Email'] ?? ''));
+                    $eid = (int)($erow['Id'] ?? 0);
+                    if ($eid === $userId && $em) $uEmail = $em;
+                    if ($eid === $pId && $em) $pEmail = $em;
+                }
+            } catch (Exception $eUser) {}
 
             // Check rental_orders by email OR id
             $rSql = "SELECT order_code, order_status FROM rental_orders 
@@ -716,6 +720,11 @@ if ($action === 'chat_conversations') {
                 $txStatus = $rOrd['order_status'];
             } else {
                 // Check Orders table
+                $uList = ($userId == 104) ? [1, 104] : [$userId];
+                $pList = ($pId == 104) ? [1, 104] : [$pId];
+                $uPlace = implode(',', array_fill(0, count($uList), '?'));
+                $pPlace = implode(',', array_fill(0, count($pList), '?'));
+
                 $oSql = "SELECT Id, Status FROM Orders 
                          WHERE ((BuyerId IN ($uPlace) AND SellerId IN ($pPlace)) 
                             OR (BuyerId IN ($pPlace) AND SellerId IN ($uPlace)))
