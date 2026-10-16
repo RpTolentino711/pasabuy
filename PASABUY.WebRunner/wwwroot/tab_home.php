@@ -6,9 +6,10 @@
 
     <!-- Top Search Input (Compact) -->
     <div class="mb-2">
-        <div class="position-relative">
-            <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left:14px; top:10px; font-size: 0.85rem;"></i>
-            <input type="text" class="form-control rounded-pill ps-4 pe-3 py-1.5 fs-8 border-0 bg-white shadow-xs"
+        <div class="position-relative d-flex align-items-center">
+            <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left:14px; top:50%; transform:translateY(-50%); font-size: 0.85rem; pointer-events:none; z-index:5;"></i>
+            <input type="text" class="form-control rounded-pill py-1.5 fs-8 border-0 bg-white shadow-xs"
+                style="padding-left: 38px !important; padding-right: 14px;"
                 placeholder="Search for equipment, sound, camera..." id="searchInput"
                 oninput="handleHomeSearch(this.value)">
         </div>

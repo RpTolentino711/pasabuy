@@ -16,13 +16,14 @@
 
     <!-- Active Search Bar inside Rentals / Explore (Compact) -->
     <div class="mb-2">
-        <div class="position-relative">
-            <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left:14px; top:10px; font-size: 0.85rem;"></i>
-            <input type="text" class="form-control rounded-pill ps-4 pe-5 py-1.5 fs-8 border-0 bg-white shadow-xs"
+        <div class="position-relative d-flex align-items-center">
+            <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left:14px; top:50%; transform:translateY(-50%); font-size: 0.85rem; pointer-events:none; z-index:5;"></i>
+            <input type="text" class="form-control rounded-pill py-1.5 fs-8 border-0 bg-white shadow-xs"
+                style="padding-left: 38px !important; padding-right: 36px !important;"
                 placeholder="Search equipment by name, category, or owner..." id="exploreSearchInput"
                 oninput="handleRentEaseSearch(this.value)">
             <button type="button" class="btn btn-sm position-absolute text-muted p-0 border-0 bg-transparent" 
-                    id="clearExploreSearchBtn" style="right:12px; top:6px; display:none;" onclick="clearExploreSearch()">
+                    id="clearExploreSearchBtn" style="right:14px; top:50%; transform:translateY(-50%); display:none; z-index:5;" onclick="clearExploreSearch()">
                 <i class="fa-solid fa-circle-xmark fs-8"></i>
             </button>
         </div>
