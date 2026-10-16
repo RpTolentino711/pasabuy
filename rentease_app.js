@@ -4565,6 +4565,8 @@ window.chatWithOwnerFromDetail = function () {
         const chatInput = document.getElementById('chatInput');
         if (chatInput) {
             chatInput.value = `Hi ${ownerName}, is "${title}" (${price}/day) available for rent?`;
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
             chatInput.focus();
         }
     }, 400);
@@ -4846,6 +4848,8 @@ window.chatWithOwnerFromTracking = function () {
         const chatInput = document.getElementById('chatInput');
         if (chatInput) {
             chatInput.value = `Hi ${partnerName}, regarding rental order ${orderCode}: let's agree on an on-campus meetup location and time for the face-to-face equipment handover.`;
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
             chatInput.focus();
         }
     }, 400);

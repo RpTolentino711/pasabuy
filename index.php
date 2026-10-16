@@ -3361,6 +3361,7 @@
                             const itemTitle = document.getElementById('chatItemTitle')?.innerText || 'Campus Item';
 
                             input.value = '';
+                            input.style.height = 'auto';
 
                             const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
                             if (stream) {
