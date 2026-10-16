@@ -3114,7 +3114,52 @@ if ($action === 'get_chat_partner_topics') {
                                AND ro.order_status NOT IN ('CANCELLED', 'REJECTED')
                              ORDER BY ro.id DESC");
     $ordStmt->execute([$userId, $partnerId, $partnerId, $userId, $userId, $userId]);
-    $orders = $ordStmt->fetchAll();
+    $orders = $ordStmt->fetchAll() ?: [];
+
+    // Also fetch any distinct products that have messages in ChatMessages between this user and partner
+    $sList = ($userId == 104) ? [1, 104] : [$userId];
+    $rList = ($partnerId == 104) ? [1, 104] : [$partnerId];
+    $sPlaceholders = implode(',', array_fill(0, count($sList), '?'));
+    $rPlaceholders = implode(',', array_fill(0, count($rList), '?'));
+
+    $chatTopicsStmt = $db->prepare("SELECT DISTINCT ItemTitle 
+                                    FROM ChatMessages 
+                                    WHERE ((SenderId IN ($sPlaceholders) AND ReceiverId IN ($rPlaceholders)) 
+                                       OR (SenderId IN ($rPlaceholders) AND ReceiverId IN ($sPlaceholders))) 
+                                      AND ItemTitle IS NOT NULL 
+                                      AND ItemTitle != '' 
+                                      AND LOWER(ItemTitle) NOT IN ('general inquiry', 'campus item', 'all')");
+    $chatTopicsStmt->execute(array_merge($sList, $rList, $rList, $sList));
+    $chattedTitles = $chatTopicsStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
+    // Track existing item names from orders
+    $existingNames = [];
+    foreach ($orders as $ord) {
+        $existingNames[strtolower(trim($ord['item_name'] ?? ''))] = true;
+    }
+
+    // For any chatted product not already in orders, add it with image & pricing so user can switch to it
+    foreach ($chattedTitles as $ct) {
+        $cleanCt = strtolower(trim($ct));
+        if ($cleanCt === '' || isset($existingNames[$cleanCt])) continue;
+        $existingNames[$cleanCt] = true;
+
+        $itStmt = $db->prepare("SELECT id, name, price_per_day, image_url FROM rental_inventory WHERE LOWER(name) = ? LIMIT 1");
+        $itStmt->execute([$cleanCt]);
+        $it = $itStmt->fetch();
+
+        $orders[] = [
+            'id' => $it['id'] ?? 0,
+            'order_code' => 'CHAT',
+            'item_name' => $it['name'] ?? $ct,
+            'order_status' => 'IN_DISCUSSION',
+            'rental_start_date' => 'Active Chat',
+            'rental_end_date' => null,
+            'total_amount' => $it['price_per_day'] ?? 0,
+            'image_url' => $it['image_url'] ?? '',
+            'timer_status' => 'CHAT'
+        ];
+    }
 
     echo json_encode([
         'success' => true,
@@ -3123,7 +3168,7 @@ if ($action === 'get_chat_partner_topics') {
             'name' => trim(($partner['FirstName'] ?? '') . ' ' . ($partner['LastName'] ?? '')) ?: 'Stock Owner',
             'email' => $pEmail
         ],
-        'items' => $postedItems,
+        'items' => [],
         'orders' => $orders
     ]);
     exit;

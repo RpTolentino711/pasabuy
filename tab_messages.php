@@ -415,13 +415,13 @@
         <div class="d-flex align-items-center gap-2.5 min-w-0">
             <div class="position-relative flex-shrink-0">
                 <img id="chatItemImage" src="" 
-                     class="rounded-3 border" 
-                     style="width:44px; height:44px; object-fit:cover; display:none;"
+                     class="rounded-circle border" 
+                     style="width:44px; height:44px; border-radius:50%; object-fit:cover; display:none;"
                      onload="this.style.display='block'; document.getElementById('chatItemThumbFallback').style.display='none';"
                      onerror="this.style.display='none'; document.getElementById('chatItemThumbFallback').style.display='flex';"
                      alt="Item Thumbnail">
-                <div id="chatItemThumbFallback" class="rounded-3 d-flex align-items-center justify-content-center" 
-                     style="width:44px; height:44px; background:linear-gradient(135deg, #EDE9FE, #DDD6FE); color:#6D28D9; font-size:1.1rem; border:1px solid #C4B5FD;">
+                <div id="chatItemThumbFallback" class="rounded-circle d-flex align-items-center justify-content-center" 
+                     style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, #EDE9FE, #DDD6FE); color:#6D28D9; font-size:1.1rem; border:1px solid #C4B5FD;">
                     <i class="fa-solid fa-cube"></i>
                 </div>
             </div>

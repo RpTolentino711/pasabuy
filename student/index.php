@@ -2336,10 +2336,10 @@
 
                                 if (orders.length > 0) {
                                     html += `
-                                    <div class="mb-3">
+                                    <div class="mb-2">
                                         <div class="d-flex align-items-center gap-1.5 mb-2">
-                                            <i class="fa-solid fa-file-contract text-primary fs-8"></i>
-                                            <span class="fw-bold text-dark fs-8">Rental Agreements &amp; Handover</span>
+                                            <i class="fa-solid fa-boxes-stacked text-primary fs-8"></i>
+                                            <span class="fw-bold text-dark fs-8">Equipment Discussions</span>
                                         </div>
                                         <div class="d-flex flex-column gap-2">
                                     `;
@@ -2348,89 +2348,49 @@
                                         const badgeColor = isTimerActive ? 'bg-success text-white' : 'bg-primary-subtle text-primary border border-primary-subtle';
                                         const safeName = (ord.item_name || 'Equipment').replace(/'/g, "\\'");
                                         const safeImg = (ord.image_url || '').replace(/'/g, "\\'");
+                                        const safeFee = ord.total_amount ? `₱${parseFloat(ord.total_amount).toFixed(0)}` : '₱0';
+                                        const codePill = (ord.order_code && ord.order_code !== 'CHAT') 
+                                            ? `<span class="badge ${badgeColor} rounded-pill fs-10 px-2 py-0.5 font-monospace">${ord.order_code}</span>`
+                                            : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-10 px-2 py-0.5">Chat Topic</span>`;
+                                        const statusLabel = ord.order_status === 'IN_DISCUSSION' ? 'Direct Discussion' : (ord.order_status || 'Active');
+
                                         html += `
                                         <div class="p-2.5 rounded-3 border bg-white shadow-2xs d-flex align-items-center justify-content-between gap-2.5" 
                                              style="cursor:pointer; transition:all 0.15s ease;" 
                                              onmouseover="this.style.borderColor='#5B3FA8'; this.style.background='#FAF5FF';" 
                                              onmouseout="this.style.borderColor='#E2E8F0'; this.style.background='#FFFFFF';"
-                                             onclick="selectTopicAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${safeName}', '₱${parseFloat(ord.total_amount || 0).toFixed(0)}', '${avatarUrl.replace(/'/g, "\\'")}', '${safeImg}')">
+                                             onclick="selectTopicAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${safeName}', '${safeFee}', '${avatarUrl.replace(/'/g, "\\'")}', '${safeImg}')">
                                             <div class="d-flex align-items-center gap-2.5 min-w-0">
                                                 <img src="${ord.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80'}" 
-                                                     class="rounded-3 border object-fit-cover flex-shrink-0" 
-                                                     style="width:42px; height:42px;" 
+                                                     class="rounded-circle border object-fit-cover flex-shrink-0" 
+                                                     style="width:44px; height:44px; border-radius:50%;" 
                                                      onerror="this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80';">
                                                 <div class="min-w-0">
                                                     <div class="d-flex align-items-center gap-1.5 flex-wrap">
                                                         <span class="fw-bold text-dark fs-8 text-truncate">${ord.item_name || 'Equipment'}</span>
-                                                        <span class="badge ${badgeColor} rounded-pill fs-10 px-2 py-0.5 font-monospace">${ord.order_code}</span>
+                                                        ${codePill}
                                                     </div>
                                                     <div class="text-muted fs-10 d-flex align-items-center gap-1 mt-0.5">
-                                                        <span class="badge bg-light text-secondary border px-1.5 py-0.5">${ord.order_status}</span>
+                                                        <span class="badge bg-light text-secondary border px-1.5 py-0.5">${statusLabel}</span>
                                                         <span>•</span>
-                                                        <span>${ord.rental_start_date || 'Today'}</span>
+                                                        <span>${ord.rental_start_date || 'Active Chat'}</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <button class="btn btn-sm btn-primary rounded-pill px-2.5 py-1 fs-9 fw-bold flex-shrink-0" style="background:#5B3FA8; border:none;">
+                                            <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold flex-shrink-0" style="background:#5B3FA8; border:none;">
                                                 Open
                                             </button>
                                         </div>`;
                                     });
                                     html += `</div></div>`;
+                                } else {
+                                    html = `
+                                    <div class="text-center py-4 px-3 bg-light rounded-4 border mx-auto">
+                                        <i class="fa-solid fa-comments text-muted mb-2 fs-4"></i>
+                                        <div class="fw-bold text-dark fs-8">No Product Chats Found</div>
+                                        <div class="text-muted fs-9 mt-1">Start a conversation from an equipment page to chat about an item.</div>
+                                    </div>`;
                                 }
-
-                                if (items.length > 0) {
-                                    html += `
-                                    <div class="mb-2">
-                                        <div class="d-flex align-items-center justify-content-between mb-2">
-                                            <div class="d-flex align-items-center gap-1.5">
-                                                <i class="fa-solid fa-boxes-stacked text-primary fs-8"></i>
-                                                <span class="fw-bold text-dark fs-8">Listed Equipment</span>
-                                            </div>
-                                            <span class="badge bg-light text-muted border rounded-pill fs-10">${items.length} Items</span>
-                                        </div>
-                                        <div class="d-flex flex-column gap-2">
-                                    `;
-                                    items.forEach(it => {
-                                        const safeName = (it.name || 'Equipment').replace(/'/g, "\\'");
-                                        const safePrice = '₱' + parseFloat(it.price_per_day || 0).toFixed(0) + '/day';
-                                        const safeImg = (it.image_url || '').replace(/'/g, "\\'");
-                                        html += `
-                                        <div class="p-2.5 rounded-3 border bg-white shadow-2xs d-flex align-items-center justify-content-between gap-2.5" 
-                                             style="cursor:pointer; transition:all 0.15s ease;" 
-                                             onmouseover="this.style.borderColor='#5B3FA8'; this.style.background='#FAF5FF';" 
-                                             onmouseout="this.style.borderColor='#E2E8F0'; this.style.background='#FFFFFF';"
-                                             onclick="selectTopicAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${safeName}', '${safePrice}', '${avatarUrl.replace(/'/g, "\\'")}', '${safeImg}')">
-                                            <div class="d-flex align-items-center gap-2.5 min-w-0">
-                                                <img src="${it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80'}" 
-                                                     class="rounded-3 border object-fit-cover flex-shrink-0" 
-                                                     style="width:42px; height:42px;" 
-                                                     onerror="this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80';">
-                                                <div class="min-w-0">
-                                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                                        <span class="fw-bold text-dark fs-8 text-truncate">${it.name}</span>
-                                                        <span class="badge bg-light text-secondary border rounded-pill fs-10 px-1.5 py-0.5">${it.category || 'Gear'}</span>
-                                                    </div>
-                                                    <div class="text-primary fw-extrabold fs-9 mt-0.5">${safePrice}</div>
-                                                </div>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fs-9 fw-bold flex-shrink-0">
-                                                Inquire
-                                            </button>
-                                        </div>`;
-                                    });
-                                    html += `</div></div>`;
-                                }
-
-                                // General inquiry option
-                                html += `
-                                <div class="pt-2 border-top">
-                                    <button type="button" class="btn btn-light rounded-pill px-3 py-2 fs-9 fw-bold text-muted w-100 d-flex align-items-center justify-content-center gap-2" 
-                                            onclick="selectTopicAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', 'General Inquiry', '₱0.00', '${avatarUrl.replace(/'/g, "\\'")}', '')">
-                                        <i class="fa-solid fa-message text-secondary"></i> Continue with General Inquiry
-                                    </button>
-                                </div>
-                                `;
 
                                 modalBody.innerHTML = html;
                             }
