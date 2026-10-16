@@ -3091,6 +3091,18 @@ if ($action === 'report_unreturned_item') {
         exit;
     }
 
+    // Strict security checks: Only stock owner, and only when rental has expired
+    if ($ownerId != $order['owner_id'] && $order['owner_id'] > 0) {
+        echo json_encode(['success' => false, 'message' => 'Only the equipment stock owner can file an unreturned report.']);
+        exit;
+    }
+
+    $timerEnd = $order['rental_timer_end'];
+    if ($timerEnd && strtotime($timerEnd) > time() && $order['timer_status'] !== 'EXPIRED' && $order['order_status'] !== 'OVERDUE') {
+        echo json_encode(['success' => false, 'message' => 'Rental duration has not expired yet. You cannot report unreturned while rental is still active.']);
+        exit;
+    }
+
     $itemName = $order['item_name'] ?: 'Equipment';
     $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
     $ownerEmail = $order['owner_email'] ?: 'romeopaolotolentino@gmail.com';

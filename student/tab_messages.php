@@ -352,8 +352,8 @@
             <div>
                 <div class="fw-extrabold text-dark" style="font-size:0.86rem; letter-spacing:-0.2px; line-height:1.2;" id="chatPartnerName">Student</div>
                 <div class="d-flex align-items-center gap-1 mt-0.5">
-                    <span class="badge rounded-pill fw-bold" style="background:#ECFDF5; color:#059669; font-size:0.62rem; padding: 2px 6px; border:1px solid #A7F3D0;">
-                        <i class="fa-solid fa-circle-check me-0.5"></i>Verified Lender
+                    <span class="badge rounded-pill fw-bold" style="background:#ECFDF5; color:#059669; font-size:0.62rem; padding: 2px 6px; border:1px solid #A7F3D0;" id="chatPartnerRoleBadge">
+                        <i class="fa-solid fa-circle-check me-0.5"></i>Stock Owner &amp; Lender
                     </span>
                     <span class="text-muted" style="font-size:0.65rem;">• Active Now</span>
                 </div>
@@ -382,7 +382,7 @@
             <div class="min-w-0">
                 <div class="d-flex align-items-center gap-1.5 mb-0.5">
                     <span class="badge rounded-pill fw-bold" style="background:#EDE9FE; color:#5B3FA8; font-size:0.62rem; padding: 2px 6px;">EQUIPMENT</span>
-                    <span class="text-muted fw-semibold" style="font-size:0.65rem;">Campus Handover</span>
+                    <span class="text-muted fw-semibold" style="font-size:0.65rem;" id="chatItemOwnerLabel">• Owner: Romeo Paolo Tolentino</span>
                 </div>
                 <h6 class="fw-bold fs-8 text-dark mb-0 text-truncate" id="chatItemTitle">Campus Item</h6>
                 <div class="d-flex align-items-baseline gap-1">
@@ -503,12 +503,16 @@
                 <div class="fs-9 text-white-50 mt-0.5" id="chatCountdownLabel">Time Remaining</div>
             </div>
         </div>
-        <!-- Owner Report Unreturned Item Button (Visible for Romeo) -->
+        <!-- Owner Report Unreturned Item Button (Visible for Stock Owner ONLY when rental is overdue) -->
         <div id="chatTimerOwnerReportRow" style="display:none;" class="pt-2 mt-2 border-top border-white border-opacity-15 d-flex align-items-center justify-content-between">
-            <span class="fs-9 text-white-50">Not returned on time?</span>
+            <span class="fs-9 text-white-50"><i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> Not returned on time?</span>
             <button type="button" class="btn btn-sm rentchat-report-unreturned-btn" onclick="openReportUnreturnedModalFromChat()">
                 <i class="fa-solid fa-flag me-1"></i> Report Unreturned
             </button>
+        </div>
+        <!-- Renter Overdue Warning (Visible for Renter ONLY when rental is overdue) -->
+        <div id="chatTimerRenterOverdueRow" style="display:none;" class="pt-2 mt-2 border-top border-white border-opacity-15 d-flex align-items-center justify-content-between">
+            <span class="fs-9 text-warning"><i class="fa-solid fa-clock-rotate-left me-1"></i> Rental expired — please return gear to owner immediately</span>
         </div>
     </div>
 

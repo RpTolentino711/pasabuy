@@ -3328,7 +3328,13 @@
                             if (!currentActiveChatSellerId) return;
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+                            let currentUserEmail = (storedUser && storedUser.email ? storedUser.email : '').toLowerCase().trim();
+                            let currentUserName = (storedUser ? (storedUser.name || (storedUser.firstName || '') + ' ' + (storedUser.lastName || '')) : '').toLowerCase().trim();
+                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 0) : 0;
+                            if (!currentUserId || currentUserId <= 0) {
+                                currentUserId = (currentUserEmail.includes('pogilameg') || currentUserName.includes('pogilameg')) ? 105 : 104;
+                            }
 
                             try {
                                 const res = await fetch(`/student/rentease_api.php?action=get_active_chat_rental&user_id=${currentUserId}&partner_id=${currentActiveChatSellerId}`);
@@ -3347,6 +3353,45 @@
 
                                 const ord = data.order;
                                 currentChatRentalOrder = ord;
+
+                                // Precise Ownership & Role Check
+                                const isOwner = (currentUserId === parseInt(ord.owner_id)) ||
+                                    (currentUserEmail && ord.owner_email && currentUserEmail === ord.owner_email.toLowerCase()) ||
+                                    (currentUserName.includes('romeo') && !currentUserName.includes('pogilameg') && !currentUserEmail.includes('pogilameg')) ||
+                                    (currentUserId === 104 && !currentUserEmail.includes('pogilameg') && !currentUserName.includes('pogilameg'));
+
+                                // Update Header Role Badge Dynamically (Never show Verified Lender on the Renter!)
+                                const partnerRoleBadge = document.getElementById('chatPartnerRoleBadge');
+                                if (partnerRoleBadge) {
+                                    if (isOwner) {
+                                        // Romeo is viewing Pogilameg (Renter)
+                                        partnerRoleBadge.innerHTML = '<i class="fa-solid fa-user me-0.5"></i>Student Renter';
+                                        partnerRoleBadge.style.background = '#EDE9FE';
+                                        partnerRoleBadge.style.color = '#5B3FA8';
+                                        partnerRoleBadge.style.borderColor = '#DDD6FE';
+                                    } else {
+                                        // Pogilameg is viewing Romeo (Stock Owner / Lender)
+                                        partnerRoleBadge.innerHTML = '<i class="fa-solid fa-circle-check me-0.5"></i>Stock Owner & Lender';
+                                        partnerRoleBadge.style.background = '#ECFDF5';
+                                        partnerRoleBadge.style.color = '#059669';
+                                        partnerRoleBadge.style.borderColor = '#A7F3D0';
+                                    }
+                                }
+
+                                // Update Attached Equipment Card Details & Clear Owner Attribution
+                                const chatOwnerLabel = document.getElementById('chatItemOwnerLabel');
+                                if (chatOwnerLabel) {
+                                    chatOwnerLabel.innerText = '• Owner: ' + (ord.owner_name || 'Romeo Paolo Tolentino');
+                                }
+                                const itemTitleEl = document.getElementById('chatItemTitle');
+                                if (itemTitleEl && ord.item_name) {
+                                    itemTitleEl.innerText = ord.item_name;
+                                }
+                                const priceEl = document.getElementById('chatItemPrice');
+                                if (priceEl && ord.total_amount && ord.rental_days) {
+                                    const dailyPrice = (parseFloat(ord.total_amount) / Math.max(1, parseInt(ord.rental_days))).toFixed(2);
+                                    priceEl.innerText = `₱${dailyPrice}`;
+                                }
 
                                 // Sync equipment thumbnail if available from order
                                 const chatItemImg = document.getElementById('chatItemImage');
@@ -3368,14 +3413,8 @@
                                     const endEl = document.getElementById('chatTimerEndDisplay');
                                     if (endEl) endEl.innerText = endText;
 
-                                    const ownerReportRow = document.getElementById('chatTimerOwnerReportRow');
-                                    if (ownerReportRow) {
-                                        // Romeo (Owner) sees Report Unreturned Item button
-                                        ownerReportRow.style.display = ord.is_owner ? 'flex' : 'none';
-                                    }
-
-                                    // Start or sync local live countdown
-                                    startChatTimerCountdown(ord.rental_timer_end);
+                                    // Start or sync local live countdown with strict owner role passing
+                                    startChatTimerCountdown(ord.rental_timer_end, isOwner);
                                 } 
                                 // 2. If status is REQUESTED or CONFIRMED (Awaiting Romeo to start timer)
                                 else if (ord.order_status === 'REQUESTED' || ord.order_status === 'CONFIRMED' || ord.timer_status === 'NOT_STARTED') {
@@ -3410,7 +3449,7 @@
                                     const ownerRow = document.getElementById('chatOwnerActionRow');
                                     const renterRow = document.getElementById('chatRenterWaitingRow');
 
-                                    if (ord.is_owner) {
+                                    if (isOwner) {
                                         // Romeo sees the "Agree to Rent & Start Timer" button
                                         if (ownerRow) ownerRow.style.display = 'block';
                                         if (renterRow) renterRow.style.display = 'none';
@@ -3419,7 +3458,7 @@
                                         if (ownerRow) ownerRow.style.display = 'none';
                                         if (renterRow) renterRow.style.display = 'block';
                                         const ownerNameEl = document.getElementById('chatReqOwnerName');
-                                        if (ownerNameEl) ownerNameEl.innerText = ord.owner_name || 'Romeo';
+                                        if (ownerNameEl) ownerNameEl.innerText = ord.owner_name || 'Romeo Paolo Tolentino';
                                     }
                                 }
                             } catch(e) {
@@ -3427,17 +3466,21 @@
                             }
                         }
 
-                        function startChatTimerCountdown(endIsoString) {
+                        function startChatTimerCountdown(endIsoString, isOwner) {
                             if (chatRentalTimerInterval) clearInterval(chatRentalTimerInterval);
 
                             const updateDisplay = () => {
                                 const cdText = document.getElementById('chatLiveCountdownText');
                                 const badge = document.getElementById('chatLiveTimerBadge');
                                 const cdLabel = document.getElementById('chatCountdownLabel');
+                                const ownerReportRow = document.getElementById('chatTimerOwnerReportRow');
+                                const renterOverdueRow = document.getElementById('chatTimerRenterOverdueRow');
                                 if (!cdText) return;
 
                                 if (!endIsoString) {
                                     cdText.innerText = '00:00:00';
+                                    if (ownerReportRow) ownerReportRow.style.display = 'none';
+                                    if (renterOverdueRow) renterOverdueRow.style.display = 'none';
                                     return;
                                 }
 
@@ -3453,8 +3496,23 @@
                                         badge.className = 'badge bg-danger text-white fw-bold fs-9';
                                     }
                                     if (cdLabel) cdLabel.innerText = 'Time Expired';
+
+                                    // CRITICAL: Rental is OVERDUE!
+                                    // ONLY the Stock Owner can see the Report Unreturned button!
+                                    if (isOwner) {
+                                        if (ownerReportRow) ownerReportRow.style.display = 'flex';
+                                        if (renterOverdueRow) renterOverdueRow.style.display = 'none';
+                                    } else {
+                                        if (ownerReportRow) ownerReportRow.style.display = 'none';
+                                        if (renterOverdueRow) renterOverdueRow.style.display = 'flex';
+                                    }
                                     return;
                                 }
+
+                                // CRITICAL: Timer is still ACTIVELY RUNNING!
+                                // The rental period has NOT expired, so Report Unreturned MUST NEVER be displayed!
+                                if (ownerReportRow) ownerReportRow.style.display = 'none';
+                                if (renterOverdueRow) renterOverdueRow.style.display = 'none';
 
                                 const totalSecs = Math.floor(diffMs / 1000);
                                 const hours = Math.floor(totalSecs / 3600);
@@ -3518,6 +3576,32 @@
 
                         window.openReportUnreturnedModalFromChat = function () {
                             if (!currentChatRentalOrder) return;
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            let currentUserEmail = (storedUser && storedUser.email ? storedUser.email : '').toLowerCase().trim();
+                            let currentUserName = (storedUser ? (storedUser.name || (storedUser.firstName || '') + ' ' + (storedUser.lastName || '')) : '').toLowerCase().trim();
+                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 0) : 0;
+                            if (!currentUserId || currentUserId <= 0) {
+                                currentUserId = (currentUserEmail.includes('pogilameg') || currentUserName.includes('pogilameg')) ? 105 : 104;
+                            }
+
+                            const isOwner = (currentUserId === parseInt(currentChatRentalOrder.owner_id)) ||
+                                (currentUserEmail && currentChatRentalOrder.owner_email && currentUserEmail === currentChatRentalOrder.owner_email.toLowerCase()) ||
+                                (currentUserName.includes('romeo') && !currentUserName.includes('pogilameg')) ||
+                                (currentUserId === 104 && !currentUserEmail.includes('pogilameg'));
+
+                            if (!isOwner) {
+                                alert("❌ Action not allowed: Only the equipment stock owner (lender) can report an unreturned item.");
+                                return;
+                            }
+
+                            const endTime = currentChatRentalOrder.rental_timer_end ? new Date(currentChatRentalOrder.rental_timer_end).getTime() : 0;
+                            if (endTime > Date.now() && currentChatRentalOrder.timer_status !== 'EXPIRED' && currentChatRentalOrder.order_status !== 'OVERDUE') {
+                                alert("⚠️ Cannot report yet: The agreed rental duration has not expired. The renter still has active rental time remaining.");
+                                return;
+                            }
+
                             const codeEl = document.getElementById('unretModalOrderCode');
                             if (codeEl) codeEl.innerText = currentChatRentalOrder.order_code;
                             const nameEl = document.getElementById('unretModalItemName');
