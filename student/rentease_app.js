@@ -3873,12 +3873,24 @@ async function openPurchaseHistoryModal() {
 function getSavedAddresses() {
     try {
         const saved = localStorage.getItem('rentease_saved_addresses');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+            let parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                // Filter out the dummy second address ('Main Quadrangle')
+                const cleaned = parsed.filter(a => a.label !== 'Main Quadrangle' && !a.address?.includes('Quadrangle Grounds'));
+                if (cleaned.length !== parsed.length) {
+                    if (cleaned.length > 0 && !cleaned.some(a => a.isPrimary)) cleaned[0].isPrimary = true;
+                    try { localStorage.setItem('rentease_saved_addresses', JSON.stringify(cleaned)); } catch(e) {}
+                }
+                if (cleaned.length > 0) return cleaned;
+            }
+        }
     } catch (e) {}
-    return [
-        { label: 'Campus Activity Center', address: 'San Pablo Colleges - Student Gymnasium & Stage Area', isPrimary: true },
-        { label: 'Main Quadrangle', address: 'San Pablo Colleges Quadrangle Grounds (Booth 4)', isPrimary: false }
+    const defaultList = [
+        { label: 'Campus Activity Center', address: 'San Pablo Colleges - Student Gymnasium & Stage Area', isPrimary: true }
     ];
+    try { localStorage.setItem('rentease_saved_addresses', JSON.stringify(defaultList)); } catch(e) {}
+    return defaultList;
 }
 
 function openSavedAddressesModal() {
@@ -3899,14 +3911,14 @@ function renderSavedAddressesList() {
     addresses.forEach((item, idx) => {
         html += `
         <div class="card border rounded-3 p-2.5 mb-2 bg-white d-flex flex-row align-items-center justify-content-between">
-            <div>
-                <div class="d-flex align-items-center gap-1.5 mb-1">
-                    <strong class="text-dark fs-8">${item.label}</strong>
+            <div class="min-w-0 me-2">
+                <div class="d-flex align-items-center gap-1.5 mb-0.5">
+                    <strong class="text-dark fs-8 text-truncate">${item.label || item.address}</strong>
                     ${item.isPrimary ? '<span class="badge bg-primary rounded-pill fs-9 py-0.5 px-2">Primary</span>' : ''}
                 </div>
-                <div class="text-muted fs-9">${item.address}</div>
+                <div class="text-muted fs-9 text-truncate">${item.address}</div>
             </div>
-            <div class="d-flex gap-1">
+            <div class="d-flex gap-1 flex-shrink-0">
                 ${!item.isPrimary ? `
                 <button class="btn btn-sm btn-light border rounded-pill py-0 px-2 fs-9" onclick="setPrimaryAddress(${idx})" title="Set as Primary">
                     Set Primary
@@ -3921,26 +3933,28 @@ function renderSavedAddressesList() {
 }
 
 function saveNewSavedAddress() {
-    const label = document.getElementById('newAddressLabel')?.value.trim();
     const address = document.getElementById('newAddressDetails')?.value.trim();
 
-    if (!label || !address) {
-        alert('Please fill out both the label and address fields.');
+    if (!address) {
+        alert('Please enter a delivery or campus meetup address.');
         return;
     }
+
+    // Auto-derive label or set concise label
+    const label = address.length > 25 ? address.substring(0, 22) + '...' : address;
 
     const addresses = getSavedAddresses();
     addresses.push({ label, address, isPrimary: addresses.length === 0 });
     localStorage.setItem('rentease_saved_addresses', JSON.stringify(addresses));
 
-    document.getElementById('newAddressLabel').value = '';
-    document.getElementById('newAddressDetails').value = '';
+    const inputEl = document.getElementById('newAddressDetails');
+    if (inputEl) inputEl.value = '';
     renderSavedAddressesList();
 
     const checkoutAddr = document.getElementById('checkoutAddressText');
-    if (checkoutAddr) checkoutAddr.innerText = `${label} (${address})`;
+    if (checkoutAddr) checkoutAddr.innerText = address;
 
-    alert('✅ New delivery address saved!');
+    alert('✅ Delivery address saved!');
 }
 
 function setPrimaryAddress(idx) {

@@ -1657,9 +1657,8 @@
 
                 <div class="border-top pt-3">
                     <h6 class="fw-bold text-dark fs-8 mb-2"><i class="fa-solid fa-plus-circle text-primary me-1"></i> Add New Address</h6>
-                    <div class="mb-2">
-                        <input type="text" class="form-control rounded-3 fs-8 mb-2" id="newAddressLabel" placeholder="Label (e.g. Campus Org Hall, Student Center, Home)">
-                        <textarea class="form-control rounded-3 fs-8" id="newAddressDetails" rows="2" placeholder="Full street, building, or drop-off directions..."></textarea>
+                    <div class="mb-2.5">
+                        <input type="text" class="form-control rounded-3 fs-8" id="newAddressDetails" autocomplete="off" name="rentease_delivery_address" placeholder="Full street, building, or drop-off directions...">
                     </div>
                     <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold fs-8" onclick="saveNewSavedAddress()">
                         <i class="fa-solid fa-plus me-1"></i> Save Address
