@@ -945,11 +945,12 @@ window.confirmRentNowDetail = async function () {
             const targetOwnerName = data.owner_name || 'Romeo Paolo Tolentino';
             const itemTitle = currentDetailProduct.name || currentDetailProduct.title || 'Campus Equipment';
             const itemPrice = '₱' + (parseFloat(currentDetailProduct.price_per_day || currentDetailProduct.price || 0)).toFixed(2);
+            const itemImg = currentDetailProduct.image_url || currentDetailProduct.image || currentDetailProduct.item_image || '';
 
             if (typeof window.checkAndOpenChat === 'function') {
-                window.checkAndOpenChat(targetOwnerId, targetOwnerName, itemTitle, itemPrice, '');
+                window.checkAndOpenChat(targetOwnerId, targetOwnerName, itemTitle, itemPrice, '', itemImg);
             } else if (typeof checkAndOpenChat === 'function') {
-                checkAndOpenChat(targetOwnerId, targetOwnerName, itemTitle, itemPrice, '');
+                checkAndOpenChat(targetOwnerId, targetOwnerName, itemTitle, itemPrice, '', itemImg);
             }
         } else {
             if (data.is_suspended && typeof window.showRentalSuspensionModal === 'function') {
@@ -967,7 +968,8 @@ window.confirmRentNowDetail = async function () {
             if (bs) bs.hide();
         }
         if (typeof checkAndOpenChat === 'function') {
-            checkAndOpenChat(104, 'Romeo Paolo Tolentino', currentDetailProduct.name || 'Campus Equipment', '₱' + (currentDetailProduct.price_per_day || 0), '');
+            const itemImg = currentDetailProduct?.image_url || currentDetailProduct?.image || currentDetailProduct?.item_image || '';
+            checkAndOpenChat(104, 'Romeo Paolo Tolentino', currentDetailProduct.name || 'Campus Equipment', '₱' + (currentDetailProduct.price_per_day || 0), '', itemImg);
         }
     } finally {
         if (btn) {
@@ -4676,11 +4678,12 @@ window.chatWithOwnerFromDetail = function () {
 
     const title = p?.name || p?.title || 'Equipment Rental';
     const price = '₱' + (parseFloat(p?.price_per_day || p?.price || 0)).toLocaleString();
+    const itemImg = p?.image_url || p?.image || p?.item_image || '';
 
     if (typeof openChat === 'function') {
-        openChat(ownerId, ownerName, title, price);
+        openChat(ownerId, ownerName, title, price, itemImg);
     } else if (typeof checkAndOpenChat === 'function') {
-        checkAndOpenChat(ownerId, ownerName, title, price, '');
+        checkAndOpenChat(ownerId, ownerName, title, price, '', itemImg);
     } else {
         switchTab('messages');
     }

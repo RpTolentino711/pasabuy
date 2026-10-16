@@ -2947,13 +2947,15 @@ if ($action === 'get_active_chat_rental') {
     $uEmail = $emails[$userId] ?? ($userId == 104 ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com');
     $pEmail = $emails[$partnerId] ?? ($partnerId == 104 ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com');
 
-    $sql = "SELECT * FROM `rental_orders` 
-            WHERE ((LOWER(`customer_email`) = ? AND LOWER(`owner_email`) = ?) 
-               OR (LOWER(`customer_email`) = ? AND LOWER(`owner_email`) = ?)
-               OR (`renter_id` = ? AND `owner_id` = ?)
-               OR (`renter_id` = ? AND `owner_id` = ?))
-              AND `order_status` NOT IN ('RETURNED', 'CANCELLED', 'REJECTED')
-            ORDER BY `id` DESC LIMIT 1";
+    $sql = "SELECT ro.*, ri.image_url AS item_image 
+            FROM `rental_orders` ro
+            LEFT JOIN `rental_inventory` ri ON ro.item_id = ri.id
+            WHERE ((LOWER(ro.`customer_email`) = ? AND LOWER(ro.`owner_email`) = ?) 
+               OR (LOWER(ro.`customer_email`) = ? AND LOWER(ro.`owner_email`) = ?)
+               OR (ro.`renter_id` = ? AND ro.`owner_id` = ?)
+               OR (ro.`renter_id` = ? AND ro.`owner_id` = ?))
+              AND ro.`order_status` NOT IN ('RETURNED', 'CANCELLED', 'REJECTED')
+            ORDER BY ro.`id` DESC LIMIT 1";
     $stmt = $db->prepare($sql);
     $stmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId]);
     $ord = $stmt->fetch();
@@ -2990,6 +2992,7 @@ if ($action === 'get_active_chat_rental') {
             'order_code' => $ord['order_code'],
             'item_id' => $ord['item_id'],
             'item_name' => $ord['item_name'] ?: 'Campus Equipment',
+            'item_image' => $ord['item_image'] ?: '',
             'customer_name' => $ord['customer_name'],
             'customer_email' => $ord['customer_email'],
             'renter_id' => $ord['renter_id'],

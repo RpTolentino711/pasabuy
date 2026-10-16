@@ -3295,15 +3295,15 @@
                                         const partnerName = document.getElementById('chatPartnerName')?.innerText || 'Campus Contact';
                                         const itemTitle = document.getElementById('chatItemTitle')?.innerText || 'Campus Item';
                                         const headerAvatarEl = document.getElementById('chatHeaderAvatar');
-                                        const finalAvatar = headerAvatarEl ? headerAvatarEl.src : `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(partnerName)}`;
+                                        const finalAvatar = headerAvatarEl ? headerAvatarEl.src : `https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=6366F1&color=fff&bold=true&rounded=true`;
 
-                                        let chatHtml = `<div class="text-center text-muted fs-9 mb-2">Connected live with <strong>${partnerName}</strong> regarding ${itemTitle}</div>`;
+                                        let chatHtml = `<div class="text-center my-2"><span class="badge rounded-pill bg-white border text-secondary shadow-2xs px-3 py-1" style="font-size:0.68rem;"><i class="fa-solid fa-lock text-success me-1"></i> Connected live with <strong>${partnerName}</strong> regarding ${itemTitle}</span></div>`;
                                         msgs.forEach(m => {
                                             const isMine = m.SenderId == currentUserId;
                                             chatHtml += `
                                             <div class="d-flex ${isMine ? 'justify-content-end' : 'justify-content-start'} align-items-end gap-2 mb-2">
-                                                ${!isMine ? `<img src="${finalAvatar}" class="rounded-circle border mb-1" width="28" height="28" style="object-fit:cover; background:#f0f3f8;">` : ''}
-                                                <div class="p-2.5 rounded-3 fs-8 ${isMine ? 'bg-primary text-white' : 'bg-light text-dark border'}" style="max-width:75%;">
+                                                ${!isMine ? `<img src="${finalAvatar}" class="rounded-circle border mb-1 flex-shrink-0" width="28" height="28" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=6366F1&color=fff&bold=true&rounded=true';">` : ''}
+                                                <div class="rentchat-bubble ${isMine ? 'rentchat-bubble-mine' : 'rentchat-bubble-partner'}">
                                                     ${m.MessageText}
                                                 </div>
                                             </div>`;
@@ -3348,6 +3348,15 @@
                                 const ord = data.order;
                                 currentChatRentalOrder = ord;
 
+                                // Sync equipment thumbnail if available from order
+                                const chatItemImg = document.getElementById('chatItemImage');
+                                const chatItemFallback = document.getElementById('chatItemThumbFallback');
+                                if (chatItemImg && ord.item_image && ord.item_image.trim() !== '') {
+                                    chatItemImg.src = ord.item_image;
+                                    chatItemImg.style.display = 'block';
+                                    if (chatItemFallback) chatItemFallback.style.display = 'none';
+                                }
+
                                 // 1. If timer is running or overdue, show TIMER BANNER
                                 if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
                                     if (reqBanner) reqBanner.style.display = 'none';
@@ -3376,8 +3385,25 @@
 
                                     const codeEl = document.getElementById('chatReqOrderCode');
                                     if (codeEl) codeEl.innerText = ord.order_code;
+                                    
                                     const datesEl = document.getElementById('chatReqDatesText');
-                                    if (datesEl) datesEl.innerText = `${ord.rental_start_date} to ${ord.rental_end_date} (${ord.rental_days} day(s))`;
+                                    if (datesEl) {
+                                        let sFormatted = ord.rental_start_date;
+                                        let eFormatted = ord.rental_end_date;
+                                        try {
+                                            const sD = new Date(ord.rental_start_date);
+                                            const eD = new Date(ord.rental_end_date);
+                                            if (!isNaN(sD.getTime()) && !isNaN(eD.getTime())) {
+                                                const opt = { month: 'short', day: 'numeric' };
+                                                sFormatted = sD.toLocaleDateString('en-US', opt);
+                                                eFormatted = eD.toLocaleDateString('en-US', opt);
+                                            }
+                                        } catch(eDateErr) {}
+                                        const days = parseInt(ord.rental_days) || 1;
+                                        const dayBadge = days === 1 ? '1 Day' : `${days} Days`;
+                                        datesEl.innerHTML = `<span>${sFormatted} – ${eFormatted}</span> <span class="badge rounded-pill ms-1 px-2 py-0.5" style="background:#EDE9FE; color:#5B3FA8; font-size:0.68rem; font-weight:700;">${dayBadge}</span>`;
+                                    }
+
                                     const totEl = document.getElementById('chatReqTotalText');
                                     if (totEl) totEl.innerText = `₱${parseFloat(ord.total_amount || 0).toFixed(2)}`;
 
@@ -3660,12 +3686,12 @@
                             }
                         };
 
-                        function openChat(partnerId, partnerName, itemTitle, itemPrice) {
+                        function openChat(partnerId, partnerName, itemTitle, itemPrice, itemImage) {
                             const pId = parseInt(partnerId) || 0;
-                            checkAndOpenChat(pId, partnerName || 'Verified Student', itemTitle || 'Campus Request', itemPrice || '₱0.00', '');
+                            checkAndOpenChat(pId, partnerName || 'Verified Student', itemTitle || 'Campus Request', itemPrice || '₱0.00', '', itemImage || '');
                         }
 
-                        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar) {
+                        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar, itemImage) {
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
                             let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
@@ -3716,8 +3742,8 @@
                             if (partnerNameEl) partnerNameEl.innerText = targetSellerName;
 
                             let finalAvatar = partnerAvatar || '';
-                            if (!finalAvatar || finalAvatar === '') {
-                                finalAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(targetSellerName)}`;
+                            if (!finalAvatar || finalAvatar === '' || finalAvatar.includes('dicebear')) {
+                                finalAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(targetSellerName)}&background=5B3FA8&color=fff&bold=true&rounded=true`;
                             }
 
                             const headerAvatarEl = document.getElementById('chatHeaderAvatar');
@@ -3728,6 +3754,19 @@
 
                             const priceEl = document.getElementById('chatItemPrice');
                             if (priceEl) priceEl.innerText = itemPrice || '₱0.00';
+
+                            const chatItemImg = document.getElementById('chatItemImage');
+                            const chatItemFallback = document.getElementById('chatItemThumbFallback');
+                            if (chatItemImg) {
+                                if (itemImage && itemImage.trim() !== '') {
+                                    chatItemImg.src = itemImage;
+                                    chatItemImg.style.display = 'block';
+                                    if (chatItemFallback) chatItemFallback.style.display = 'none';
+                                } else {
+                                    chatItemImg.style.display = 'none';
+                                    if (chatItemFallback) chatItemFallback.style.display = 'flex';
+                                }
+                            }
 
                             switchTab('messages');
                             const tabMsgs = document.getElementById('tabMessages');
@@ -3758,7 +3797,7 @@
                             if (stream) {
                                 stream.innerHTML += `
                                 <div class="d-flex justify-content-end mb-2">
-                                    <div class="p-2.5 rounded-3 fs-8 bg-primary text-white" style="max-width:75%;">
+                                    <div class="rentchat-bubble rentchat-bubble-mine">
                                         ${text}
                                     </div>
                                 </div>`;
