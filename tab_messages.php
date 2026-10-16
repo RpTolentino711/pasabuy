@@ -214,33 +214,70 @@
             flex-shrink: 0;
         }
 
-        /* Live Countdown Timer Card */
+        /* Ultra-Modern Live Countdown Timer Card */
         .rentchat-timer-card {
-            background: linear-gradient(135deg, #312E81 0%, #1E1B4B 100%);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 6px 20px rgba(49, 46, 129, 0.25);
+            background: linear-gradient(135deg, #1E1B4B 0%, #2E1065 100%);
+            border-radius: 18px;
+            border: 1px solid rgba(167, 139, 250, 0.25);
+            box-shadow: 0 10px 25px -5px rgba(30, 27, 75, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
             position: relative;
             overflow: hidden;
         }
-        .rentchat-live-pulse {
-            width: 7px;
-            height: 7px;
+        .rentchat-timer-card::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 130px;
+            height: 130px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .rentchat-live-pulse-ring {
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: #34D399;
-            box-shadow: 0 0 6px #34D399;
+            background: rgba(16, 185, 129, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .rentchat-live-pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10B981;
+            box-shadow: 0 0 8px #10B981;
             animation: rentPulseLive 1.4s infinite ease-in-out;
         }
         @keyframes rentPulseLive {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.3; transform: scale(1.3); }
         }
+        .rentchat-timer-display-box {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        .rentchat-countdown-digits {
+            font-size: 1.35rem;
+            color: #FBBF24;
+            letter-spacing: 1px;
+            text-shadow: 0 0 12px rgba(251, 191, 36, 0.3);
+            line-height: 1.2;
+        }
+        .rentchat-timer-meta-grid {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
         .rentchat-report-unreturned-btn {
-            background: rgba(239, 68, 68, 0.15);
+            background: rgba(239, 68, 68, 0.2);
             color: #FCA5A5;
-            border: 1px solid rgba(239, 68, 68, 0.35);
+            border: 1px solid rgba(239, 68, 68, 0.4);
             border-radius: 999px;
-            padding: 3px 12px;
+            padding: 4px 14px;
             font-size: 0.72rem;
             font-weight: 700;
             transition: all 0.2s ease;
@@ -600,36 +637,57 @@
         </div>
     </div>
 
-    <!-- ACTIVE RENTAL LIVE COUNTDOWN TIMER BANNER -->
+    <!-- ACTIVE RENTAL LIVE COUNTDOWN TIMER BANNER (Sleek Redesign) -->
     <div id="chatRentalTimerBanner" class="rentchat-timer-card p-3 mb-2 flex-shrink-0 text-white" style="display:none;">
-        <div class="d-flex align-items-center justify-content-between mb-2 pb-1.5 border-bottom border-white border-opacity-10">
-            <div class="d-flex align-items-center gap-1.5">
-                <span class="rentchat-live-pulse"></span>
-                <span class="fs-9 fw-bold text-white-75" style="letter-spacing:0.4px;">RENTAL IN PROGRESS</span>
-            </div>
-            <span class="badge rounded-pill fw-bold px-2.5 py-0.5 fs-9" id="chatLiveTimerBadge" 
-                  style="background:rgba(16, 185, 129, 0.2); color:#34D399; border:1px solid rgba(52, 211, 153, 0.3);">
-                <i class="fa-solid fa-play me-1"></i> Timer Active
-            </span>
-        </div>
-        <div class="d-flex align-items-center justify-content-between gap-2">
-            <div class="min-w-0">
-                <div class="fw-bold fs-8 text-white text-truncate" id="chatTimerItemTitle">POSPT (#RE-10000)</div>
-                <div class="fs-9 text-white-50 mt-0.5">
-                    <i class="fa-solid fa-clock-rotate-left me-1"></i>Ends: <span id="chatTimerEndDisplay" class="text-white-75 fw-semibold">Oct 17, 2026, 3:45 PM</span>
+        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rentchat-live-pulse-ring">
+                    <span class="rentchat-live-pulse"></span>
+                </div>
+                <div>
+                    <div class="fw-extrabold text-white" style="font-size:0.8rem; letter-spacing:0.2px;">Active Rental Period</div>
+                    <div class="text-white-50 fs-10 font-monospace" id="chatTimerItemTitle">POSPT • #RE-10000</div>
                 </div>
             </div>
-            <div class="text-end flex-shrink-0">
-                <div class="fs-5 fw-extrabold text-warning font-monospace leading-none" id="chatLiveCountdownText" style="letter-spacing: 0.5px;">00:00:00</div>
-                <div class="fs-9 text-white-50 mt-0.5" id="chatCountdownLabel">Time Remaining</div>
+            <span class="badge rounded-pill fw-bold px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1.5" id="chatLiveTimerBadge" 
+                  style="background:rgba(16, 185, 129, 0.2); color:#34D399; border:1px solid rgba(52, 211, 153, 0.35);">
+                <i class="fa-solid fa-play fs-11"></i>
+                <span>Timer Running</span>
+            </span>
+        </div>
+
+        <!-- Center Digital Countdown Display Board -->
+        <div class="rentchat-timer-display-box rounded-3 p-2.5 text-center mb-2">
+            <div class="text-white-50 fs-10 text-uppercase fw-bold mb-1" style="letter-spacing:0.8px;" id="chatCountdownLabel">Time Remaining Until Return</div>
+            <div class="rentchat-countdown-digits font-monospace fw-extrabold" id="chatLiveCountdownText">
+                23h 57m 04s
             </div>
         </div>
+
+        <!-- Return Details Grid (Formatted cleanly without awkward wraps) -->
+        <div class="rentchat-timer-meta-grid rounded-3 p-2">
+            <div class="d-flex align-items-center justify-content-between py-1 border-bottom border-white border-opacity-10 fs-9">
+                <span class="text-white-50 d-flex align-items-center gap-1.5">
+                    <i class="fa-solid fa-clock-rotate-left text-warning opacity-75"></i> Return Deadline
+                </span>
+                <span class="fw-bold text-white text-end" id="chatTimerEndDisplay">Oct 18, 2026 • 12:55 AM</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between pt-1 fs-9">
+                <span class="text-white-50 d-flex align-items-center gap-1.5">
+                    <i class="fa-solid fa-location-dot text-danger opacity-75"></i> Handover Spot
+                </span>
+                <span class="fw-semibold text-white text-end text-truncate ms-2" id="chatTimerMeetupDisplay" style="max-width: 170px;">Campus Activity Center</span>
+            </div>
+        </div>
+
         <!-- Owner Report Unreturned Item Button (Visible for Stock Owner ONLY when rental is overdue) -->
         <div id="chatTimerOwnerReportRow" style="display:none !important;" class="pt-2 mt-2 border-top border-white border-opacity-15 rentchat-overdue-row">
-            <span class="fs-9 text-white-50"><i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> Not returned on time?</span>
-            <button type="button" class="btn btn-sm rentchat-report-unreturned-btn" onclick="openReportUnreturnedModalFromChat()">
-                <i class="fa-solid fa-flag me-1"></i> Report Unreturned
-            </button>
+            <div class="d-flex align-items-center justify-content-between w-100 gap-2">
+                <span class="fs-9 text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i> Item overdue</span>
+                <button type="button" class="btn btn-sm rentchat-report-unreturned-btn" onclick="openReportUnreturnedModalFromChat()">
+                    <i class="fa-solid fa-flag me-1"></i> Report Unreturned
+                </button>
+            </div>
         </div>
         <!-- Renter Overdue Warning (Visible for Renter ONLY when rental is overdue) -->
         <div id="chatTimerRenterOverdueRow" style="display:none !important;" class="pt-2 mt-2 border-top border-white border-opacity-15 rentchat-overdue-row">

@@ -995,17 +995,18 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <table class="table table-custom mb-0">
                             <thead>
                                 <tr>
-                                    <th>Order #</th>
+                                    <th>Order Ref</th>
                                     <th>Buyer (Renter)</th>
                                     <th>Stock Owner (Lender)</th>
                                     <th>Campus Meetup Spot</th>
-                                    <th>Status</th>
+                                    <th>Agreement Lifecycle Step</th>
+                                    <th>Rental Timer</th>
                                     <th>Total Amount</th>
                                     <th width="120">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="deliveriesTableBody">
-                                <tr><td colspan="7" class="text-center py-4 text-muted">Loading campus meetups...</td></tr>
+                                <tr><td colspan="8" class="text-center py-4 text-muted">Loading campus meetups...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -2841,10 +2842,18 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
 
                 // Calculate active step index for 5-step face-to-face workflow
                 let activeIdx = 0;
-                if (st === 'PREPARING' || st === 'PROCESSING') activeIdx = 1;
-                else if (st === 'MEETUP' || st === 'LOOKING_FOR_RIDER' || st === 'PICKUP' || st === 'ON_THE_WAY') activeIdx = 2;
-                else if (st === 'DELIVERED') activeIdx = 3;
-                else if (st === 'RETURN_DELIVERY' || st === 'RETURNED') activeIdx = 4;
+                const ownerAgreed = (parseInt(o.owner_agreed) === 1);
+                const hasPrepPhoto = (o.prep_photo_url && o.prep_photo_url.trim() !== '');
+                const renterConfirmedPrep = (parseInt(o.prep_confirmed_by_renter) === 1);
+                const hasMeetupLoc = (o.meetup_location && o.meetup_location.trim() !== '' && o.meetup_location !== 'Campus Handover Meetup');
+                const isHandedOver = (parseInt(o.handed_over) === 1 || o.rental_timer_start || st === 'DELIVERED' || st === 'IN_PROGRESS' || st === 'RENTED');
+                const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED');
+
+                if (isReturned) activeIdx = 4;
+                else if (isHandedOver) activeIdx = 3;
+                else if (hasMeetupLoc) activeIdx = 2;
+                else if (renterConfirmedPrep || hasPrepPhoto || ownerAgreed) activeIdx = 1;
+                else activeIdx = 0;
 
                 let html = `
                     <!-- 1. 5-STAGE PROGRESS STEPPER (Face-to-Face Handover) -->
@@ -2874,6 +2883,176 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     </div>
                                 `;
                             }).join('<div class="flex-grow-1 border-top" style="border-top-width: 2px !important; margin-bottom: 24px; min-width: 15px;"></div>')}
+                        </div>
+                    </div>
+
+                    <!-- STEP-BY-STEP AGREEMENT & HANDOVER AUDIT TRAIL -->
+                    <div class="card border-0 rounded-4 shadow-sm p-3 mb-3 bg-white">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                            <div>
+                                <h6 class="fw-extrabold text-dark fs-8 mb-0">
+                                    <i class="fa-solid fa-timeline me-1.5 text-primary"></i> Step-by-Step Agreement &amp; Handover Audit
+                                </h6>
+                                <span class="fs-10 text-muted">Complete lifecycle trace between Student Renter and Stock Owner</span>
+                            </div>
+                            <span class="badge ${activeIdx >= 3 ? 'bg-success' : 'bg-primary'} fs-9">
+                                Step ${activeIdx + 1} of 5 Active
+                            </span>
+                        </div>
+
+                        <!-- Stepper Timeline Items -->
+                        <div class="d-flex flex-column gap-2.5">
+                            <!-- Step 1: Booking Confirmation -->
+                            <div class="p-2.5 rounded-3 border ${activeIdx >= 0 ? 'bg-light border-primary-subtle' : 'bg-light opacity-50'}">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge rounded-circle ${ownerAgreed ? 'bg-success' : 'bg-warning'} text-white p-1" style="width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center;">
+                                            <i class="fa-solid ${ownerAgreed ? 'fa-check' : 'fa-hourglass-start'} fs-11"></i>
+                                        </span>
+                                        <div>
+                                            <strong class="fs-9 text-dark">Step 1: Booking Confirmation &amp; Owner Agreement</strong>
+                                            <div class="fs-10 text-muted">
+                                                ${ownerAgreed ? `Confirmed by Stock Owner (${o.owner_name || 'Romeo Paolo Tolentino'})` : 'Awaiting Stock Owner confirmation in chat'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge ${ownerAgreed ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} fs-10">
+                                            ${ownerAgreed ? 'AGREED' : 'PENDING'}
+                                        </span>
+                                        <div class="fs-11 text-muted mt-0.5">${o.owner_agreed_at || o.created_at || '—'}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Equipment Preparation & Inspection Proof -->
+                            <div class="p-2.5 rounded-3 border ${activeIdx >= 1 ? 'bg-light border-primary-subtle' : 'bg-light opacity-60'}">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge rounded-circle ${renterConfirmedPrep ? 'bg-success' : (hasPrepPhoto ? 'bg-info' : 'bg-secondary')} text-white p-1" style="width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center;">
+                                            <i class="fa-solid fa-camera fs-11"></i>
+                                        </span>
+                                        <div>
+                                            <strong class="fs-9 text-dark">Step 2: Equipment Preparation &amp; Condition Proof</strong>
+                                            <div class="fs-10 text-muted">
+                                                ${hasPrepPhoto ? (renterConfirmedPrep ? `Inspected &amp; accepted by Renter (${o.customer_name})` : 'Photo uploaded by Owner; awaiting Renter acceptance') : 'Owner preparing equipment and condition photo'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge ${renterConfirmedPrep ? 'bg-success-subtle text-success' : (hasPrepPhoto ? 'bg-info-subtle text-info' : 'bg-secondary-subtle text-secondary')} fs-10">
+                                            ${renterConfirmedPrep ? 'INSPECTED & ACCEPTED' : (hasPrepPhoto ? 'PHOTO SUBMITTED' : 'PREPARING')}
+                                        </span>
+                                        <div class="fs-11 text-muted mt-0.5">${o.prep_confirmed_at || o.prep_photo_at || '—'}</div>
+                                    </div>
+                                </div>
+                                ${hasPrepPhoto ? `
+                                    <div class="mt-2 pt-2 border-top d-flex align-items-center gap-2">
+                                        <img src="${o.prep_photo_url}" class="rounded-2 border" style="width:48px; height:48px; object-fit:cover; cursor:pointer;" onclick="window.open(this.src, '_blank')" title="Click to view full condition photo">
+                                        <div class="fs-10">
+                                            <span class="fw-bold text-dark">Preparation Condition Photo</span>
+                                            <div class="text-muted">Uploaded ${o.prep_photo_at || 'Recorded'} &bull; <a href="${o.prep_photo_url}" target="_blank" class="text-primary text-decoration-none fw-bold">View Full Photo</a></div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Step 3: Campus Meetup Spot -->
+                            <div class="p-2.5 rounded-3 border ${activeIdx >= 2 ? 'bg-light border-primary-subtle' : 'bg-light opacity-60'}">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge rounded-circle ${hasMeetupLoc ? 'bg-success' : 'bg-secondary'} text-white p-1" style="width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center;">
+                                            <i class="fa-solid fa-location-dot fs-11"></i>
+                                        </span>
+                                        <div>
+                                            <strong class="fs-9 text-dark">Step 3: Designated Campus Meetup Spot</strong>
+                                            <div class="fs-10 text-muted">
+                                                ${hasMeetupLoc ? `Agreed Spot: <strong>${o.meetup_location}</strong>` : 'Parties coordinating public campus meeting place'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge ${hasMeetupLoc ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'} fs-10">
+                                            ${hasMeetupLoc ? 'SPOT CONFIRMED' : 'COORDINATING'}
+                                        </span>
+                                        <div class="fs-11 text-muted mt-0.5">${o.meetup_location_at || '—'}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Face-to-Face Handover & Live Countdown Timer -->
+                            <div class="p-2.5 rounded-3 border ${activeIdx >= 3 ? 'bg-light border-primary-subtle' : 'bg-light opacity-60'}">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge rounded-circle ${isHandedOver ? 'bg-success' : 'bg-secondary'} text-white p-1" style="width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center;">
+                                            <i class="fa-solid fa-stopwatch fs-11"></i>
+                                        </span>
+                                        <div>
+                                            <strong class="fs-9 text-dark">Step 4: Physical Handover &amp; Rental Timer</strong>
+                                            <div class="fs-10 text-muted">
+                                                ${isHandedOver ? `Handed over on campus. Return scheduled: <strong>${o.rental_timer_end || o.rental_end_date}</strong>` : 'Timer starts upon physical in-person equipment exchange'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge ${isHandedOver ? 'bg-success text-white' : 'bg-secondary-subtle text-secondary'} fs-10">
+                                            ${isHandedOver ? (o.is_overdue ? 'OVERDUE' : 'TIMER ACTIVE') : 'NOT STARTED'}
+                                        </span>
+                                        <div class="fs-11 text-muted mt-0.5">${o.handed_over_at || o.rental_timer_start || '—'}</div>
+                                    </div>
+                                </div>
+                                ${isHandedOver ? `
+                                    <div class="mt-2 pt-2 border-top d-flex align-items-center justify-content-between">
+                                        <div class="fs-10 text-muted">
+                                            <i class="fa-solid fa-clock text-info me-1"></i> Return Deadline: <strong class="text-dark">${o.rental_timer_end || o.rental_end_date}</strong>
+                                        </div>
+                                        <div>
+                                            ${o.is_overdue ? 
+                                                '<span class="badge bg-danger text-white fs-10 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> RENTAL OVERDUE</span>' :
+                                                `<span class="badge bg-warning-subtle text-dark border fs-10 fw-bold font-monospace"><i class="fa-solid fa-stopwatch me-1 text-warning"></i> ${Math.floor((o.seconds_remaining||0)/3600)}h ${Math.floor(((o.seconds_remaining||0)%3600)/60)}m remaining</span>`
+                                            }
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Step 5: Equipment Return & Restocking -->
+                            <div class="p-2.5 rounded-3 border ${activeIdx >= 4 ? 'bg-success-subtle border-success' : 'bg-light opacity-60'}">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge rounded-circle ${activeIdx >= 4 ? 'bg-success' : 'bg-secondary'} text-white p-1" style="width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center;">
+                                            <i class="fa-solid fa-boxes-stacked fs-11"></i>
+                                        </span>
+                                        <div>
+                                            <strong class="fs-9 text-dark">Step 5: Equipment Return &amp; Catalog Restock</strong>
+                                            <div class="fs-10 text-muted">
+                                                ${activeIdx >= 4 ? 'Returned by Renter, inspected by Owner, and restocked to inventory' : 'Awaiting rental duration completion and physical return'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge ${activeIdx >= 4 ? 'bg-success text-white' : 'bg-light text-muted border'} fs-10">
+                                            ${activeIdx >= 4 ? 'RESTOCKED & COMPLETED' : 'PENDING RETURN'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Quick Actions Bar -->
+                        <div class="mt-3 pt-2.5 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <span class="fs-10 text-muted"><i class="fa-solid fa-shield me-1 text-primary"></i> Admin Step Override &amp; Moderation</span>
+                            <div class="d-flex gap-2">
+                                ${activeIdx < 4 ? `
+                                    <button type="button" class="btn btn-sm btn-outline-success py-1 px-2.5 fs-10 fw-bold" onclick="adminMarkOrderReturned(${o.id})">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Mark as Returned &amp; Restocked
+                                    </button>
+                                ` : `
+                                    <span class="badge bg-success-subtle text-success fs-10 py-1.5 px-2.5 fw-bold">
+                                        <i class="fa-solid fa-check-double me-1"></i> Order Closed &amp; Restocked
+                                    </span>
+                                `}
+                            </div>
                         </div>
                     </div>
 
@@ -3595,35 +3774,70 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 if (data.success && data.deliveries.length > 0) {
                     tbody.innerHTML = data.deliveries.map(d => `
                         <tr>
-                            <td class="fw-bold text-primary">${d.order_code}</td>
+                            <td class="fw-bold text-primary font-monospace">${d.order_code}</td>
                             <td>
                                 <div class="fw-bold text-dark">${d.customer_name}</div>
                                 <div class="fs-9 text-muted">${d.customer_phone || ''}</div>
                             </td>
                             <td>
-                                <div class="fw-bold text-dark">${d.owner_name || 'Equipment Owner'}</div>
+                                <div class="fw-bold text-dark">${d.lender_name || d.owner_name || 'Romeo Paolo Tolentino'}</div>
                                 <div class="fs-9 text-muted">${d.owner_email || ''}</div>
                             </td>
                             <td class="fs-8 fw-semibold text-dark">
-                                <i class="fa-solid fa-location-dot text-danger me-1"></i>${d.delivery_address || 'Campus Meetup Spot'}
+                                <span class="badge bg-light text-dark border"><i class="fa-solid fa-location-dot text-danger me-1"></i>${d.campus_spot || d.meetup_location || 'Campus Meetup Spot'}</span>
                             </td>
                             <td>
-                                <span class="badge ${getStatusBadge(d.order_status)}">${d.order_status}</span>
+                                <span class="badge ${d.step_badge_class || 'bg-primary text-white'} py-1.5 px-2.5 fs-9 fw-bold">
+                                    ${d.step_title || ('Step ' + (d.step_number || 1))}
+                                </span>
+                            </td>
+                            <td>
+                                ${d.rental_timer_end ? (
+                                    d.is_overdue ? 
+                                    '<span class="badge bg-danger text-white fs-9"><i class="fa-solid fa-clock-rotate-left me-1"></i> Overdue</span>' :
+                                    `<span class="badge bg-success-subtle text-success fs-9 border border-success-subtle"><i class="fa-solid fa-stopwatch me-1"></i> ${Math.floor(d.seconds_remaining / 3600)}h ${Math.floor((d.seconds_remaining % 3600)/60)}m left</span>`
+                                ) : '<span class="text-muted fs-9">Not Started</span>'}
                             </td>
                             <td class="fw-bold text-dark fs-8">
                                 ₱${parseFloat(d.total_amount || 0).toLocaleString()}
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary py-1 px-2.5 fs-9" onclick="openAdminOrderModal(${d.id})">
-                                    <i class="fa-solid fa-eye me-1"></i> View
+                                <button class="btn btn-sm btn-outline-primary py-1 px-2.5 fs-9 fw-bold d-inline-flex align-items-center gap-1" onclick="openOrderDetailModal(${d.id})">
+                                    <i class="fa-solid fa-list-check"></i> Audit Step
                                 </button>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No campus meetups found.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No campus meetups found.</td></tr>';
                 }
             } catch (e) {}
+        }
+
+        function openAdminOrderModal(id) {
+            openOrderDetailModal(id);
+        }
+
+        async function adminMarkOrderReturned(orderId) {
+            if (!confirm('Are you sure you want to mark this equipment order as RETURNED & RESTOCKED?')) return;
+            try {
+                const res = await fetch(`${API_URL}?action=update_order_status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: orderId, status: 'RETURNED' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Order marked as Returned & Restocked!');
+                    openOrderDetailModal(orderId);
+                    if (typeof loadOrders === 'function') loadOrders();
+                    if (typeof loadDeliveries === 'function') loadDeliveries();
+                } else {
+                    alert(data.message || 'Failed to update order status.');
+                }
+            } catch(e) {
+                alert('Error updating order status.');
+            }
         }
 
         function openAdminPopModal(encodedData) {

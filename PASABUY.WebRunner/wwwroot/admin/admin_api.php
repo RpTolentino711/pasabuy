@@ -740,7 +740,40 @@ if ($action === 'get_order_details') {
     // Fetch all reported issues for this order
     $issuesStmt = $db->prepare("SELECT * FROM `rental_issues` WHERE `order_code` = ? ORDER BY `id` DESC");
     $issuesStmt->execute([$order['order_code']]);
-    $issues = $issuesStmt->fetchAll();
+    // Enrich order with step lifecycle info
+    $ownerAgreed = (int)($order['owner_agreed'] ?? 0) === 1;
+    $hasPrepPhoto = !empty($order['prep_photo_url']);
+    $renterConfirmed = (int)($order['prep_confirmed_by_renter'] ?? 0) === 1;
+    $meetupSet = !empty($order['meetup_location']) && $order['meetup_location'] !== 'Campus Handover Meetup' && !empty($order['meetup_location_at']);
+    $handedOver = (int)($order['handed_over'] ?? 0) === 1 || in_array($order['order_status'], ['DELIVERED', 'IN_PROGRESS', 'RENTED']);
+    $isReturned = in_array($order['order_status'], ['RETURNED', 'COMPLETED']);
+
+    if ($isReturned) {
+        $order['step_number'] = 5;
+        $order['step_title'] = 'Step 5: Returned & Restocked';
+    } elseif ($handedOver) {
+        $order['step_number'] = 4;
+        $order['step_title'] = 'Step 4: Handed Over (Rental Timer Active)';
+    } elseif ($meetupSet) {
+        $order['step_number'] = 3;
+        $order['step_title'] = 'Step 3: Campus Meetup Spot Set';
+    } elseif ($renterConfirmed || $hasPrepPhoto || $ownerAgreed) {
+        $order['step_number'] = 2;
+        $order['step_title'] = 'Step 2: Equipment Preparation & Inspection';
+    } else {
+        $order['step_number'] = 1;
+        $order['step_title'] = 'Step 1: Booking Confirmation';
+    }
+
+    if (!empty($order['rental_timer_end'])) {
+        $endSec = strtotime($order['rental_timer_end']);
+        $nowSec = time();
+        $order['seconds_remaining'] = max(0, $endSec - $nowSec);
+        $order['is_overdue'] = ($endSec < $nowSec);
+    } else {
+        $order['seconds_remaining'] = 0;
+        $order['is_overdue'] = false;
+    }
 
     echo json_encode([
         'success' => true,
@@ -1138,33 +1171,71 @@ if ($action === 'get_deliveries') {
     $status = trim((string)($req['status'] ?? 'All'));
     $search = trim((string)($req['search'] ?? ''));
 
-    $sql = "SELECT id, order_code, customer_name, customer_phone, delivery_address,
-                   COALESCE(owner_name, 'San Pablo Central Hub') as pickup_location,
-                   owner_name, owner_email,
-                   order_status, assigned_rider_name, assigned_rider_phone, estimated_arrival,
-                   pickup_proof_photo, pickup_proof_note, pickup_proof_time,
-                   delivery_proof_photo, delivery_proof_note, delivery_proof_recipient, delivery_proof_time,
-                   renter_received_confirmed, renter_received_time,
-                   delivery_vehicle_type, delivery_plate_number,
-                   rider_current_lat, rider_current_lng, total_amount
-            FROM `rental_orders` WHERE 1=1";
+    $sql = "SELECT o.*,
+                   COALESCE(o.meetup_location, o.delivery_address, 'Campus Meetup Spot') as campus_spot,
+                   COALESCE(o.owner_name, 'Romeo Paolo Tolentino') as lender_name
+            FROM `rental_orders` o WHERE 1=1";
     $params = [];
 
     if ($status !== 'All' && $status !== '') {
-        $sql .= " AND `order_status` = ?";
+        $sql .= " AND o.`order_status` = ?";
         $params[] = strtoupper($status);
     }
     if ($search !== '') {
-        $sql .= " AND (`order_code` LIKE ? OR `customer_name` LIKE ? OR `assigned_rider_name` LIKE ?)";
+        $sql .= " AND (o.`order_code` LIKE ? OR o.`customer_name` LIKE ? OR o.`owner_name` LIKE ? OR o.`item_name` LIKE ?)";
+        $params[] = "%{$search}%";
         $params[] = "%{$search}%";
         $params[] = "%{$search}%";
         $params[] = "%{$search}%";
     }
 
-    $sql .= " ORDER BY `id` DESC";
+    $sql .= " ORDER BY o.`id` DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $deliveries = $stmt->fetchAll();
+
+    foreach ($deliveries as &$d) {
+        $ownerAgreed = (int)($d['owner_agreed'] ?? 0) === 1;
+        $hasPrepPhoto = !empty($d['prep_photo_url']);
+        $renterConfirmed = (int)($d['prep_confirmed_by_renter'] ?? 0) === 1;
+        $meetupSet = !empty($d['meetup_location']) && $d['meetup_location'] !== 'Campus Handover Meetup' && !empty($d['meetup_location_at']);
+        $handedOver = (int)($d['handed_over'] ?? 0) === 1 || in_array($d['order_status'], ['DELIVERED', 'IN_PROGRESS', 'RENTED']);
+        $isReturned = in_array($d['order_status'], ['RETURNED', 'COMPLETED']);
+
+        if ($isReturned) {
+            $d['step_number'] = 5;
+            $d['step_title'] = 'Step 5: Returned & Restocked';
+            $d['step_badge_class'] = 'bg-secondary text-white';
+        } elseif ($handedOver) {
+            $d['step_number'] = 4;
+            $d['step_title'] = 'Step 4: Active Handover (Timer Running)';
+            $d['step_badge_class'] = 'bg-success text-white';
+        } elseif ($meetupSet) {
+            $d['step_number'] = 3;
+            $d['step_title'] = 'Step 3: Meetup Spot Set';
+            $d['step_badge_class'] = 'bg-info text-dark';
+        } elseif ($renterConfirmed || $hasPrepPhoto || $ownerAgreed) {
+            $d['step_number'] = 2;
+            $d['step_title'] = 'Step 2: Equipment Prepared';
+            $d['step_badge_class'] = 'bg-warning text-dark';
+        } else {
+            $d['step_number'] = 1;
+            $d['step_title'] = 'Step 1: Booking Confirmation';
+            $d['step_badge_class'] = 'bg-primary text-white';
+        }
+
+        // Timer remaining computation
+        if (!empty($d['rental_timer_end'])) {
+            $endSec = strtotime($d['rental_timer_end']);
+            $nowSec = time();
+            $d['seconds_remaining'] = max(0, $endSec - $nowSec);
+            $d['is_overdue'] = ($endSec < $nowSec);
+        } else {
+            $d['seconds_remaining'] = 0;
+            $d['is_overdue'] = false;
+        }
+    }
+    unset($d);
 
     echo json_encode(['success' => true, 'count' => count($deliveries), 'deliveries' => $deliveries]);
     exit;

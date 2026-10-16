@@ -3428,10 +3428,24 @@
                                     if (sendBtn) sendBtn.disabled = false;
 
                                     const titleEl = document.getElementById('chatTimerItemTitle');
-                                    if (titleEl) titleEl.innerText = `${ord.item_name} (${ord.order_code})`;
-                                    const endText = ord.rental_timer_end ? new Date(ord.rental_timer_end).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ord.rental_end_date;
+                                    if (titleEl) titleEl.innerText = `${ord.item_name} • ${ord.order_code}`;
+                                    
+                                    let endFormatted = ord.rental_end_date || 'Scheduled';
+                                    if (ord.rental_timer_end) {
+                                        try {
+                                            const d = new Date(ord.rental_timer_end);
+                                            const m = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                            const t = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                                            endFormatted = `${m} • ${t}`;
+                                        } catch(e) {}
+                                    }
                                     const endEl = document.getElementById('chatTimerEndDisplay');
-                                    if (endEl) endEl.innerText = endText;
+                                    if (endEl) endEl.innerText = endFormatted;
+
+                                    const meetupDisplay = document.getElementById('chatTimerMeetupDisplay');
+                                    if (meetupDisplay) {
+                                        meetupDisplay.innerText = ord.meetup_location || 'Campus Meetup Spot';
+                                    }
 
                                     // Start or sync local live countdown with strict owner role passing
                                     startChatTimerCountdown(ord.rental_timer_end, isOwner);
@@ -3609,7 +3623,7 @@
 
                                 if (diffMs <= 0) {
                                     cdText.innerText = '⚠️ OVERDUE';
-                                    cdText.className = 'fs-6 fw-extrabold text-danger font-monospace';
+                                    cdText.className = 'rentchat-countdown-digits font-monospace fw-extrabold text-danger';
                                     if (badge) {
                                         badge.innerText = 'Overdue / Return Required';
                                         badge.className = 'badge bg-danger text-white fw-bold fs-9';
@@ -3643,7 +3657,7 @@
                                 const sStr = secs < 10 ? '0' + secs : secs;
 
                                 cdText.innerText = `${hStr}h ${mStr}m ${sStr}s`;
-                                cdText.className = 'fs-6 fw-extrabold text-warning font-monospace';
+                                cdText.className = 'rentchat-countdown-digits font-monospace fw-extrabold';
                                 if (badge) {
                                     badge.innerText = 'Timer Running';
                                     badge.className = 'badge bg-success text-white fw-bold fs-9';
