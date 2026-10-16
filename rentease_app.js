@@ -1549,88 +1549,179 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                 let html = '';
                 data.incoming_requests.forEach(order => {
                     const status = (order.order_status || 'CONFIRMED').toUpperCase();
-                    let statusBadgeClass = 'bg-primary';
-                    if (status === 'PREPARING') statusBadgeClass = 'bg-warning text-dark';
-                    if (status === 'IN_TRANSIT') statusBadgeClass = 'bg-info text-dark';
-                    if (status === 'RETURNED') statusBadgeClass = 'bg-success';
+                    const orderCode = order.order_code || '#RE-0000';
+                    const customerName = order.customer_name || 'Student Renter';
+                    const customerInitials = customerName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'SR';
+                    const rentalDays = order.rental_days || 1;
+                    const totalAmt = parseFloat(order.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    
+                    // Format dates compactly e.g. "Oct 16 – Oct 17"
+                    let scheduleFormatted = 'Flexible Schedule';
+                    if (order.rental_start_date) {
+                        try {
+                            const s = new Date(order.rental_start_date);
+                            const sm = s.toLocaleDateString('en-US', { month: 'short' });
+                            const sd = s.getDate();
+                            if (order.rental_end_date) {
+                                const e = new Date(order.rental_end_date);
+                                const em = e.toLocaleDateString('en-US', { month: 'short' });
+                                const ed = e.getDate();
+                                scheduleFormatted = (sm === em) ? `${sm} ${sd} – ${ed}` : `${sm} ${sd} – ${em} ${ed}`;
+                            } else {
+                                scheduleFormatted = `${sm} ${sd}`;
+                            }
+                        } catch(e) {
+                            scheduleFormatted = `${order.rental_start_date} to ${order.rental_end_date}`;
+                        }
+                    }
+
+                    // Precise status styling and lifecycle mapping
+                    let statusBadgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+                    let statusLabel = status;
+                    let isStepActive = 1;
+
+                    if (status === 'CONFIRMED') {
+                        statusBadgeClass = 'bg-primary text-white';
+                        statusLabel = 'Step 1 • Confirmed';
+                        isStepActive = 1;
+                    } else if (status === 'PREPARING' || status === 'PROCESSING') {
+                        statusBadgeClass = 'bg-warning-subtle text-dark border border-warning-subtle';
+                        statusLabel = 'Step 2 • Preparing Gear';
+                        isStepActive = 2;
+                    } else if (status === 'MEETUP' || status === 'LOOKING_FOR_RIDER' || status === 'PICKUP' || status === 'ON_THE_WAY') {
+                        statusBadgeClass = 'bg-info-subtle text-info-emphasis border border-info-subtle';
+                        statusLabel = 'Step 3 • Meetup Set';
+                        isStepActive = 3;
+                    } else if (status === 'IN_PROGRESS' || status === 'RENTED' || status === 'DELIVERED') {
+                        statusBadgeClass = 'bg-success text-white';
+                        statusLabel = 'Step 4 • Rental Active';
+                        isStepActive = 4;
+                    } else if (status === 'RETURNED' || status === 'COMPLETED') {
+                        statusBadgeClass = 'bg-secondary text-white';
+                        statusLabel = 'Step 5 • Restocked';
+                        isStepActive = 5;
+                    }
 
                     const itemsHtml = (order.items || []).map(it => `
-                        <div class="d-flex align-items-center gap-2 p-1.5 bg-light rounded-3 mb-1">
-                            <img src="${it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" class="rounded-2" style="width:36px; height:36px; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
-                            <div class="flex-grow-1 text-truncate">
-                                <div class="fw-bold text-dark fs-9 text-truncate">${it.product_name}</div>
-                                <div class="fs-9 text-muted">${it.quantity}x unit(s) • ₱${parseFloat(it.price_per_day).toFixed(0)}/day</div>
+                        <div class="d-flex align-items-center gap-2.5 p-2 bg-light rounded-3 mb-1.5 border border-light-subtle">
+                            <img src="${it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" 
+                                 class="rounded-3 border object-fit-cover shadow-2xs" 
+                                 style="width:42px; height:42px; flex-shrink:0;" 
+                                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="fw-bold text-dark fs-9 text-truncate">${it.product_name || order.item_name || 'Equipment'}</div>
+                                <div class="fs-10 text-muted d-flex align-items-center gap-1.5">
+                                    <span class="badge bg-white text-secondary border px-1.5 py-0.5">${it.quantity || 1} unit(s)</span>
+                                    <span>•</span>
+                                    <span>₱${parseFloat(it.price_per_day || order.price_per_day || 0).toFixed(0)} / day</span>
+                                </div>
                             </div>
-                            <div class="fw-extrabold text-dark fs-9">₱${parseFloat(it.subtotal).toFixed(0)}</div>
+                            <div class="fw-extrabold text-primary fs-8 text-end">
+                                ₱${parseFloat(it.subtotal || order.total_amount || 0).toFixed(0)}
+                            </div>
                         </div>
                     `).join('');
 
                     html += `
-                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-2">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <div class="d-flex align-items-center gap-1.5">
-                                <span class="fw-extrabold text-dark fs-8">${order.order_code}</span>
-                                <span class="badge ${statusBadgeClass} rounded-pill fs-9 fw-bold">${status}</span>
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3 position-relative overflow-hidden" style="border: 1px solid #E2E8F0 !important;">
+                        <!-- Top Header: Reference & Duration Pill -->
+                        <div class="d-flex align-items-center justify-content-between mb-2.5">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-extrabold text-dark fs-8 font-monospace">${orderCode}</span>
+                                <span class="badge ${statusBadgeClass} rounded-pill fs-10 fw-bold px-2.5 py-1">
+                                    ${isStepActive === 4 ? '<span class="spinner-grow spinner-grow-sm me-1" style="width:6px; height:6px;"></span>' : ''}
+                                    ${statusLabel}
+                                </span>
                             </div>
-                            <span class="text-muted fs-9">${order.rental_days || 1} day(s) duration</span>
+                            <span class="badge bg-light text-muted border rounded-pill fs-10 px-2 py-1">
+                                <i class="fa-solid fa-clock me-1 text-primary"></i>${rentalDays} Day${rentalDays > 1 ? 's' : ''}
+                            </span>
                         </div>
 
-                        <!-- Customer Info -->
-                        <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light border mb-2">
-                            <div class="d-flex align-items-center gap-2 text-truncate">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white" style="width:28px; height:28px; font-size:11px; flex-shrink:0;">
-                                    <i class="fa-solid fa-user"></i>
+                        <!-- Customer Profile Box -->
+                        <div class="d-flex align-items-center justify-content-between p-2.5 rounded-3 mb-2.5 border" style="background:#F8FAFC;">
+                            <div class="d-flex align-items-center gap-2.5 text-truncate">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-2xs" 
+                                     style="width:34px; height:34px; font-size:12px; background:linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink:0;">
+                                    ${customerInitials}
                                 </div>
                                 <div class="text-truncate">
-                                    <div class="fw-bold text-dark fs-9 text-truncate">${order.customer_name}</div>
-                                    <div class="fs-9 text-muted">${order.customer_phone || 'Verified Student'}</div>
+                                    <div class="fw-bold text-dark fs-8 text-truncate leading-tight">${customerName}</div>
+                                    <div class="fs-10 text-muted d-flex align-items-center gap-1 mt-0.5">
+                                        <i class="fa-solid fa-phone text-secondary" style="font-size:9px;"></i>
+                                        <span>${order.customer_phone || 'Verified Student'}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold border text-primary" onclick="openChatWithRenter('${order.customer_name}', '${order.customer_phone || ''}', '${order.order_code}')">
+                            <button class="btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold text-white shadow-2xs" 
+                                    style="background: linear-gradient(135deg, #5B3FA8, #4027B0); border:none;" 
+                                    onclick="openChatWithRenter('${customerName}', '${order.customer_phone || ''}', '${orderCode}')">
                                 <i class="fa-solid fa-comment me-1"></i> Chat
                             </button>
                         </div>
 
-                        <!-- Items list -->
+                        <!-- Item Manifest -->
                         <div class="mb-2">
-                            ${itemsHtml}
+                            ${itemsHtml || `
+                                <div class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 mb-1.5 border">
+                                    <div class="rounded-2 d-flex align-items-center justify-content-center bg-white border" style="width:38px; height:38px; color:#5B3FA8;">
+                                        <i class="fa-solid fa-box"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold text-dark fs-9">${order.item_name || 'Rental Equipment'}</div>
+                                        <div class="fs-10 text-muted">1x unit • ₱${parseFloat(order.total_amount).toFixed(0)}</div>
+                                    </div>
+                                    <div class="fw-extrabold text-primary fs-8">₱${parseFloat(order.total_amount).toFixed(0)}</div>
+                                </div>
+                            `}
                         </div>
 
-                        <!-- Financials & Dates -->
-                        <div class="d-flex align-items-center justify-content-between fs-9 text-muted mb-2.5 px-1">
-                            <div>Dates: <strong class="text-dark">${order.rental_start_date || 'Today'}</strong> to <strong class="text-dark">${order.rental_end_date || 'Next Day'}</strong></div>
-                            <div>Total: <strong class="text-primary fs-8">₱${parseFloat(order.total_amount).toFixed(2)}</strong></div>
+                        <!-- Schedule & Financial Summary (Clean 2-Column Grid, Zero Word Wrapping!) -->
+                        <div class="p-2 rounded-3 mb-2.5 d-flex align-items-center justify-content-between" style="background:#F1F5F9;">
+                            <div class="d-flex align-items-center gap-1.5 text-truncate me-2">
+                                <i class="fa-solid fa-calendar-days text-primary fs-9"></i>
+                                <span class="fs-9 text-muted">Schedule:</span>
+                                <strong class="fs-9 text-dark text-truncate">${scheduleFormatted}</strong>
+                            </div>
+                            <div class="text-end flex-shrink-0">
+                                <span class="fs-10 text-muted me-1">Total:</span>
+                                <strong class="fs-8 text-primary font-monospace fw-extrabold">₱${totalAmt}</strong>
+                            </div>
                         </div>
 
-                        <!-- Action Bar for Owner (Face-to-Face Handover) -->
+                        <!-- Action Bar for Owner (Accurate by Step!) -->
                         <div class="d-flex align-items-center gap-2 pt-2 border-top">
                             ${status === 'CONFIRMED' ? `
-                                <button class="btn btn-sm btn-outline-warning rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="updateOwnerOrderStatus(${order.id}, '${order.order_code}', 'PREPARING')">
+                                <button class="btn btn-sm btn-outline-warning rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="updateOwnerOrderStatus(${order.id}, '${orderCode}', 'PREPARING')">
                                     <i class="fa-solid fa-boxes-packing me-1"></i> Prepare Equipment
                                 </button>
-                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-3 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${order.order_code}')">
+                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-3 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${orderCode}')">
                                     <i class="fa-solid fa-eye me-1"></i> Details
                                 </button>
                             ` : (status === 'PREPARING' || status === 'MEETUP' || status === 'LOOKING_FOR_RIDER' || status === 'PICKUP' || status === 'ON_THE_WAY') ? `
-                                <button class="btn btn-sm text-white rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background:#10B981; border:none;" onclick="ownerConfirmHandover('${order.order_code}')">
+                                <button class="btn btn-sm text-white rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background:#10B981; border:none;" onclick="ownerConfirmHandover('${orderCode}')">
                                     <i class="fa-solid fa-handshake me-1"></i> Confirm Handover
                                 </button>
-                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-primary" onclick="chatWithOwnerFromTracking('${order.customer_name || 'Renter'}', '${order.order_code}')">
-                                    <i class="fa-solid fa-comment-dots me-1"></i> Coordinate Meetup
+                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-primary" onclick="openChatWithRenter('${customerName}', '${order.customer_phone || ''}', '${orderCode}')">
+                                    <i class="fa-solid fa-comment-dots me-1"></i> Coordinate
                                 </button>
-                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${order.order_code}')">
+                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${orderCode}')">
                                     <i class="fa-solid fa-eye me-1"></i> Track
                                 </button>
-                            ` : status === 'DELIVERED' || status === 'RETURN_DELIVERY' ? `
-                                <button class="btn btn-sm btn-primary rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1" style="background: linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(${order.id}, '${order.order_code}')">
-                                    <i class="fa-solid fa-circle-check me-1"></i> Mark Returned & Restock
+                            ` : (status === 'IN_PROGRESS' || status === 'RENTED' || status === 'DELIVERED' || status === 'RETURN_DELIVERY') ? `
+                                <button class="btn btn-sm btn-primary rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background: linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(${order.id}, '${orderCode}')">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Mark Returned &amp; Restock
                                 </button>
-                                <button class="btn btn-sm btn-outline-primary rounded-pill py-1 px-2.5 fs-9 fw-bold" onclick="openTrackScreen('${order.order_code}')">
-                                    <i class="fa-solid fa-eye me-1"></i> View
+                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-primary" onclick="openChatWithRenter('${customerName}', '${order.customer_phone || ''}', '${orderCode}')">
+                                    <i class="fa-solid fa-comment me-1"></i> Chat
+                                </button>
+                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${orderCode}')">
+                                    <i class="fa-solid fa-eye me-1"></i> Track
                                 </button>
                             ` : `
-                                <div class="w-100 text-center py-1 text-success fs-9 fw-bold">
-                                    <i class="fa-solid fa-check-double me-1"></i> Equipment Returned & Restocked in Catalog
+                                <div class="w-100 text-center py-1 text-success fs-9 fw-bold d-flex align-items-center justify-content-center gap-1.5">
+                                    <i class="fa-solid fa-check-double text-success"></i>
+                                    <span>Equipment Returned &amp; Restocked in Catalog</span>
                                 </div>
                             `}
                         </div>
@@ -1688,45 +1779,72 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                     const rented = parseInt(item.qty_rented || 0);
                     const avail = parseInt(item.qty_available ?? (total - rented));
                     const percentRented = Math.min(100, Math.round((rented / Math.max(1, total)) * 100));
+                    const safeName = (item.name || 'Equipment').replace(/'/g, "\\'");
+                    const priceFormatted = parseFloat(item.price_per_day || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
                     html += `
-                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-2" id="ownerInventoryCard_${item.id}">
-                        <div class="d-flex align-items-start gap-2.5 mb-2.5">
-                            <img src="${item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" class="rounded-3" style="width:64px; height:64px; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
-                            <div class="flex-grow-1 text-truncate">
-                                <div class="d-flex align-items-center justify-content-between mb-0.5">
-                                    <span class="badge bg-light text-dark border fs-9">${item.category || 'General'}</span>
-                                    <span class="fw-extrabold text-primary fs-8">₱${parseFloat(item.price_per_day).toFixed(0)} <span class="text-muted fs-9 fw-normal">/ day</span></span>
+                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3 position-relative overflow-hidden" id="ownerInventoryCard_${item.id}" style="border: 1px solid #E2E8F0 !important;">
+                        <!-- Header with Image & Title -->
+                        <div class="d-flex align-items-start gap-3 mb-2.5">
+                            <div class="position-relative flex-shrink-0">
+                                <img src="${item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" 
+                                     class="rounded-3 border object-fit-cover shadow-2xs" 
+                                     style="width:68px; height:68px;" 
+                                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="badge bg-light text-secondary border fs-10 fw-semibold px-2 py-0.5">${item.category || 'Equipment'}</span>
+                                    <div class="d-flex align-items-baseline gap-0.5">
+                                        <span class="fw-extrabold fs-7" style="color:#5B3FA8;">₱${priceFormatted}</span>
+                                        <span class="text-muted fs-10">/ day</span>
+                                    </div>
                                 </div>
-                                <h6 class="fw-bold text-dark fs-8 mb-1 text-truncate" title="${item.name}">${item.name}</h6>
-                                <span class="fs-9 text-muted"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${item.location || 'San Pablo Campus'}</span>
+                                <h6 class="fw-extrabold text-dark fs-8 mb-1 text-truncate" title="${item.name}">${item.name}</h6>
+                                <div class="fs-10 text-muted d-flex align-items-center gap-1 text-truncate">
+                                    <i class="fa-solid fa-location-dot text-danger" style="font-size:10px;"></i>
+                                    <span class="text-truncate">${item.location || 'Campus / In-App Chat'}</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Live Stock Monitor Progress Bar -->
-                        <div class="p-2.5 rounded-3 bg-light border mb-2.5">
-                            <div class="d-flex align-items-center justify-content-between fs-9 mb-1">
-                                <span class="fw-bold text-dark"><i class="fa-solid fa-chart-simple text-primary me-1"></i> Stock Status</span>
-                                <span><strong>${avail}</strong> available / <strong>${rented}</strong> rented out (${total} total)</span>
+                        <!-- Live Stock Status Dashboard (Pill Metrics + Progress Bar, Zero Word Wrapping!) -->
+                        <div class="p-2.5 rounded-3 mb-2.5 border" style="background:#F8FAFC;">
+                            <!-- Top Metric Pills -->
+                            <div class="d-flex align-items-center justify-content-between mb-2 gap-1.5 flex-wrap">
+                                <span class="badge bg-success-subtle text-success fs-10 fw-bold px-2 py-1 border border-success-subtle">
+                                    <i class="fa-solid fa-check me-1"></i><strong>${avail}</strong> Available
+                                </span>
+                                <span class="badge ${rented > 0 ? 'bg-warning-subtle text-dark border border-warning-subtle' : 'bg-light text-muted border'} fs-10 fw-semibold px-2 py-1">
+                                    <i class="fa-solid fa-handshake me-1"></i><strong>${rented}</strong> Rented Out
+                                </span>
+                                <span class="badge bg-light text-secondary border fs-10 px-2 py-1">
+                                    <strong>${total}</strong> Total
+                                </span>
                             </div>
-                            <div class="progress rounded-pill" style="height: 7px; background:#e2e8f0;">
-                                <div class="progress-bar rounded-pill" role="progressbar" style="width: ${percentRented}%; background: linear-gradient(90deg, #F59E0B, #EF4444);" aria-valuenow="${percentRented}" aria-valuemin="0" aria-valuemax="100"></div>
+
+                            <!-- Progress Track -->
+                            <div class="progress rounded-pill overflow-hidden" style="height: 6px; background:#E2E8F0;">
+                                <div class="progress-bar rounded-pill" role="progressbar" 
+                                     style="width: ${percentRented}%; background: linear-gradient(90deg, #10B981, #5B3FA8);" 
+                                     aria-valuenow="${percentRented}" aria-valuemin="0" aria-valuemax="100">
+                                </div>
                             </div>
                         </div>
 
                         <!-- Owner Control Buttons -->
-                        <div class="d-flex align-items-center gap-1.5 pt-2 border-top">
-                            <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold text-dark border shadow-2xs" 
+                        <div class="d-flex align-items-center gap-2 pt-2 border-top">
+                            <button class="btn btn-sm btn-light rounded-pill px-3 py-1.5 fs-9 fw-bold text-dark border shadow-2xs flex-grow-1" 
                                     onclick="openRentalDetail(${item.id})">
-                                <i class="fa-solid fa-eye me-1"></i>View
+                                <i class="fa-solid fa-eye me-1 text-primary"></i> View
                             </button>
-                            <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 fs-9 fw-bold text-primary shadow-2xs" 
-                                    onclick="openEditStockPriceModal(${item.id}, '${(item.name || 'Equipment').replace(/'/g, "\\'")}', ${parseFloat(item.price_per_day || 0)}, ${avail}, ${total})">
-                                <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                            <button class="btn btn-sm btn-light rounded-pill px-3 py-1.5 fs-9 fw-bold text-primary border shadow-2xs flex-grow-1" 
+                                    onclick="openEditStockPriceModal(${item.id}, '${safeName}', ${parseFloat(item.price_per_day || 0)}, ${avail}, ${total})">
+                                <i class="fa-solid fa-pen-to-square me-1"></i> Edit Stock
                             </button>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" 
-                                    onclick="deleteUserRentalItem(${item.id}, '${(item.name || 'Equipment').replace(/'/g, "\\'")}')">
-                                <i class="fa-solid fa-ban me-1"></i>Take Down
+                            <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1.5 fs-9 fw-bold" 
+                                    onclick="deleteUserRentalItem(${item.id}, '${safeName}')" title="Take Down Listing">
+                                <i class="fa-solid fa-ban me-1"></i> Take Down
                             </button>
                         </div>
                     </div>
