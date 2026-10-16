@@ -738,8 +738,11 @@ if ($action === 'chat_conversations') {
                     $txStatus = $ord['Status'];
                 }
             }
-        } catch (Exception $eTx) {}
+        } catch (Exception $eTx) {
+            $c['DebugErr'] = $eTx->getMessage();
+        }
 
+        $c['DebugEmails'] = [$uEmail, $pEmail, $userId, $pId];
         $c['HasTransaction'] = $hasTx;
         $c['TransactionOrderCode'] = $txCode;
         $c['TransactionStatus'] = $txStatus;
