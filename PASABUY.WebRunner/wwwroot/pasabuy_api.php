@@ -677,10 +677,12 @@ if ($action === 'chat_conversations') {
         } else {
             $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
             $c['PartnerName'] = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
+            $c['PartnerId'] = (int)$c['SenderId'];
+            $c['PartnerAvatar'] = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
         }
 
         // Check if transaction has been made between user and partner
-        $pId = (int)$c['PartnerId'];
+        $pId = (int)($c['PartnerId'] ?? 0);
         $hasTx = false;
         $txCode = '';
         $txStatus = '';
@@ -738,11 +740,8 @@ if ($action === 'chat_conversations') {
                     $txStatus = $ord['Status'];
                 }
             }
-        } catch (Exception $eTx) {
-            $c['DebugErr'] = $eTx->getMessage();
-        }
+        } catch (Exception $eTx) {}
 
-        $c['DebugEmails'] = [$uEmail, $pEmail, $userId, $pId];
         $c['HasTransaction'] = $hasTx;
         $c['TransactionOrderCode'] = $txCode;
         $c['TransactionStatus'] = $txStatus;
