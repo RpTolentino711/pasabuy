@@ -3504,39 +3504,39 @@
                                     const hasMeetupLoc = (ord.meetup_location && ord.meetup_location.trim() !== '');
 
                                     // Reset step rows
-                                    if (step1Row) step1Row.style.display = 'none';
-                                    if (step2Row) step2Row.style.display = 'none';
-                                    if (step3Row) step3Row.style.display = 'none';
-                                    if (step4Row) step4Row.style.display = 'none';
+                                    if (step1Row) step1Row.style.setProperty('display', 'none', 'important');
+                                    if (step2Row) step2Row.style.setProperty('display', 'none', 'important');
+                                    if (step3Row) step3Row.style.setProperty('display', 'none', 'important');
+                                    if (step4Row) step4Row.style.setProperty('display', 'none', 'important');
 
                                     // STEP 1: Booking Confirmation
                                     if (!ownerAgreed) {
                                         if (stepPill) { stepPill.innerText = 'Step 1 of 4 • Booking Confirmation'; stepPill.style.background = '#EDE9FE'; stepPill.style.color = '#5B3FA8'; }
-                                        if (step1Row) step1Row.style.display = 'block';
+                                        if (step1Row) step1Row.style.setProperty('display', 'block', 'important');
                                         if (isOwner) {
-                                            if (step1Owner) step1Owner.style.display = 'block';
-                                            if (step1Renter) step1Renter.style.display = 'none';
+                                            if (step1Owner) step1Owner.style.setProperty('display', 'block', 'important');
+                                            if (step1Renter) step1Renter.style.setProperty('display', 'none', 'important');
                                         } else {
-                                            if (step1Owner) step1Owner.style.display = 'none';
-                                            if (step1Renter) step1Renter.style.display = 'block';
+                                            if (step1Owner) step1Owner.style.setProperty('display', 'none', 'important');
+                                            if (step1Renter) step1Renter.style.setProperty('display', 'flex', 'important');
                                         }
                                     }
                                     // STEP 2: Equipment Preparation & Photo Proof
                                     else if (!renterConfirmedPrep) {
                                         if (stepPill) { stepPill.innerText = 'Step 2 of 4 • Equipment Preparation'; stepPill.style.background = '#FEF3C7'; stepPill.style.color = '#B45309'; }
-                                        if (step2Row) step2Row.style.display = 'block';
+                                        if (step2Row) step2Row.style.setProperty('display', 'block', 'important');
 
                                         if (isOwner) {
-                                            if (step2Owner) step2Owner.style.display = 'block';
-                                            if (step2Renter) step2Renter.style.display = 'none';
+                                            if (step2Owner) step2Owner.style.setProperty('display', 'block', 'important');
+                                            if (step2Renter) step2Renter.style.setProperty('display', 'none', 'important');
                                         } else {
-                                            if (step2Owner) step2Owner.style.display = 'none';
-                                            if (step2Renter) step2Renter.style.display = 'block';
+                                            if (step2Owner) step2Owner.style.setProperty('display', 'none', 'important');
+                                            if (step2Renter) step2Renter.style.setProperty('display', 'block', 'important');
 
                                             if (!hasPrepPhoto) {
                                                 // Renter must wait for photo proof; chat locked until owner uploads photo!
-                                                if (step2RenterWait) step2RenterWait.style.display = 'flex';
-                                                if (step2RenterAction) step2RenterAction.style.display = 'none';
+                                                if (step2RenterWait) step2RenterWait.style.setProperty('display', 'flex', 'important');
+                                                if (step2RenterAction) step2RenterAction.style.setProperty('display', 'none', 'important');
                                                 if (chatInput) {
                                                     chatInput.disabled = true;
                                                     chatInput.placeholder = 'Chat locked: Stock owner is preparing equipment & uploading photo proof...';
@@ -3544,8 +3544,8 @@
                                                 if (sendBtn) sendBtn.disabled = true;
                                             } else {
                                                 // Photo uploaded! Renter can view photo & click Accept
-                                                if (step2RenterWait) step2RenterWait.style.display = 'none';
-                                                if (step2RenterAction) step2RenterAction.style.display = 'block';
+                                                if (step2RenterWait) step2RenterWait.style.setProperty('display', 'none', 'important');
+                                                if (step2RenterAction) step2RenterAction.style.setProperty('display', 'block', 'important');
                                                 if (prepImgDisplay) prepImgDisplay.src = ord.prep_photo_url;
                                             }
                                         }
@@ -3553,29 +3553,29 @@
                                     // STEP 3: Campus Meetup Spot
                                     else if (!hasMeetupLoc) {
                                         if (stepPill) { stepPill.innerText = 'Step 3 of 4 • Campus Meetup Location'; stepPill.style.background = '#E0F2FE'; stepPill.style.color = '#0369A1'; }
-                                        if (step3Row) step3Row.style.display = 'block';
+                                        if (step3Row) step3Row.style.setProperty('display', 'block', 'important');
 
                                         if (isOwner) {
-                                            if (step3Owner) step3Owner.style.display = 'block';
-                                            if (step3Renter) step3Renter.style.display = 'none';
+                                            if (step3Owner) step3Owner.style.setProperty('display', 'block', 'important');
+                                            if (step3Renter) step3Renter.style.setProperty('display', 'none', 'important');
                                         } else {
-                                            if (step3Owner) step3Owner.style.display = 'none';
-                                            if (step3Renter) step3Renter.style.display = 'block';
+                                            if (step3Owner) step3Owner.style.setProperty('display', 'none', 'important');
+                                            if (step3Renter) step3Renter.style.setProperty('display', 'flex', 'important');
                                             if (meetupNotice) meetupNotice.innerText = 'Waiting for stock owner to field campus meetup spot...';
                                         }
                                     }
                                     // STEP 4: In-Person Handover & Start Timer
                                     else {
                                         if (stepPill) { stepPill.innerText = 'Step 4 of 4 • Handover & Start Timer'; stepPill.style.background = '#DCFCE7'; stepPill.style.color = '#15803D'; }
-                                        if (step4Row) step4Row.style.display = 'block';
+                                        if (step4Row) step4Row.style.setProperty('display', 'block', 'important');
 
                                         if (isOwner) {
-                                            if (step4Owner) step4Owner.style.display = 'block';
-                                            if (step4Renter) step4Renter.style.display = 'none';
+                                            if (step4Owner) step4Owner.style.setProperty('display', 'block', 'important');
+                                            if (step4Renter) step4Renter.style.setProperty('display', 'none', 'important');
                                             if (step4LocOwner) step4LocOwner.innerText = ord.meetup_location;
                                         } else {
-                                            if (step4Owner) step4Owner.style.display = 'none';
-                                            if (step4Renter) step4Renter.style.display = 'block';
+                                            if (step4Owner) step4Owner.style.setProperty('display', 'none', 'important');
+                                            if (step4Renter) step4Renter.style.setProperty('display', 'flex', 'important');
                                             if (step4LocRenter) step4LocRenter.innerText = ord.meetup_location;
                                         }
                                     }

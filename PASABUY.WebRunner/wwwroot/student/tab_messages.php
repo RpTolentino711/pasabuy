@@ -146,6 +146,10 @@
             align-items: center;
             justify-content: space-between;
         }
+        .rentchat-flex-row {
+            display: flex;
+            align-items: center;
+        }
         .rentchat-badge-pending {
             background: #FEF3C7;
             color: #B45309;
@@ -480,7 +484,7 @@
                 </div>
             </div>
             <!-- Renter View: Waiting for Owner Agreement -->
-            <div id="chatStep1RenterBox" style="display:none;" class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2">
+            <div id="chatStep1RenterBox" style="display:none !important;" class="rentchat-waiting-box p-2.5 rounded-3 rentchat-flex-row gap-2">
                 <i class="fa-solid fa-hourglass-half text-warning fs-8"></i>
                 <div style="font-size:0.72rem;">
                     <div class="fw-bold text-dark">Awaiting Owner Confirmation</div>
@@ -490,9 +494,9 @@
         </div>
 
         <!-- STEP 2: EQUIPMENT PREPARATION & PHOTO PROOF -->
-        <div id="chatStep2Row" style="display:none;" class="mb-2">
+        <div id="chatStep2Row" style="display:none !important;" class="mb-2">
             <!-- Owner View: Upload Preparation Photo -->
-            <div id="chatStep2OwnerBox" style="display:none;">
+            <div id="chatStep2OwnerBox" style="display:none !important;">
                 <div class="p-2.5 rounded-3 border bg-light mb-2 text-start">
                     <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-camera text-primary me-1"></i> Step 2: Equipment Preparation Photo</div>
                     <div class="text-muted" style="font-size:0.68rem;">Inspect the equipment and upload a condition photo proof before meeting the renter:</div>
@@ -503,7 +507,7 @@
                         </button>
                         <span id="prepPhotoNameLabel" class="text-muted fs-9 text-truncate" style="max-width:140px;">No photo selected</span>
                     </div>
-                    <div id="prepPhotoPreviewWrap" style="display:none;" class="mt-2 text-center">
+                    <div id="prepPhotoPreviewWrap" style="display:none !important;" class="mt-2 text-center">
                         <img id="prepPhotoPreviewImg" src="" class="rounded-3 border" style="max-height:100px; max-width:100%; object-fit:contain;">
                     </div>
                 </div>
@@ -513,9 +517,9 @@
             </div>
 
             <!-- Renter View: Waiting or Inspecting Photo -->
-            <div id="chatStep2RenterBox" style="display:none;">
+            <div id="chatStep2RenterBox" style="display:none !important;">
                 <!-- If photo not yet submitted by owner -->
-                <div id="chatStep2RenterWaiting" class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2">
+                <div id="chatStep2RenterWaiting" style="display:none !important;" class="rentchat-waiting-box p-2.5 rounded-3 rentchat-flex-row gap-2">
                     <i class="fa-solid fa-screwdriver-wrench text-warning fs-8"></i>
                     <div style="font-size:0.72rem;">
                         <div class="fw-bold text-dark">Equipment Being Prepared</div>
@@ -523,7 +527,7 @@
                     </div>
                 </div>
                 <!-- If photo is submitted, renter inspects and clicks "Accept" -->
-                <div id="chatStep2RenterAction" style="display:none;" class="p-2.5 rounded-3 border bg-light text-start">
+                <div id="chatStep2RenterAction" style="display:none !important;" class="p-2.5 rounded-3 border bg-light text-start">
                     <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-circle-check text-success me-1"></i> Equipment Ready - Review Photo</div>
                     <div class="text-muted mb-2" style="font-size:0.68rem;">Stock owner submitted this photo of your gear:</div>
                     <div class="text-center mb-2">
@@ -537,9 +541,9 @@
         </div>
 
         <!-- STEP 3: CAMPUS MEETUP LOCATION -->
-        <div id="chatStep3Row" style="display:none;" class="mb-2">
+        <div id="chatStep3Row" style="display:none !important;" class="mb-2">
             <!-- Owner View: Field a Location -->
-            <div id="chatStep3OwnerBox" style="display:none;">
+            <div id="chatStep3OwnerBox" style="display:none !important;">
                 <div class="p-2.5 rounded-3 border bg-light mb-2 text-start">
                     <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i> Step 3: Set Campus Meetup Spot</div>
                     <div class="text-muted mb-2" style="font-size:0.68rem;">Field where on campus you will meet the renter to hand over the gear:</div>
@@ -557,8 +561,8 @@
             </div>
 
             <!-- Renter View: Waiting for location or view location -->
-            <div id="chatStep3RenterBox" style="display:none;">
-                <div class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2">
+            <div id="chatStep3RenterBox" style="display:none !important;">
+                <div class="rentchat-waiting-box p-2.5 rounded-3 rentchat-flex-row gap-2">
                     <i class="fa-solid fa-location-crosshairs text-primary fs-8"></i>
                     <div style="font-size:0.72rem;">
                         <div class="fw-bold text-dark">Campus Meetup Spot</div>
@@ -569,9 +573,9 @@
         </div>
 
         <!-- STEP 4: IN-PERSON HANDOVER & START TIMER -->
-        <div id="chatStep4Row" style="display:none;" class="mb-2">
+        <div id="chatStep4Row" style="display:none !important;" class="mb-2">
             <!-- Owner View: Hand Over Gear & Start Timer (Only unlocked after steps 1, 2, 3) -->
-            <div id="chatStep4OwnerBox" style="display:none;">
+            <div id="chatStep4OwnerBox" style="display:none !important;">
                 <div class="p-2.5 rounded-3 border bg-light mb-2 text-start">
                     <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-handshake text-success me-1"></i> Step 4: Face-to-Face Handover</div>
                     <div class="text-muted mb-2" style="font-size:0.68rem;">
@@ -584,8 +588,8 @@
             </div>
 
             <!-- Renter View: Awaiting Handover on campus -->
-            <div id="chatStep4RenterBox" style="display:none;">
-                <div class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2">
+            <div id="chatStep4RenterBox" style="display:none !important;">
+                <div class="rentchat-waiting-box p-2.5 rounded-3 rentchat-flex-row gap-2">
                     <i class="fa-solid fa-person-walking text-primary fs-8"></i>
                     <div style="font-size:0.72rem;">
                         <div class="fw-bold text-dark">Meet Owner for Handover</div>
