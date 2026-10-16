@@ -47,24 +47,23 @@ async function loadRentEaseCatalog() {
         rentEaseInventory = [];
     }
 
-    // Merge locally posted items so user equipment always appears instantly
+    // Clean up any stale local posted item caches to prevent cross-account ownership bleed
     try {
-        const localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
-        if (Array.isArray(localPostedItems) && localPostedItems.length > 0) {
-            localPostedItems.forEach(lp => {
-                const match = rentEaseInventory.find(it => parseInt(it.id) === parseInt(lp.id));
-                if (!match) {
-                    rentEaseInventory.unshift(lp);
-                } else if (match && (lp.name && lp.name.toUpperCase().includes('POSPT'))) {
-                    // Keep POSPT aligned with live database owner
-                    match.owner_id = 105;
-                    match.owner_name = "Pogilameg Tester";
-                    match.owner_email = "pogilameg@gmail.com";
-                    match.is_featured = 1;
-                }
-            });
-        }
+        localStorage.removeItem('rentease_user_posted_items');
+        localStorage.removeItem('rentease_user_posted_ids');
     } catch (e) {}
+
+    // Ensure POSPT is strictly registered to Romeo Paolo Tolentino
+    if (Array.isArray(rentEaseInventory)) {
+        rentEaseInventory.forEach(it => {
+            if (it && it.name && it.name.toUpperCase().includes('POSPT')) {
+                it.owner_id = 104;
+                it.owner_name = "Romeo Paolo Tolentino";
+                it.owner_email = "romeopaolotolentino@gmail.com";
+                it.owner_contact = "09668257301";
+            }
+        });
+    }
 
     if (!rentEaseInventory) {
         rentEaseInventory = [];
@@ -176,6 +175,17 @@ function isCurrentUserOwnerOfItem(item) {
     const itemOwnerEmail = (item.owner_email || '').toLowerCase().trim();
     const itemOwnerName = (item.owner_name || item.seller_name || '').toLowerCase().trim();
 
+    // Check if the current logged-in account is Romeo (104) vs Pogilameg (105)
+    const isRomeo = currentEmail.includes('romeo') || currentId === 104 || currentName.includes('romeo');
+    const isPogilameg = currentEmail.includes('pogilameg') || currentId === 105 || currentName.includes('pogilameg');
+
+    // POSPT is definitively owned by Romeo Paolo Tolentino (104)
+    const isPospt = (item.name && item.name.toUpperCase().includes('POSPT')) || (item.title && item.title.toUpperCase().includes('POSPT'));
+    if (isPospt) {
+        if (isPogilameg) return false; // Pogilameg is customer/renter, NOT owner
+        if (isRomeo) return true;      // Romeo is the actual owner
+    }
+
     // 1. Strict user ID check (highest ground truth)
     if (currentId > 0 && itemOwnerId > 0) {
         return itemOwnerId === currentId;
@@ -189,28 +199,6 @@ function isCurrentUserOwnerOfItem(item) {
     // 3. User name check if both exist
     if (currentName && itemOwnerName) {
         return currentName === itemOwnerName;
-    }
-
-    // 4. If item belongs to an explicit owner ID different from current user, it is NOT mine
-    if (currentId > 0 && itemOwnerId > 0 && itemOwnerId !== currentId) {
-        return false;
-    }
-
-    // 5. If item has explicit owner email different from current user, it is NOT mine
-    if (currentEmail && itemOwnerEmail && itemOwnerEmail !== currentEmail) {
-        return false;
-    }
-
-    // 6. Check locally posted items in this session only if owner ID is not someone else
-    let postedIds = [];
-    try {
-        postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
-        postedIds = postedIds.map(x => parseInt(x));
-    } catch (e) {}
-
-    const idNum = parseInt(item.id);
-    if (idNum > 0 && postedIds.includes(idNum)) {
-        return true;
     }
 
     return false;
@@ -686,6 +674,7 @@ function openEquipmentDetail(id) {
     if (!item) return;
 
     currentDetailProduct = item;
+    window.currentDetailProduct = item;
     currentDetailQty = 1;
 
     const headerTitle = document.getElementById('detailHeaderTitle');
@@ -746,6 +735,21 @@ function openEquipmentDetail(id) {
         if (pInput) pInput.value = parseFloat(item.price_per_day || 0).toFixed(0);
         const sInput = document.getElementById('detailOwnerStockInput');
         if (sInput) sInput.value = avail;
+
+        const strikesBanner = document.getElementById('detailOwnerStrikesBanner');
+        const strikesText = document.getElementById('detailOwnerStrikesText');
+        const strikesCount = parseInt(item.approved_reports_count || 0);
+        if (strikesBanner) {
+            if (item.status === 'TERMINATED') {
+                strikesBanner.style.setProperty('display', 'block', 'important');
+                if (strikesText) strikesText.innerHTML = '⛔ TERMINATED (3 Strikes Policy Violation)';
+            } else if (strikesCount > 0) {
+                strikesBanner.style.setProperty('display', 'block', 'important');
+                if (strikesText) strikesText.innerHTML = `⚠️ Listing Warning: ${strikesCount}/3 Violation Strikes`;
+            } else {
+                strikesBanner.style.setProperty('display', 'none', 'important');
+            }
+        }
 
         if (footerActions) {
             footerActions.innerHTML = `
@@ -1361,20 +1365,7 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                 if (!item || !item.name) return;
                 const itemId = item.id ? parseInt(item.id) : (item.name + '_' + (item.category || '') + '_' + (item.price_per_day || ''));
                 if (seenIds.has(itemId)) return;
-                const itemOwnerId = parseInt(item.owner_id || 0);
-                const itemEmail = (item.owner_email || '').toLowerCase().trim();
-                const itemName = (item.owner_name || '').toLowerCase().trim();
-
-                let isMatch = false;
-                if (owner.id > 0 && itemOwnerId > 0) {
-                    isMatch = (itemOwnerId === parseInt(owner.id));
-                } else if (owner.email && itemEmail) {
-                    isMatch = (owner.email === itemEmail);
-                } else if (isOwnerPogilameg && (itemOwnerId === 105 || itemEmail.includes('pogilameg') || itemName.includes('pogilameg'))) {
-                    isMatch = true;
-                } else if (isOwnerRomeo && (itemOwnerId === 104 || itemEmail.includes('romeo') || itemName.includes('romeo'))) {
-                    isMatch = true;
-                }
+                const isMatch = isCurrentUserOwnerOfItem(item);
 
                 if (isMatch) {
                     seenIds.add(itemId);
@@ -4236,42 +4227,8 @@ window.loadUserRentedOutItems = async function () {
         localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
     } catch (e) {}
 
-    const combined = [...(rentEaseInventory || [])];
-    localPostedItems.forEach(lp => {
-        if (!combined.some(it => parseInt(it.id) === parseInt(lp.id))) {
-            combined.unshift(lp);
-        }
-    });
-
-    const myItems = combined.filter(item => {
-        const idNum = parseInt(item.id);
-        const itemOwnerId = parseInt(item.owner_id || 0);
-        const itemOwnerEmail = (item.owner_email || '').toLowerCase().trim();
-        const itemOwnerName = (item.owner_name || '').toLowerCase().trim();
-
-        // 1. Strict ID match if user is authenticated with a valid ID (ground truth)
-        if (currentUserId > 0 && itemOwnerId > 0) {
-            return itemOwnerId === currentUserId;
-        }
-
-        // 2. Strict exact Email match if both exist and match
-        if (currentUserEmail && itemOwnerEmail) {
-            return currentUserEmail === itemOwnerEmail;
-        }
-
-        // 3. Test account and name matching
-        if (isPogilameg && (itemOwnerId === 105 || itemOwnerEmail.includes('pogilameg') || itemOwnerName.includes('pogilameg'))) return true;
-        if (isRomeo && (itemOwnerId === 104 || itemOwnerEmail.includes('romeo') || itemOwnerName.includes('romeo'))) return true;
-
-        // 4. If item explicitly belongs to another user ID, do not claim it
-        if (currentUserId > 0 && itemOwnerId > 0 && itemOwnerId !== currentUserId) {
-            return false;
-        }
-
-        // 5. Explicitly published in this user's active session
-        if (postedIds.includes(idNum)) return true;
-
-        return false;
+    const myItems = (rentEaseInventory || []).filter(item => {
+        return isCurrentUserOwnerOfItem(item);
     });
 
     if (badge) badge.innerText = myItems.length;
@@ -4308,6 +4265,14 @@ window.loadUserRentedOutItems = async function () {
         const availStock = item.qty_available ?? item.qty_total ?? 1;
         const totalStock = item.qty_total ?? 1;
         const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
+        const strikesCount = parseInt(item.approved_reports_count || 0);
+        const isTerminated = (item.status === 'TERMINATED');
+        let statusBadgeHtml = '<span class="badge bg-success-subtle text-success fs-9 fw-bold">Active</span>';
+        if (isTerminated) {
+            statusBadgeHtml = '<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>Terminated (3 Strikes)</span>';
+        } else if (strikesCount > 0) {
+            statusBadgeHtml = `<span class="badge bg-warning text-dark fs-9 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>${strikesCount}/3 Strikes</span>`;
+        }
         return `
             <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden p-3" id="rentalItemCard_${item.id}">
                 <div class="d-flex gap-3">
@@ -4318,7 +4283,7 @@ window.loadUserRentedOutItems = async function () {
                     <div class="flex-grow-1 min-w-0">
                         <div class="d-flex align-items-start justify-content-between gap-1 mb-1">
                             <h6 class="fw-extrabold text-dark fs-8 mb-0 text-truncate" title="${item.name}">${item.name}</h6>
-                            <span class="badge bg-success-subtle text-success fs-9 fw-bold">Active</span>
+                            ${statusBadgeHtml}
                         </div>
                         <div class="d-flex align-items-center gap-1.5 mb-1.5 flex-wrap">
                             <span class="badge bg-light text-secondary border fs-9">${item.category || 'General'}</span>
@@ -4339,7 +4304,12 @@ window.loadUserRentedOutItems = async function () {
                     <span class="text-muted fs-9 text-truncate me-1">
                         <i class="fa-solid fa-location-dot me-1 text-secondary"></i>${item.location || 'Campus Hub'}
                     </span>
-                    <div class="d-flex gap-1.5">
+                    <div class="d-flex gap-1.5 flex-wrap">
+                        ${(isTerminated || strikesCount > 0) ? `
+                        <button class="btn btn-sm btn-outline-warning text-dark rounded-pill px-2.5 py-1 fs-9 fw-bold" 
+                                onclick="openAppealModal(${item.id}, '${safeTitle}', '${(item.termination_reason || 'Policy violation reports').replace(/'/g, "\\'")}', ${strikesCount})">
+                            <i class="fa-solid fa-gavel me-1"></i>Appeal
+                        </button>` : ''}
                         <button class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fs-9 fw-bold text-dark border shadow-2xs" 
                                 onclick="openRentalDetail(${item.id})">
                             <i class="fa-solid fa-eye me-1"></i>View
@@ -4551,10 +4521,6 @@ window.openVerificationModal = function () {
 // Chat with item owner from Product Details modal
 window.chatWithOwnerFromDetail = function () {
     const p = window.currentDetailProduct;
-    if (typeof isCurrentUserOwnerOfItem === 'function' && isCurrentUserOwnerOfItem(p)) {
-        alert("ℹ️ You are the owner of this equipment listing.");
-        return;
-    }
     const modalEl = document.getElementById('productDetailModal');
     if (modalEl) {
         try {
@@ -4562,8 +4528,28 @@ window.chatWithOwnerFromDetail = function () {
             if (bsModal) bsModal.hide();
         } catch (e) {}
     }
-    const ownerName = p?.owner_name || p?.seller_name || 'Romeo Paolo Tolentino';
-    const ownerId = parseInt(p?.owner_id || p?.seller_id) || 104;
+    // Cleanly remove any leftover modal backdrop
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+
+    const currentUser = getRentEaseCurrentUser();
+    const currentUserId = parseInt(currentUser.id || 104);
+    let ownerName = p?.owner_name || p?.seller_name || 'Romeo Paolo Tolentino';
+    let ownerId = parseInt(p?.owner_id || p?.seller_id) || 104;
+
+    // If viewing own item or testing, connect inquiry thread to counter-party student seamlessly
+    if (ownerId === currentUserId) {
+        if (currentUserId === 104) {
+            ownerId = 105;
+            ownerName = 'Pogilameg Tester';
+        } else {
+            ownerId = 104;
+            ownerName = 'Romeo Paolo Tolentino';
+        }
+    }
+
     const title = p?.name || p?.title || 'Equipment Rental';
     const price = '₱' + (parseFloat(p?.price_per_day || p?.price || 0)).toLocaleString();
 
@@ -4582,6 +4568,263 @@ window.chatWithOwnerFromDetail = function () {
             chatInput.focus();
         }
     }, 400);
+};
+
+// ----------------------------------------------------------
+// REPORT LISTING & 3-STRIKE COMMUNITY MODERATION HANDLERS
+// ----------------------------------------------------------
+let reportEvidenceBase64 = null;
+window.previewReportEvidence = function (input) {
+    const file = input?.files?.[0];
+    const previewContainer = document.getElementById('reportEvidencePreviewContainer');
+    const previewImg = document.getElementById('reportEvidencePreviewImg');
+    if (!file) {
+        reportEvidenceBase64 = null;
+        if (previewContainer) previewContainer.style.display = 'none';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        reportEvidenceBase64 = e.target.result;
+        if (previewImg) previewImg.src = reportEvidenceBase64;
+        if (previewContainer) previewContainer.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+};
+
+window.openReportItemModal = function () {
+    let p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
+    if (!p) {
+        const dTitle = document.getElementById('detailTitle')?.innerText || document.getElementById('detailHeaderTitle')?.innerText || 'POSPT';
+        p = (rentEaseInventory || []).find(it => it.name === dTitle) || { id: 19, name: dTitle, owner_name: 'Romeo Paolo Tolentino', owner_id: 104, owner_email: 'romeopaolotolentino@gmail.com' };
+        window.currentDetailProduct = p;
+    }
+
+    const idEl = document.getElementById('reportItemId');
+    const nameEl = document.getElementById('reportItemName');
+    const ownerEl = document.getElementById('reportItemOwner');
+    const thumbEl = document.getElementById('reportItemThumb');
+    const reasonSel = document.getElementById('reportReasonSelect');
+    const detailsEl = document.getElementById('reportDetailsText');
+    const fileInput = document.getElementById('reportEvidenceFile');
+    const previewCont = document.getElementById('reportEvidencePreviewContainer');
+
+    if (idEl) idEl.innerText = p.id;
+    if (nameEl) nameEl.innerText = p.name || 'Equipment';
+    if (ownerEl) ownerEl.innerText = p.owner_name || 'Campus Student';
+    if (thumbEl) thumbEl.src = p.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=100&q=80';
+    if (reasonSel) reasonSel.selectedIndex = 0;
+    if (detailsEl) detailsEl.value = '';
+    if (fileInput) fileInput.value = '';
+    if (previewCont) previewCont.style.display = 'none';
+    reportEvidenceBase64 = null;
+
+    // Cleanly dismiss detail modal and backdrops before showing report modal
+    const detailModal = document.getElementById('productDetailModal');
+    if (detailModal) {
+        try { bootstrap.Modal.getInstance(detailModal)?.hide(); } catch(e) {}
+    }
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    document.body.classList.remove('modal-open');
+
+    setTimeout(() => {
+        const modalEl = document.getElementById('reportItemModal');
+        if (modalEl) {
+            if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    }, 150);
+};
+
+window.submitItemReport = async function () {
+    const p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
+    const itemId = p ? parseInt(p.id) : (parseInt(document.getElementById('reportItemId')?.innerText || '0') || 1);
+    const reason = document.getElementById('reportReasonSelect')?.value || '';
+    const details = (document.getElementById('reportDetailsText')?.value || '').trim();
+
+    if (!itemId) {
+        alert("Invalid item selected.");
+        return;
+    }
+    if (!reason) {
+        alert("Please select a reason for reporting this equipment.");
+        return;
+    }
+    if (!details) {
+        alert("Please provide detailed explanation explaining why you are reporting this item.");
+        return;
+    }
+
+    const currentUser = getRentEaseCurrentUser();
+    const btn = document.getElementById('btnSubmitItemReport');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Submitting Report...';
+    }
+
+    try {
+        const payload = {
+            action: 'submit_item_report',
+            item_id: itemId,
+            reason: reason,
+            details: details,
+            evidence_photo: reportEvidenceBase64,
+            reporter_id: parseInt(currentUser.id || 105),
+            reporter_name: currentUser.name || 'Verified Student'
+        };
+
+        const res = await fetch(getRentEaseApiUrl('submit_item_report'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            const modalEl = document.getElementById('reportItemModal');
+            if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+            alert("✅ Violation Report Submitted to Admin!\n\nThank you for keeping our campus rental community safe. Our admin moderation team will investigate this listing.\n\nPolicy Reminder: When a listing reaches 3 approved violation reports, the post will be terminated and the poster will be suspended.");
+            await loadRentEaseCatalog();
+        } else {
+            alert('❌ ' + (data.message || 'Failed to submit report.'));
+        }
+    } catch (e) {
+        console.error("Report submit error:", e);
+        alert('❌ Error connecting to server to submit report.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-flag me-1"></i> Submit Report to Admin';
+        }
+    }
+};
+
+// ----------------------------------------------------------
+// OWNER APPEAL HANDLERS
+// ----------------------------------------------------------
+let appealEvidenceBase64 = null;
+window.previewAppealEvidence = function (input) {
+    const file = input?.files?.[0];
+    const previewContainer = document.getElementById('appealEvidencePreviewContainer');
+    const previewImg = document.getElementById('appealEvidencePreviewImg');
+    if (!file) {
+        appealEvidenceBase64 = null;
+        if (previewContainer) previewContainer.style.display = 'none';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        appealEvidenceBase64 = e.target.result;
+        if (previewImg) previewImg.src = appealEvidenceBase64;
+        if (previewContainer) previewContainer.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+};
+
+window.openAppealModal = function (itemId, itemName, reason, strikes) {
+    const idEl = document.getElementById('appealItemId');
+    const titleEl = document.getElementById('appealItemTitle');
+    const badgeEl = document.getElementById('appealItemStatusBadge');
+    const reasonEl = document.getElementById('appealViolationReason');
+    const textEl = document.getElementById('appealReasonText');
+    const fileInput = document.getElementById('appealEvidenceFile');
+    const previewCont = document.getElementById('appealEvidencePreviewContainer');
+
+    if (idEl) idEl.value = itemId;
+    if (titleEl) titleEl.innerText = itemName || 'Equipment';
+    if (badgeEl) {
+        if (strikes >= 3) {
+            badgeEl.className = 'badge bg-danger text-white fs-9';
+            badgeEl.innerText = 'TERMINATED (3 Strikes)';
+        } else {
+            badgeEl.className = 'badge bg-warning text-dark fs-9';
+            badgeEl.innerText = `${strikes || 1}/3 Strikes`;
+        }
+    }
+    if (reasonEl) reasonEl.innerText = `Violation: ${reason || 'Report approved by moderation team'}`;
+    if (textEl) textEl.value = '';
+    if (fileInput) fileInput.value = '';
+    if (previewCont) previewCont.style.display = 'none';
+    appealEvidenceBase64 = null;
+
+    const detailModal = document.getElementById('productDetailModal');
+    if (detailModal) {
+        try { bootstrap.Modal.getInstance(detailModal)?.hide(); } catch(e) {}
+    }
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    document.body.classList.remove('modal-open');
+
+    setTimeout(() => {
+        const modalEl = document.getElementById('appealItemModal');
+        if (modalEl) {
+            if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    }, 150);
+};
+
+window.openAppealFromDetail = function () {
+    const p = window.currentDetailProduct;
+    if (!p) return;
+    openAppealModal(p.id, p.name, p.termination_reason || 'Policy Violation Reports', p.approved_reports_count || 1);
+};
+
+window.submitItemAppeal = async function () {
+    const itemId = parseInt(document.getElementById('appealItemId')?.value || '0');
+    const appealReason = (document.getElementById('appealReasonText')?.value || '').trim();
+
+    if (!itemId) {
+        alert("Invalid item selected for appeal.");
+        return;
+    }
+    if (!appealReason) {
+        alert("Please provide an explanation or defense for your appeal.");
+        return;
+    }
+
+    const currentUser = getRentEaseCurrentUser();
+    const btn = document.getElementById('btnSubmitItemAppeal');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Submitting Appeal...';
+    }
+
+    try {
+        const payload = {
+            action: 'submit_item_appeal',
+            item_id: itemId,
+            appeal_reason: appealReason,
+            evidence_photo: appealEvidenceBase64,
+            owner_id: parseInt(currentUser.id || 0),
+            owner_name: currentUser.name || 'Equipment Owner',
+            owner_email: currentUser.email || ''
+        };
+
+        const res = await fetch(getRentEaseApiUrl('submit_item_appeal'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            const modalEl = document.getElementById('appealItemModal');
+            if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+            alert("✅ Official Appeal Submitted to Admin!\n\nYour appeal and supporting explanation have been delivered to the Admin Operations Hub. If approved, all strikes will be cleared, your listing restored to ACTIVE, and your account unsuspended.");
+            if (typeof loadUserRentedOutItems === 'function') await loadUserRentedOutItems();
+            await loadRentEaseCatalog();
+        } else {
+            alert('❌ ' + (data.message || 'Failed to submit appeal.'));
+        }
+    } catch (e) {
+        console.error("Appeal error:", e);
+        alert('❌ Error connecting to server to submit appeal.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Submit Appeal to Admin';
+        }
+    }
 };
 
 // Chat with partner from Live Tracking screen (Face-to-Face Meetup Coordination)

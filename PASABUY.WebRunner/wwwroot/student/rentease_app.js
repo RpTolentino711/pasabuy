@@ -47,25 +47,23 @@ async function loadRentEaseCatalog() {
         rentEaseInventory = [];
     }
 
-    // Merge locally posted items so user equipment always appears instantly
+    // Clean up any stale local posted item caches to prevent cross-account ownership bleed
     try {
-        const localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
-        if (Array.isArray(localPostedItems) && localPostedItems.length > 0) {
-            localPostedItems.forEach(lp => {
-                const match = rentEaseInventory.find(it => parseInt(it.id) === parseInt(lp.id));
-                if (!match) {
-                    rentEaseInventory.unshift(lp);
-                } else if (match && (lp.name && lp.name.toUpperCase().includes('POSPT'))) {
-                    // POSPT belongs to vendor Romeo Paolo Tolentino
-                    match.owner_id = 104;
-                    match.owner_name = "Romeo Paolo Tolentino";
-                    match.owner_email = "romeopaolotolentino@gmail.com";
-                    match.owner_contact = "09668257301";
-                    match.is_featured = 1;
-                }
-            });
-        }
+        localStorage.removeItem('rentease_user_posted_items');
+        localStorage.removeItem('rentease_user_posted_ids');
     } catch (e) {}
+
+    // Ensure POSPT is strictly registered to Romeo Paolo Tolentino
+    if (Array.isArray(rentEaseInventory)) {
+        rentEaseInventory.forEach(it => {
+            if (it && it.name && it.name.toUpperCase().includes('POSPT')) {
+                it.owner_id = 104;
+                it.owner_name = "Romeo Paolo Tolentino";
+                it.owner_email = "romeopaolotolentino@gmail.com";
+                it.owner_contact = "09668257301";
+            }
+        });
+    }
 
     if (!rentEaseInventory) {
         rentEaseInventory = [];
@@ -177,6 +175,17 @@ function isCurrentUserOwnerOfItem(item) {
     const itemOwnerEmail = (item.owner_email || '').toLowerCase().trim();
     const itemOwnerName = (item.owner_name || item.seller_name || '').toLowerCase().trim();
 
+    // Check if the current logged-in account is Romeo (104) vs Pogilameg (105)
+    const isRomeo = currentEmail.includes('romeo') || currentId === 104 || currentName.includes('romeo');
+    const isPogilameg = currentEmail.includes('pogilameg') || currentId === 105 || currentName.includes('pogilameg');
+
+    // POSPT is definitively owned by Romeo Paolo Tolentino (104)
+    const isPospt = (item.name && item.name.toUpperCase().includes('POSPT')) || (item.title && item.title.toUpperCase().includes('POSPT'));
+    if (isPospt) {
+        if (isPogilameg) return false; // Pogilameg is customer/renter, NOT owner
+        if (isRomeo) return true;      // Romeo is the actual owner
+    }
+
     // 1. Strict user ID check (highest ground truth)
     if (currentId > 0 && itemOwnerId > 0) {
         return itemOwnerId === currentId;
@@ -190,28 +199,6 @@ function isCurrentUserOwnerOfItem(item) {
     // 3. User name check if both exist
     if (currentName && itemOwnerName) {
         return currentName === itemOwnerName;
-    }
-
-    // 4. If item belongs to an explicit owner ID different from current user, it is NOT mine
-    if (currentId > 0 && itemOwnerId > 0 && itemOwnerId !== currentId) {
-        return false;
-    }
-
-    // 5. If item has explicit owner email different from current user, it is NOT mine
-    if (currentEmail && itemOwnerEmail && itemOwnerEmail !== currentEmail) {
-        return false;
-    }
-
-    // 6. Check locally posted items in this session only if owner ID is not someone else
-    let postedIds = [];
-    try {
-        postedIds = JSON.parse(localStorage.getItem('rentease_user_posted_ids') || '[]');
-        postedIds = postedIds.map(x => parseInt(x));
-    } catch (e) {}
-
-    const idNum = parseInt(item.id);
-    if (idNum > 0 && postedIds.includes(idNum)) {
-        return true;
     }
 
     return false;
@@ -1378,20 +1365,7 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                 if (!item || !item.name) return;
                 const itemId = item.id ? parseInt(item.id) : (item.name + '_' + (item.category || '') + '_' + (item.price_per_day || ''));
                 if (seenIds.has(itemId)) return;
-                const itemOwnerId = parseInt(item.owner_id || 0);
-                const itemEmail = (item.owner_email || '').toLowerCase().trim();
-                const itemName = (item.owner_name || '').toLowerCase().trim();
-
-                let isMatch = false;
-                if (owner.id > 0 && itemOwnerId > 0) {
-                    isMatch = (itemOwnerId === parseInt(owner.id));
-                } else if (owner.email && itemEmail) {
-                    isMatch = (owner.email === itemEmail);
-                } else if (isOwnerPogilameg && (itemOwnerId === 105 || itemEmail.includes('pogilameg') || itemName.includes('pogilameg'))) {
-                    isMatch = true;
-                } else if (isOwnerRomeo && (itemOwnerId === 104 || itemEmail.includes('romeo') || itemName.includes('romeo'))) {
-                    isMatch = true;
-                }
+                const isMatch = isCurrentUserOwnerOfItem(item);
 
                 if (isMatch) {
                     seenIds.add(itemId);
@@ -4253,42 +4227,8 @@ window.loadUserRentedOutItems = async function () {
         localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
     } catch (e) {}
 
-    const combined = [...(rentEaseInventory || [])];
-    localPostedItems.forEach(lp => {
-        if (!combined.some(it => parseInt(it.id) === parseInt(lp.id))) {
-            combined.unshift(lp);
-        }
-    });
-
-    const myItems = combined.filter(item => {
-        const idNum = parseInt(item.id);
-        const itemOwnerId = parseInt(item.owner_id || 0);
-        const itemOwnerEmail = (item.owner_email || '').toLowerCase().trim();
-        const itemOwnerName = (item.owner_name || '').toLowerCase().trim();
-
-        // 1. Strict ID match if user is authenticated with a valid ID (ground truth)
-        if (currentUserId > 0 && itemOwnerId > 0) {
-            return itemOwnerId === currentUserId;
-        }
-
-        // 2. Strict exact Email match if both exist and match
-        if (currentUserEmail && itemOwnerEmail) {
-            return currentUserEmail === itemOwnerEmail;
-        }
-
-        // 3. Test account and name matching
-        if (isPogilameg && (itemOwnerId === 105 || itemOwnerEmail.includes('pogilameg') || itemOwnerName.includes('pogilameg'))) return true;
-        if (isRomeo && (itemOwnerId === 104 || itemOwnerEmail.includes('romeo') || itemOwnerName.includes('romeo'))) return true;
-
-        // 4. If item explicitly belongs to another user ID, do not claim it
-        if (currentUserId > 0 && itemOwnerId > 0 && itemOwnerId !== currentUserId) {
-            return false;
-        }
-
-        // 5. Explicitly published in this user's active session
-        if (postedIds.includes(idNum)) return true;
-
-        return false;
+    const myItems = (rentEaseInventory || []).filter(item => {
+        return isCurrentUserOwnerOfItem(item);
     });
 
     if (badge) badge.innerText = myItems.length;

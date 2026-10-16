@@ -165,6 +165,8 @@ if (typeof window.loginStudentWithPassword !== 'function') {
                 localStorage.setItem('pasabuy_student_logged_in', 'true');
                 localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
                 localStorage.setItem('rentease_user_profile', JSON.stringify(renteaseProfile));
+                localStorage.removeItem('rentease_user_posted_items');
+                localStorage.removeItem('rentease_user_posted_ids');
 
                 window.location.href = 'index.php';
             } else {

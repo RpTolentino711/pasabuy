@@ -1516,12 +1516,12 @@ if ($action === 'get_owner_rental_data') {
             $invConditions[] = "`owner_id` = 105";
             $invConditions[] = "LOWER(`owner_email`) LIKE '%pogilameg%'";
             $invConditions[] = "`owner_name` LIKE '%Pogilameg%'";
-            $invConditions[] = "LOWER(`name`) LIKE '%pospt%'";
         }
         if ($isRomeo) {
             $invConditions[] = "`owner_id` = 104";
             $invConditions[] = "LOWER(`owner_email`) LIKE '%romeopaolo%'";
             $invConditions[] = "`owner_name` LIKE '%Romeo%'";
+            $invConditions[] = "LOWER(`name`) LIKE '%pospt%'";
         }
 
         $ownerInventory = [];
