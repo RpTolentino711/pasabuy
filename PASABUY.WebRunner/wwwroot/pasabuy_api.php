@@ -653,6 +653,8 @@ if ($action === 'chat_conversations') {
     } catch (Exception $eUser) {}
 
     $allConvs = [];
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `chat_deleted_by_renter` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `chat_deleted_by_owner` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
 
     // 1. Fetch all rental orders involving this user
     try {
@@ -688,6 +690,14 @@ if ($action === 'chat_conversations') {
                 $isOwner = false;
             } else {
                 $isOwner = $ownerIsUser;
+            }
+
+            // Skip if this conversation has been deleted by this user
+            if ($isOwner && !empty($ro['chat_deleted_by_owner']) && (int)$ro['chat_deleted_by_owner'] === 1) {
+                continue;
+            }
+            if (!$isOwner && !empty($ro['chat_deleted_by_renter']) && (int)$ro['chat_deleted_by_renter'] === 1) {
+                continue;
             }
 
             $partnerId = $isOwner ? (int)$ro['renter_id'] : (int)$ro['owner_id'];
@@ -730,7 +740,8 @@ if ($action === 'chat_conversations') {
                     $isTimerRunning = false;
                 }
             }
-            $isReturned = (in_array($st, ['RETURNED', 'RETURN_DELIVERY', 'COMPLETED']) || $ro['timer_status'] === 'COMPLETED');
+            $hasRated = ((int)($ro['has_rated'] ?? 0) === 1 || (int)($ro['rating'] ?? 0) > 0);
+            $isReturned = (in_array($st, ['RETURNED', 'RETURN_DELIVERY', 'COMPLETED']) || $ro['timer_status'] === 'COMPLETED' || $hasRated);
 
             $stepLevel = 1;
             $stepTitle = 'Step 1 of 4 • Booking Request';
@@ -740,10 +751,10 @@ if ($action === 'chat_conversations') {
 
             if ($isReturned) {
                 $stepLevel = 4;
-                $stepTitle = 'Rental Completed • Returned';
-                $isActionRequired = false;
-                $actionPrompt = '✅ Rental Completed • Returned';
-                $actionBadgeClass = 'badge-completed';
+                $stepTitle = $hasRated ? 'Completed • Rated' : 'Rental Completed • Returned';
+                $isActionRequired = !$hasRated && !$isOwner;
+                $actionPrompt = $hasRated ? '⭐ Rental Completed & Rated' : ($isOwner ? '⏳ Awaiting Renter Rating' : '⭐ Rating Required: Rate item');
+                $actionBadgeClass = $hasRated ? 'badge-completed' : 'badge-rate';
             } elseif ($isOverdue) {
                 $stepLevel = 4;
                 $stepTitle = 'Overdue • Return Required';
@@ -846,6 +857,10 @@ if ($action === 'chat_conversations') {
                 'MessageText' => $lastMsg,
                 'CreatedAt' => $lastMsgTime,
                 'HasTransaction' => true,
+                'HasActiveTransaction' => (!$isReturned && !$hasRated),
+                'IsCompleted' => $isReturned,
+                'HasRated' => $hasRated,
+                'Rating' => (int)($ro['rating'] ?? 0),
                 'TransactionOrderCode' => $ro['order_code'],
                 'TransactionStatus' => $ro['order_status'],
                 'IsMyItem' => $isOwner,
@@ -1145,6 +1160,8 @@ if ($action === 'mark_messages_read' || $action === 'read_messages') {
 if ($action === 'check_active_transaction') {
     $userId = (int)($_GET['user_id'] ?? $body['userId'] ?? 104);
     $partnerId = (int)($_GET['partner_id'] ?? $body['partnerId'] ?? 104);
+    $itemTitle = trim((string)($_GET['item_title'] ?? $body['itemTitle'] ?? ''));
+    $orderCode = trim((string)($_GET['order_code'] ?? $body['orderCode'] ?? ''));
     if ($userId <= 1) $userId = 104;
     if ($partnerId <= 1) $partnerId = 104;
 
@@ -1166,7 +1183,7 @@ if ($action === 'check_active_transaction') {
         $stmt = $db->prepare($sql);
         $stmt->execute(array_merge($uList, $pList, $pList, $uList));
         $ord = $stmt->fetch();
-        if ($ord) {
+        if ($ord && empty($orderCode)) {
             $hasActive = true;
             $details = [
                 'type' => 'marketplace',
@@ -1197,12 +1214,25 @@ if ($action === 'check_active_transaction') {
                              OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
                             OR ((renter_id = ? AND owner_id = ?) 
                              OR (renter_id = ? AND owner_id = ?)))
-                           AND NOT (UPPER(order_status) IN ('RETURNED', 'COMPLETED') OR COALESCE(has_rated, 0) = 1) AND UPPER(order_status) NOT IN ('CANCELLED', 'REJECTED')
+                           AND NOT (UPPER(order_status) IN ('RETURNED', 'COMPLETED') OR COALESCE(has_rated, 0) = 1 OR COALESCE(rating, 0) > 0) 
+                           AND UPPER(order_status) NOT IN ('CANCELLED', 'REJECTED')
                            AND order_code NOT IN ('#RE-10245', '#RE-10234')
-                           AND order_code NOT LIKE '%10234%'
-                         ORDER BY id DESC LIMIT 1";
+                           AND order_code NOT LIKE '%10234%'";
+                $rParams = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId];
+                if ($orderCode !== '') {
+                    $cleanCode = ltrim($orderCode, '#');
+                    $rSql .= " AND (order_code = ? OR order_code = ? OR order_code LIKE ?)";
+                    $rParams[] = $orderCode;
+                    $rParams[] = '#' . $cleanCode;
+                    $rParams[] = '%' . $cleanCode . '%';
+                } elseif ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
+                    $rSql .= " AND (LOWER(item_name) = ? OR LOWER(item_name) LIKE ?)";
+                    $rParams[] = strtolower($itemTitle);
+                    $rParams[] = '%' . strtolower($itemTitle) . '%';
+                }
+                $rSql .= " ORDER BY id DESC LIMIT 1";
                 $rStmt = $db->prepare($rSql);
-                $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId]);
+                $rStmt->execute($rParams);
                 $rOrd = $rStmt->fetch();
                 if ($rOrd) {
                     $hasActive = true;
@@ -1230,6 +1260,8 @@ if ($action === 'check_active_transaction') {
 if ($action === 'delete_conversation') {
     $userId = (int)($_POST['userId'] ?? $body['userId'] ?? $_GET['user_id'] ?? 104);
     $partnerId = (int)($_POST['partnerId'] ?? $body['partnerId'] ?? $_GET['partner_id'] ?? 104);
+    $itemTitle = trim((string)($_POST['itemTitle'] ?? $body['itemTitle'] ?? $_GET['item_title'] ?? ''));
+    $orderCode = trim((string)($_POST['orderCode'] ?? $body['orderCode'] ?? $_GET['order_code'] ?? ''));
     if ($userId <= 1) $userId = 104;
     if ($partnerId <= 1) $partnerId = 104;
 
@@ -1238,7 +1270,7 @@ if ($action === 'delete_conversation') {
         exit;
     }
 
-    // Check active transaction first
+    // Check active transaction first (specific to item/order if passed)
     $hasActive = false;
     $activeOrderCode = '';
     try {
@@ -1255,7 +1287,7 @@ if ($action === 'delete_conversation') {
         $stmt = $db->prepare($sql);
         $stmt->execute(array_merge($uList, $pList, $pList, $uList));
         $ord = $stmt->fetch();
-        if ($ord) {
+        if ($ord && empty($orderCode)) {
             $hasActive = true;
             $activeOrderCode = '#ORD-' . $ord['Id'];
         }
@@ -1281,12 +1313,25 @@ if ($action === 'delete_conversation') {
                              OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
                             OR ((renter_id = ? AND owner_id = ?) 
                              OR (renter_id = ? AND owner_id = ?)))
-                           AND NOT (UPPER(order_status) IN ('RETURNED', 'COMPLETED') OR COALESCE(has_rated, 0) = 1) AND UPPER(order_status) NOT IN ('CANCELLED', 'REJECTED')
+                           AND NOT (UPPER(order_status) IN ('RETURNED', 'COMPLETED') OR COALESCE(has_rated, 0) = 1 OR COALESCE(rating, 0) > 0) 
+                           AND UPPER(order_status) NOT IN ('CANCELLED', 'REJECTED')
                            AND order_code NOT IN ('#RE-10245', '#RE-10234')
-                           AND order_code NOT LIKE '%10234%'
-                         ORDER BY id DESC LIMIT 1";
+                           AND order_code NOT LIKE '%10234%'";
+                $rParams = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId];
+                if ($orderCode !== '') {
+                    $cleanCode = ltrim($orderCode, '#');
+                    $rSql .= " AND (order_code = ? OR order_code = ? OR order_code LIKE ?)";
+                    $rParams[] = $orderCode;
+                    $rParams[] = '#' . $cleanCode;
+                    $rParams[] = '%' . $cleanCode . '%';
+                } elseif ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
+                    $rSql .= " AND (LOWER(item_name) = ? OR LOWER(item_name) LIKE ?)";
+                    $rParams[] = strtolower($itemTitle);
+                    $rParams[] = '%' . strtolower($itemTitle) . '%';
+                }
+                $rSql .= " ORDER BY id DESC LIMIT 1";
                 $rStmt = $db->prepare($rSql);
-                $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId]);
+                $rStmt->execute($rParams);
                 $rOrd = $rStmt->fetch();
                 if ($rOrd) {
                     $hasActive = true;
@@ -1300,12 +1345,12 @@ if ($action === 'delete_conversation') {
         echo json_encode([
             'success' => false,
             'blocked' => true,
-            'message' => "Cannot delete conversation: A rental transaction ($activeOrderCode) has been made between you and this user. Chat history is protected."
+            'message' => "Cannot delete conversation: A rental transaction ($activeOrderCode) is currently active between you and this user. Chat history is protected until returned and rated."
         ]);
         exit;
     }
 
-    // Delete chat messages between these two users
+    // Delete chat messages between these two users (filtered by item/order if passed)
     try {
         $uList = ($userId == 104) ? [1, 104] : [$userId];
         $pList = ($partnerId == 104) ? [1, 104] : [$partnerId];
@@ -1315,9 +1360,46 @@ if ($action === 'delete_conversation') {
         $delSql = "DELETE FROM ChatMessages 
                    WHERE ((SenderId IN ($uPlace) AND ReceiverId IN ($pPlace)) 
                       OR (SenderId IN ($pPlace) AND ReceiverId IN ($uPlace)))";
+        $delParams = array_merge($uList, $pList, $pList, $uList);
+        if ($orderCode !== '') {
+            $cleanCode = ltrim($orderCode, '#');
+            $delSql .= " AND (LOWER(ItemTitle) = ? OR MessageText LIKE ? OR ItemTitle LIKE ?)";
+            $delParams[] = strtolower($itemTitle);
+            $delParams[] = '%' . $cleanCode . '%';
+            $delParams[] = '%' . $cleanCode . '%';
+        } elseif ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
+            $delSql .= " AND (LOWER(ItemTitle) = ? OR LOWER(ItemTitle) LIKE ?)";
+            $delParams[] = strtolower($itemTitle);
+            $delParams[] = '%' . strtolower($itemTitle) . '%';
+        }
         $delStmt = $db->prepare($delSql);
-        $delStmt->execute(array_merge($uList, $pList, $pList, $uList));
+        $delStmt->execute($delParams);
         $deletedCount = $delStmt->rowCount();
+
+        if ($deletedCount === 0 && empty($itemTitle) && empty($orderCode)) {
+            $delStmt2 = $db->prepare("DELETE FROM ChatMessages WHERE ((SenderId IN ($uPlace) AND ReceiverId IN ($pPlace)) OR (SenderId IN ($pPlace) AND ReceiverId IN ($uPlace)))");
+            $delStmt2->execute(array_merge($uList, $pList, $pList, $uList));
+            $deletedCount = $delStmt2->rowCount();
+        }
+
+        // Hide/mark this conversation as deleted in rental_orders for this user
+        try {
+            $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `chat_deleted_by_renter` TINYINT(1) DEFAULT 0");
+            $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `chat_deleted_by_owner` TINYINT(1) DEFAULT 0");
+        } catch (Exception $eCol) {}
+
+        if ($orderCode !== '') {
+            $cleanCode = ltrim($orderCode, '#');
+            $db->prepare("UPDATE `rental_orders` SET `chat_deleted_by_renter` = 1 WHERE `renter_id` IN ($uPlace) AND (`order_code` = ? OR `order_code` = ? OR `order_code` LIKE ?)")
+               ->execute(array_merge($uList, [$orderCode, '#' . $cleanCode, '%' . $cleanCode . '%']));
+            $db->prepare("UPDATE `rental_orders` SET `chat_deleted_by_owner` = 1 WHERE `owner_id` IN ($uPlace) AND (`order_code` = ? OR `order_code` = ? OR `order_code` LIKE ?)")
+               ->execute(array_merge($uList, [$orderCode, '#' . $cleanCode, '%' . $cleanCode . '%']));
+        } elseif ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
+            $db->prepare("UPDATE `rental_orders` SET `chat_deleted_by_renter` = 1 WHERE `renter_id` IN ($uPlace) AND (LOWER(`item_name`) = ? OR LOWER(`item_name`) LIKE ?)")
+               ->execute(array_merge($uList, [strtolower($itemTitle), '%' . strtolower($itemTitle) . '%']));
+            $db->prepare("UPDATE `rental_orders` SET `chat_deleted_by_owner` = 1 WHERE `owner_id` IN ($uPlace) AND (LOWER(`item_name`) = ? OR LOWER(`item_name`) LIKE ?)")
+               ->execute(array_merge($uList, [strtolower($itemTitle), '%' . strtolower($itemTitle) . '%']));
+        }
 
         echo json_encode([
             'success' => true,

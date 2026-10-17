@@ -2049,9 +2049,7 @@
                                 const partnerId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
                                 const partnerName = c.PartnerName || (c.SenderId == currentUserId ? 'Campus Seller' : (c.SenderName || 'Campus Buyer'));
                                 const itemTitle = c.ItemTitle || 'Campus Item';
-                                const lastMsg = c.MessageText || 'Tap to chat';
-
-                                let avatarUrl = c.PartnerAvatar || c.partnerAvatar || '';
+                                       let avatarUrl = c.PartnerAvatar || c.partnerAvatar || '';
                                 if (!avatarUrl || avatarUrl === '' || avatarUrl.includes('dicebear')) {
                                     avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true`;
                                 }
@@ -2061,8 +2059,21 @@
                                 const safeOwnerName = ownerName.replace(/"/g, '&quot;');
                                 const itemImage = c.ItemImage || '';
                                 const safePartnerNameAttr = partnerName.replace(/"/g, '&quot;');
+                                const safeItemTitleAttr = itemTitle.replace(/"/g, '&quot;');
                                 const hasTx = !!(c.HasTransaction);
                                 const txOrder = c.TransactionOrderCode || '';
+                                const txStatus = (c.TransactionStatus || '').toUpperCase();
+                                const isCompletedOrRated = !!(
+                                    c.HasRated ||
+                                    (c.Rating && c.Rating > 0) ||
+                                    c.IsCompleted ||
+                                    txStatus === 'RETURNED' ||
+                                    txStatus === 'COMPLETED' ||
+                                    (c.MessageText && c.MessageText.includes('RENTER REVIEW'))
+                                );
+                                const hasActiveTx = (c.HasActiveTransaction !== undefined)
+                                    ? !!c.HasActiveTransaction
+                                    : (hasTx && !isCompletedOrRated);
 
                                 const isOverdue = !!(c.IsOverdue || c.isOverdue || c.ActionBadgeClass === 'badge-overdue' || c.TransactionStatus === 'OVERDUE' || c.TimerStatus === 'EXPIRED');
                                 const convKey = 'c_' + partnerId + '_' + idx;
@@ -2075,15 +2086,16 @@
                                     itemImage: itemImage,
                                     isMyItem: isMyItem,
                                     ownerName: ownerName,
-                                    isOverdue: isOverdue
+                                    isOverdue: isOverdue,
+                                    orderCode: txOrder
                                 };
 
                                 html += `
                 <div class="swipe-conv-wrapper position-relative mb-2 overflow-hidden rounded-4" style="touch-action: pan-y; -webkit-user-select: none; user-select: none;">
-                    ${hasTx ? `
+                    ${hasActiveTx ? `
                     <div class="swipe-delete-bg position-absolute top-0 bottom-0 end-0 d-flex align-items-center justify-content-end px-3 rounded-4 text-white" 
                          style="width: 100%; z-index: 1; cursor: not-allowed; background:#64748B !important;" 
-                         onclick="alert('Chat Deletion Blocked: You cannot delete this conversation because a rental transaction (${txOrder}) has been made with this user.'); event.stopPropagation();">
+                         onclick="alert('Chat Deletion Blocked: You cannot delete this conversation because rental transaction (${txOrder}) is currently active and protected.'); event.stopPropagation();">
                         <div class="d-flex flex-column align-items-center justify-content-center text-white" style="width: 75px;">
                             <i class="fa-solid fa-lock fs-5 mb-1"></i>
                             <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px;">PROTECTED</span>
@@ -2092,7 +2104,7 @@
                     ` : `
                     <div class="swipe-delete-bg position-absolute top-0 bottom-0 end-0 d-flex align-items-center justify-content-end px-3 rounded-4 bg-danger text-white" 
                          style="width: 100%; z-index: 1; cursor: pointer;" 
-                         onclick="initiateDeleteConversation(${partnerId}, '${safePartnerNameAttr}', event)">
+                         onclick="initiateDeleteConversation(${partnerId}, '${safePartnerNameAttr}', event, '${safeItemTitleAttr}', '${txOrder}')">
                         <div class="d-flex flex-column align-items-center justify-content-center text-white" style="width: 65px;">
                             <i class="fa-solid fa-trash-can fs-5 mb-1"></i>
                             <span style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;">DELETE</span>
@@ -2104,8 +2116,10 @@
                          data-conv-key="${convKey}"
                          data-partner-id="${partnerId}" 
                          data-partner-name="${safePartnerNameAttr}" 
-                         data-has-transaction="${hasTx ? '1' : '0'}"
+                         data-item-title="${safeItemTitleAttr}"
+                         data-has-transaction="${hasActiveTx ? '1' : '0'}"
                          data-is-overdue="${isOverdue ? '1' : '0'}"
+                         data-order-code="${txOrder || ''}"
                          onclick="handleConversationCardClick(event, this, '${convKey}')">
                         <div class="d-flex align-items-center gap-3 min-w-0" style="pointer-events: none;">
                             <div class="position-relative flex-shrink-0">
@@ -2128,15 +2142,19 @@
                                         </span>
                                     ` : `
                                         <span class="badge rounded-pill fw-bold" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD; font-size:0.62rem; padding: 2.5px 7px;">
-                                            <i class="fa-solid fa-store me-0.5"></i>Lender (You're Renting)
+                                             <i class="fa-solid fa-store me-0.5"></i>Lender (You're Renting)
                                         </span>
                                     `}
 
-                                    ${hasTx ? `
-                                        <span class="badge rounded-pill fw-bold" style="background:#ECFDF5; color:#059669; font-size:0.60rem; padding: 2px 6px; border:1px solid #A7F3D0;" title="Protected rental transaction">
+                                    ${hasActiveTx ? `
+                                        <span class="badge rounded-pill fw-bold" style="background:#ECFDF5; color:#059669; font-size:0.60rem; padding: 2px 6px; border:1px solid #A7F3D0;" title="Protected active rental transaction">
                                             <i class="fa-solid fa-shield-halved me-0.5"></i>Protected
                                         </span>
-                                    ` : ''}
+                                    ` : (isCompletedOrRated ? `
+                                        <span class="badge rounded-pill fw-bold" style="background:#F0FDF4; color:#16A34A; font-size:0.60rem; padding: 2px 6px; border:1px solid #BBF7D0;" title="Rental completed & rated">
+                                            <i class="fa-solid fa-circle-check me-0.5"></i>Completed • Safe to Delete
+                                        </span>
+                                    ` : '')}
                                 </div>
                                 
                                 <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
@@ -2149,7 +2167,7 @@
                                         </span>
                                     ` : `
                                         <span class="badge rounded-pill fw-bold shadow-2xs" style="background:#FFFBEB; color:#B45309; border:1px solid #FDE68A; font-size:0.65rem; padding: 2.5px 8px;">
-                                            <i class="fa-solid fa-user-tag text-warning me-1"></i>Owner: <span class="fw-bold text-dark">${safeOwnerName}</span>
+                                             <i class="fa-solid fa-user-tag text-warning me-1"></i>Owner: <span class="fw-bold text-dark">${safeOwnerName}</span>
                                         </span>
                                     `}
                                     ${txOrder && txOrder !== 'Order' ? `
@@ -2162,8 +2180,20 @@
                                 <div class="${isOverdue ? 'text-danger fw-bold' : 'text-muted'} fs-8 text-truncate" style="max-width:210px;">${isOverdue ? '⚠️ Rental timer expired • Handover item back now' : lastMsg}</div>
                             </div>
                         </div>
-                        <div class="text-end flex-shrink-0 ms-2" style="pointer-events: none;">
-                            <i class="fa-solid fa-chevron-right ${isOverdue ? 'text-danger' : 'text-muted'} fs-9"></i>
+                        <div class="d-flex align-items-center gap-1.5 flex-shrink-0 ms-2">
+                            ${!hasActiveTx ? `
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center p-0" 
+                                    style="width: 32px; height: 32px; border-color: #FECACA; background: #FEF2F2;" 
+                                    title="Delete Conversation" 
+                                    onclick="initiateDeleteConversation(${partnerId}, '${safePartnerNameAttr}', event, '${safeItemTitleAttr}', '${txOrder}')">
+                                <i class="fa-solid fa-trash-can" style="font-size:0.75rem;"></i>
+                            </button>
+                            ` : `
+                            <span class="badge bg-light text-muted border rounded-circle d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" title="Active transaction is protected">
+                                <i class="fa-solid fa-lock" style="font-size:0.65rem;"></i>
+                            </span>
+                            `}
+                            <i class="fa-solid fa-chevron-right ${isOverdue ? 'text-danger' : 'text-muted'} fs-9" style="pointer-events: none;"></i>
                         </div>
                     </div>
                 </div>`;
@@ -2260,7 +2290,9 @@
                                         setCardTransform(-80, true);
                                         const partnerId = card.dataset.partnerId;
                                         const partnerName = card.dataset.partnerName;
-                                        initiateDeleteConversation(partnerId, partnerName);
+                                        const itemTitle = card.dataset.itemTitle || '';
+                                        const orderCode = card.dataset.orderCode || '';
+                                        initiateDeleteConversation(partnerId, partnerName, null, itemTitle, orderCode);
                                     } else if (currentX < -40) {
                                         setCardTransform(-80, true);
                                     } else {
@@ -2313,7 +2345,9 @@
                                         setCardTransform(-80, true);
                                         const partnerId = card.dataset.partnerId;
                                         const partnerName = card.dataset.partnerName;
-                                        initiateDeleteConversation(partnerId, partnerName);
+                                        const itemTitle = card.dataset.itemTitle || '';
+                                        const orderCode = card.dataset.orderCode || '';
+                                        initiateDeleteConversation(partnerId, partnerName, null, itemTitle, orderCode);
                                     } else if (currentX < -40) {
                                         setCardTransform(-80, true);
                                     } else {
@@ -2360,9 +2394,9 @@
                             const key = (card && card.dataset.convKey) || convKeyOrPartnerId;
                             const conv = (key && window._chatConversationsMap && window._chatConversationsMap[key]);
                             if (conv) {
-                                checkAndOpenChat(conv.partnerId, conv.partnerName, conv.itemTitle, conv.itemPrice, conv.avatarUrl, conv.itemImage, conv.isMyItem, conv.ownerName, conv.isOverdue);
+                                checkAndOpenChat(conv.partnerId, conv.partnerName, conv.itemTitle, conv.itemPrice, conv.avatarUrl, conv.itemImage, conv.isMyItem, conv.ownerName, conv.isOverdue, conv.orderCode);
                             } else {
-                                checkAndOpenChat(convKeyOrPartnerId, partnerName || 'Verified Student', itemTitle || 'Campus Equipment', price || '₱0.00', avatarUrl || '', itemImg || '', false, '', card?.dataset?.isOverdue === '1');
+                                checkAndOpenChat(convKeyOrPartnerId, partnerName || 'Verified Student', itemTitle || 'Campus Equipment', price || '₱0.00', avatarUrl || '', itemImg || '', false, '', card?.dataset?.isOverdue === '1', card?.dataset?.orderCode || '');
                             }
                         };
 
@@ -2380,14 +2414,18 @@
 
                         let pendingDeletePartnerId = null;
                         let pendingDeletePartnerName = '';
+                        let pendingDeleteItemTitle = '';
+                        let pendingDeleteOrderCode = '';
 
-                        window.initiateDeleteConversation = async function(partnerId, partnerName, event) {
+                        window.initiateDeleteConversation = async function(partnerId, partnerName, event, itemTitle, orderCode) {
                             if (event) {
                                 event.stopPropagation();
                                 event.preventDefault();
                             }
                             pendingDeletePartnerId = partnerId;
                             pendingDeletePartnerName = partnerName || 'User';
+                            pendingDeleteItemTitle = itemTitle || '';
+                            pendingDeleteOrderCode = orderCode || '';
 
                             const modalEl = document.getElementById('deleteConversationModal');
                             if (!modalEl) {
@@ -2435,7 +2473,11 @@
                             if (currentUserId <= 1) currentUserId = 104;
 
                             try {
-                                const resp = await fetch(`/pasabuy_api.php?action=check_active_transaction&user_id=${currentUserId}&partner_id=${partnerId}`);
+                                let checkUrl = `/pasabuy_api.php?action=check_active_transaction&user_id=${currentUserId}&partner_id=${partnerId}`;
+                                if (pendingDeleteItemTitle) checkUrl += `&item_title=${encodeURIComponent(pendingDeleteItemTitle)}`;
+                                if (pendingDeleteOrderCode) checkUrl += `&order_code=${encodeURIComponent(pendingDeleteOrderCode)}`;
+
+                                const resp = await fetch(checkUrl);
                                 const data = await resp.json();
 
                                 if (checkingState) checkingState.style.display = 'none';
@@ -2451,7 +2493,7 @@
 
                                     const orderCodeEl = document.getElementById('deleteConvOrderCode');
                                     if (orderCodeEl) {
-                                        orderCodeEl.textContent = (data.transaction && data.transaction.orderId) ? data.transaction.orderId : 'Active Order';
+                                        orderCodeEl.textContent = (data.transaction && data.transaction.orderId) ? data.transaction.orderId : (pendingDeleteOrderCode || 'Active Order');
                                     }
 
                                     if (confirmState) confirmState.style.display = 'none';
@@ -2513,6 +2555,8 @@
                                 const formData = new URLSearchParams();
                                 formData.append('userId', currentUserId);
                                 formData.append('partnerId', pendingDeletePartnerId);
+                                if (pendingDeleteItemTitle) formData.append('itemTitle', pendingDeleteItemTitle);
+                                if (pendingDeleteOrderCode) formData.append('orderCode', pendingDeleteOrderCode);
 
                                 const resp = await fetch('/pasabuy_api.php?action=delete_conversation', {
                                     method: 'POST',
@@ -2548,6 +2592,9 @@
                                     btnConfirm.innerHTML = '<i class="fa-solid fa-trash-can me-1 fs-9"></i> Delete';
                                 }
                                 pendingDeletePartnerId = null;
+                                pendingDeletePartnerName = '';
+                                pendingDeleteItemTitle = '';
+                                pendingDeleteOrderCode = '';
                             }
                         };
 
@@ -3486,7 +3533,8 @@
                             try {
                                 const activeTitle = document.getElementById('chatItemTitle')?.innerText || '';
                                 const orderParam = window.currentActiveChatOrderCode ? ('&order_code=' + encodeURIComponent(window.currentActiveChatOrderCode)) : '';
-                                const res = await fetch(`/student/rentease_api.php?action=get_active_chat_rental&user_id=${currentUserId}&user_email=${encodeURIComponent(currentUserEmail)}&partner_id=${currentActiveChatSellerId}&item_title=${encodeURIComponent(activeTitle)}${orderParam}`);
+                                const apiBase = window.location.pathname.includes('/student/') ? 'rentease_api.php' : '/student/rentease_api.php';
+                                const res = await fetch(`${apiBase}?action=get_active_chat_rental&user_id=${currentUserId}&user_email=${encodeURIComponent(currentUserEmail)}&partner_id=${currentActiveChatSellerId}&item_title=${encodeURIComponent(activeTitle)}${orderParam}&_t=${Date.now()}`);
                                 const data = await res.json();
 
                                 const reqBanner = document.getElementById('chatRentalRequestBanner');
@@ -3585,10 +3633,27 @@
                                     if (chatItemFallback) chatItemFallback.style.display = 'none';
                                 }
 
+                                const orderStatusUpper = String(ord.order_status || '').trim().toUpperCase();
+                                const timerStatusUpper = String(ord.timer_status || '').trim().toUpperCase();
+                                const isHandedOver = (parseInt(ord.handed_over) === 1 || !!ord.rental_timer_start);
+                                const hasRatedOrder = (parseInt(ord.has_rated) === 1 || parseInt(ord.rating) > 0);
+
                                 const isOrderReturnedOrRated = (
-                                    ord.order_status === 'RETURNED' ||
-                                    parseInt(ord.has_rated) === 1 ||
-                                    parseInt(ord.rating) > 0
+                                    orderStatusUpper === 'RETURNED' ||
+                                    orderStatusUpper === 'COMPLETED' ||
+                                    timerStatusUpper === 'COMPLETED' ||
+                                    hasRatedOrder
+                                );
+
+                                const isTimerActiveOrOverdue = (
+                                    !isOrderReturnedOrRated && (
+                                        isHandedOver ||
+                                        timerStatusUpper === 'RUNNING' ||
+                                        timerStatusUpper === 'EXPIRED' ||
+                                        orderStatusUpper === 'IN_PROGRESS' ||
+                                        orderStatusUpper === 'RENTED' ||
+                                        orderStatusUpper === 'OVERDUE'
+                                    )
                                 );
 
                                 // 1. If order is RETURNED or RATED, show RETURNED & RATING BANNER (NEVER OVERDUE!)
@@ -3607,7 +3672,6 @@
 
                                     const headerStepBadge = document.getElementById('chatHeaderStepBadge');
                                     const headerActionBadge = document.getElementById('chatHeaderActionBadge');
-                                    const hasRatedOrder = (parseInt(ord.has_rated) === 1 || parseInt(ord.rating) > 0);
 
                                     if (headerStepBadge) {
                                         headerStepBadge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i>Completed';
@@ -3619,6 +3683,11 @@
                                         if (hasRatedOrder) {
                                             headerActionBadge.innerHTML = '<i class="fa-solid fa-star text-warning me-1"></i>Rated';
                                             headerActionBadge.style.background = '#FFFBEB';
+                                            headerActionBadge.style.color = '#B45309';
+                                            headerActionBadge.style.borderColor = '#FDE68A';
+                                        } else if (!isOwner) {
+                                            headerActionBadge.innerHTML = '<i class="fa-solid fa-star me-1 text-warning"></i>Rate Item';
+                                            headerActionBadge.style.background = '#FEF3C7';
                                             headerActionBadge.style.color = '#B45309';
                                             headerActionBadge.style.borderColor = '#FDE68A';
                                         } else {
@@ -3644,10 +3713,8 @@
                                     const ratedStarsDisplay = document.getElementById('chatRatedStarsDisplay');
                                     const ratedReviewTextDisplay = document.getElementById('chatRatedReviewTextDisplay');
 
-                                    const hasRated = (parseInt(ord.has_rated) === 1);
-
                                     // Delete conversation ONLY shows after the renter rates the item!
-                                    if (hasRated) {
+                                    if (hasRatedOrder) {
                                         if (headerDeleteBtn) headerDeleteBtn.style.display = 'inline-flex';
                                         if (deleteSection) deleteSection.style.display = 'block';
                                     } else {
@@ -3657,14 +3724,14 @@
 
                                     if (!isOwner) {
                                         // Current user is RENTER
-                                        if (!hasRated) {
-                                            if (renterRatingBox) renterRatingBox.style.display = 'block';
-                                            if (ratedSuccessBox) ratedSuccessBox.style.display = 'none';
-                                            if (ownerWaitingBox) ownerWaitingBox.style.display = 'none';
+                                        if (!hasRatedOrder) {
+                                            if (renterRatingBox) renterRatingBox.style.setProperty('display', 'block', 'important');
+                                            if (ratedSuccessBox) ratedSuccessBox.style.setProperty('display', 'none', 'important');
+                                            if (ownerWaitingBox) ownerWaitingBox.style.setProperty('display', 'none', 'important');
                                         } else {
-                                            if (renterRatingBox) renterRatingBox.style.display = 'none';
-                                            if (ratedSuccessBox) ratedSuccessBox.style.display = 'block';
-                                            if (ownerWaitingBox) ownerWaitingBox.style.display = 'none';
+                                            if (renterRatingBox) renterRatingBox.style.setProperty('display', 'none', 'important');
+                                            if (ratedSuccessBox) ratedSuccessBox.style.setProperty('display', 'block', 'important');
+                                            if (ownerWaitingBox) ownerWaitingBox.style.setProperty('display', 'none', 'important');
                                             if (ratedByHeader) ratedByHeader.innerText = 'Your Rental Rating & Review';
                                             if (ratedStarsDisplay) {
                                                 const starCount = Math.max(1, Math.min(5, parseInt(ord.rating) || 5));
@@ -3676,10 +3743,10 @@
                                         }
                                     } else {
                                         // Current user is STOCK OWNER
-                                        if (renterRatingBox) renterRatingBox.style.display = 'none';
-                                        if (hasRated) {
-                                            if (ratedSuccessBox) ratedSuccessBox.style.display = 'block';
-                                            if (ownerWaitingBox) ownerWaitingBox.style.display = 'none';
+                                        if (renterRatingBox) renterRatingBox.style.setProperty('display', 'none', 'important');
+                                        if (hasRatedOrder) {
+                                            if (ratedSuccessBox) ratedSuccessBox.style.setProperty('display', 'block', 'important');
+                                            if (ownerWaitingBox) ownerWaitingBox.style.setProperty('display', 'none', 'important');
                                             if (ratedByHeader) ratedByHeader.innerText = `Renter Rating (${ord.customer_name || 'Renter'})`;
                                             if (ratedStarsDisplay) {
                                                 const starCount = Math.max(1, Math.min(5, parseInt(ord.rating) || 5));
@@ -3689,8 +3756,8 @@
                                                 ratedReviewTextDisplay.innerText = `"${ord.review_text || 'Great item, returned safely.'}"`;
                                             }
                                         } else {
-                                            if (ratedSuccessBox) ratedSuccessBox.style.display = 'none';
-                                            if (ownerWaitingBox) ownerWaitingBox.style.display = 'block';
+                                            if (ratedSuccessBox) ratedSuccessBox.style.setProperty('display', 'none', 'important');
+                                            if (ownerWaitingBox) ownerWaitingBox.style.setProperty('display', 'block', 'important');
                                         }
                                     }
 
@@ -3701,13 +3768,13 @@
                                     if (sendBtn) sendBtn.disabled = false;
                                 }
                                 // 2. If timer is running or overdue, show TIMER BANNER (ONLY IF NOT RETURNED/RATED!)
-                                else if (!isOrderReturnedOrRated && (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE')) {
+                                else if (isTimerActiveOrOverdue) {
                                     if (returnedBanner) returnedBanner.style.setProperty('display', 'none', 'important');
                                     if (headerDeleteBtn) headerDeleteBtn.style.setProperty('display', 'none', 'important');
                                     if (reqBanner) reqBanner.style.setProperty('display', 'none', 'important');
                                     if (timerBanner) timerBanner.style.setProperty('display', 'block', 'important');
 
-                                    const isOrderOverdue = !!(ord.is_overdue || ord.timer_status === 'EXPIRED' || ord.order_status === 'OVERDUE' || (ord.rental_timer_end && new Date(ord.rental_timer_end).getTime() <= Date.now()));
+                                    const isOrderOverdue = !!(ord.is_overdue || timerStatusUpper === 'EXPIRED' || orderStatusUpper === 'OVERDUE' || (ord.rental_timer_end && new Date(ord.rental_timer_end).getTime() <= Date.now()));
                                     const headerBar = document.querySelector('.rentchat-header-bar');
                                     const chatVw = document.getElementById('chatView');
                                     if (isOrderOverdue) {
@@ -3780,6 +3847,9 @@
                                 } 
                                 // 3. Step-by-Step Lifecycle (Before Timer Starts)
                                 else {
+                                    if (isHandedOver || isOrderReturnedOrRated) {
+                                        return;
+                                    }
                                     if (returnedBanner) returnedBanner.style.setProperty('display', 'none', 'important');
                                     if (headerDeleteBtn) headerDeleteBtn.style.setProperty('display', 'none', 'important');
                                     if (timerBanner) {
@@ -3881,8 +3951,23 @@
                                     if (step3Row) step3Row.style.setProperty('display', 'none', 'important');
                                     if (step4Row) step4Row.style.setProperty('display', 'none', 'important');
 
+                                    const headerStepBadge = document.getElementById('chatHeaderStepBadge');
+                                    const headerActionBadge = document.getElementById('chatHeaderActionBadge');
+
                                     // STEP 1: Booking Confirmation
                                     if (!ownerAgreed) {
+                                        if (headerStepBadge) {
+                                            headerStepBadge.innerHTML = 'Step 1 of 4';
+                                            headerStepBadge.style.background = '#EDE9FE';
+                                            headerStepBadge.style.color = '#5B3FA8';
+                                            headerStepBadge.style.borderColor = '#DDD6FE';
+                                        }
+                                        if (headerActionBadge) {
+                                            headerActionBadge.innerHTML = isOwner ? '<i class="fa-solid fa-handshake me-1 text-primary"></i>Confirm Request' : '<i class="fa-solid fa-hourglass-half me-1 text-warning"></i>Pending Owner';
+                                            headerActionBadge.style.background = '#F8FAFC';
+                                            headerActionBadge.style.color = '#64748B';
+                                            headerActionBadge.style.borderColor = '#E2E8F0';
+                                        }
                                         if (stepPill) { stepPill.innerText = 'Step 1 of 4 • Booking Confirmation'; stepPill.style.background = '#EDE9FE'; stepPill.style.color = '#5B3FA8'; }
                                         if (step1Row) step1Row.style.setProperty('display', 'block', 'important');
                                         if (isOwner) {
@@ -3904,6 +3989,18 @@
                                         const prepStatus = ord.prep_status || (hasPrepPhoto ? 'AWAITING_APPROVAL' : 'PENDING_UPLOAD');
                                         const hasFeedback = (prepStatus === 'FEEDBACK_RECEIVED' && ord.prep_feedback && ord.prep_feedback.trim() !== '');
 
+                                        if (headerStepBadge) {
+                                            headerStepBadge.innerHTML = `Step 2 of 4 • Prep`;
+                                            headerStepBadge.style.background = '#FEF3C7';
+                                            headerStepBadge.style.color = '#B45309';
+                                            headerStepBadge.style.borderColor = '#FDE68A';
+                                        }
+                                        if (headerActionBadge) {
+                                            headerActionBadge.innerHTML = isOwner ? '<i class="fa-solid fa-camera me-1"></i>Upload Photo' : '<i class="fa-solid fa-magnifying-glass me-1"></i>Inspect Photo';
+                                            headerActionBadge.style.background = '#FFFBEB';
+                                            headerActionBadge.style.color = '#B45309';
+                                            headerActionBadge.style.borderColor = '#FDE68A';
+                                        }
                                         if (stepPill) {
                                             stepPill.innerText = `Step 2 of 4 • Equipment Preparation (Attempt ${attempts} of 3)`;
                                             stepPill.style.background = '#FEF3C7';
@@ -3982,9 +4079,9 @@
                                                 }
                                                 if (sendBtn) sendBtn.disabled = true;
                                                 if (renterWaitNotice) {
-                                                    renterWaitNotice.innerText = hasFeedback
-                                                        ? `Feedback sent (Attempt ${Math.max(1, attempts - 1)} of 3). Stock owner is preparing a replacement photo.`
-                                                        : 'Stock owner is inspecting and packaging your gear. Chat will unlock once preparation photo is submitted.';
+                                                     renterWaitNotice.innerText = hasFeedback
+                                                         ? `Feedback sent (Attempt ${Math.max(1, attempts - 1)} of 3). Stock owner is preparing a replacement photo.`
+                                                         : 'Stock owner is inspecting and packaging your gear. Chat will unlock once preparation photo is submitted.';
                                                 }
                                             } else {
                                                 // Photo uploaded! Renter can view photo & click Accept or Request Another Photo
@@ -3997,6 +4094,18 @@
 
                                     // STEP 3: Campus Meetup Spot
                                     else if (!hasMeetupLoc) {
+                                        if (headerStepBadge) {
+                                            headerStepBadge.innerHTML = 'Step 3 of 4';
+                                            headerStepBadge.style.background = '#E0F2FE';
+                                            headerStepBadge.style.color = '#0369A1';
+                                            headerStepBadge.style.borderColor = '#BAE6FD';
+                                        }
+                                        if (headerActionBadge) {
+                                            headerActionBadge.innerHTML = isOwner ? '<i class="fa-solid fa-location-dot me-1"></i>Set Meetup' : '<i class="fa-solid fa-clock me-1"></i>Awaiting Meetup';
+                                            headerActionBadge.style.background = '#F0F9FF';
+                                            headerActionBadge.style.color = '#0369A1';
+                                            headerActionBadge.style.borderColor = '#BAE6FD';
+                                        }
                                         if (stepPill) { stepPill.innerText = 'Step 3 of 4 • Campus Meetup Location'; stepPill.style.background = '#E0F2FE'; stepPill.style.color = '#0369A1'; }
                                         if (step3Row) step3Row.style.setProperty('display', 'block', 'important');
 
@@ -4011,6 +4120,18 @@
                                     }
                                     // STEP 4: In-Person Handover & Start Timer
                                     else {
+                                        if (headerStepBadge) {
+                                            headerStepBadge.innerHTML = 'Step 4 of 4';
+                                            headerStepBadge.style.background = '#DCFCE7';
+                                            headerStepBadge.style.color = '#15803D';
+                                            headerStepBadge.style.borderColor = '#86EFAC';
+                                        }
+                                        if (headerActionBadge) {
+                                            headerActionBadge.innerHTML = isOwner ? '<i class="fa-solid fa-play me-1"></i>Start Timer' : '<i class="fa-solid fa-person-walking me-1"></i>Handover';
+                                            headerActionBadge.style.background = '#ECFDF5';
+                                            headerActionBadge.style.color = '#059669';
+                                            headerActionBadge.style.borderColor = '#A7F3D0';
+                                        }
                                         if (stepPill) { stepPill.innerText = 'Step 4 of 4 • Handover & Start Timer'; stepPill.style.background = '#DCFCE7'; stepPill.style.color = '#15803D'; }
                                         if (step4Row) step4Row.style.setProperty('display', 'block', 'important');
 
@@ -4804,8 +4925,21 @@
                                 }
                             }
 
-                            if (!confirm(`Confirm that order #${orderCode} has been delivered back and verified in good condition?\n\nThis will mark the rental as RETURNED and restock your equipment inventory automatically.`)) {
-                                return;
+                            const endTime = currentChatRentalOrder.rental_timer_end ? new Date(currentChatRentalOrder.rental_timer_end).getTime() : 0;
+                            const isTimerStillRunning = (endTime > Date.now());
+                            if (isTimerStillRunning) {
+                                const diffSec = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+                                const hours = Math.floor(diffSec / 3600);
+                                const mins = Math.floor((diffSec % 3600) / 60);
+                                const timeRemainingStr = `${hours}h ${mins}m`;
+                                const confirmMsg = `⚠️ Early Return Confirmation for Order #${orderCode}:\n\nThe rental timer is still actively running with ${timeRemainingStr} remaining.\n\nHas the student renter already delivered the equipment back early in good condition?\n\nConfirming will end the timer early, restock the gear back in your catalog, and prompt the student renter to submit their 1–5 star rating.`;
+                                if (!confirm(confirmMsg)) {
+                                    return;
+                                }
+                            } else {
+                                if (!confirm(`Confirm that order #${orderCode} has been delivered back and verified in good condition?\n\nThis will mark the rental as RETURNED and restock your equipment inventory automatically.`)) {
+                                    return;
+                                }
                             }
 
                             await doExecuteMarkRentalReturnedRestock(orderId, orderCode);
@@ -5026,7 +5160,9 @@
                                 return;
                             }
                             const partnerName = document.getElementById('chatPartnerName')?.innerText || 'User';
-                            initiateDeleteConversation(currentActiveChatSellerId, partnerName);
+                            const itemTitle = document.getElementById('chatItemTitle')?.innerText || '';
+                            const orderCode = window.currentActiveChatOrderCode || (currentChatRentalOrder ? currentChatRentalOrder.order_code : '') || '';
+                            initiateDeleteConversation(currentActiveChatSellerId, partnerName, null, itemTitle, orderCode);
                         };
 
                         window.showRentalSuspensionModal = function (suspData) {
@@ -5115,9 +5251,12 @@
                             const pId = parseInt(partnerId) || 0;
                             checkAndOpenChat(pId, partnerName || 'Verified Student', itemTitle || 'Campus Request', itemPrice || '₱0.00', '', itemImage || '');
                         }
-
                         async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar, itemImage, isMyItem, ownerName, isOverdueHint, orderCode) {
-                            if (orderCode) window.currentActiveChatOrderCode = orderCode;
+                            if (orderCode && String(orderCode).trim() !== '' && String(orderCode).trim() !== 'Order') {
+                                window.currentActiveChatOrderCode = String(orderCode).trim();
+                            } else {
+                                window.currentActiveChatOrderCode = null;
+                            }
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
                             let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;

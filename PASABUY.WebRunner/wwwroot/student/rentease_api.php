@@ -194,6 +194,7 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `review_text` TEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `has_rated` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rated_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `is_overdue` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}
 
     // Auto-heal any orders that have already been rated so they are marked as RETURNED / COMPLETED and NOT overdue
@@ -201,9 +202,11 @@ if ($db) {
         $db->exec("UPDATE `rental_orders` 
                    SET `order_status` = 'RETURNED', 
                        `status_display` = 'Returned to Owner Stock', 
-                       `timer_status` = 'COMPLETED', 
-                       `is_overdue` = 0 
-                   WHERE (`has_rated` = 1 OR `rating` > 0) AND (`order_status` != 'RETURNED' OR `is_overdue` = 1 OR `timer_status` != 'COMPLETED')");
+                       `timer_status` = 'COMPLETED' 
+                   WHERE (`has_rated` = 1 OR `rating` > 0) AND (`order_status` != 'RETURNED' OR `timer_status` != 'COMPLETED')");
+    } catch (Exception $e) {}
+    try {
+        $db->exec("UPDATE `rental_orders` SET `is_overdue` = 0 WHERE (`has_rated` = 1 OR `rating` > 0)");
     } catch (Exception $e) {}
 
     try {
@@ -1833,7 +1836,8 @@ if ($action === 'update_owner_order_status') {
             } catch (Exception $eN3) {}
         } elseif ($newStatus === 'RETURNED') {
             $statusDisplay = 'Returned to Owner Stock';
-            try { $db->prepare("UPDATE `rental_orders` SET `timer_status` = 'COMPLETED', `is_overdue` = 0 WHERE `id` = ?")->execute([$oId]); } catch (Exception $eTimerComp) {}
+            try { $db->prepare("UPDATE `rental_orders` SET `timer_status` = 'COMPLETED' WHERE `id` = ?")->execute([$oId]); } catch (Exception $eTimerComp) {}
+            try { $db->prepare("UPDATE `rental_orders` SET `is_overdue` = 0 WHERE `id` = ?")->execute([$oId]); } catch (Exception $eTimerComp2) {}
         }
 
         try {
@@ -1975,7 +1979,7 @@ if ($action === 'submit_rental_rating') {
         $orderCode = $order['order_code'];
         $itemName = $order['item_name'] ?: 'Campus Equipment';
 
-        // Update rental order with rating and review, AND mark as RETURNED / COMPLETED / NOT OVERDUE
+        // Update rental order with rating and review, AND mark as RETURNED / COMPLETED
         $updOrder = $db->prepare("UPDATE `rental_orders` 
                                   SET `has_rated` = 1, 
                                       `rating` = ?, 
@@ -1983,10 +1987,10 @@ if ($action === 'submit_rental_rating') {
                                       `rated_at` = NOW(),
                                       `order_status` = 'RETURNED',
                                       `status_display` = 'Returned to Owner Stock',
-                                      `timer_status` = 'COMPLETED',
-                                      `is_overdue` = 0
+                                      `timer_status` = 'COMPLETED'
                                   WHERE `id` = ?");
         $updOrder->execute([$rating, $reviewText, $oId]);
+        try { $db->prepare("UPDATE `rental_orders` SET `is_overdue` = 0 WHERE `id` = ?")->execute([$oId]); } catch (Exception $eOv) {}
 
         // Restock inventory if not already returned
         if ($itemId > 0 && ($order['order_status'] ?? '') !== 'RETURNED') {
@@ -3218,6 +3222,7 @@ if ($action === 'get_active_chat_rental') {
     $params = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId];
 
     if ($orderCode !== '') {
+        $cleanOrderCode = ltrim($orderCode, '#');
         // If exact order code is passed from card or query, retrieve that exact order regardless of status!
         $sql = "SELECT ro.*, ri.image_url AS item_image 
                 FROM `rental_orders` ro
@@ -3226,8 +3231,8 @@ if ($action === 'get_active_chat_rental') {
                    OR (LOWER(ro.`customer_email`) = ? AND LOWER(ro.`owner_email`) = ?)
                    OR (ro.`renter_id` = ? AND ro.`owner_id` = ?)
                    OR (ro.`renter_id` = ? AND ro.`owner_id` = ?))
-                  AND ro.`order_code` = ?";
-        $params = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId, $orderCode];
+                  AND (ro.`order_code` = ? OR ro.`order_code` = ? OR ro.`order_code` = ? OR ro.`order_code` LIKE ?)";
+        $params = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId, $orderCode, '#' . $cleanOrderCode, $cleanOrderCode, '%' . $cleanOrderCode . '%'];
     } elseif ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
         $sql .= " AND (LOWER(ro.`item_name`) LIKE ? OR LOWER(ri.`name`) LIKE ?)";
         $params[] = '%' . strtolower($itemTitle) . '%';
