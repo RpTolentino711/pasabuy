@@ -190,6 +190,26 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_agreed_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `unreturned_reported` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `status_display` VARCHAR(255) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rating` INT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `review_text` TEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `has_rated` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rated_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_reviews` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `order_id` INT NOT NULL,
+            `order_code` VARCHAR(50) NOT NULL,
+            `item_id` INT DEFAULT NULL,
+            `item_name` VARCHAR(255) NOT NULL,
+            `renter_id` INT NOT NULL,
+            `renter_name` VARCHAR(150) NOT NULL,
+            `owner_id` INT NOT NULL,
+            `rating` INT NOT NULL,
+            `review_text` TEXT NOT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
 
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_unreturned_reports` (
@@ -1828,10 +1848,22 @@ if ($action === 'update_owner_order_status') {
                 } catch (Exception $eDirectStock) {}
             }
 
-            // Notification message to customer
+            // Official chat messages to both owner and renter stream
             try {
-                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Equipment Owner', ?, 'Rental Return Complete', NOW())")
-                   ->execute(["Your rental equipment for Order {$order['order_code']} has been verified and returned. Thank you for renting!"]);
+                $oOwnerId = (int)($order['owner_id'] ?: 104);
+                $oRenterId = (int)($order['renter_id'] ?: 105);
+                $oOwnerName = $order['owner_name'] ?: 'Stock Owner';
+                $oRenterName = $order['customer_name'] ?: 'Student Renter';
+                $oItemName = $order['item_name'] ?: 'Campus Equipment';
+                $oOrderCode = $order['order_code'] ?: ('#RE-' . $oId);
+
+                $returnMsg = "📦 ITEM RETURNED & RESTOCKED: The item '{$oItemName}' ({$oOrderCode}) has been received back in good condition by {$oOwnerName} and restocked in the catalog. Rental is officially completed!";
+                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+                   ->execute([$oOwnerId, $oRenterId, $oOwnerName, $returnMsg, $oItemName]);
+
+                $ratePromptMsg = "⭐ RATING REQUIRED: Hello {$oRenterName}, please rate your rental experience with '{$oItemName}' from 1 to 5 stars and provide details so the transaction can be finalized!";
+                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'RentEase System', ?, ?, NOW())")
+                   ->execute([$oOwnerId, $oRenterId, $ratePromptMsg, $oItemName]);
             } catch (Exception $eC) {}
         }
 
@@ -1840,6 +1872,95 @@ if ($action === 'update_owner_order_status') {
             'message' => "Order #{$order['order_code']} status updated to {$newStatus}.",
             'order_status' => $newStatus,
             'status_display' => $statusDisplay
+        ]);
+        exit;
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------
+// SUBMIT RENTAL RATING & REVIEW (Renter rates 1-5 stars + details)
+// ----------------------------------------------------------
+if ($action === 'submit_rental_rating') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'Database connection failed.']); exit; }
+
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    $orderId = (int)($data['order_id'] ?? 0);
+    $rating = (int)($data['rating'] ?? 0);
+    $reviewText = trim((string)($data['review_text'] ?? ''));
+    $renterId = (int)($data['renter_id'] ?? $data['user_id'] ?? 105);
+
+    if ($rating < 1 || $rating > 5) {
+        echo json_encode(['success' => false, 'message' => 'Please select a star rating between 1 and 5 stars.']);
+        exit;
+    }
+    if (empty($reviewText)) {
+        echo json_encode(['success' => false, 'message' => 'Please provide required details explaining your rating.']);
+        exit;
+    }
+
+    try {
+        if ($orderId > 0) {
+            $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `id` = ? LIMIT 1");
+            $stmt->execute([$orderId]);
+        } else {
+            $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+            $stmt->execute([$orderCode]);
+        }
+        $order = $stmt->fetch();
+        if (!$order) {
+            echo json_encode(['success' => false, 'message' => 'Order not found.']);
+            exit;
+        }
+
+        $oId = (int)$order['id'];
+        $itemId = (int)$order['item_id'];
+        $renterName = $order['customer_name'] ?: 'Student Renter';
+        $ownerId = (int)($order['owner_id'] ?: 104);
+        $orderCode = $order['order_code'];
+        $itemName = $order['item_name'] ?: 'Campus Equipment';
+
+        // Update rental order with rating and review
+        $updOrder = $db->prepare("UPDATE `rental_orders` SET `has_rated` = 1, `rating` = ?, `review_text` = ?, `rated_at` = NOW() WHERE `id` = ?");
+        $updOrder->execute([$rating, $reviewText, $oId]);
+
+        // Insert into rental_reviews
+        try {
+            $insReview = $db->prepare("INSERT INTO `rental_reviews` (`order_id`, `order_code`, `item_id`, `item_name`, `renter_id`, `renter_name`, `owner_id`, `rating`, `review_text`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            $insReview->execute([$oId, $orderCode, $itemId, $itemName, $renterId, $renterName, $ownerId, $rating, $reviewText]);
+        } catch (Exception $eRev) {}
+
+        // Recompute average rating for equipment inventory
+        if ($itemId > 0) {
+            try {
+                $avgStmt = $db->prepare("SELECT AVG(rating) as avg_r, COUNT(*) as cnt FROM `rental_reviews` WHERE `item_id` = ?");
+                $avgStmt->execute([$itemId]);
+                $avgRow = $avgStmt->fetch();
+                if ($avgRow && (int)$avgRow['cnt'] > 0) {
+                    $newAvg = round((float)$avgRow['avg_r'], 1);
+                    $newCount = (int)$avgRow['cnt'];
+                    $db->prepare("UPDATE `rental_inventory` SET `rating` = ?, `reviews_count` = ? WHERE `id` = ?")
+                       ->execute([$newAvg, $newCount, $itemId]);
+                }
+            } catch (Exception $eAvg) {}
+        }
+
+        // Post official review message into chat stream
+        try {
+            $starEmoji = str_repeat('⭐', $rating);
+            $reviewChatMsg = "⭐ RENTER REVIEW ({$rating}/5 Stars {$starEmoji}): \"{$reviewText}\" — Submitted by {$renterName}. Rental is completed and both parties can now safely delete this conversation.";
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+               ->execute([$renterId, $ownerId, $renterName, $reviewChatMsg, $itemName]);
+        } catch (Exception $eMsg) {}
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Thank you! Your rating and review have been submitted successfully. Conversation can now be safely deleted.',
+            'rating' => $rating,
+            'review_text' => $reviewText,
+            'order_code' => $orderCode
         ]);
         exit;
     } catch (Exception $e) {
@@ -3016,12 +3137,21 @@ if ($action === 'get_active_chat_rental') {
                OR (ro.`renter_id` = ? AND ro.`owner_id` = ?)
                OR (ro.`renter_id` = ? AND ro.`owner_id` = ?))
               AND (ro.`order_status` NOT IN ('RETURNED', 'CANCELLED', 'REJECTED')
+                   OR (ro.`order_status` = 'RETURNED' AND (ro.`has_rated` = 0 OR ro.`updated_at` >= NOW() - INTERVAL 3 DAY))
                    OR (ro.`order_status` = 'CANCELLED' AND ro.`updated_at` >= NOW() - INTERVAL 1 DAY))";
     $params = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId];
 
     if ($orderCode !== '') {
-        $sql .= " AND ro.`order_code` = ?";
-        $params[] = $orderCode;
+        // If exact order code is passed from card or query, retrieve that exact order regardless of status!
+        $sql = "SELECT ro.*, ri.image_url AS item_image 
+                FROM `rental_orders` ro
+                LEFT JOIN `rental_inventory` ri ON ro.item_id = ri.id
+                WHERE ((LOWER(ro.`customer_email`) = ? AND LOWER(ro.`owner_email`) = ?) 
+                   OR (LOWER(ro.`customer_email`) = ? AND LOWER(ro.`owner_email`) = ?)
+                   OR (ro.`renter_id` = ? AND ro.`owner_id` = ?)
+                   OR (ro.`renter_id` = ? AND ro.`owner_id` = ?))
+                  AND ro.`order_code` = ?";
+        $params = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId, $orderCode];
     } elseif ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
         $sql .= " AND (LOWER(ro.`item_name`) LIKE ? OR LOWER(ri.`name`) LIKE ?)";
         $params[] = '%' . strtolower($itemTitle) . '%';
@@ -3105,6 +3235,10 @@ if ($action === 'get_active_chat_rental') {
             'seconds_remaining' => $secondsRemaining,
             'is_overdue' => $isOverdue,
             'unreturned_reported' => (int)($ord['unreturned_reported'] ?? 0),
+            'has_rated' => (int)($ord['has_rated'] ?? 0),
+            'rating' => (int)($ord['rating'] ?? 0),
+            'review_text' => (string)($ord['review_text'] ?? ''),
+            'rated_at' => (string)($ord['rated_at'] ?? ''),
             'is_owner' => $isOwner
         ]
     ]);

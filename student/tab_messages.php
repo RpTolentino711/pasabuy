@@ -461,9 +461,14 @@
                 </div>
             </div>
         </div>
-        <button type="button" class="rentchat-report-btn" onclick="openReportModal()" title="Report user or issue">
-            <i class="fa-solid fa-shield-halved fs-9"></i> Report
-        </button>
+        <div class="d-flex align-items-center gap-1">
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1" id="chatHeaderDeleteBtn" onclick="initiateDeleteCurrentChatConversation()" style="font-size:0.72rem; display:none;" title="Delete this conversation safely">
+                <i class="fa-solid fa-trash-can me-1"></i> Delete
+            </button>
+            <button type="button" class="rentchat-report-btn" onclick="openReportModal()" title="Report user or issue">
+                <i class="fa-solid fa-shield-halved fs-9"></i> Report
+            </button>
+        </div>
     </div>
 
     <!-- Attached Equipment Banner (Never broken, elegant layout) -->
@@ -868,6 +873,103 @@
         <!-- Renter Overdue Warning (Visible for Renter ONLY when rental is overdue) -->
         <div id="chatTimerRenterOverdueRow" style="display:none !important;" class="pt-2 mt-2 border-top border-white border-opacity-15 rentchat-overdue-row">
             <span class="fs-9 text-warning"><i class="fa-solid fa-clock-rotate-left me-1"></i> Rental expired — please return gear to owner immediately</span>
+        </div>
+    </div>
+
+    <!-- RENTAL RETURNED & RATING / REVIEW BANNER (Shown when order_status === 'RETURNED') -->
+    <div id="chatRentalReturnedBanner" class="rentchat-returned-card p-3 mb-2 flex-shrink-0" style="display:none; background: #FFFFFF; border-radius: 16px; border: 1.5px solid #E2E8F0; box-shadow: 0 4px 16px rgba(0,0,0,0.06);">
+        <!-- Top Status Bar -->
+        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-light">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:34px; height:34px; background:#DCFCE7; color:#15803D;">
+                    <i class="fa-solid fa-boxes-packing fs-8"></i>
+                </div>
+                <div>
+                    <div class="fw-extrabold text-dark" style="font-size:0.82rem; letter-spacing:-0.2px;">Rental Returned &amp; Restocked</div>
+                    <div class="text-muted" style="font-size:0.65rem;" id="chatReturnedOrderCodeDisplay">Item safely back in owner stock</div>
+                </div>
+            </div>
+            <span class="badge rounded-pill fw-bold px-2 py-0.5" style="background:#DCFCE7; color:#15803D; font-size:0.68rem; border:1px solid #BBF7D0;">
+                <i class="fa-solid fa-circle-check me-1"></i>Completed
+            </span>
+        </div>
+
+        <!-- RENTER VIEW: Rate 1 to 5 Stars & Required Review -->
+        <div id="chatReturnedRenterRatingBox" style="display:none;">
+            <div class="p-2.5 rounded-3 mb-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                <div class="fw-bold text-dark fs-9 mb-1">
+                    <i class="fa-solid fa-star text-warning me-1"></i> Rate Your Rental Experience
+                </div>
+                <div class="text-muted mb-2" style="font-size:0.68rem;">
+                    Please rate this item from 1 to 5 stars and tell us why you gave this rating:
+                </div>
+
+                <!-- Interactive 1-5 Star Picker -->
+                <div class="d-flex align-items-center justify-content-center gap-2 py-1 mb-1" id="chatRatingStarsContainer">
+                    <button type="button" class="btn p-0 border-0 fs-3 rentchat-star" data-star="1" onclick="setRentalStarRating(1)" style="color:#D1D5DB; transition:all 0.15s ease;"><i class="fa-solid fa-star"></i></button>
+                    <button type="button" class="btn p-0 border-0 fs-3 rentchat-star" data-star="2" onclick="setRentalStarRating(2)" style="color:#D1D5DB; transition:all 0.15s ease;"><i class="fa-solid fa-star"></i></button>
+                    <button type="button" class="btn p-0 border-0 fs-3 rentchat-star" data-star="3" onclick="setRentalStarRating(3)" style="color:#D1D5DB; transition:all 0.15s ease;"><i class="fa-solid fa-star"></i></button>
+                    <button type="button" class="btn p-0 border-0 fs-3 rentchat-star" data-star="4" onclick="setRentalStarRating(4)" style="color:#D1D5DB; transition:all 0.15s ease;"><i class="fa-solid fa-star"></i></button>
+                    <button type="button" class="btn p-0 border-0 fs-3 rentchat-star" data-star="5" onclick="setRentalStarRating(5)" style="color:#D1D5DB; transition:all 0.15s ease;"><i class="fa-solid fa-star"></i></button>
+                </div>
+                <div class="text-center fw-bold fs-9 mb-2" id="chatRatingLabelText" style="color:#64748B;">Tap a star to rate (1–5)</div>
+
+                <!-- Required Details Textarea -->
+                <label class="form-label fw-bold text-dark mb-1" style="font-size:0.7rem;">
+                    Why did you give this item this rating? <span class="text-danger">* (Required)</span>
+                </label>
+                <textarea class="form-control rounded-3 p-2 fs-8 mb-2" id="chatRatingReviewText" rows="2" 
+                          placeholder="Please describe item condition, pickup/return smoothness, and your overall experience..."
+                          oninput="checkRentalRatingFormValidity()"></textarea>
+
+                <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold" id="btnSubmitRentalRating" onclick="submitRentalRatingFromChat()" disabled>
+                    <i class="fa-solid fa-paper-plane me-1"></i> Submit Rating &amp; Review
+                </button>
+            </div>
+        </div>
+
+        <!-- RENTER ALREADY RATED or OWNER VIEWING SUBMITTED RATING -->
+        <div id="chatReturnedRatedSuccessBox" style="display:none;" class="mb-2">
+            <div class="p-2.5 rounded-3 text-start" style="background:#F0FDF4; border:1px solid #BBF7D0;">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="fw-bold text-success fs-9 d-flex align-items-center gap-1">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span id="chatRatedByHeader">Renter Rating Submitted</span>
+                    </span>
+                    <div id="chatRatedStarsDisplay" class="text-warning fs-9">
+                    </div>
+                </div>
+                <div class="bg-white p-2 rounded-2 border border-success-subtle text-dark fs-8 fst-italic mb-1" id="chatRatedReviewTextDisplay">
+                    "Great experience!"
+                </div>
+                <div class="text-muted" style="font-size:0.65rem;">
+                    <i class="fa-solid fa-shield-halved text-success me-0.5"></i> Rental finalized. Both parties can now safely delete this conversation.
+                </div>
+            </div>
+        </div>
+
+        <!-- OWNER VIEW: Waiting for renter rating -->
+        <div id="chatReturnedOwnerWaitingBox" style="display:none;" class="mb-2">
+            <div class="rentchat-waiting-box p-2.5 rounded-3 d-flex align-items-center gap-2">
+                <div class="spinner-border spinner-border-sm text-warning flex-shrink-0" role="status"></div>
+                <div style="font-size:0.72rem;">
+                    <div class="fw-bold text-dark">Item Restocked • Awaiting Renter Review</div>
+                    <div class="text-muted mt-0.5">The student renter is completing their 1–5 star rating and feedback.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SAFE DELETE CONVERSATION BUTTON (Visible to BOTH owner and renter once returned) -->
+        <div id="chatReturnedDeleteSection" class="pt-2 border-top border-light text-center">
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-1.5 shadow-2xs" 
+                    id="btnChatReturnedDeleteConv" 
+                    onclick="initiateDeleteCurrentChatConversation()">
+                <i class="fa-solid fa-trash-can fs-9"></i>
+                <span>Delete Conversation Safely</span>
+            </button>
+            <div class="text-muted mt-1" style="font-size:0.65rem;">
+                <i class="fa-solid fa-lock-open me-0.5 text-secondary"></i> Safe to delete: Rental is returned and restocked in inventory.
+            </div>
         </div>
     </div>
 

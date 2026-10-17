@@ -3489,10 +3489,14 @@
 
                                 const reqBanner = document.getElementById('chatRentalRequestBanner');
                                 const timerBanner = document.getElementById('chatRentalTimerBanner');
+                                const returnedBanner = document.getElementById('chatRentalReturnedBanner');
+                                const headerDeleteBtn = document.getElementById('chatHeaderDeleteBtn');
 
                                 if (!data || !data.success || !data.has_rental) {
                                     if (reqBanner) reqBanner.style.display = 'none';
                                     if (timerBanner) timerBanner.style.display = 'none';
+                                    if (returnedBanner) returnedBanner.style.display = 'none';
+                                    if (headerDeleteBtn) headerDeleteBtn.style.display = 'none';
                                     if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
                                     currentChatRentalOrder = null;
                                     return;
@@ -3579,8 +3583,84 @@
                                     if (chatItemFallback) chatItemFallback.style.display = 'none';
                                 }
 
-                                // 1. If timer is running or overdue, show TIMER BANNER
-                                if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
+                                // 1. If order is RETURNED, show RETURNED & RATING BANNER
+                                if (ord.order_status === 'RETURNED') {
+                                    if (reqBanner) reqBanner.style.display = 'none';
+                                    if (timerBanner) timerBanner.style.display = 'none';
+                                    if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
+
+                                    const headerBar = document.querySelector('.rentchat-header-bar');
+                                    const chatVw = document.getElementById('chatView');
+                                    if (timerBanner) timerBanner.classList.remove('is-overdue');
+                                    if (headerBar) headerBar.classList.remove('is-overdue');
+                                    if (chatVw) chatVw.classList.remove('is-overdue');
+
+                                    if (returnedBanner) returnedBanner.style.display = 'block';
+                                    if (headerDeleteBtn) headerDeleteBtn.style.display = 'inline-flex';
+
+                                    const returnedOrderCodeEl = document.getElementById('chatReturnedOrderCodeDisplay');
+                                    if (returnedOrderCodeEl) {
+                                        returnedOrderCodeEl.innerText = `${ord.item_name} (${ord.order_code}) • Returned & Restocked in Catalog`;
+                                    }
+
+                                    const renterRatingBox = document.getElementById('chatReturnedRenterRatingBox');
+                                    const ratedSuccessBox = document.getElementById('chatReturnedRatedSuccessBox');
+                                    const ownerWaitingBox = document.getElementById('chatReturnedOwnerWaitingBox');
+                                    const ratedByHeader = document.getElementById('chatRatedByHeader');
+                                    const ratedStarsDisplay = document.getElementById('chatRatedStarsDisplay');
+                                    const ratedReviewTextDisplay = document.getElementById('chatRatedReviewTextDisplay');
+
+                                    const hasRated = (parseInt(ord.has_rated) === 1);
+
+                                    if (!isOwner) {
+                                        // Current user is RENTER
+                                        if (!hasRated) {
+                                            if (renterRatingBox) renterRatingBox.style.display = 'block';
+                                            if (ratedSuccessBox) ratedSuccessBox.style.display = 'none';
+                                            if (ownerWaitingBox) ownerWaitingBox.style.display = 'none';
+                                        } else {
+                                            if (renterRatingBox) renterRatingBox.style.display = 'none';
+                                            if (ratedSuccessBox) ratedSuccessBox.style.display = 'block';
+                                            if (ownerWaitingBox) ownerWaitingBox.style.display = 'none';
+                                            if (ratedByHeader) ratedByHeader.innerText = 'Your Rental Rating & Review';
+                                            if (ratedStarsDisplay) {
+                                                const starCount = Math.max(1, Math.min(5, parseInt(ord.rating) || 5));
+                                                ratedStarsDisplay.innerHTML = '⭐'.repeat(starCount) + ` <strong class="text-dark">(${starCount}/5)</strong>`;
+                                            }
+                                            if (ratedReviewTextDisplay) {
+                                                ratedReviewTextDisplay.innerText = `"${ord.review_text || 'Great item, returned safely.'}"`;
+                                            }
+                                        }
+                                    } else {
+                                        // Current user is STOCK OWNER
+                                        if (renterRatingBox) renterRatingBox.style.display = 'none';
+                                        if (hasRated) {
+                                            if (ratedSuccessBox) ratedSuccessBox.style.display = 'block';
+                                            if (ownerWaitingBox) ownerWaitingBox.style.display = 'none';
+                                            if (ratedByHeader) ratedByHeader.innerText = `Renter Rating (${ord.customer_name || 'Renter'})`;
+                                            if (ratedStarsDisplay) {
+                                                const starCount = Math.max(1, Math.min(5, parseInt(ord.rating) || 5));
+                                                ratedStarsDisplay.innerHTML = '⭐'.repeat(starCount) + ` <strong class="text-dark">(${starCount}/5)</strong>`;
+                                            }
+                                            if (ratedReviewTextDisplay) {
+                                                ratedReviewTextDisplay.innerText = `"${ord.review_text || 'Great item, returned safely.'}"`;
+                                            }
+                                        } else {
+                                            if (ratedSuccessBox) ratedSuccessBox.style.display = 'none';
+                                            if (ownerWaitingBox) ownerWaitingBox.style.display = 'block';
+                                        }
+                                    }
+
+                                    // Chat input is enabled
+                                    const chatInput = document.getElementById('chatInput');
+                                    const sendBtn = document.querySelector('.rentchat-send-btn');
+                                    if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'Type your message...'; }
+                                    if (sendBtn) sendBtn.disabled = false;
+                                }
+                                // 2. If timer is running or overdue, show TIMER BANNER
+                                else if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
+                                    if (returnedBanner) returnedBanner.style.display = 'none';
+                                    if (headerDeleteBtn) headerDeleteBtn.style.display = 'none';
                                     if (reqBanner) reqBanner.style.display = 'none';
                                     if (timerBanner) timerBanner.style.display = 'block';
 
@@ -3626,8 +3706,10 @@
                                     // Start or sync local live countdown with strict owner role passing
                                     startChatTimerCountdown(ord.rental_timer_end, isOwner);
                                 } 
-                                // 2. Step-by-Step Lifecycle (Before Timer Starts)
+                                // 3. Step-by-Step Lifecycle (Before Timer Starts)
                                 else {
+                                    if (returnedBanner) returnedBanner.style.display = 'none';
+                                    if (headerDeleteBtn) headerDeleteBtn.style.display = 'none';
                                     if (timerBanner) timerBanner.style.display = 'none';
                                     if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
                                     if (reqBanner) reqBanner.style.display = 'block';
@@ -4655,6 +4737,132 @@
                             }
                         };
 
+                        window.currentSelectedRentalStar = 0;
+
+                        window.setRentalStarRating = function(star) {
+                            window.currentSelectedRentalStar = parseInt(star) || 0;
+                            const container = document.getElementById('chatRatingStarsContainer');
+                            if (container) {
+                                const starBtns = container.querySelectorAll('.rentchat-star');
+                                starBtns.forEach(btn => {
+                                    const s = parseInt(btn.dataset.star) || 0;
+                                    if (s <= window.currentSelectedRentalStar) {
+                                        btn.style.color = '#F59E0B';
+                                        btn.style.transform = 'scale(1.15)';
+                                    } else {
+                                        btn.style.color = '#D1D5DB';
+                                        btn.style.transform = 'scale(1.0)';
+                                    }
+                                });
+                            }
+                            const labelEl = document.getElementById('chatRatingLabelText');
+                            if (labelEl) {
+                                const descMap = {
+                                    1: '⭐ 1 Star • Poor experience',
+                                    2: '⭐⭐ 2 Stars • Fair experience',
+                                    3: '⭐⭐⭐ 3 Stars • Good experience',
+                                    4: '⭐⭐⭐⭐ 4 Stars • Very Good experience',
+                                    5: '⭐⭐⭐⭐⭐ 5 Stars • Excellent experience!'
+                                };
+                                labelEl.innerText = descMap[window.currentSelectedRentalStar] || 'Tap a star to rate (1–5)';
+                                labelEl.style.color = '#D97706';
+                            }
+                            checkRentalRatingFormValidity();
+                        };
+
+                        window.checkRentalRatingFormValidity = function() {
+                            const btn = document.getElementById('btnSubmitRentalRating');
+                            const reviewText = document.getElementById('chatRatingReviewText')?.value?.trim() || '';
+                            const isValid = (window.currentSelectedRentalStar >= 1 && window.currentSelectedRentalStar <= 5 && reviewText.length > 0);
+                            if (btn) {
+                                btn.disabled = !isValid;
+                                if (isValid) {
+                                    btn.classList.add('shadow-sm');
+                                } else {
+                                    btn.classList.remove('shadow-sm');
+                                }
+                            }
+                        };
+
+                        window.submitRentalRatingFromChat = async function() {
+                            if (!currentChatRentalOrder) {
+                                alert('No active rental order found to rate.');
+                                return;
+                            }
+                            const rating = window.currentSelectedRentalStar;
+                            const reviewText = document.getElementById('chatRatingReviewText')?.value?.trim() || '';
+
+                            if (rating < 1 || rating > 5) {
+                                alert('Please select a star rating between 1 and 5.');
+                                return;
+                            }
+                            if (!reviewText) {
+                                alert('Please provide the required details explaining why you gave this rating.');
+                                return;
+                            }
+
+                            const btn = document.getElementById('btnSubmitRentalRating');
+                            if (btn) {
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Submitting Review...';
+                            }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 105) : 105;
+
+                            try {
+                                const apiEndpoint = window.location.pathname.includes('/student/') ? 'rentease_api.php?action=submit_rental_rating' : '/student/rentease_api.php?action=submit_rental_rating';
+                                const res = await fetch(apiEndpoint, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        action: 'submit_rental_rating',
+                                        order_id: currentChatRentalOrder.id,
+                                        order_code: currentChatRentalOrder.order_code,
+                                        rating: rating,
+                                        review_text: reviewText,
+                                        renter_id: currentUserId
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data && data.success) {
+                                    alert(data.message || 'Rating & review submitted successfully!');
+                                    if (typeof checkAndRenderChatRentalTimer === 'function') {
+                                        await checkAndRenderChatRentalTimer();
+                                    }
+                                    if (typeof refreshActiveChatStream === 'function') {
+                                        await refreshActiveChatStream();
+                                    }
+                                    if (typeof loadChatConversationsList === 'function') {
+                                        loadChatConversationsList();
+                                    }
+                                } else {
+                                    alert(data?.message || 'Failed to submit rating.');
+                                    if (btn) {
+                                        btn.disabled = false;
+                                        btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Submit Rating &amp; Review';
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Error submitting rating:', e);
+                                alert('Server connection error while submitting review.');
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Submit Rating &amp; Review';
+                                }
+                            }
+                        };
+
+                        window.initiateDeleteCurrentChatConversation = function() {
+                            if (!currentActiveChatSellerId) {
+                                alert('No active conversation open.');
+                                return;
+                            }
+                            const partnerName = document.getElementById('chatPartnerName')?.innerText || 'User';
+                            initiateDeleteConversation(currentActiveChatSellerId, partnerName);
+                        };
+
                         window.showRentalSuspensionModal = function (suspData) {
                             const rEl = document.getElementById('suspensionNoticeReason');
                             if (rEl) rEl.innerText = suspData.reason || 'Unreturned equipment report approved by admin.';
@@ -4951,6 +5159,12 @@
                             const header = document.querySelector('.rentchat-header-bar');
                             if (banner) banner.classList.remove('is-overdue');
                             if (header) header.classList.remove('is-overdue');
+                            const retBanner = document.getElementById('chatRentalReturnedBanner');
+                            if (retBanner) retBanner.style.display = 'none';
+                            const hDelBtn = document.getElementById('chatHeaderDeleteBtn');
+                            if (hDelBtn) hDelBtn.style.display = 'none';
+                            if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
+                            window.currentSelectedRentalStar = 0;
                             loadChatConversationsList();
                         }
 
