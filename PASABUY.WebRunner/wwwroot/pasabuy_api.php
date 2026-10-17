@@ -643,109 +643,293 @@ if ($action === 'chat_conversations') {
         $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100 OR `ReceiverId` = 100 OR `SenderId` = `ReceiverId` OR (`SenderId` IN (1, 104) AND `ReceiverId` IN (1, 104)) OR (`SenderId` = 105 AND `ReceiverId` = 105) OR `ItemTitle` = 'Roem' OR `MessageText` LIKE '%Hi Romeo%'");
     } catch (Exception $eClean) {}
 
-    $stmt = $db->prepare("SELECT c1.*, 
-        spSender.FirstName as SenderFirstName, spSender.LastName as SenderLastName, spSender.ProfileImage as SenderProfileImage,
-        spReceiver.FirstName as ReceiverFirstName, spReceiver.LastName as ReceiverLastName, spReceiver.ProfileImage as ReceiverProfileImage
-        FROM ChatMessages c1 
-        INNER JOIN (
-            SELECT MAX(Id) as max_id FROM ChatMessages 
-            WHERE (SenderId IN (1, ?) OR ReceiverId IN (1, ?)) 
-              AND SenderId != ReceiverId
-              AND NOT (SenderId IN (1, 104) AND ReceiverId IN (1, 104))
-              AND SenderName NOT LIKE '%Fleet Dispatch%' 
-              AND SenderName NOT LIKE '%Rider%' 
-              AND SenderId != 100 
-            GROUP BY LEAST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId)), GREATEST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId))
-        ) c2 ON c1.Id = c2.max_id 
-        LEFT JOIN StudentProfiles spSender ON c1.SenderId = spSender.UserId
-        LEFT JOIN StudentProfiles spReceiver ON c1.ReceiverId = spReceiver.UserId
-        WHERE c1.SenderId != c1.ReceiverId 
-          AND NOT (c1.SenderId IN (1, 104) AND c1.ReceiverId IN (1, 104))
-          AND c1.SenderName NOT LIKE '%Fleet Dispatch%' 
-          AND c1.SenderName NOT LIKE '%Rider%' 
-          AND c1.SenderId != 100
-        ORDER BY c1.CreatedAt DESC");
-    $stmt->execute([$userId, $userId]);
-    $convs = $stmt->fetchAll();
+    // Resolve current user email
+    $uEmail = ($userId == 104) ? 'romeopaolotolentino@gmail.com' : (($userId == 105) ? 'pogilameg@gmail.com' : '');
+    try {
+        $uStmt = $db->prepare("SELECT Email FROM `Users` WHERE Id = ?");
+        $uStmt->execute([$userId]);
+        $fetchedEmail = strtolower(trim((string)$uStmt->fetchColumn()));
+        if ($fetchedEmail !== '') $uEmail = $fetchedEmail;
+    } catch (Exception $eUser) {}
 
-    foreach ($convs as &$c) {
-        if ($c['SenderId'] == $userId || $c['SenderId'] == 1) {
-            $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
-            $c['PartnerName'] = $rName !== '' ? $rName : 'Campus Seller';
-            $c['PartnerId'] = (int)$c['ReceiverId'];
-            $c['PartnerAvatar'] = !empty($c['ReceiverProfileImage']) ? $c['ReceiverProfileImage'] : '';
-        } else {
-            $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
-            $c['PartnerName'] = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
-            $c['PartnerId'] = (int)$c['SenderId'];
-            $c['PartnerAvatar'] = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
-        }
+    $allConvs = [];
 
-        // Check if transaction has been made between user and partner
-        $pId = (int)($c['PartnerId'] ?? 0);
-        $hasTx = false;
-        $txCode = '';
-        $txStatus = '';
+    // 1. Fetch all rental orders involving this user
+    try {
+        $rOrdersSql = "SELECT ro.*, ri.image_url as item_image,
+                              uOwner.FirstName as OwnerFirstName, uOwner.LastName as OwnerLastName, spOwner.ProfileImage as OwnerProfileImage,
+                              uRenter.FirstName as RenterFirstName, uRenter.LastName as RenterLastName, spRenter.ProfileImage as RenterProfileImage
+                       FROM rental_orders ro
+                       LEFT JOIN rental_inventory ri ON ro.item_id = ri.id
+                       LEFT JOIN Users uOwner ON ro.owner_id = uOwner.Id
+                       LEFT JOIN StudentProfiles spOwner ON ro.owner_id = spOwner.UserId
+                       LEFT JOIN Users uRenter ON ro.renter_id = uRenter.Id
+                       LEFT JOIN StudentProfiles spRenter ON ro.renter_id = spRenter.UserId
+                       WHERE (ro.renter_id = ? OR ro.owner_id = ? 
+                          OR (LOWER(ro.customer_email) = ? AND ? != '') 
+                          OR (LOWER(ro.owner_email) = ? AND ? != ''))
+                         AND ro.order_code NOT IN ('#RE-10245', '#RE-10234')
+                         AND ro.order_code NOT LIKE '%10234%'
+                         AND ro.order_status NOT IN ('CANCELLED', 'REJECTED')
+                       ORDER BY ro.id DESC";
+        $rOrdersStmt = $db->prepare($rOrdersSql);
+        $rOrdersStmt->execute([$userId, $userId, $uEmail, $uEmail, $uEmail, $uEmail]);
+        $rentalOrders = $rOrdersStmt->fetchAll();
 
-        try {
-            $uEmail = ($userId == 104) ? 'romeopaolotolentino@gmail.com' : (($userId == 105) ? 'pogilameg@gmail.com' : '');
-            $pEmail = ($pId == 104) ? 'romeopaolotolentino@gmail.com' : (($pId == 105) ? 'pogilameg@gmail.com' : '');
-
-            try {
-                $emailStmt = $db->prepare("SELECT `Id`, `Email` FROM `Users` WHERE `Id` IN (?, ?)");
-                $emailStmt->execute([$userId, $pId]);
-                foreach ($emailStmt->fetchAll() as $erow) {
-                    $em = strtolower(trim($erow['Email'] ?? ''));
-                    $eid = (int)($erow['Id'] ?? 0);
-                    if ($eid === $userId && $em) $uEmail = $em;
-                    if ($eid === $pId && $em) $pEmail = $em;
-                }
-            } catch (Exception $eUser) {}
-
-            // Check rental_orders by email OR id
-            $rSql = "SELECT order_code, order_status FROM rental_orders 
-                     WHERE (((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
-                         OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
-                        OR ((renter_id = ? AND owner_id = ?) 
-                         OR (renter_id = ? AND owner_id = ?))
-                        OR ((renter_id IN (1, 104) AND owner_id = ?) 
-                         OR (owner_id IN (1, 104) AND renter_id = ?)))
-                       AND order_code NOT IN ('#RE-10245', '#RE-10234')
-                       AND order_code NOT LIKE '%10234%'
-                     ORDER BY id DESC LIMIT 1";
-            $rStmt = $db->prepare($rSql);
-            $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $pId, $pId, $userId, $pId, $pId]);
-            $rOrd = $rStmt->fetch();
-            if ($rOrd) {
-                $hasTx = true;
-                $txCode = $rOrd['order_code'];
-                $txStatus = $rOrd['order_status'];
-            } else {
-                // Check Orders table
-                $uList = ($userId == 104) ? [1, 104] : [$userId];
-                $pList = ($pId == 104) ? [1, 104] : [$pId];
-                $uPlace = implode(',', array_fill(0, count($uList), '?'));
-                $pPlace = implode(',', array_fill(0, count($pList), '?'));
-
-                $oSql = "SELECT Id, Status FROM Orders 
-                         WHERE ((BuyerId IN ($uPlace) AND SellerId IN ($pPlace)) 
-                            OR (BuyerId IN ($pPlace) AND SellerId IN ($uPlace)))
-                         ORDER BY Id DESC LIMIT 1";
-                $oStmt = $db->prepare($oSql);
-                $oStmt->execute(array_merge($uList, $pList, $pList, $uList));
-                $ord = $oStmt->fetch();
-                if ($ord) {
-                    $hasTx = true;
-                    $txCode = '#ORD-' . $ord['Id'];
-                    $txStatus = $ord['Status'];
-                }
+        foreach ($rentalOrders as $ro) {
+            $isOwner = ((int)$userId === (int)$ro['owner_id'] || (!empty($uEmail) && !empty($ro['owner_email']) && strtolower($uEmail) === strtolower($ro['owner_email'])));
+            if ((int)$userId === (int)$ro['renter_id'] || (!empty($uEmail) && !empty($ro['customer_email']) && strtolower($uEmail) === strtolower($ro['customer_email']))) {
+                $isOwner = false;
             }
-        } catch (Exception $eTx) {}
 
-        $c['HasTransaction'] = $hasTx;
-        $c['TransactionOrderCode'] = $txCode;
-        $c['TransactionStatus'] = $txStatus;
-    }
+            $partnerId = $isOwner ? (int)$ro['renter_id'] : (int)$ro['owner_id'];
+            if ($partnerId <= 0 || $partnerId === $userId) {
+                $partnerId = ($userId === 104) ? 105 : 104;
+            }
+
+            if ($isOwner) {
+                $pName = trim(($ro['RenterFirstName'] ?? '') . ' ' . ($ro['RenterLastName'] ?? ''));
+                if ($pName === '') $pName = trim((string)($ro['customer_name'] ?? ''));
+                if ($pName === '') $pName = ($partnerId === 105 ? 'Pogilameg Tester' : 'Campus Renter');
+                $pAvatar = !empty($ro['RenterProfileImage']) ? $ro['RenterProfileImage'] : '';
+            } else {
+                $pName = trim(($ro['OwnerFirstName'] ?? '') . ' ' . ($ro['OwnerLastName'] ?? ''));
+                if ($pName === '') $pName = trim((string)($ro['owner_name'] ?? ''));
+                if ($pName === '') $pName = ($partnerId === 104 ? 'Romeo Paolo Tolentino' : 'Stock Owner');
+                $pAvatar = !empty($ro['OwnerProfileImage']) ? $ro['OwnerProfileImage'] : '';
+            }
+
+            // Fallback avatar
+            if (empty($pAvatar) || str_contains($pAvatar, 'dicebear')) {
+                $pAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($pName) . '&background=5B3FA8&color=fff&bold=true&rounded=true';
+            }
+
+            // Steps Calculation
+            $st = strtoupper(trim((string)$ro['order_status']));
+            $ownerAgreed = ((int)$ro['owner_agreed'] === 1 || in_array($st, ['CONFIRMED', 'PREPARING', 'PROCESSING', 'MEETUP', 'HANDOVER_READY', 'IN_PROGRESS', 'DELIVERED', 'RETURNED']));
+            $hasPrepPhoto = (!empty($ro['prep_photo_url']) && trim((string)$ro['prep_photo_url']) !== '');
+            $prepConfirmed = ((int)$ro['prep_confirmed_by_renter'] === 1 || in_array($st, ['MEETUP', 'HANDOVER_READY', 'IN_PROGRESS', 'DELIVERED', 'RETURNED']));
+            $hasMeetupLoc = (!empty($ro['meetup_location']) && $ro['meetup_location'] !== 'Campus Handover Meetup' && !empty($ro['meetup_location_at']));
+            $isHandedOver = ((int)$ro['handed_over'] === 1 || in_array($st, ['IN_PROGRESS', 'DELIVERED', 'RETURNED']) || !empty($ro['rental_timer_start']));
+            $isTimerRunning = ($ro['timer_status'] === 'RUNNING' || in_array($st, ['IN_PROGRESS', 'DELIVERED']));
+            $isOverdue = ($ro['timer_status'] === 'EXPIRED' || $st === 'OVERDUE');
+            $isReturned = (in_array($st, ['RETURNED', 'RETURN_DELIVERY', 'COMPLETED']) || $ro['timer_status'] === 'COMPLETED');
+
+            $stepLevel = 1;
+            $stepTitle = 'Step 1 of 4 • Booking Request';
+            $isActionRequired = false;
+            $actionPrompt = '';
+            $actionBadgeClass = 'badge-step1';
+
+            if ($isReturned) {
+                $stepLevel = 4;
+                $stepTitle = 'Rental Completed • Returned';
+                $isActionRequired = false;
+                $actionPrompt = '✅ Rental Completed • Returned';
+                $actionBadgeClass = 'badge-completed';
+            } elseif ($isOverdue) {
+                $stepLevel = 4;
+                $stepTitle = 'Overdue • Return Required';
+                $isActionRequired = true;
+                $actionPrompt = '⚠️ Overdue • Return Required';
+                $actionBadgeClass = 'badge-overdue';
+            } elseif ($isTimerRunning) {
+                $stepLevel = 4;
+                $stepTitle = 'Step 4 of 4 • Live Rental Active';
+                $isActionRequired = false;
+                $actionPrompt = '⏱️ Live Timer Active (Running)';
+                $actionBadgeClass = 'badge-running';
+            } elseif ($hasMeetupLoc || $st === 'HANDOVER_READY') {
+                $stepLevel = 4;
+                $stepTitle = 'Step 4 of 4 • Handover & Start Timer';
+                if ($isOwner) {
+                    $isActionRequired = true;
+                    $actionPrompt = '⚡ Action Required: Handover & Start Timer';
+                } else {
+                    $isActionRequired = false;
+                    $actionPrompt = '🤝 Ready for Handover • Meet at Campus';
+                }
+                $actionBadgeClass = 'badge-handover';
+            } elseif ($prepConfirmed) {
+                $stepLevel = 3;
+                $stepTitle = 'Step 3 of 4 • Meetup Location';
+                if ($isOwner) {
+                    $isActionRequired = true;
+                    $actionPrompt = '⚡ Action Required: Set Meetup Location';
+                } else {
+                    $isActionRequired = false;
+                    $actionPrompt = '⏳ Awaiting Meetup Location';
+                }
+                $actionBadgeClass = 'badge-meetup';
+            } elseif ($ownerAgreed) {
+                $stepLevel = 2;
+                $stepTitle = 'Step 2 of 4 • Equipment Preparation';
+                if (!$hasPrepPhoto) {
+                    if ($isOwner) {
+                        $isActionRequired = true;
+                        $actionPrompt = '⚡ Action Required: Upload Prep Photo';
+                    } else {
+                        $isActionRequired = false;
+                        $actionPrompt = '⏳ Owner Preparing Equipment';
+                    }
+                } else {
+                    if ($isOwner) {
+                        $isActionRequired = false;
+                        $actionPrompt = '⏳ Awaiting Renter Photo Approval';
+                    } else {
+                        $isActionRequired = true;
+                        $actionPrompt = '⚡ Action Required: Review & Accept Photo';
+                    }
+                }
+                $actionBadgeClass = 'badge-prep';
+            } else {
+                $stepLevel = 1;
+                $stepTitle = 'Step 1 of 4 • Booking Request';
+                if ($isOwner) {
+                    $isActionRequired = true;
+                    $actionPrompt = '⚡ Action Required: Agree to Rent';
+                } else {
+                    $isActionRequired = false;
+                    $actionPrompt = '⏳ Awaiting Owner Agreement';
+                }
+                $actionBadgeClass = 'badge-step1';
+            }
+
+            // Get latest message for this product
+            $lastMsg = '';
+            $lastMsgTime = $ro['created_at'];
+            try {
+                $msgStmt = $db->prepare("SELECT MessageText, CreatedAt FROM ChatMessages 
+                                         WHERE ((SenderId = ? AND ReceiverId = ?) OR (SenderId = ? AND ReceiverId = ?))
+                                           AND (LOWER(ItemTitle) = ? OR MessageText LIKE ?)
+                                         ORDER BY Id DESC LIMIT 1");
+                $msgStmt->execute([$userId, $partnerId, $partnerId, $userId, strtolower($ro['item_name']), '%' . $ro['order_code'] . '%']);
+                $msgRow = $msgStmt->fetch();
+                if ($msgRow) {
+                    $lastMsg = $msgRow['MessageText'];
+                    $lastMsgTime = $msgRow['CreatedAt'];
+                }
+            } catch (Exception $eM) {}
+
+            if ($lastMsg === '') {
+                $lastMsg = "Rental Order {$ro['order_code']} • {$ro['item_name']} (" . ($ro['rental_days'] ?: 1) . " Day) • ₱" . number_format((float)($ro['total_amount'] ?: 0), 2);
+            }
+
+            $convKey = $partnerId . '_' . strtolower($ro['item_name']);
+            $allConvs[$convKey] = [
+                'Id' => (int)$ro['id'],
+                'SenderId' => $userId,
+                'ReceiverId' => $partnerId,
+                'SenderName' => $isOwner ? ($ro['owner_name'] ?: 'Stock Owner') : ($ro['customer_name'] ?: 'Campus Renter'),
+                'PartnerId' => $partnerId,
+                'PartnerName' => $pName,
+                'PartnerAvatar' => $pAvatar,
+                'ItemTitle' => $ro['item_name'],
+                'ItemImage' => $ro['item_image'] ?: '',
+                'MessageText' => $lastMsg,
+                'CreatedAt' => $lastMsgTime,
+                'HasTransaction' => true,
+                'TransactionOrderCode' => $ro['order_code'],
+                'TransactionStatus' => $ro['order_status'],
+                'IsMyItem' => $isOwner,
+                'RoleLabel' => $isOwner ? 'My Item (Lender)' : 'Renting (Borrower)',
+                'RoleType' => $isOwner ? 'OWNER' : 'RENTER',
+                'OwnerName' => $ro['owner_name'] ?: 'Stock Owner',
+                'StepLevel' => $stepLevel,
+                'StepTitle' => $stepTitle,
+                'IsActionRequired' => $isActionRequired,
+                'ActionPrompt' => $actionPrompt,
+                'ActionBadgeClass' => $actionBadgeClass,
+                'TotalAmount' => $ro['total_amount'],
+                'RentalDays' => $ro['rental_days']
+            ];
+        }
+    } catch (Exception $eOrders) {}
+
+    // 2. Also check any standalone ChatMessages not already covered by an order
+    try {
+        $stmt = $db->prepare("SELECT c1.*, 
+            spSender.FirstName as SenderFirstName, spSender.LastName as SenderLastName, spSender.ProfileImage as SenderProfileImage,
+            spReceiver.FirstName as ReceiverFirstName, spReceiver.LastName as ReceiverLastName, spReceiver.ProfileImage as ReceiverProfileImage
+            FROM ChatMessages c1 
+            INNER JOIN (
+                SELECT MAX(Id) as max_id FROM ChatMessages 
+                WHERE (SenderId IN (1, ?) OR ReceiverId IN (1, ?)) 
+                  AND SenderId != ReceiverId
+                  AND NOT (SenderId IN (1, 104) AND ReceiverId IN (1, 104))
+                  AND SenderName NOT LIKE '%Fleet Dispatch%' 
+                  AND SenderName NOT LIKE '%Rider%' 
+                  AND SenderId != 100 
+                GROUP BY LEAST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId)), 
+                         GREATEST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId)),
+                         COALESCE(NULLIF(TRIM(ItemTitle), ''), 'General')
+            ) c2 ON c1.Id = c2.max_id 
+            LEFT JOIN StudentProfiles spSender ON c1.SenderId = spSender.UserId
+            LEFT JOIN StudentProfiles spReceiver ON c1.ReceiverId = spReceiver.UserId
+            WHERE c1.SenderId != c1.ReceiverId 
+              AND NOT (c1.SenderId IN (1, 104) AND c1.ReceiverId IN (1, 104))
+              AND c1.SenderName NOT LIKE '%Fleet Dispatch%' 
+              AND c1.SenderName NOT LIKE '%Rider%' 
+              AND c1.SenderId != 100
+            ORDER BY c1.CreatedAt DESC");
+        $stmt->execute([$userId, $userId]);
+        $rawConvs = $stmt->fetchAll();
+
+        foreach ($rawConvs as $c) {
+            $pId = ($c['SenderId'] == $userId || $c['SenderId'] == 1) ? (int)$c['ReceiverId'] : (int)$c['SenderId'];
+            $itemTitle = trim((string)($c['ItemTitle'] ?? ''));
+            if ($itemTitle === '') $itemTitle = 'General';
+            $convKey = $pId . '_' . strtolower($itemTitle);
+
+            if (!isset($allConvs[$convKey])) {
+                if ($c['SenderId'] == $userId || $c['SenderId'] == 1) {
+                    $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
+                    $pName = $rName !== '' ? $rName : 'Campus Seller';
+                    $pAvatar = !empty($c['ReceiverProfileImage']) ? $c['ReceiverProfileImage'] : '';
+                } else {
+                    $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
+                    $pName = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
+                    $pAvatar = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
+                }
+                if (empty($pAvatar) || str_contains($pAvatar, 'dicebear')) {
+                    $pAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($pName) . '&background=5B3FA8&color=fff&bold=true&rounded=true';
+                }
+
+                $allConvs[$convKey] = [
+                    'Id' => (int)$c['Id'],
+                    'SenderId' => (int)$c['SenderId'],
+                    'ReceiverId' => (int)$c['ReceiverId'],
+                    'SenderName' => $c['SenderName'],
+                    'PartnerId' => $pId,
+                    'PartnerName' => $pName,
+                    'PartnerAvatar' => $pAvatar,
+                    'ItemTitle' => $itemTitle,
+                    'ItemImage' => '',
+                    'MessageText' => $c['MessageText'],
+                    'CreatedAt' => $c['CreatedAt'],
+                    'HasTransaction' => false,
+                    'TransactionOrderCode' => '',
+                    'TransactionStatus' => '',
+                    'IsMyItem' => false,
+                    'RoleLabel' => 'General Inquiry',
+                    'RoleType' => 'RENTER',
+                    'OwnerName' => 'Campus Student',
+                    'StepLevel' => 0,
+                    'StepTitle' => 'General Inquiry',
+                    'IsActionRequired' => false,
+                    'ActionPrompt' => '💬 Open Campus Chat',
+                    'ActionBadgeClass' => 'badge-general',
+                    'TotalAmount' => '0.00',
+                    'RentalDays' => 1
+                ];
+            }
+        }
+    } catch (Exception $eMsg) {}
+
+    $convs = array_values($allConvs);
+    usort($convs, function($a, $b) {
+        return strtotime($b['CreatedAt'] ?? 'now') - strtotime($a['CreatedAt'] ?? 'now');
+    });
 
     // Strictly filter out self-conversations and rider/fleet dispatch conversations
     $convs = array_values(array_filter($convs, function($c) use ($userId) {

@@ -2300,147 +2300,19 @@
                                 card.dataset.currentX = '0';
                                 return;
                             }
-                            if (itemTitle && itemTitle.trim() !== '' && itemTitle !== 'Campus Item' && itemTitle !== 'General') {
-                                checkAndOpenChat(partnerId, partnerName, itemTitle, price || '₱0.00', avatarUrl, itemImg || '');
-                            } else {
-                                promptOrOpenChatTopic(partnerId, partnerName, itemTitle, price, avatarUrl);
-                            }
+                            checkAndOpenChat(partnerId, partnerName, itemTitle || 'Campus Equipment', price || '₱0.00', avatarUrl, itemImg || '');
                         }
 
-                        window.promptOrOpenChatTopic = async function (partnerId, partnerName, defaultItemTitle, defaultPrice, avatarUrl) {
-                            let storedUser = null;
-                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
-                            if (currentUserId <= 1) currentUserId = 104;
-
-                            const modalEl = document.getElementById('selectChatTopicModal');
-                            const modalBody = document.getElementById('selectChatTopicModalBody');
-                            const modalAvatar = document.getElementById('topicModalPartnerAvatar');
-                            const modalSub = document.getElementById('topicModalPartnerSub');
-
-                            if (modalAvatar) {
-                                const initials = (partnerName || 'ST').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'ST';
-                                modalAvatar.innerText = initials;
-                            }
-                            if (modalSub) {
-                                modalSub.innerText = `With ${partnerName}`;
-                            }
-
-                            // Show loading
-                            if (modalBody) {
-                                modalBody.innerHTML = `
-                                    <div class="text-center py-4 text-muted fs-8">
-                                        <i class="fa-solid fa-spinner fa-spin fs-4 text-primary mb-2"></i>
-                                        <div>Loading equipment and rental agreements...</div>
-                                    </div>`;
-                            }
-
-                            if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                                const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                                bsModal.show();
-                            }
-
-                            let topicsData = null;
-                            try {
-                                const res = await fetch(`/student/rentease_api.php?action=get_chat_partner_topics&user_id=${currentUserId}&partner_id=${partnerId}`);
-                                topicsData = await res.json();
-                            } catch(e) {
-                                console.error('Failed to load chat partner topics:', e);
-                            }
-
-                            const items = (topicsData && topicsData.items) ? topicsData.items : [];
-                            const orders = (topicsData && topicsData.orders) ? topicsData.orders : [];
-
-                            // If partner has no items and no orders, proceed directly
-                            if (items.length === 0 && orders.length === 0) {
-                                if (modalEl) {
-                                    try { bootstrap.Modal.getInstance(modalEl)?.hide(); } catch(e) {}
-                                }
-                                checkAndOpenChat(partnerId, partnerName, defaultItemTitle, defaultPrice, avatarUrl);
-                                return;
-                            }
-
-                            if (modalBody) {
-                                let html = '';
-
-                                if (orders.length > 0) {
-                                    html += `
-                                    <div class="mb-2">
-                                        <div class="d-flex align-items-center gap-1.5 mb-2">
-                                            <i class="fa-solid fa-boxes-stacked text-primary fs-8"></i>
-                                            <span class="fw-bold text-dark fs-8">Equipment Discussions</span>
-                                        </div>
-                                        <div class="d-flex flex-column gap-2">
-                                    `;
-                                    orders.forEach(ord => {
-                                        const isTimerActive = (ord.timer_status === 'RUNNING' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'DELIVERED');
-                                        const badgeColor = isTimerActive ? 'bg-success text-white' : 'bg-primary-subtle text-primary border border-primary-subtle';
-                                        const safeName = (ord.item_name || 'Equipment').replace(/'/g, "\\'");
-                                        const safeImg = (ord.image_url || '').replace(/'/g, "\\'");
-                                        const safeFee = ord.total_amount ? `₱${parseFloat(ord.total_amount).toFixed(0)}` : '₱0';
-                                        const codePill = (ord.order_code && ord.order_code !== 'CHAT') 
-                                            ? `<span class="badge ${badgeColor} rounded-pill fs-10 px-2 py-0.5 font-monospace">${ord.order_code}</span>`
-                                            : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-10 px-2 py-0.5">Chat Topic</span>`;
-                                        const statusLabel = ord.order_status === 'IN_DISCUSSION' ? 'Direct Discussion' : (ord.order_status || 'Active');
-
-                                        html += `
-                                        <div class="p-2.5 rounded-3 border bg-white shadow-2xs d-flex align-items-center justify-content-between gap-2.5" 
-                                             style="cursor:pointer; transition:all 0.15s ease;" 
-                                             onmouseover="this.style.borderColor='#5B3FA8'; this.style.background='#FAF5FF';" 
-                                             onmouseout="this.style.borderColor='#E2E8F0'; this.style.background='#FFFFFF';"
-                                             onclick="selectTopicAndOpenChat(${partnerId}, '${partnerName.replace(/'/g, "\\'")}', '${safeName}', '${safeFee}', '${avatarUrl.replace(/'/g, "\\'")}', '${safeImg}')">
-                                            <div class="d-flex align-items-center gap-2.5 min-w-0">
-                                                <img src="${ord.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80'}" 
-                                                     class="rounded-circle border object-fit-cover flex-shrink-0" 
-                                                     style="width:44px; height:44px; border-radius:50%;" 
-                                                     onerror="this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80';">
-                                                <div class="min-w-0">
-                                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                                        <span class="fw-bold text-dark fs-8 text-truncate">${ord.item_name || 'Equipment'}</span>
-                                                        ${codePill}
-                                                    </div>
-                                                    <div class="text-muted fs-10 d-flex align-items-center gap-1 mt-0.5">
-                                                        <span class="badge bg-light text-secondary border px-1.5 py-0.5">${statusLabel}</span>
-                                                        <span>•</span>
-                                                        <span>${ord.rental_start_date || 'Active Chat'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fs-9 fw-bold flex-shrink-0" style="background:#5B3FA8; border:none;">
-                                                Open
-                                            </button>
-                                        </div>`;
-                                    });
-                                    html += `</div></div>`;
-                                } else {
-                                    html = `
-                                    <div class="text-center py-4 px-3 bg-light rounded-4 border mx-auto">
-                                        <i class="fa-solid fa-comments text-muted mb-2 fs-4"></i>
-                                        <div class="fw-bold text-dark fs-8">No Product Chats Found</div>
-                                        <div class="text-muted fs-9 mt-1">Start a conversation from an equipment page to chat about an item.</div>
-                                    </div>`;
-                                }
-
-                                modalBody.innerHTML = html;
-                            }
+                        window.promptOrOpenChatTopic = function (partnerId, partnerName, defaultItemTitle, defaultPrice, avatarUrl, itemImg) {
+                            checkAndOpenChat(partnerId, partnerName, defaultItemTitle || 'Campus Equipment', defaultPrice || '₱0.00', avatarUrl, itemImg || '');
                         };
 
                         window.selectTopicAndOpenChat = function (partnerId, partnerName, itemTitle, price, avatarUrl, itemImg) {
-                            const modalEl = document.getElementById('selectChatTopicModal');
-                            if (modalEl) {
-                                try {
-                                    const inst = bootstrap.Modal.getInstance(modalEl);
-                                    if (inst) inst.hide();
-                                } catch(e) {}
-                            }
                             checkAndOpenChat(partnerId, partnerName, itemTitle, price, avatarUrl, itemImg);
                         };
 
                         window.openSwitchChatTopicModal = function () {
-                            if (!currentActiveChatSellerId) return;
-                            const partnerName = document.getElementById('chatPartnerName')?.innerText || 'Student Lender';
-                            const headerAvatar = document.getElementById('chatHeaderAvatar')?.src || '';
-                            promptOrOpenChatTopic(currentActiveChatSellerId, partnerName, 'Campus Equipment', '₱0.00', headerAvatar);
+                            // Switch item removed
                         };
 
                         let pendingDeletePartnerId = null;
