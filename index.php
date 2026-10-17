@@ -2031,6 +2031,16 @@
                                 return;
                             }
 
+                            // CRITICAL: Overdue rentals must automatically jump to the very top (index 0)
+                            convs.sort((a, b) => {
+                                const aOverdue = (a.IsOverdue || a.isOverdue || a.ActionBadgeClass === 'badge-overdue' || a.TransactionStatus === 'OVERDUE' || a.TimerStatus === 'EXPIRED') ? 1 : 0;
+                                const bOverdue = (b.IsOverdue || b.isOverdue || b.ActionBadgeClass === 'badge-overdue' || b.TransactionStatus === 'OVERDUE' || b.TimerStatus === 'EXPIRED') ? 1 : 0;
+                                if (bOverdue !== aOverdue) return bOverdue - aOverdue;
+                                const aTime = new Date(a.CreatedAt || a.Timestamp || 0).getTime() || 0;
+                                const bTime = new Date(b.CreatedAt || b.Timestamp || 0).getTime() || 0;
+                                return bTime - aTime;
+                            });
+
                             window._chatConversationsMap = window._chatConversationsMap || {};
                             let html = '';
                             convs.forEach((c, idx) => {
@@ -2052,6 +2062,7 @@
                                 const hasTx = !!(c.HasTransaction);
                                 const txOrder = c.TransactionOrderCode || '';
 
+                                const isOverdue = !!(c.IsOverdue || c.isOverdue || c.ActionBadgeClass === 'badge-overdue' || c.TransactionStatus === 'OVERDUE' || c.TimerStatus === 'EXPIRED');
                                 const convKey = 'c_' + partnerId + '_' + idx;
                                 window._chatConversationsMap[convKey] = {
                                     partnerId: partnerId,
@@ -2061,7 +2072,8 @@
                                     avatarUrl: avatarUrl,
                                     itemImage: itemImage,
                                     isMyItem: isMyItem,
-                                    ownerName: ownerName
+                                    ownerName: ownerName,
+                                    isOverdue: isOverdue
                                 };
 
                                 html += `
@@ -2085,22 +2097,29 @@
                         </div>
                     </div>
                     `}
-                    <div class="swipe-conv-card p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center justify-content-between position-relative" 
-                         style="z-index: 2; transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1); background: #ffffff; cursor: pointer;" 
+                    <div class="swipe-conv-card p-3 ${isOverdue ? 'is-overdue' : 'bg-white'} rounded-4 border shadow-sm d-flex align-items-center justify-content-between position-relative" 
+                         style="z-index: 2; transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1); cursor: pointer;" 
                          data-conv-key="${convKey}"
                          data-partner-id="${partnerId}" 
                          data-partner-name="${safePartnerNameAttr}" 
                          data-has-transaction="${hasTx ? '1' : '0'}"
+                         data-is-overdue="${isOverdue ? '1' : '0'}"
                          onclick="handleConversationCardClick(event, this, '${convKey}')">
                         <div class="d-flex align-items-center gap-3 min-w-0" style="pointer-events: none;">
                             <div class="position-relative flex-shrink-0">
-                                <img src="${avatarUrl}" class="rounded-circle border" width="48" height="48" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true';">
-                                <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white" style="width:13px; height:13px;"></span>
+                                <img src="${avatarUrl}" class="rounded-circle border ${isOverdue ? 'border-danger border-2 shadow-sm' : ''}" width="48" height="48" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true';">
+                                <span class="position-absolute bottom-0 end-0 ${isOverdue ? 'bg-danger' : 'bg-success'} rounded-circle border border-2 border-white" style="width:13px; height:13px;"></span>
                             </div>
                             <div class="min-w-0">
                                 <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1">
-                                    <h6 class="fw-bold mb-0 text-dark fs-7 text-truncate" style="max-width:140px;">${partnerName}</h6>
+                                    <h6 class="fw-bold mb-0 ${isOverdue ? 'text-danger' : 'text-dark'} fs-7 text-truncate" style="max-width:140px;">${partnerName}</h6>
                                     
+                                    ${isOverdue ? `
+                                        <span class="badge rounded-pill fw-bold bg-danger text-white shadow-sm" style="font-size:0.62rem; padding: 2.5px 7px; animation: rentPulseOverdueBorder 1.5s infinite;">
+                                            <i class="fa-solid fa-triangle-exclamation me-1"></i>OVERDUE • TIMER EXPIRED
+                                        </span>
+                                    ` : ''}
+
                                     ${isMyItem ? `
                                         <span class="badge rounded-pill fw-bold" style="background:#EDE9FE; color:#5B3FA8; border:1px solid #DDD6FE; font-size:0.62rem; padding: 2.5px 7px;">
                                              <i class="fa-solid fa-hand-holding-hand text-primary me-0.5"></i>Borrower (Renting from You)
@@ -2138,11 +2157,11 @@
                                     ` : ''}
                                 </div>
 
-                                <div class="text-muted fs-8 text-truncate" style="max-width:210px;">${lastMsg}</div>
+                                <div class="${isOverdue ? 'text-danger fw-bold' : 'text-muted'} fs-8 text-truncate" style="max-width:210px;">${isOverdue ? '⚠️ Rental timer expired • Handover item back now' : lastMsg}</div>
                             </div>
                         </div>
                         <div class="text-end flex-shrink-0 ms-2" style="pointer-events: none;">
-                            <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
+                            <i class="fa-solid fa-chevron-right ${isOverdue ? 'text-danger' : 'text-muted'} fs-9"></i>
                         </div>
                     </div>
                 </div>`;
@@ -2339,9 +2358,9 @@
                             const key = (card && card.dataset.convKey) || convKeyOrPartnerId;
                             const conv = (key && window._chatConversationsMap && window._chatConversationsMap[key]);
                             if (conv) {
-                                checkAndOpenChat(conv.partnerId, conv.partnerName, conv.itemTitle, conv.itemPrice, conv.avatarUrl, conv.itemImage, conv.isMyItem, conv.ownerName);
+                                checkAndOpenChat(conv.partnerId, conv.partnerName, conv.itemTitle, conv.itemPrice, conv.avatarUrl, conv.itemImage, conv.isMyItem, conv.ownerName, conv.isOverdue);
                             } else {
-                                checkAndOpenChat(convKeyOrPartnerId, partnerName || 'Verified Student', itemTitle || 'Campus Equipment', price || '₱0.00', avatarUrl || '', itemImg || '');
+                                checkAndOpenChat(convKeyOrPartnerId, partnerName || 'Verified Student', itemTitle || 'Campus Equipment', price || '₱0.00', avatarUrl || '', itemImg || '', false, '', card?.dataset?.isOverdue === '1');
                             }
                         };
 
@@ -3564,6 +3583,19 @@
                                     if (reqBanner) reqBanner.style.display = 'none';
                                     if (timerBanner) timerBanner.style.display = 'block';
 
+                                    const isOrderOverdue = !!(ord.is_overdue || ord.timer_status === 'EXPIRED' || ord.order_status === 'OVERDUE' || (ord.rental_timer_end && new Date(ord.rental_timer_end).getTime() <= Date.now()));
+                                    const headerBar = document.querySelector('.rentchat-header-bar');
+                                    const chatVw = document.getElementById('chatView');
+                                    if (isOrderOverdue) {
+                                        if (timerBanner) timerBanner.classList.add('is-overdue');
+                                        if (headerBar) headerBar.classList.add('is-overdue');
+                                        if (chatVw) chatVw.classList.add('is-overdue');
+                                    } else {
+                                        if (timerBanner) timerBanner.classList.remove('is-overdue');
+                                        if (headerBar) headerBar.classList.remove('is-overdue');
+                                        if (chatVw) chatVw.classList.remove('is-overdue');
+                                    }
+
                                     // Chat input is always unlocked when rental is active
                                     const chatInput = document.getElementById('chatInput');
                                     const sendBtn = document.querySelector('.rentchat-send-btn');
@@ -3844,12 +3876,18 @@
                                 const cdLabel = document.getElementById('chatCountdownLabel');
                                 const ownerReportRow = document.getElementById('chatTimerOwnerReportRow');
                                 const renterOverdueRow = document.getElementById('chatTimerRenterOverdueRow');
+                                const timerBanner = document.getElementById('chatRentalTimerBanner');
+                                const headerBar = document.querySelector('.rentchat-header-bar');
+                                const chatVw = document.getElementById('chatView');
                                 if (!cdText) return;
 
                                 if (!endIsoString) {
                                     cdText.innerText = '00:00:00';
                                     if (ownerReportRow) ownerReportRow.style.setProperty('display', 'none', 'important');
                                     if (renterOverdueRow) renterOverdueRow.style.setProperty('display', 'none', 'important');
+                                    if (timerBanner) timerBanner.classList.remove('is-overdue');
+                                    if (headerBar) headerBar.classList.remove('is-overdue');
+                                    if (chatVw) chatVw.classList.remove('is-overdue');
                                     return;
                                 }
 
@@ -3858,13 +3896,19 @@
                                 const diffMs = endTime - now;
 
                                 if (diffMs <= 0) {
-                                    cdText.innerText = '⚠️ OVERDUE';
-                                    cdText.className = 'rentchat-countdown-digits font-monospace fw-extrabold text-danger';
+                                    // Timer expired: Turn banner, header bar, and chat red!
+                                    if (timerBanner) timerBanner.classList.add('is-overdue');
+                                    if (headerBar) headerBar.classList.add('is-overdue');
+                                    if (chatVw) chatVw.classList.add('is-overdue');
+
+                                    cdText.innerText = '⚠️ 00:00:00 • EXPIRED';
+                                    cdText.className = 'rentchat-countdown-digits font-monospace fw-extrabold text-white';
                                     if (badge) {
-                                        badge.innerText = 'Overdue / Return Required';
-                                        badge.className = 'badge bg-danger text-white fw-bold fs-9';
+                                        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation fs-11"></i> <span>Overdue • Return Required</span>';
+                                        badge.className = 'badge rounded-pill fw-bold px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1.5 bg-danger text-white border border-white border-opacity-25 shadow-sm';
+                                        badge.style = '';
                                     }
-                                    if (cdLabel) cdLabel.innerText = 'Time Expired';
+                                    if (cdLabel) cdLabel.innerText = 'Rental Period Expired';
 
                                     // CRITICAL: Rental is OVERDUE!
                                     // ONLY the Stock Owner can see the Report Unreturned button!
@@ -3878,8 +3922,10 @@
                                     return;
                                 }
 
-                                // CRITICAL: Timer is still ACTIVELY RUNNING!
-                                // The rental period has NOT expired, so Report Unreturned MUST NEVER be displayed!
+                                // Timer is still actively running: Normal state
+                                if (timerBanner) timerBanner.classList.remove('is-overdue');
+                                if (headerBar) headerBar.classList.remove('is-overdue');
+                                if (chatVw) chatVw.classList.remove('is-overdue');
                                 if (ownerReportRow) ownerReportRow.style.setProperty('display', 'none', 'important');
                                 if (renterOverdueRow) renterOverdueRow.style.setProperty('display', 'none', 'important');
 
@@ -3895,8 +3941,9 @@
                                 cdText.innerText = `${hStr}h ${mStr}m ${sStr}s`;
                                 cdText.className = 'rentchat-countdown-digits font-monospace fw-extrabold';
                                 if (badge) {
-                                    badge.innerText = 'Timer Running';
-                                    badge.className = 'badge bg-success text-white fw-bold fs-9';
+                                    badge.innerHTML = '<i class="fa-solid fa-play fs-11"></i> <span>Timer Running</span>';
+                                    badge.className = 'badge rounded-pill fw-bold px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1.5';
+                                    badge.style = 'background:rgba(16, 185, 129, 0.2); color:#34D399; border:1px solid rgba(52, 211, 153, 0.35);';
                                 }
                                 if (cdLabel) cdLabel.innerText = 'Time Remaining';
                             };
@@ -4598,7 +4645,7 @@
                             checkAndOpenChat(pId, partnerName || 'Verified Student', itemTitle || 'Campus Request', itemPrice || '₱0.00', '', itemImage || '');
                         }
 
-                        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar, itemImage, isMyItem, ownerName) {
+                        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar, itemImage, isMyItem, ownerName, isOverdueHint) {
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
                             let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
@@ -4712,7 +4759,14 @@
                             const tabMsgs = document.getElementById('tabMessages');
                             const chatVw = document.getElementById('chatView');
                             if (tabMsgs) tabMsgs.style.setProperty('display', 'none', 'important');
-                            if (chatVw) chatVw.style.setProperty('display', 'flex', 'important');
+                            if (chatVw) {
+                                chatVw.style.setProperty('display', 'flex', 'important');
+                                if (isOverdueHint) {
+                                    chatVw.classList.add('is-overdue');
+                                } else {
+                                    chatVw.classList.remove('is-overdue');
+                                }
+                            }
 
                             const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
                             if (stream) {
@@ -4790,8 +4844,15 @@
                         function closeChat() {
                             const chatVw = document.getElementById('chatView');
                             const tabMsgs = document.getElementById('tabMessages');
-                            if (chatVw) chatVw.style.display = 'none';
+                            if (chatVw) {
+                                chatVw.style.display = 'none';
+                                chatVw.classList.remove('is-overdue');
+                            }
                             if (tabMsgs) tabMsgs.style.display = 'block';
+                            const banner = document.getElementById('chatRentalTimerBanner');
+                            const header = document.querySelector('.rentchat-header-bar');
+                            if (banner) banner.classList.remove('is-overdue');
+                            if (header) header.classList.remove('is-overdue');
                             loadChatConversationsList();
                         }
 

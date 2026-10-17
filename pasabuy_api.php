@@ -724,6 +724,12 @@ if ($action === 'chat_conversations') {
             $isHandedOver = ((int)$ro['handed_over'] === 1 || in_array($st, ['IN_PROGRESS', 'DELIVERED', 'RETURNED']) || !empty($ro['rental_timer_start']));
             $isTimerRunning = ($ro['timer_status'] === 'RUNNING' || in_array($st, ['IN_PROGRESS', 'DELIVERED']));
             $isOverdue = ($ro['timer_status'] === 'EXPIRED' || $st === 'OVERDUE');
+            if ($isTimerRunning && !empty($ro['rental_timer_end'])) {
+                if (strtotime($ro['rental_timer_end']) <= time()) {
+                    $isOverdue = true;
+                    $isTimerRunning = false;
+                }
+            }
             $isReturned = (in_array($st, ['RETURNED', 'RETURN_DELIVERY', 'COMPLETED']) || $ro['timer_status'] === 'COMPLETED');
 
             $stepLevel = 1;
@@ -846,6 +852,10 @@ if ($action === 'chat_conversations') {
                 'RoleLabel' => $isOwner ? 'My Item (Lender)' : 'Renting (Borrower)',
                 'RoleType' => $isOwner ? 'OWNER' : 'RENTER',
                 'OwnerName' => $isOwner ? 'You' : ($rawOwnerName !== '' ? $rawOwnerName : $pName),
+                'IsOverdue' => $isOverdue,
+                'IsTimerRunning' => $isTimerRunning,
+                'RentalTimerEnd' => $ro['rental_timer_end'] ?? null,
+                'TimerStatus' => $isOverdue ? 'EXPIRED' : ($ro['timer_status'] ?: 'NOT_STARTED'),
                 'StepLevel' => $stepLevel,
                 'StepTitle' => $stepTitle,
                 'IsActionRequired' => $isActionRequired,
@@ -989,6 +999,11 @@ if ($action === 'chat_conversations') {
 
     $convs = array_values($allConvs);
     usort($convs, function($a, $b) {
+        $aOverdue = (!empty($a['IsOverdue']) || ($a['ActionBadgeClass'] ?? '') === 'badge-overdue' || ($a['TransactionStatus'] ?? '') === 'OVERDUE' || ($a['TimerStatus'] ?? '') === 'EXPIRED') ? 1 : 0;
+        $bOverdue = (!empty($b['IsOverdue']) || ($b['ActionBadgeClass'] ?? '') === 'badge-overdue' || ($b['TransactionStatus'] ?? '') === 'OVERDUE' || ($b['TimerStatus'] ?? '') === 'EXPIRED') ? 1 : 0;
+        if ($aOverdue !== $bOverdue) {
+            return $bOverdue - $aOverdue; // OVERDUE CONVERSATIONS GO IN FIRST AT THE TOP!
+        }
         return strtotime($b['CreatedAt'] ?? 'now') - strtotime($a['CreatedAt'] ?? 'now');
     });
 

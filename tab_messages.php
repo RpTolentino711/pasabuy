@@ -288,6 +288,62 @@
             border-color: #EF4444;
         }
 
+        /* OVERDUE RED STYLING: Triggers when rental timer runs out */
+        .rentchat-timer-card.is-overdue {
+            background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 50%, #B91C1C 100%) !important;
+            border: 2px solid #EF4444 !important;
+            box-shadow: 0 10px 30px rgba(220, 38, 38, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+            animation: rentPulseOverdueBorder 2s infinite ease-in-out;
+        }
+        .rentchat-timer-card.is-overdue::before {
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.5) 0%, transparent 70%) !important;
+        }
+        .rentchat-timer-card.is-overdue .rentchat-live-pulse-ring {
+            background: rgba(239, 68, 68, 0.25) !important;
+        }
+        .rentchat-timer-card.is-overdue .rentchat-live-pulse {
+            background: #EF4444 !important;
+            box-shadow: 0 0 10px #EF4444 !important;
+        }
+        .rentchat-timer-card.is-overdue .rentchat-timer-display-box {
+            background: rgba(69, 10, 10, 0.8) !important;
+            border: 1px solid rgba(239, 68, 68, 0.5) !important;
+        }
+        @keyframes rentPulseOverdueBorder {
+            0%, 100% { box-shadow: 0 10px 30px rgba(220, 38, 38, 0.45); }
+            50% { box-shadow: 0 10px 42px rgba(239, 68, 68, 0.85); }
+        }
+
+        #chatView.is-overdue {
+            background: #FFF5F5 !important;
+        }
+        #chatView.is-overdue .rentchat-header-bar,
+        .rentchat-header-bar.is-overdue {
+            border-bottom: 2.5px solid #EF4444 !important;
+            background: #FEE2E2 !important;
+        }
+        #chatView.is-overdue #chatStream {
+            background: linear-gradient(180deg, rgba(254, 226, 226, 0.45) 0%, rgba(255, 255, 255, 0.85) 140px) !important;
+        }
+
+        /* OVERDUE RED CONVERSATION CARD */
+        .swipe-conv-card.is-overdue {
+            background: #FFF5F5 !important;
+            border: 2px solid #EF4444 !important;
+            box-shadow: 0 6px 18px rgba(239, 68, 68, 0.28) !important;
+            position: relative;
+        }
+        .swipe-conv-card.is-overdue::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            background: #EF4444;
+            border-radius: 16px 0 0 16px;
+        }
+
         /* Chat Bubbles */
         .rentchat-bubble {
             max-width: 78%;
