@@ -4673,10 +4673,58 @@
                             const orderCode = currentChatRentalOrder.order_code;
                             const orderId = currentChatRentalOrder.id;
 
+                            // Check if an unreturned ticket was reported for this order
+                            const hasReportedTicket = (
+                                currentChatRentalOrder.has_unreturned_ticket ||
+                                currentChatRentalOrder.unreturned_reported == 1 ||
+                                currentChatRentalOrder.order_status === 'OVERDUE' ||
+                                currentChatRentalOrder.order_status === 'REPORTED_UNRETURNED'
+                            );
+
+                            if (hasReportedTicket) {
+                                // Populate and open confirmReturnReportedTicketModal
+                                const codeEl = document.getElementById('confirmReturnTicketOrderCode');
+                                const nameEl = document.getElementById('confirmReturnTicketItemName');
+                                if (codeEl) codeEl.innerText = orderCode;
+                                if (nameEl) nameEl.innerText = currentChatRentalOrder.item_name || 'Equipment';
+
+                                const modalEl = document.getElementById('confirmReturnReportedTicketModal');
+                                if (modalEl) {
+                                    new bootstrap.Modal(modalEl).show();
+                                    return;
+                                }
+                            }
+
                             if (!confirm(`Confirm that order #${orderCode} has been delivered back and verified in good condition?\n\nThis will mark the rental as RETURNED and restock your equipment inventory automatically.`)) {
                                 return;
                             }
 
+                            await doExecuteMarkRentalReturnedRestock(orderId, orderCode);
+                        };
+
+                        window.executeConfirmReturnReportedOrder = async function () {
+                            if (!currentChatRentalOrder) return;
+                            const modalEl = document.getElementById('confirmReturnReportedTicketModal');
+                            if (modalEl) {
+                                const inst = bootstrap.Modal.getInstance(modalEl);
+                                if (inst) inst.hide();
+                            }
+                            const yesBtn = document.getElementById('btnConfirmReturnReportedYes');
+                            if (yesBtn) {
+                                yesBtn.disabled = true;
+                                yesBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Restocking...';
+                            }
+                            try {
+                                await doExecuteMarkRentalReturnedRestock(currentChatRentalOrder.id, currentChatRentalOrder.order_code);
+                            } finally {
+                                if (yesBtn) {
+                                    yesBtn.disabled = false;
+                                    yesBtn.innerHTML = '<i class="fa-solid fa-boxes-packing me-1"></i> Yes, Mark Returned';
+                                }
+                            }
+                        };
+
+                        async function doExecuteMarkRentalReturnedRestock(orderId, orderCode) {
                             const btn = document.getElementById('btnChatMarkReturnedRestock');
                             const btnOverdue = document.getElementById('btnChatOverdueRestock');
                             if (btn) {
@@ -4744,7 +4792,7 @@
                                     btnOverdue.innerHTML = '<i class="fa-solid fa-boxes-packing me-1"></i> Mark Returned &amp; Restock Item Back in Market';
                                 }
                             }
-                        };
+                        }
 
                         window.currentSelectedRentalStar = 0;
 

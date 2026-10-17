@@ -175,6 +175,11 @@ if ($db) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $e) {}
 
+    // Auto-migrate rental_unreturned_reports columns
+    try { $db->exec("ALTER TABLE `rental_unreturned_reports` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'PENDING'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_unreturned_reports` ADD COLUMN `solution` VARCHAR(255) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_unreturned_reports` ADD COLUMN `returned_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_suspension_appeals` (
             `id` INT PRIMARY KEY AUTO_INCREMENT,
@@ -1905,8 +1910,12 @@ if ($action === 'get_unreturned_reports') {
             WHERE 1=1";
     $params = [];
     if ($status !== 'All' && $status !== '') {
-        $sql .= " AND r.`status` = ?";
-        $params[] = strtoupper($status);
+        if (strtoupper($status) === 'RESOLVED_RETURNED' || strtoupper($status) === 'RETURNED') {
+            $sql .= " AND (r.`status` IN ('RESOLVED_RETURNED', 'RETURNED') OR r.`solution` LIKE '%Return%')";
+        } else {
+            $sql .= " AND r.`status` = ?";
+            $params[] = strtoupper($status);
+        }
     }
     $sql .= " ORDER BY r.`id` DESC";
 
@@ -1917,6 +1926,7 @@ if ($action === 'get_unreturned_reports') {
     $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'PENDING'")->fetchColumn();
     $approvedCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'APPROVED'")->fetchColumn();
     $dismissedCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'DISMISSED'")->fetchColumn();
+    $returnedCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` IN ('RESOLVED_RETURNED', 'RETURNED') OR `solution` LIKE '%Return%'")->fetchColumn();
 
     echo json_encode([
         'success' => true,
@@ -1924,6 +1934,7 @@ if ($action === 'get_unreturned_reports') {
         'pending_count' => $pendingCount,
         'approved_count' => $approvedCount,
         'dismissed_count' => $dismissedCount,
+        'returned_count' => $returnedCount,
         'reports' => $reports
     ]);
     exit;

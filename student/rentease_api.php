@@ -235,6 +235,11 @@ if ($db) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $e) {}
 
+    // Auto-migrate rental_unreturned_reports columns
+    try { $db->exec("ALTER TABLE `rental_unreturned_reports` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'PENDING'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_unreturned_reports` ADD COLUMN `solution` VARCHAR(255) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_unreturned_reports` ADD COLUMN `returned_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_suspension_appeals` (
             `id` INT PRIMARY KEY AUTO_INCREMENT,
@@ -1828,8 +1833,38 @@ if ($action === 'update_owner_order_status') {
             $upd->execute([$newStatus, $oId]);
         }
 
-        // If returned, automatically restock equipment inventory
+        // If returned, automatically restock equipment inventory and resolve any unreturned tickets
         if ($newStatus === 'RETURNED') {
+            $orderCodeVal = $order['order_code'] ?: ('#RE-' . $oId);
+
+            // 1. Resolve unreturned report in rental_unreturned_reports if a report/ticket exists
+            try {
+                $updRpt = $db->prepare("UPDATE `rental_unreturned_reports` 
+                                        SET `status` = 'RESOLVED_RETURNED', 
+                                            `solution` = 'Item Has Returned', 
+                                            `admin_notes` = CONCAT(COALESCE(`admin_notes`, ''), ' [Stock owner verified equipment return & restocked into inventory on ', NOW(), ']'),
+                                            `returned_at` = NOW() 
+                                        WHERE `order_code` = ?");
+                $updRpt->execute([$orderCodeVal]);
+            } catch (Exception $eRptUpd) {}
+
+            // 2. Update corresponding rental_issues tickets for admin visibility
+            try {
+                $db->prepare("UPDATE `rental_issues` 
+                              SET `status` = 'RESOLVED', 
+                                  `status_display` = 'Resolved • Item Has Returned', 
+                                  `resolution_notes` = 'Item Has Returned - Stock owner confirmed gear has been returned safely and restocked.' 
+                              WHERE `order_code` = ?")
+                   ->execute([$orderCodeVal]);
+            } catch (Exception $eIssUpd) {}
+
+            // 3. Clear active rental suspension on Users table if renter was suspended for this order's incident
+            try {
+                $db->prepare("UPDATE `Users` SET `rental_suspended_until` = NULL, `rental_suspension_reason` = NULL 
+                              WHERE `rental_suspension_report_id` IN (SELECT id FROM `rental_unreturned_reports` WHERE `order_code` = ?)")
+                   ->execute([$orderCodeVal]);
+            } catch (Exception $eUserSusp) {}
+
             $itemsStmt = $db->prepare("SELECT `product_id`, `quantity` FROM `rental_order_items` WHERE `order_id` = ?");
             $itemsStmt->execute([$oId]);
             $items = $itemsStmt->fetchAll();
@@ -1855,11 +1890,18 @@ if ($action === 'update_owner_order_status') {
                 $oOwnerName = $order['owner_name'] ?: 'Stock Owner';
                 $oRenterName = $order['customer_name'] ?: 'Student Renter';
                 $oItemName = $order['item_name'] ?: 'Campus Equipment';
-                $oOrderCode = $order['order_code'] ?: ('#RE-' . $oId);
+                $oOrderCode = $orderCodeVal;
 
                 $returnMsg = "📦 ITEM RETURNED & RESTOCKED: The item '{$oItemName}' ({$oOrderCode}) has been received back in good condition by {$oOwnerName} and restocked in the catalog. Rental is officially completed!";
                 $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
                    ->execute([$oOwnerId, $oRenterId, $oOwnerName, $returnMsg, $oItemName]);
+
+                // If this order had an overdue/unreturned ticket, notify in chat that ticket is resolved
+                if (!empty($order['unreturned_reported'])) {
+                    $ticketResolvedMsg = "📋 INCIDENT TICKET RESOLVED: The unreturned equipment report filed with Admin for '{$oItemName}' ({$oOrderCode}) has been updated with resolution: 'Item Has Returned'. Record kept on file.";
+                    $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, ?, 'RentEase Admin Moderation', ?, ?, NOW())")
+                       ->execute([$oRenterId, $ticketResolvedMsg, $oItemName]);
+                }
 
                 $ratePromptMsg = "⭐ RATING REQUIRED: Hello {$oRenterName}, please rate your rental experience with '{$oItemName}' from 1 to 5 stars and provide details so the transaction can be finalized!";
                 $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'RentEase System', ?, ?, NOW())")
@@ -3193,6 +3235,23 @@ if ($action === 'get_active_chat_rental') {
         }
     }
 
+    // Check if an unreturned equipment report / ticket exists for this order code
+    $hasUnreturnedTicket = false;
+    $unretTicketId = 0;
+    $unretTicketStatus = '';
+    $unretTicketSolution = '';
+    try {
+        $tktStmt = $db->prepare("SELECT id, status, solution FROM `rental_unreturned_reports` WHERE `order_code` = ? ORDER BY `id` DESC LIMIT 1");
+        $tktStmt->execute([$ord['order_code']]);
+        $unretRow = $tktStmt->fetch();
+        if ($unretRow) {
+            $hasUnreturnedTicket = true;
+            $unretTicketId = (int)$unretRow['id'];
+            $unretTicketStatus = (string)($unretRow['status'] ?? '');
+            $unretTicketSolution = (string)($unretRow['solution'] ?? '');
+        }
+    } catch (Exception $eTkt) {}
+
     echo json_encode([
         'success' => true,
         'has_rental' => true,
@@ -3235,6 +3294,10 @@ if ($action === 'get_active_chat_rental') {
             'seconds_remaining' => $secondsRemaining,
             'is_overdue' => $isOverdue,
             'unreturned_reported' => (int)($ord['unreturned_reported'] ?? 0),
+            'has_unreturned_ticket' => $hasUnreturnedTicket,
+            'unreturned_ticket_id' => $unretTicketId,
+            'unreturned_ticket_status' => $unretTicketStatus,
+            'unreturned_ticket_solution' => $unretTicketSolution,
             'has_rated' => (int)($ord['has_rated'] ?? 0),
             'rating' => (int)($ord['rating'] ?? 0),
             'review_text' => (string)($ord['review_text'] ?? ''),

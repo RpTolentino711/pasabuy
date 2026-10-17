@@ -1396,13 +1396,14 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
 
                         <div class="col-12 col-sm-6 col-lg-3">
-                            <div class="card-stat p-3 d-flex align-items-center gap-3" style="background:linear-gradient(135deg, #F8FAFC, #EFF6FF); border-left:4px solid #3B82F6;">
-                                <div class="stat-icon-wrapper flex-shrink-0" style="background:#DBEAFE; color:#2563EB;">
-                                    <i class="fa-solid fa-shield-halved"></i>
+                            <div class="card-stat p-3 d-flex align-items-center gap-3">
+                                <div class="stat-icon-wrapper flex-shrink-0" style="background:#ECFDF5; color:#059669; border:1px solid #A7F3D0;">
+                                    <i class="fa-solid fa-boxes-packing"></i>
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="fw-bold fs-8 text-dark mb-0.5">Campus 5-Day Ban Policy</div>
-                                    <div class="fs-10 text-muted" style="line-height:1.3;">Approving an overdue report immediately suspends the renter across campus for 5 days.</div>
+                                    <div class="text-muted fs-9 fw-bold text-uppercase" style="letter-spacing:0.5px;">Items Returned</div>
+                                    <div class="fw-extrabold fs-5 text-dark" id="unretStatReturned">0</div>
+                                    <div class="fs-10 text-success fw-semibold">Resolved &amp; Restocked</div>
                                 </div>
                             </div>
                         </div>
@@ -1433,6 +1434,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     <option value="PENDING" selected>Pending Review</option>
                                     <option value="APPROVED">Approved (5-Day Ban)</option>
                                     <option value="DISMISSED">Dismissed</option>
+                                    <option value="RESOLVED_RETURNED">Item Has Returned</option>
                                 </select>
                             </div>
                         </div>
@@ -4876,9 +4878,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const statPending = document.getElementById("unretStatPending");
                 const statBans = document.getElementById("unretStatBans");
                 const statDismissed = document.getElementById("unretStatDismissed");
+                const statReturned = document.getElementById("unretStatReturned");
                 if (statPending) statPending.innerText = data.pending_count ?? 0;
                 if (statBans) statBans.innerText = data.approved_count ?? 0;
                 if (statDismissed) statDismissed.innerText = data.dismissed_count ?? 0;
+                if (statReturned) statReturned.innerText = data.returned_count ?? 0;
 
                 window._allUnreturnedReports = (data.success && Array.isArray(data.reports)) ? data.reports : [];
                 renderUnreturnedReportsTable(window._allUnreturnedReports);
@@ -4901,7 +4905,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const renter = (r.renter_name || "").toLowerCase() + " " + (r.renter_email || "").toLowerCase();
                 const details = (r.details || "").toLowerCase();
                 const reason = (r.reason || "").toLowerCase();
-                return orderCode.includes(q) || itemName.includes(q) || owner.includes(q) || renter.includes(q) || details.includes(q) || reason.includes(q);
+                const solution = (r.solution || "").toLowerCase();
+                return orderCode.includes(q) || itemName.includes(q) || owner.includes(q) || renter.includes(q) || details.includes(q) || reason.includes(q) || solution.includes(q);
             });
             renderUnreturnedReportsTable(filtered);
         }
@@ -4939,9 +4944,19 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     } catch (eDate) {}
                 }
 
+                const isResolvedReturned = (r.status === "RESOLVED_RETURNED" || r.status === "RETURNED" || (r.solution && r.solution.toLowerCase().includes("return")));
+
                 // Enforcement badge
                 let statusBadge = "";
-                if (r.status === "APPROVED") {
+                if (isResolvedReturned) {
+                    statusBadge = `
+                        <span class="badge bg-success text-white px-2.5 py-1.5 rounded-pill fw-bold fs-9 d-inline-flex align-items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-boxes-packing"></i> Item Has Returned
+                        </span>
+                        <div class="text-success fw-bold fs-10 mt-1">
+                            <i class="fa-solid fa-circle-check me-1"></i>Restocked by Owner
+                        </div>`;
+                } else if (r.status === "APPROVED") {
                     statusBadge = `
                         <span class="badge bg-danger text-white px-2.5 py-1.5 rounded-pill fw-bold fs-9 d-inline-flex align-items-center gap-1.5 shadow-sm">
                             <i class="fa-solid fa-ban"></i> 5-Day Ban Active
@@ -4989,7 +5004,17 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
 
                 // Actions cell
                 let actionsHtml = "";
-                if (r.status === "PENDING") {
+                if (isResolvedReturned) {
+                    actionsHtml = `
+                        <div class="d-flex flex-column gap-1 align-items-end">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 fs-10 fw-bold">
+                                <i class="fa-solid fa-boxes-packing me-1"></i>Resolved • Returned
+                            </span>
+                            <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-0.5 fs-10 text-primary mt-1" onclick="openUnreturnedInspectModal(${r.id})">
+                                <i class="fa-solid fa-folder-open me-1"></i> Case File
+                            </button>
+                        </div>`;
+                } else if (r.status === "PENDING") {
                     actionsHtml = `
                         <div class="d-flex flex-column gap-1.5 align-items-end">
                             <button class="btn btn-sm btn-danger rounded-pill px-3 py-1 fs-9 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm" onclick="openApproveUnreturnedModal(${r.id}, '${safeRenterName}', '${safeItemName}', '${safeOrderCode}', '${safeRenterEmail}')">
@@ -5074,13 +5099,18 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
 
                         <td>
                             <div class="d-inline-flex align-items-center gap-1">
-                                <span class="badge bg-danger-subtle text-danger fw-bold fs-9">
-                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>${r.reason || "Unreturned"}
+                                <span class="badge ${isResolvedReturned ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-bold fs-9">
+                                    <i class="fa-solid ${isResolvedReturned ? 'fa-boxes-packing' : 'fa-triangle-exclamation'} me-1"></i>${r.reason || "Unreturned"}
                                 </span>
                             </div>
-                            <div class="p-2 rounded-2 bg-light border-start border-3 border-danger fs-9 text-dark mt-1" style="max-width:230px; word-break:break-word;">
+                            <div class="p-2 rounded-2 bg-light border-start border-3 ${isResolvedReturned ? 'border-success' : 'border-danger'} fs-9 text-dark mt-1" style="max-width:230px; word-break:break-word;">
                                 "${r.details || "No statement provided."}"
                             </div>
+                            ${isResolvedReturned ? `
+                            <div class="p-1.5 rounded-2 bg-success-subtle border border-success-subtle fs-10 text-success mt-1.5 d-flex align-items-center gap-1.5" style="max-width:230px;">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span><strong>Solution:</strong> ${r.solution || "Item Has Returned"}</span>
+                            </div>` : ""}
                             ${photoProofHtml}
                         </td>
 
@@ -5224,6 +5254,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             }
 
             if (body) {
+                const isCaseResolvedReturned = (report.status === "RESOLVED_RETURNED" || report.status === "RETURNED" || (report.solution && report.solution.toLowerCase().includes("return")));
+
                 body.innerHTML = `
                     <div class="p-3 rounded-3 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0;">
                         <div class="row g-2">
@@ -5241,8 +5273,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             </div>
                             <div class="col-6 col-md-3">
                                 <span class="fs-10 text-muted d-block">Current Status</span>
-                                <span class="badge ${report.status === "APPROVED" ? "bg-danger text-white" : (report.status === "DISMISSED" ? "bg-light text-secondary border" : "bg-warning-subtle text-dark border border-warning-subtle")} fs-9 fw-bold">
-                                    ${report.status}
+                                <span class="badge ${isCaseResolvedReturned ? "bg-success text-white" : (report.status === "APPROVED" ? "bg-danger text-white" : (report.status === "DISMISSED" ? "bg-light text-secondary border" : "bg-warning-subtle text-dark border border-warning-subtle"))} fs-9 fw-bold">
+                                    ${isCaseResolvedReturned ? '<i class="fa-solid fa-boxes-packing me-1"></i>Item Has Returned' : report.status}
                                 </span>
                             </div>
                         </div>
@@ -5277,6 +5309,16 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
 
                     ${photoSection}
 
+                    ${(isCaseResolvedReturned || report.solution) ? `
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-success mb-1"><i class="fa-solid fa-circle-check me-1"></i>Case Resolution</label>
+                        <div class="p-2.5 rounded-3 bg-success-subtle border border-success-subtle fs-8 text-dark">
+                            <div class="fw-bold text-success mb-0.5"><i class="fa-solid fa-boxes-packing me-1"></i>Solution: ${report.solution || "Item Has Returned"}</div>
+                            <div class="fs-9 text-secondary">The equipment was received back safely by the stock owner and restocked back into market inventory. Any active suspension was lifted.</div>
+                            ${report.returned_at ? `<div class="fs-10 text-muted mt-1"><i class="fa-regular fa-clock me-1"></i>Returned at: ${report.returned_at}</div>` : ""}
+                        </div>
+                    </div>` : ""}
+
                     ${report.admin_notes ? `
                     <div class="mb-3">
                         <label class="form-label fs-9 fw-bold text-muted mb-1">Admin Enforcement Notes</label>
@@ -5285,7 +5327,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
 
                     <div class="d-flex justify-content-end gap-2 pt-2 border-top">
                         <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
-                        ${report.status === "PENDING" ? `
+                        ${(report.status === "PENDING" && !isCaseResolvedReturned) ? `
                         <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold" onclick="bootstrap.Modal.getInstance(document.getElementById('unretCaseFileModal'))?.hide(); openApproveUnreturnedModal(${report.id}, '${(report.renter_name || "").replace(/'/g, "\'")}', '${(report.item_name || "").replace(/'/g, "\'")}', '${(report.order_code || "").replace(/'/g, "\'")}', '${(report.renter_email || "").replace(/'/g, "\'")}')">
                             <i class="fa-solid fa-gavel me-1"></i> Proceed to Approve Ban
                         </button>` : ""}

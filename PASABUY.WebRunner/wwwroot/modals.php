@@ -1936,6 +1936,68 @@
 </div>
 
 <!-- ==========================================================
+     CONFIRM RETURN OF REPORTED UNRETURNED EQUIPMENT MODAL
+     (Shown when owner clicks "Mark Returned & Restock" if ticket exists)
+     ========================================================== -->
+<div class="modal fade" id="confirmReturnReportedTicketModal" tabindex="-1" style="z-index: 1085;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-white">
+            <div class="modal-header border-0 pb-2 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:42px; height:42px; background:linear-gradient(135deg, #FEF3C7, #FDE68A); color:#D97706;">
+                        <i class="fa-solid fa-file-shield fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-extrabold text-dark mb-0 fs-7">Confirm Return of Reported Gear</h6>
+                        <span class="fs-9 text-muted">Admin Incident Ticket on Record</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close fs-9" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2">
+                <div class="p-3 rounded-3 mb-2.5" style="background:#FFFBEB; border:1.5px solid #FDE68A;">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-warning fs-6 mt-0.5 flex-shrink-0"></i>
+                        <div>
+                            <div class="fw-bold text-dark fs-8 mb-1">Notice: You previously reported an incident ticket to Admin!</div>
+                            <div class="fs-9 text-secondary" style="line-height:1.4;">
+                                You reported that the renter did not return this gear for Order <strong class="text-dark font-monospace" id="confirmReturnTicketOrderCode">#RE-00000</strong> (<span id="confirmReturnTicketItemName" class="fw-semibold">Equipment</span>).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-2.5 rounded-3 bg-light border mb-2.5 fs-8 text-secondary" style="line-height:1.45;">
+                    <div class="fw-bold text-dark mb-1.5"><i class="fa-solid fa-info-circle text-primary me-1"></i>If you confirm receipt:</div>
+                    <ul class="mb-0 ps-3 fs-9">
+                        <li class="mb-1">The ticket sent to Admin <strong>will remain on file for recordkeeping</strong>, but its status and solution will be updated to:
+                            <div class="mt-1">
+                                <span class="badge bg-success text-white fw-bold px-2 py-1 fs-10 rounded-pill">
+                                    <i class="fa-solid fa-boxes-packing me-1"></i>Solution: Item Has Returned
+                                </span>
+                            </div>
+                        </li>
+                        <li class="mb-1">The equipment will be automatically restocked into your market inventory.</li>
+                        <li>Any temporary rental suspension applied to the renter for this item will be safely cleared.</li>
+                    </ul>
+                </div>
+
+                <div class="text-center text-dark fw-bold fs-8 mb-2.5">
+                    Are you sure the equipment was returned and you want to restock it?
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light rounded-pill w-50 fw-bold py-2 fs-8" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn rounded-pill w-50 fw-bold py-2 fs-8 shadow-xs text-white" id="btnConfirmReturnReportedYes" style="background:linear-gradient(135deg, #10B981, #059669); border:none;" onclick="executeConfirmReturnReportedOrder()">
+                        <i class="fa-solid fa-boxes-packing me-1"></i> Yes, Mark Returned
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================
      RENTAL SUSPENSION NOTICE & APPEAL MODAL (Renter -> Admin)
      ========================================================== -->
 <div class="modal fade" id="rentalSuspensionAppealModal" tabindex="-1" style="z-index: 1085;">
