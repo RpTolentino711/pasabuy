@@ -876,13 +876,22 @@ if ($action === 'update_order_status') {
     $riderName = trim((string)($req['rider_name'] ?? $req['driver_name'] ?? ''));
     $riderPhone = trim((string)($req['rider_phone'] ?? $req['driver_phone'] ?? ''));
 
-    $valid = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'MEETUP', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'CANCELLED', 'RIDER_CANCELLED'];
+    $valid = ['PENDING', 'REQUESTED', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'MEETUP', 'HANDOVER_READY', 'IN_PROGRESS', 'RENTED', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'OVERDUE', 'CANCELLED', 'RIDER_CANCELLED'];
     if (!in_array($status, $valid)) {
         echo json_encode(['success' => false, 'message' => 'Invalid status']);
         exit;
     }
 
-    if ($riderName !== '') {
+    if ($status === 'IN_PROGRESS') {
+        $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = 'IN_PROGRESS', `timer_status` = 'RUNNING', `rental_timer_start` = COALESCE(`rental_timer_start`, NOW()), `rental_timer_end` = COALESCE(`rental_timer_end`, DATE_ADD(NOW(), INTERVAL COALESCE(`rental_days`, 1) DAY)), `handed_over` = 1 WHERE `id` = ?");
+        $stmt->execute([$id]);
+    } elseif ($status === 'CONFIRMED') {
+        $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = 'CONFIRMED', `owner_agreed` = 1, `owner_agreed_at` = COALESCE(`owner_agreed_at`, NOW()) WHERE `id` = ?");
+        $stmt->execute([$id]);
+    } elseif ($status === 'RETURNED') {
+        $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = 'RETURNED', `timer_status` = 'COMPLETED' WHERE `id` = ?");
+        $stmt->execute([$id]);
+    } elseif ($riderName !== '') {
         $stmt = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `assigned_rider_name` = ?, `assigned_rider_phone` = ?, `rider_name` = ?, `rider_phone` = ? WHERE `id` = ?");
         $stmt->execute([$status, $riderName, $riderPhone ?: '09187654321', $riderName, $riderPhone ?: '09187654321', $id]);
     } else {

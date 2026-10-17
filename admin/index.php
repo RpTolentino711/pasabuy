@@ -2847,6 +2847,21 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const issues = data.issues || [];
                 const st = (o.order_status || 'CONFIRMED').toUpperCase();
 
+                // Calculate active step index for 5-step face-to-face workflow
+                const ownerAgreed = (parseInt(o.owner_agreed) === 1);
+                const hasPrepPhoto = (o.prep_photo_url && o.prep_photo_url.trim() !== '');
+                const renterConfirmedPrep = (parseInt(o.prep_confirmed_by_renter) === 1);
+                const hasMeetupLoc = (o.meetup_location && o.meetup_location.trim() !== '' && o.meetup_location !== 'Campus Handover Meetup');
+                const isHandedOver = (parseInt(o.handed_over) === 1 || o.rental_timer_start || st === 'DELIVERED' || st === 'IN_PROGRESS' || st === 'RENTED');
+                const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED');
+
+                let activeIdx = 0;
+                if (isReturned) activeIdx = 4;
+                else if (isHandedOver) activeIdx = 3;
+                else if (hasMeetupLoc) activeIdx = 2;
+                else if (renterConfirmedPrep || hasPrepPhoto || ownerAgreed) activeIdx = 1;
+                else activeIdx = 0;
+
                 document.getElementById('mOrderTitle').innerText = `Order ${o.order_code}`;
                 const stageBadge = document.getElementById('mOrderLiveStageBadge');
                 if (stageBadge) {
@@ -2857,27 +2872,18 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     } else if (o.timer_status === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue) {
                         stageBadge.className = 'badge fs-9 fw-bold bg-danger text-white';
                         stageBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> OVERDUE (EXPIRED)';
+                    } else if (st === 'HANDOVER_READY') {
+                        stageBadge.className = 'badge fs-9 fw-bold bg-warning-subtle text-warning border border-warning-subtle';
+                        stageBadge.innerHTML = '<i class="fa-solid fa-handshake me-1"></i> HANDOVER READY (AWAITING EXCHANGE)';
+                    } else if (st === 'REQUESTED') {
+                        stageBadge.className = 'badge fs-9 fw-bold bg-warning-subtle text-warning border border-warning-subtle';
+                        stageBadge.innerHTML = '<i class="fa-solid fa-hourglass-start me-1"></i> REQUESTED (AWAITING OWNER)';
                     } else {
                         stageBadge.className = `badge fs-9 fw-bold ${getStatusBadge(st)}`;
                         stageBadge.innerText = `${st}`;
                     }
                 }
                 document.getElementById('mOrderSubtitle').innerText = `Placed on ${o.created_at || 'Recently'} • Payment: ${o.payment_method || 'GCash'} (${o.payment_status || 'PAID'})`;
-
-                // Calculate active step index for 5-step face-to-face workflow
-                let activeIdx = 0;
-                const ownerAgreed = (parseInt(o.owner_agreed) === 1);
-                const hasPrepPhoto = (o.prep_photo_url && o.prep_photo_url.trim() !== '');
-                const renterConfirmedPrep = (parseInt(o.prep_confirmed_by_renter) === 1);
-                const hasMeetupLoc = (o.meetup_location && o.meetup_location.trim() !== '' && o.meetup_location !== 'Campus Handover Meetup');
-                const isHandedOver = (parseInt(o.handed_over) === 1 || o.rental_timer_start || st === 'DELIVERED' || st === 'IN_PROGRESS' || st === 'RENTED');
-                const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED');
-
-                if (isReturned) activeIdx = 4;
-                else if (isHandedOver) activeIdx = 3;
-                else if (hasMeetupLoc) activeIdx = 2;
-                else if (renterConfirmedPrep || hasPrepPhoto || ownerAgreed) activeIdx = 1;
-                else activeIdx = 0;
 
                 let html = `
                     <!-- 1. 5-STAGE PROGRESS STEPPER (Face-to-Face Handover) -->
@@ -5054,6 +5060,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             const isTimerRunning = (timerSt === 'RUNNING' || o.is_timer_running || (st === 'IN_PROGRESS' && o.rental_timer_start));
             const isOverdue = (timerSt === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue);
             const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED');
+            const isHandoverReady = (st === 'HANDOVER_READY');
             const isRequested = (st === 'REQUESTED');
             const isPreparing = (st === 'PREPARING' || st === 'PROCESSING');
             const isMeetup = (st === 'MEETUP' || st === 'PICKUP' || st === 'ON_THE_WAY' || st === 'LOOKING_FOR_RIDER');
@@ -5088,6 +5095,16 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <i class="fa-solid fa-check-double me-1 text-success"></i> Returned
                         </span>
                         <div class="fs-11 text-muted mt-0.5">Restocked</div>
+                    </div>`;
+            }
+
+            if (isHandoverReady) {
+                return `
+                    <div>
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-handshake me-1"></i> Handover Ready
+                        </span>
+                        <div class="fs-11 text-muted mt-0.5 text-truncate" style="max-width:140px;">${o.meetup_location || 'Awaiting Exchange'}</div>
                     </div>`;
             }
 
@@ -5156,6 +5173,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 case 'PREPARING': return 'bg-info-subtle text-info border border-info';
                 case 'PROCESSING':
                 case 'CONFIRMED': return 'bg-info-subtle text-info';
+                case 'HANDOVER_READY': return 'bg-warning-subtle text-warning border border-warning-subtle';
                 case 'REQUESTED': return 'bg-warning-subtle text-warning border border-warning-subtle';
                 case 'CANCELLED': return 'bg-danger-subtle text-danger';
                 default: return 'bg-warning-subtle text-warning';
