@@ -656,6 +656,8 @@ if ($action === 'chat_conversations') {
 
     // 1. Fetch all rental orders involving this user
     try {
+        $userMatchIds = ($userId === 104 || $userId === 1) ? [1, 104] : [$userId];
+        $uIdsList = implode(',', $userMatchIds);
         $rOrdersSql = "SELECT ro.*, ri.image_url as item_image,
                               uOwner.FirstName as OwnerFirstName, uOwner.LastName as OwnerLastName, spOwner.ProfileImage as OwnerProfileImage,
                               uRenter.FirstName as RenterFirstName, uRenter.LastName as RenterLastName, spRenter.ProfileImage as RenterProfileImage
@@ -665,7 +667,7 @@ if ($action === 'chat_conversations') {
                        LEFT JOIN StudentProfiles spOwner ON ro.owner_id = spOwner.UserId
                        LEFT JOIN Users uRenter ON ro.renter_id = uRenter.Id
                        LEFT JOIN StudentProfiles spRenter ON ro.renter_id = spRenter.UserId
-                       WHERE (ro.renter_id = ? OR ro.owner_id = ? 
+                       WHERE (ro.renter_id IN ($uIdsList) OR ro.owner_id IN ($uIdsList) 
                           OR (LOWER(ro.customer_email) = ? AND ? != '') 
                           OR (LOWER(ro.owner_email) = ? AND ? != ''))
                          AND ro.order_code NOT IN ('#RE-10245', '#RE-10234')
@@ -673,18 +675,29 @@ if ($action === 'chat_conversations') {
                          AND ro.order_status NOT IN ('CANCELLED', 'REJECTED')
                        ORDER BY ro.id DESC";
         $rOrdersStmt = $db->prepare($rOrdersSql);
-        $rOrdersStmt->execute([$userId, $userId, $uEmail, $uEmail, $uEmail, $uEmail]);
+        $rOrdersStmt->execute([$uEmail, $uEmail, $uEmail, $uEmail]);
         $rentalOrders = $rOrdersStmt->fetchAll();
 
         foreach ($rentalOrders as $ro) {
-            $isOwner = ((int)$userId === (int)$ro['owner_id'] || (!empty($uEmail) && !empty($ro['owner_email']) && strtolower($uEmail) === strtolower($ro['owner_email'])));
-            if ((int)$userId === (int)$ro['renter_id'] || (!empty($uEmail) && !empty($ro['customer_email']) && strtolower($uEmail) === strtolower($ro['customer_email']))) {
+            $ownerIsUser = (in_array((int)$ro['owner_id'], $userMatchIds) || (!empty($uEmail) && !empty($ro['owner_email']) && strtolower($uEmail) === strtolower($ro['owner_email'])));
+            $renterIsUser = (in_array((int)$ro['renter_id'], $userMatchIds) || (!empty($uEmail) && !empty($ro['customer_email']) && strtolower($uEmail) === strtolower($ro['customer_email'])));
+            
+            if ($ownerIsUser && !$renterIsUser) {
+                $isOwner = true;
+            } elseif (!$ownerIsUser && $renterIsUser) {
                 $isOwner = false;
+            } else {
+                $isOwner = $ownerIsUser;
             }
 
             $partnerId = $isOwner ? (int)$ro['renter_id'] : (int)$ro['owner_id'];
-            if ($partnerId <= 0 || $partnerId === $userId) {
+            if ($partnerId <= 0 || in_array($partnerId, $userMatchIds)) {
                 $partnerId = ($userId === 104) ? 105 : 104;
+            }
+
+            $rawOwnerName = trim((string)($ro['owner_name'] ?? ''));
+            if ($rawOwnerName === '') {
+                $rawOwnerName = trim(($ro['OwnerFirstName'] ?? '') . ' ' . ($ro['OwnerLastName'] ?? ''));
             }
 
             if ($isOwner) {
@@ -693,9 +706,7 @@ if ($action === 'chat_conversations') {
                 if ($pName === '') $pName = ($partnerId === 105 ? 'Pogilameg Tester' : 'Campus Renter');
                 $pAvatar = !empty($ro['RenterProfileImage']) ? $ro['RenterProfileImage'] : '';
             } else {
-                $pName = trim(($ro['OwnerFirstName'] ?? '') . ' ' . ($ro['OwnerLastName'] ?? ''));
-                if ($pName === '') $pName = trim((string)($ro['owner_name'] ?? ''));
-                if ($pName === '') $pName = ($partnerId === 104 ? 'Romeo Paolo Tolentino' : 'Stock Owner');
+                $pName = $rawOwnerName !== '' ? $rawOwnerName : ($partnerId === 104 ? 'Romeo Paolo Tolentino' : 'Stock Owner');
                 $pAvatar = !empty($ro['OwnerProfileImage']) ? $ro['OwnerProfileImage'] : '';
             }
 
@@ -834,7 +845,7 @@ if ($action === 'chat_conversations') {
                 'IsMyItem' => $isOwner,
                 'RoleLabel' => $isOwner ? 'My Item (Lender)' : 'Renting (Borrower)',
                 'RoleType' => $isOwner ? 'OWNER' : 'RENTER',
-                'OwnerName' => $ro['owner_name'] ?: 'Stock Owner',
+                'OwnerName' => $isOwner ? 'You' : ($rawOwnerName !== '' ? $rawOwnerName : $pName),
                 'StepLevel' => $stepLevel,
                 'StepTitle' => $stepTitle,
                 'IsActionRequired' => $isActionRequired,
@@ -876,13 +887,13 @@ if ($action === 'chat_conversations') {
         $rawConvs = $stmt->fetchAll();
 
         foreach ($rawConvs as $c) {
-            $pId = ($c['SenderId'] == $userId || $c['SenderId'] == 1) ? (int)$c['ReceiverId'] : (int)$c['SenderId'];
+            $pId = in_array((int)$c['SenderId'], [1, $userId]) ? (int)$c['ReceiverId'] : (int)$c['SenderId'];
             $itemTitle = trim((string)($c['ItemTitle'] ?? ''));
             if ($itemTitle === '') $itemTitle = 'General';
             $convKey = $pId . '_' . strtolower($itemTitle);
 
             if (!isset($allConvs[$convKey])) {
-                if ($c['SenderId'] == $userId || $c['SenderId'] == 1) {
+                if (in_array((int)$c['SenderId'], [1, $userId])) {
                     $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
                     $pName = $rName !== '' ? $rName : 'Campus Seller';
                     $pAvatar = !empty($c['ReceiverProfileImage']) ? $c['ReceiverProfileImage'] : '';
@@ -895,6 +906,56 @@ if ($action === 'chat_conversations') {
                     $pAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($pName) . '&background=5B3FA8&color=fff&bold=true&rounded=true';
                 }
 
+                // Resolve item ownership from rental_inventory or rental_orders
+                $isItemMine = false;
+                $itemOwnerName = $pName;
+                $itemImage = '';
+                if ($itemTitle !== '' && $itemTitle !== 'General') {
+                    try {
+                        $invStmt = $db->prepare("SELECT user_id, owner_name, image_url FROM rental_inventory WHERE LOWER(name) = ? LIMIT 1");
+                        $invStmt->execute([strtolower($itemTitle)]);
+                        $invRow = $invStmt->fetch();
+                        if ($invRow) {
+                            $invOwnerId = (int)($invRow['user_id'] ?? 0);
+                            if (in_array($invOwnerId, $userMatchIds)) {
+                                $isItemMine = true;
+                                $itemOwnerName = !empty($invRow['owner_name']) ? $invRow['owner_name'] : 'Romeo Paolo Tolentino';
+                            } else {
+                                $isItemMine = false;
+                                $itemOwnerName = !empty($invRow['owner_name']) ? $invRow['owner_name'] : $pName;
+                            }
+                            if (!empty($invRow['image_url'])) $itemImage = $invRow['image_url'];
+                        } else {
+                            $ordStmt = $db->prepare("SELECT owner_id, owner_name, renter_id, customer_name, ri.image_url FROM rental_orders ro LEFT JOIN rental_inventory ri ON ro.item_id = ri.id WHERE LOWER(ro.item_name) = ? ORDER BY ro.id DESC LIMIT 1");
+                            $ordStmt->execute([strtolower($itemTitle)]);
+                            $ordRow = $ordStmt->fetch();
+                            if ($ordRow) {
+                                $ordOwnerId = (int)($ordRow['owner_id'] ?? 0);
+                                if (in_array($ordOwnerId, $userMatchIds)) {
+                                    $isItemMine = true;
+                                    $itemOwnerName = !empty($ordRow['owner_name']) ? $ordRow['owner_name'] : 'Romeo Paolo Tolentino';
+                                } else {
+                                    $isItemMine = false;
+                                    $itemOwnerName = !empty($ordRow['owner_name']) ? $ordRow['owner_name'] : $pName;
+                                }
+                                if (!empty($ordRow['image_url'])) $itemImage = $ordRow['image_url'];
+                            }
+                        }
+                    } catch (Exception $eInv) {}
+                }
+
+                // Check message text heuristics
+                $msgLower = strtolower($c['MessageText'] ?? '');
+                if (str_contains($msgLower, 'waiting for romeo') || str_contains($msgLower, 'romeo paolo tolentino to agree')) {
+                    if (in_array($userId, [1, 104])) {
+                        $isItemMine = true;
+                        $itemOwnerName = 'Romeo Paolo Tolentino';
+                    } else {
+                        $isItemMine = false;
+                        $itemOwnerName = 'Romeo Paolo Tolentino';
+                    }
+                }
+
                 $allConvs[$convKey] = [
                     'Id' => (int)$c['Id'],
                     'SenderId' => (int)$c['SenderId'],
@@ -904,16 +965,16 @@ if ($action === 'chat_conversations') {
                     'PartnerName' => $pName,
                     'PartnerAvatar' => $pAvatar,
                     'ItemTitle' => $itemTitle,
-                    'ItemImage' => '',
+                    'ItemImage' => $itemImage,
                     'MessageText' => $c['MessageText'],
                     'CreatedAt' => $c['CreatedAt'],
                     'HasTransaction' => false,
                     'TransactionOrderCode' => '',
                     'TransactionStatus' => '',
-                    'IsMyItem' => false,
-                    'RoleLabel' => 'General Inquiry',
-                    'RoleType' => 'RENTER',
-                    'OwnerName' => 'Campus Student',
+                    'IsMyItem' => $isItemMine,
+                    'RoleLabel' => $isItemMine ? 'My Item (Lender)' : 'Renting (Borrower)',
+                    'RoleType' => $isItemMine ? 'OWNER' : 'RENTER',
+                    'OwnerName' => $itemOwnerName,
                     'StepLevel' => 0,
                     'StepTitle' => 'General Inquiry',
                     'IsActionRequired' => false,

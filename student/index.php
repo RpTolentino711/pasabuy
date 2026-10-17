@@ -2047,6 +2047,8 @@
                                 }
 
                                 const isMyItem = !!c.IsMyItem;
+                                const ownerName = c.OwnerName || (isMyItem ? 'You' : partnerName);
+                                const safeOwnerName = ownerName.replace(/"/g, '&quot;');
                                 const itemImage = c.ItemImage || '';
                                 const safePartnerNameAttr = partnerName.replace(/"/g, '&quot;');
                                 const hasTx = !!(c.HasTransaction);
@@ -2059,7 +2061,9 @@
                                     itemTitle: itemTitle,
                                     itemPrice: '₱0.00',
                                     avatarUrl: avatarUrl,
-                                    itemImage: itemImage
+                                    itemImage: itemImage,
+                                    isMyItem: isMyItem,
+                                    ownerName: ownerName
                                 };
 
                                 html += `
@@ -2101,11 +2105,11 @@
                                     
                                     ${isMyItem ? `
                                         <span class="badge rounded-pill fw-bold" style="background:#EDE9FE; color:#5B3FA8; border:1px solid #DDD6FE; font-size:0.62rem; padding: 2.5px 7px;">
-                                             <i class="fa-solid fa-crown text-warning me-0.5"></i>My Item (Lender)
+                                             <i class="fa-solid fa-hand-holding-hand text-primary me-0.5"></i>Borrower (Renting from You)
                                         </span>
                                     ` : `
                                         <span class="badge rounded-pill fw-bold" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD; font-size:0.62rem; padding: 2.5px 7px;">
-                                            <i class="fa-solid fa-cart-shopping me-0.5"></i>Renting (Borrower)
+                                            <i class="fa-solid fa-store me-0.5"></i>Lender (You're Renting)
                                         </span>
                                     `}
 
@@ -2117,9 +2121,18 @@
                                 </div>
                                 
                                 <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
-                                    <span class="badge rounded-pill fw-bold" style="background:#F1F5F9; color:#1E293B; border:1px solid #E2E8F0; font-size:0.68rem; padding: 2.5px 8px;">
+                                    <span class="badge rounded-pill fw-bold" style="background:#F1F5F9; color:#1E293B; border:1px solid #CBD5E1; font-size:0.68rem; padding: 2.5px 8px;">
                                         <i class="fa-solid fa-cube text-primary me-1"></i>Item: <span class="fw-extrabold text-dark">${itemTitle}</span>
                                     </span>
+                                    ${isMyItem ? `
+                                        <span class="badge rounded-pill fw-bold shadow-2xs" style="background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; font-size:0.65rem; padding: 2.5px 8px;">
+                                            <i class="fa-solid fa-crown text-warning me-1"></i>Your Item (You Own This)
+                                        </span>
+                                    ` : `
+                                        <span class="badge rounded-pill fw-bold shadow-2xs" style="background:#FFFBEB; color:#B45309; border:1px solid #FDE68A; font-size:0.65rem; padding: 2.5px 8px;">
+                                            <i class="fa-solid fa-user-tag text-warning me-1"></i>Owner: <span class="fw-bold text-dark">${safeOwnerName}</span>
+                                        </span>
+                                    `}
                                     ${txOrder && txOrder !== 'Order' ? `
                                         <span class="badge bg-light text-muted border rounded-pill font-monospace" style="font-size:0.60rem; padding: 2px 6px;">
                                             ${txOrder}
@@ -2328,7 +2341,7 @@
                             const key = (card && card.dataset.convKey) || convKeyOrPartnerId;
                             const conv = (key && window._chatConversationsMap && window._chatConversationsMap[key]);
                             if (conv) {
-                                checkAndOpenChat(conv.partnerId, conv.partnerName, conv.itemTitle, conv.itemPrice, conv.avatarUrl, conv.itemImage);
+                                checkAndOpenChat(conv.partnerId, conv.partnerName, conv.itemTitle, conv.itemPrice, conv.avatarUrl, conv.itemImage, conv.isMyItem, conv.ownerName);
                             } else {
                                 checkAndOpenChat(convKeyOrPartnerId, partnerName || 'Verified Student', itemTitle || 'Campus Equipment', price || '₱0.00', avatarUrl || '', itemImg || '');
                             }
@@ -3511,23 +3524,23 @@
                                 const ownershipBadge = document.getElementById('chatItemOwnershipBadge');
                                 if (ownershipBadge) {
                                     if (isOwner) {
-                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-crown text-warning me-1"></i>My Item (Lender)';
-                                        ownershipBadge.style.background = '#EDE9FE';
-                                        ownershipBadge.style.color = '#5B3FA8';
-                                        ownershipBadge.style.border = '1px solid #DDD6FE';
+                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-crown text-warning me-1"></i>Your Item (You Own This)';
+                                        ownershipBadge.style.background = '#ECFDF5';
+                                        ownershipBadge.style.color = '#059669';
+                                        ownershipBadge.style.border = '1px solid #A7F3D0';
                                         ownershipBadge.style.display = 'inline-flex';
                                     } else {
-                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-cart-shopping me-1"></i>Renting (Borrower)';
-                                        ownershipBadge.style.background = '#E0F2FE';
-                                        ownershipBadge.style.color = '#0369A1';
-                                        ownershipBadge.style.border = '1px solid #BAE6FD';
+                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-user-tag text-warning me-1"></i>Owner: ' + (ord.owner_name || 'Campus Student');
+                                        ownershipBadge.style.background = '#FFFBEB';
+                                        ownershipBadge.style.color = '#B45309';
+                                        ownershipBadge.style.border = '1px solid #FDE68A';
                                         ownershipBadge.style.display = 'inline-flex';
                                     }
                                 }
 
                                 const chatOwnerLabel = document.getElementById('chatItemOwnerLabel');
                                 if (chatOwnerLabel) {
-                                    chatOwnerLabel.innerText = '• Owner: ' + (ord.owner_name || 'Stock Owner');
+                                    chatOwnerLabel.innerText = isOwner ? '• Owner: You' : ('• Owner: ' + (ord.owner_name || 'Stock Owner'));
                                 }
                                 const itemTitleEl = document.getElementById('chatItemTitle');
                                 if (itemTitleEl && ord.item_name) {
@@ -4197,7 +4210,7 @@
                             checkAndOpenChat(pId, partnerName || 'Verified Student', itemTitle || 'Campus Request', itemPrice || '₱0.00', '', itemImage || '');
                         }
 
-                        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar, itemImage) {
+                        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar, itemImage, isMyItem, ownerName) {
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
                             let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
@@ -4271,6 +4284,30 @@
                                 } else {
                                     chatItemImg.style.display = 'none';
                                     if (chatItemFallback) chatItemFallback.style.display = 'flex';
+                                }
+                            }
+
+                            // Set initial ownership badge & owner label if passed from conversation card
+                            const ownershipBadge = document.getElementById('chatItemOwnershipBadge');
+                            const chatOwnerLabel = document.getElementById('chatItemOwnerLabel');
+                            if (isMyItem !== undefined && isMyItem !== null) {
+                                if (ownershipBadge) {
+                                    if (isMyItem) {
+                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-crown text-warning me-1"></i>Your Item (You Own This)';
+                                        ownershipBadge.style.background = '#ECFDF5';
+                                        ownershipBadge.style.color = '#059669';
+                                        ownershipBadge.style.border = '1px solid #A7F3D0';
+                                        ownershipBadge.style.display = 'inline-flex';
+                                    } else {
+                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-user-tag text-warning me-1"></i>Owner: ' + (ownerName || targetSellerName);
+                                        ownershipBadge.style.background = '#FFFBEB';
+                                        ownershipBadge.style.color = '#B45309';
+                                        ownershipBadge.style.border = '1px solid #FDE68A';
+                                        ownershipBadge.style.display = 'inline-flex';
+                                    }
+                                }
+                                if (chatOwnerLabel) {
+                                    chatOwnerLabel.innerText = isMyItem ? '• Owner: You' : ('• Owner: ' + (ownerName || targetSellerName));
                                 }
                             }
 
