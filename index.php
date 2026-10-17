@@ -3673,6 +3673,11 @@
                                         if (isOwner) {
                                             if (step1Owner) step1Owner.style.setProperty('display', 'block', 'important');
                                             if (step1Renter) step1Renter.style.setProperty('display', 'none', 'important');
+
+                                            // Pop-up notification for Stock Owner receiving Step 1 proposal
+                                            if (typeof showStep1OwnerProposalPopup === 'function') {
+                                                showStep1OwnerProposalPopup(ord, partnerName, itemTitle || ord.item_name || 'Campus Equipment');
+                                            }
                                         } else {
                                             if (step1Owner) step1Owner.style.setProperty('display', 'none', 'important');
                                             if (step1Renter) step1Renter.style.setProperty('display', 'flex', 'important');
@@ -3812,6 +3817,159 @@
                             chatRentalTimerInterval = setInterval(updateDisplay, 1000);
                         }
 
+                        // STEP 1 POP-UP NOTIFICATION & CHIME AUDIO SYSTEM
+                        window.playRentalRequestChime = function () {
+                            try {
+                                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                                if (!AudioContext) return;
+                                const ctx = new AudioContext();
+                                const now = ctx.currentTime;
+                                
+                                const osc1 = ctx.createOscillator();
+                                const gain1 = ctx.createGain();
+                                osc1.type = 'sine';
+                                osc1.frequency.setValueAtTime(659.25, now);
+                                gain1.gain.setValueAtTime(0.18, now);
+                                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                                osc1.connect(gain1);
+                                gain1.connect(ctx.destination);
+                                osc1.start(now);
+                                osc1.stop(now + 0.28);
+
+                                const osc2 = ctx.createOscillator();
+                                const gain2 = ctx.createGain();
+                                osc2.type = 'sine';
+                                osc2.frequency.setValueAtTime(880, now + 0.12);
+                                gain2.gain.setValueAtTime(0.22, now + 0.12);
+                                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+                                osc2.connect(gain2);
+                                gain2.connect(ctx.destination);
+                                osc2.start(now + 0.12);
+                                osc2.stop(now + 0.55);
+                            } catch(e) {}
+                        };
+
+                        window._shownStep1Modals = window._shownStep1Modals || new Set();
+
+                        window.showStep1OwnerProposalPopup = function (ord, renterName, itemTitle) {
+                            if (!ord) return;
+                            const modalKey = 'step1_' + (ord.order_code || ord.id);
+                            if (window._shownStep1Modals.has(modalKey)) return;
+                            window._shownStep1Modals.add(modalKey);
+
+                            const modalEl = document.getElementById('step1OwnerProposalModal');
+                            if (!modalEl) return;
+
+                            const rName = renterName || ord.customer_name || 'Student Renter';
+                            const renterNameEl = document.getElementById('step1ModalRenterName');
+                            if (renterNameEl) renterNameEl.innerText = rName;
+
+                            const renterAvatarEl = document.getElementById('step1ModalRenterAvatar');
+                            if (renterAvatarEl) {
+                                renterAvatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rName)}&background=5B3FA8&color=fff&bold=true&rounded=true`;
+                            }
+
+                            const itemTitleEl = document.getElementById('step1ModalItemTitle');
+                            if (itemTitleEl) itemTitleEl.innerText = itemTitle || ord.item_name || 'Campus Equipment';
+
+                            const orderCodeEl = document.getElementById('step1ModalOrderCode');
+                            if (orderCodeEl) orderCodeEl.innerText = ord.order_code || '#RE-ORDER';
+
+                            const totalEl = document.getElementById('step1ModalTotalAmount');
+                            if (totalEl) totalEl.innerText = `₱${parseFloat(ord.total_amount || 0).toFixed(2)}`;
+
+                            const durationEl = document.getElementById('step1ModalDuration');
+                            if (durationEl) {
+                                const days = parseInt(ord.rental_days) || 1;
+                                durationEl.innerText = days === 1 ? '1 Day Duration' : `${days} Days Duration`;
+                            }
+
+                            if (typeof playRentalRequestChime === 'function') {
+                                playRentalRequestChime();
+                            }
+
+                            try {
+                                const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
+                                inst.show();
+                            } catch(e) {
+                                modalEl.style.display = 'block';
+                            }
+                        };
+
+                        window.executeStep1AgreeFromPopup = async function () {
+                            const modalEl = document.getElementById('step1OwnerProposalModal');
+                            if (modalEl) {
+                                try {
+                                    const inst = bootstrap.Modal.getInstance(modalEl);
+                                    if (inst) inst.hide();
+                                } catch(e) {}
+                            }
+                            const btnModal = document.getElementById('btnModalStep1Agree');
+                            if (btnModal) {
+                                btnModal.disabled = true;
+                                btnModal.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Agreeing...';
+                            }
+                            if (typeof window.executeStep1Agree === 'function') {
+                                await window.executeStep1Agree();
+                            }
+                            if (btnModal) {
+                                btnModal.disabled = false;
+                                btnModal.innerHTML = '<i class="fa-solid fa-handshake-simple fs-6"></i> Agree to Rent Equipment';
+                            }
+                        };
+
+                        window._notifiedStep1Orders = window._notifiedStep1Orders || new Set();
+
+                        window.showStep1IncomingProposalToast = function (order, renterName, itemTitle, partnerId) {
+                            if (!order) return;
+                            const toastKey = 'toast_' + (order.order_code || order.id);
+                            if (window._notifiedStep1Orders.has(toastKey)) return;
+                            window._notifiedStep1Orders.add(toastKey);
+
+                            const toastEl = document.getElementById('step1IncomingProposalToast');
+                            if (!toastEl) return;
+
+                            const renterTitleEl = document.getElementById('step1ToastRenterAndItem');
+                            if (renterTitleEl) {
+                                renterTitleEl.innerText = `${renterName || order.customer_name || 'A Student'} wants to rent your '${itemTitle || order.item_name || 'equipment'}'!`;
+                            }
+
+                            const detailsEl = document.getElementById('step1ToastDetails');
+                            if (detailsEl) {
+                                detailsEl.innerText = `Order ${order.order_code} • ₱${parseFloat(order.total_amount || 0).toFixed(2)} • Step 1: Agree to Rent`;
+                            }
+
+                            const openBtn = document.getElementById('btnStep1ToastOpen');
+                            if (openBtn) {
+                                openBtn.onclick = function () {
+                                    dismissStep1IncomingToast();
+                                    const pId = partnerId || parseInt(order.renter_id) || 105;
+                                    const pName = renterName || order.customer_name || 'Student Renter';
+                                    const iTitle = itemTitle || order.item_name || 'Campus Equipment';
+                                    const iPrice = `₱${parseFloat(order.total_amount || 0).toFixed(2)}`;
+                                    if (typeof window.checkAndOpenChat === 'function') {
+                                        window.checkAndOpenChat(pId, pName, iTitle, iPrice, '', '', true, 'You');
+                                    }
+                                };
+                            }
+
+                            if (typeof playRentalRequestChime === 'function') {
+                                playRentalRequestChime();
+                            }
+
+                            toastEl.style.display = 'block';
+
+                            clearTimeout(window._step1ToastTimer);
+                            window._step1ToastTimer = setTimeout(() => {
+                                dismissStep1IncomingToast();
+                            }, 12000);
+                        };
+
+                        window.dismissStep1IncomingToast = function () {
+                            const toastEl = document.getElementById('step1IncomingProposalToast');
+                            if (toastEl) toastEl.style.display = 'none';
+                        };
+
                         // STEP 1: OWNER AGREES TO RENT
                         window.executeStep1Agree = async function () {
                             if (!currentChatRentalOrder) return;
@@ -3823,7 +3981,8 @@
                             const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104)) : (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104);
 
                             try {
-                                const res = await fetch('/student/rentease_api.php?action=step1_owner_agree', {
+                                const apiEndpoint = window.location.pathname.includes('/student/') ? 'rentease_api.php?action=step1_owner_agree' : '/student/rentease_api.php?action=step1_owner_agree';
+                                const res = await fetch(apiEndpoint, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ order_code: currentChatRentalOrder.order_code, owner_id: ownerId })
@@ -4309,7 +4468,8 @@
                                 }
                             }
 
-                            // Cleanly hide all tab screens and activate messages tab navigation
+                            // Reset shown modals for fresh chat entry
+                            window._shownStep1Modals = new Set();
                             const tabs = ['home', 'explore', 'cart', 'sell', 'wanted', 'messages', 'profile', 'track'];
                             tabs.forEach(t => {
                                 const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));

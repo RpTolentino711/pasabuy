@@ -786,3 +786,114 @@
     </div>
 </div>
 
+<!-- STEP 1 OWNER PROPOSAL POP-UP NOTIFICATION MODAL -->
+<div class="modal fade" id="step1OwnerProposalModal" tabindex="-1" aria-labelledby="step1OwnerProposalModalLabel" aria-hidden="true" style="z-index: 1080;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg bg-white overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-3 text-white text-center position-relative" style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #9333EA 100%);">
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.75rem;"></button>
+                <div class="rounded-circle bg-white bg-opacity-20 d-inline-flex align-items-center justify-content-center p-2 mb-2 shadow-2xs" style="width: 56px; height: 56px;">
+                    <i class="fa-solid fa-handshake-simple fs-3 text-white"></i>
+                </div>
+                <div class="badge rounded-pill bg-white text-primary fw-extrabold px-2.5 py-1 mb-1.5 shadow-2xs" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                    STEP 1 OF 4 • BOOKING CONFIRMATION
+                </div>
+                <h5 class="fw-extrabold mb-0 text-white" style="letter-spacing: -0.3px;">Rental Proposal Received!</h5>
+                <p class="text-white text-opacity-90 fs-9 mb-0 mt-1">A verified student wants to rent your equipment</p>
+            </div>
+
+            <div class="modal-body p-3 pt-3 text-center">
+                <!-- Renter Box -->
+                <div class="p-2.5 rounded-3 mb-2.5 text-start d-flex align-items-center gap-2.5" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
+                    <img id="step1ModalRenterAvatar" src="https://ui-avatars.com/api/?name=Student&background=5B3FA8&color=fff" class="rounded-circle border" width="42" height="42" style="object-fit:cover;">
+                    <div class="min-w-0">
+                        <div class="text-muted" style="font-size: 0.68rem; font-weight: 600;">BORROWER REQUEST</div>
+                        <div class="fw-bold text-dark fs-8 text-truncate" id="step1ModalRenterName">Pogilameg Tester</div>
+                        <span class="badge rounded-pill" style="background:#E0F2FE; color:#0369A1; font-size:0.60rem; padding: 2px 6px;">
+                            <i class="fa-solid fa-cart-shopping me-0.5"></i> Student Renter
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Item Details Card -->
+                <div class="p-3 rounded-3 text-start mb-2.5" style="background: #F5F3FF; border: 1px solid #DDD6FE;">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <span class="badge rounded-pill fw-bold" style="background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; font-size:0.65rem; padding: 2px 8px;">
+                            <i class="fa-solid fa-crown text-warning me-1"></i>Your Item (You Own This)
+                        </span>
+                        <span class="font-monospace text-muted fw-bold" style="font-size: 0.68rem;" id="step1ModalOrderCode">#RE-00000</span>
+                    </div>
+                    <h6 class="fw-extrabold text-dark mb-1" id="step1ModalItemTitle" style="font-size: 0.95rem;">Equipment</h6>
+                    <div class="d-flex align-items-center justify-content-between pt-1 border-top border-purple-subtle" style="font-size: 0.75rem;">
+                        <div>
+                            <span class="text-muted">Rental Fee: </span>
+                            <span class="fw-extrabold text-primary" id="step1ModalTotalAmount">₱0.00</span>
+                            <span class="text-muted fs-9">(Cash on Handover)</span>
+                        </div>
+                        <div class="text-secondary fw-semibold" id="step1ModalDuration">1 Day Duration</div>
+                    </div>
+                </div>
+
+                <!-- Guidance Alert -->
+                <div class="alert alert-light border text-start p-2.5 rounded-3 mb-3 d-flex align-items-start gap-2" style="background:#FFFBEB; border-color:#FDE68A !important;">
+                    <i class="fa-solid fa-circle-info text-warning fs-6 mt-0.5 flex-shrink-0"></i>
+                    <div style="font-size: 0.72rem; line-height: 1.35; color: #92400E;">
+                        <strong>Action Required:</strong> Agree to this booking request to accept the rental and unlock <strong>Step 2 (Equipment Preparation &amp; Condition Proof)</strong>.
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <button type="button" class="btn btn-success w-100 py-2.5 rounded-pill fw-extrabold text-white shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2"
+                        id="btnModalStep1Agree" onclick="executeStep1AgreeFromPopup()" style="background:#059669; border:none; font-size: 0.88rem;">
+                    <i class="fa-solid fa-handshake-simple fs-6"></i>
+                    <span>Agree to Rent Equipment</span>
+                </button>
+                <button type="button" class="btn btn-light w-100 py-2 rounded-pill fw-bold text-secondary border"
+                        data-bs-dismiss="modal" style="font-size: 0.78rem;">
+                    Review in Chat First
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- APP-WIDE INCOMING PROPOSAL POP-UP TOAST -->
+<div id="step1IncomingProposalToast" class="shadow-lg" style="display:none; position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1090; width: 92%; max-width: 440px; background: #ffffff; border: 1.5px solid #8B5CF6; border-radius: 16px; padding: 12px 14px; animation: slideDownBounce 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);">
+    <div class="d-flex align-items-start gap-2.5">
+        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs" style="width: 42px; height: 42px; background: linear-gradient(135deg, #EDE9FE, #DDD6FE); color: #6D28D9;">
+            <i class="fa-solid fa-handshake-simple fs-6"></i>
+        </div>
+        <div class="min-w-0 flex-grow-1">
+            <div class="d-flex align-items-center justify-content-between mb-0.5">
+                <span class="badge rounded-pill fw-bold" style="background:#EDE9FE; color:#5B3FA8; font-size:0.62rem; padding: 2px 7px;">
+                    <i class="fa-solid fa-bell me-1"></i>STEP 1: RENTAL PROPOSAL
+                </span>
+                <button type="button" class="btn-close" style="font-size: 0.65rem;" onclick="dismissStep1IncomingToast()"></button>
+            </div>
+            <div class="fw-extrabold text-dark fs-8 text-truncate" id="step1ToastRenterAndItem">
+                Pogilameg Tester wants to rent your item!
+            </div>
+            <div class="text-muted fs-9 text-truncate mb-2" id="step1ToastDetails">
+                Order #RE-00000 • ₱0.00 • Tap to Agree
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-bold fs-9 text-white d-flex align-items-center gap-1 shadow-2xs" id="btnStep1ToastOpen">
+                    <i class="fa-solid fa-handshake-simple"></i> View &amp; Agree
+                </button>
+                <button type="button" class="btn btn-sm btn-light rounded-pill px-2.5 py-1 fw-semibold fs-9 text-muted border" onclick="dismissStep1IncomingToast()">
+                    Later
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes slideDownBounce {
+    0% { transform: translate(-50%, -40px); opacity: 0; }
+    60% { transform: translate(-50%, 8px); opacity: 1; }
+    100% { transform: translate(-50%, 0); opacity: 1; }
+}
+</style>
+

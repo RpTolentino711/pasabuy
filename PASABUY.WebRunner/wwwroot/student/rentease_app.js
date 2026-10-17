@@ -1947,6 +1947,17 @@ window.checkOwnerRentalNotifications = async function () {
             checkUserOrderUpdatesBadge();
         }
 
+        // Check for incoming Step 1 proposals awaiting owner agreement
+        const incoming = data.incoming_requests || [];
+        const pendingStep1 = incoming.find(req => parseInt(req.owner_agreed) === 0 || req.order_status === 'PENDING');
+        if (pendingStep1 && typeof window.showStep1IncomingProposalToast === 'function') {
+            const chatVw = document.getElementById('chatView');
+            const isChatActive = chatVw && chatVw.style.display !== 'none' && (window.currentChatRentalOrder && (window.currentChatRentalOrder.order_code === pendingStep1.order_code));
+            if (!isChatActive) {
+                window.showStep1IncomingProposalToast(pendingStep1, pendingStep1.customer_name, pendingStep1.item_name, pendingStep1.renter_id);
+            }
+        }
+
         // Live dashboard sync: if requests section or sell tab is visible, update incoming requests live
         const reqSection = document.getElementById('profileSectionRequests');
         const tabProfile = document.getElementById('tabProfile');
