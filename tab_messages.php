@@ -960,7 +960,7 @@
         </div>
 
         <!-- SAFE DELETE CONVERSATION BUTTON (Visible to BOTH owner and renter once returned) -->
-        <div id="chatReturnedDeleteSection" class="pt-2 border-top border-light text-center">
+        <div id="chatReturnedDeleteSection" style="display:none;" class="pt-2 border-top border-light text-center">
             <button type="button" class="btn btn-outline-danger btn-sm rounded-pill w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-1.5 shadow-2xs" 
                     id="btnChatReturnedDeleteConv" 
                     onclick="initiateDeleteCurrentChatConversation()">

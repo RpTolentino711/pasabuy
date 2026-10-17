@@ -1197,7 +1197,7 @@ if ($action === 'check_active_transaction') {
                              OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
                             OR ((renter_id = ? AND owner_id = ?) 
                              OR (renter_id = ? AND owner_id = ?)))
-                           AND UPPER(order_status) NOT IN ('RETURNED', 'COMPLETED', 'CANCELLED', 'REJECTED')
+                           AND NOT (UPPER(order_status) IN ('RETURNED', 'COMPLETED') AND COALESCE(has_rated, 0) = 1) AND UPPER(order_status) NOT IN ('CANCELLED', 'REJECTED')
                            AND order_code NOT IN ('#RE-10245', '#RE-10234')
                            AND order_code NOT LIKE '%10234%'
                          ORDER BY id DESC LIMIT 1";
@@ -1281,7 +1281,7 @@ if ($action === 'delete_conversation') {
                              OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
                             OR ((renter_id = ? AND owner_id = ?) 
                              OR (renter_id = ? AND owner_id = ?)))
-                           AND UPPER(order_status) NOT IN ('RETURNED', 'COMPLETED', 'CANCELLED', 'REJECTED')
+                           AND NOT (UPPER(order_status) IN ('RETURNED', 'COMPLETED') AND COALESCE(has_rated, 0) = 1) AND UPPER(order_status) NOT IN ('CANCELLED', 'REJECTED')
                            AND order_code NOT IN ('#RE-10245', '#RE-10234')
                            AND order_code NOT LIKE '%10234%'
                          ORDER BY id DESC LIMIT 1";

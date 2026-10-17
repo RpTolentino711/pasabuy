@@ -3596,7 +3596,7 @@
                                     if (chatVw) chatVw.classList.remove('is-overdue');
 
                                     if (returnedBanner) returnedBanner.style.display = 'block';
-                                    if (headerDeleteBtn) headerDeleteBtn.style.display = 'inline-flex';
+                                    const deleteSection = document.getElementById('chatReturnedDeleteSection');
 
                                     const returnedOrderCodeEl = document.getElementById('chatReturnedOrderCodeDisplay');
                                     if (returnedOrderCodeEl) {
@@ -3611,6 +3611,15 @@
                                     const ratedReviewTextDisplay = document.getElementById('chatRatedReviewTextDisplay');
 
                                     const hasRated = (parseInt(ord.has_rated) === 1);
+
+                                    // Delete conversation ONLY shows after the renter rates the item!
+                                    if (hasRated) {
+                                        if (headerDeleteBtn) headerDeleteBtn.style.display = 'inline-flex';
+                                        if (deleteSection) deleteSection.style.display = 'block';
+                                    } else {
+                                        if (headerDeleteBtn) headerDeleteBtn.style.display = 'none';
+                                        if (deleteSection) deleteSection.style.display = 'none';
+                                    }
 
                                     if (!isOwner) {
                                         // Current user is RENTER
