@@ -2043,16 +2043,19 @@
                                 const lastMsg = c.MessageText || 'Tap to chat';
 
                                 let avatarUrl = c.PartnerAvatar || c.partnerAvatar || '';
-                                if (!avatarUrl || avatarUrl === '') {
-                                    avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(partnerName)}`;
+                                if (!avatarUrl || avatarUrl === '' || avatarUrl.includes('dicebear')) {
+                                    avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true`;
                                 }
 
+                                const isMyItem = !!c.IsMyItem;
+                                const itemImage = c.ItemImage || '';
                                 const safePartnerName = partnerName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                                 const safePartnerNameAttr = partnerName.replace(/"/g, '&quot;');
                                 const safeItemTitle = itemTitle.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                                const safeItemImage = itemImage.replace(/'/g, "\\'");
                                 const safeAvatarUrl = avatarUrl.replace(/'/g, "\\'");
                                 const hasTx = !!(c.HasTransaction);
-                                const txOrder = c.TransactionOrderCode || 'Order';
+                                const txOrder = c.TransactionOrderCode || '';
 
                                 html += `
                 <div class="swipe-conv-wrapper position-relative mb-2 overflow-hidden rounded-4" style="touch-action: pan-y; -webkit-user-select: none; user-select: none;">
@@ -2080,26 +2083,48 @@
                          data-partner-id="${partnerId}" 
                          data-partner-name="${safePartnerNameAttr}" 
                          data-has-transaction="${hasTx ? '1' : '0'}"
-                         onclick="handleConversationCardClick(event, this, ${partnerId}, '${safePartnerName}', '${safeItemTitle}', '₱0.00', '${safeAvatarUrl}')">
-                        <div class="d-flex align-items-center gap-3" style="pointer-events: none;">
-                            <div class="position-relative">
-                                <img src="${avatarUrl}" class="rounded-circle border" width="50" height="50" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true';">
-                                <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white" style="width:14px; height:14px;"></span>
+                         onclick="handleConversationCardClick(event, this, ${partnerId}, '${safePartnerName}', '${safeItemTitle}', '₱0.00', '${safeAvatarUrl}', '${safeItemImage}')">
+                        <div class="d-flex align-items-center gap-3 min-w-0" style="pointer-events: none;">
+                            <div class="position-relative flex-shrink-0">
+                                <img src="${avatarUrl}" class="rounded-circle border" width="48" height="48" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true';">
+                                <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white" style="width:13px; height:13px;"></span>
                             </div>
-                            <div>
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                    <h6 class="fw-bold mb-0 text-dark fs-7">${partnerName}</h6>
-                                    <span class="badge bg-primary-subtle text-primary rounded-pill fs-10 fw-semibold px-2 py-0.5">${itemTitle}</span>
+                            <div class="min-w-0">
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1">
+                                    <h6 class="fw-bold mb-0 text-dark fs-7 text-truncate" style="max-width:140px;">${partnerName}</h6>
+                                    
+                                    ${isMyItem ? `
+                                        <span class="badge rounded-pill fw-bold" style="background:#EDE9FE; color:#5B3FA8; border:1px solid #DDD6FE; font-size:0.62rem; padding: 2.5px 7px;">
+                                            <i class="fa-solid fa-crown text-warning me-0.5"></i>My Item (Lender)
+                                        </span>
+                                    ` : `
+                                        <span class="badge rounded-pill fw-bold" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD; font-size:0.62rem; padding: 2.5px 7px;">
+                                            <i class="fa-solid fa-cart-shopping me-0.5"></i>Renting (Borrower)
+                                        </span>
+                                    `}
+
                                     ${hasTx ? `
-                                        <span class="badge rounded-pill fw-bold" style="background:#ECFDF5; color:#059669; font-size:0.62rem; padding: 2px 6px; border:1px solid #A7F3D0;" title="Protected transaction made">
+                                        <span class="badge rounded-pill fw-bold" style="background:#ECFDF5; color:#059669; font-size:0.60rem; padding: 2px 6px; border:1px solid #A7F3D0;" title="Protected rental transaction">
                                             <i class="fa-solid fa-shield-halved me-0.5"></i>Protected
                                         </span>
                                     ` : ''}
                                 </div>
-                                <div class="text-muted fs-8 text-truncate" style="max-width:200px;">${lastMsg}</div>
+                                
+                                <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
+                                    <span class="badge rounded-pill fw-bold" style="background:#F1F5F9; color:#1E293B; border:1px solid #E2E8F0; font-size:0.68rem; padding: 2.5px 8px;">
+                                        <i class="fa-solid fa-cube text-primary me-1"></i>Item: <span class="fw-extrabold text-dark">${itemTitle}</span>
+                                    </span>
+                                    ${txOrder && txOrder !== 'Order' ? `
+                                        <span class="badge bg-light text-muted border rounded-pill font-monospace" style="font-size:0.60rem; padding: 2px 6px;">
+                                            ${txOrder}
+                                        </span>
+                                    ` : ''}
+                                </div>
+
+                                <div class="text-muted fs-8 text-truncate" style="max-width:210px;">${lastMsg}</div>
                             </div>
                         </div>
-                        <div class="text-end" style="pointer-events: none;">
+                        <div class="text-end flex-shrink-0 ms-2" style="pointer-events: none;">
                             <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
                         </div>
                     </div>
@@ -2264,7 +2289,7 @@
                             });
                         }
 
-                        function handleConversationCardClick(event, card, partnerId, partnerName, itemTitle, price, avatarUrl) {
+                        function handleConversationCardClick(event, card, partnerId, partnerName, itemTitle, price, avatarUrl, itemImg) {
                             if (card && card.dataset.hasDragged === '1') {
                                 return;
                             }
@@ -2275,7 +2300,11 @@
                                 card.dataset.currentX = '0';
                                 return;
                             }
-                            promptOrOpenChatTopic(partnerId, partnerName, itemTitle, price, avatarUrl);
+                            if (itemTitle && itemTitle.trim() !== '' && itemTitle !== 'Campus Item' && itemTitle !== 'General') {
+                                checkAndOpenChat(partnerId, partnerName, itemTitle, price || '₱0.00', avatarUrl, itemImg || '');
+                            } else {
+                                promptOrOpenChatTopic(partnerId, partnerName, itemTitle, price, avatarUrl);
+                            }
                         }
 
                         window.promptOrOpenChatTopic = async function (partnerId, partnerName, defaultItemTitle, defaultPrice, avatarUrl) {
@@ -3576,6 +3605,23 @@
                                 }
 
                                 // Update Attached Equipment Card Details & Clear Owner Attribution
+                                const ownershipBadge = document.getElementById('chatItemOwnershipBadge');
+                                if (ownershipBadge) {
+                                    if (isOwner) {
+                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-crown text-warning me-1"></i>My Item (Lender)';
+                                        ownershipBadge.style.background = '#EDE9FE';
+                                        ownershipBadge.style.color = '#5B3FA8';
+                                        ownershipBadge.style.border = '1px solid #DDD6FE';
+                                        ownershipBadge.style.display = 'inline-flex';
+                                    } else {
+                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-cart-shopping me-1"></i>Renting (Borrower)';
+                                        ownershipBadge.style.background = '#E0F2FE';
+                                        ownershipBadge.style.color = '#0369A1';
+                                        ownershipBadge.style.border = '1px solid #BAE6FD';
+                                        ownershipBadge.style.display = 'inline-flex';
+                                    }
+                                }
+
                                 const chatOwnerLabel = document.getElementById('chatItemOwnerLabel');
                                 if (chatOwnerLabel) {
                                     chatOwnerLabel.innerText = '• Owner: ' + (ord.owner_name || 'Stock Owner');

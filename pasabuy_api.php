@@ -655,7 +655,9 @@ if ($action === 'chat_conversations') {
               AND SenderName NOT LIKE '%Fleet Dispatch%' 
               AND SenderName NOT LIKE '%Rider%' 
               AND SenderId != 100 
-            GROUP BY LEAST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId)), GREATEST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId))
+            GROUP BY LEAST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId)), 
+                     GREATEST(IF(SenderId=1, 104, SenderId), IF(ReceiverId=1, 104, ReceiverId)),
+                     COALESCE(NULLIF(TRIM(ItemTitle), ''), 'General')
         ) c2 ON c1.Id = c2.max_id 
         LEFT JOIN StudentProfiles spSender ON c1.SenderId = spSender.UserId
         LEFT JOIN StudentProfiles spReceiver ON c1.ReceiverId = spReceiver.UserId
@@ -683,6 +685,7 @@ if ($action === 'chat_conversations') {
 
         // Check if transaction has been made between user and partner
         $pId = (int)($c['PartnerId'] ?? 0);
+        $currItem = trim((string)($c['ItemTitle'] ?? ''));
         $hasTx = false;
         $txCode = '';
         $txStatus = '';
@@ -702,42 +705,82 @@ if ($action === 'chat_conversations') {
                 }
             } catch (Exception $eUser) {}
 
-            // Check rental_orders by email OR id
-            $rSql = "SELECT order_code, order_status FROM rental_orders 
-                     WHERE (((LOWER(customer_email) = ? AND LOWER(owner_email) = ?) 
-                         OR (LOWER(customer_email) = ? AND LOWER(owner_email) = ?))
-                        OR ((renter_id = ? AND owner_id = ?) 
-                         OR (renter_id = ? AND owner_id = ?))
-                        OR ((renter_id IN (1, 104) AND owner_id = ?) 
-                         OR (owner_id IN (1, 104) AND renter_id = ?)))
-                       AND order_code NOT IN ('#RE-10245', '#RE-10234')
-                       AND order_code NOT LIKE '%10234%'
-                     ORDER BY id DESC LIMIT 1";
+            // Check rental_orders specifically matching this item topic first
+            $rSql = "SELECT ro.order_code, ro.order_status, ro.item_name, ro.owner_id, ro.renter_id, ro.owner_name, ro.customer_name,
+                            ro.customer_email, ro.owner_email, ri.image_url as item_image
+                     FROM rental_orders ro
+                     LEFT JOIN rental_inventory ri ON ro.item_id = ri.id
+                     WHERE (((LOWER(ro.customer_email) = ? AND LOWER(ro.owner_email) = ?) 
+                         OR (LOWER(ro.customer_email) = ? AND LOWER(ro.owner_email) = ?))
+                        OR ((ro.renter_id = ? AND ro.owner_id = ?) 
+                         OR (ro.renter_id = ? AND ro.owner_id = ?))
+                        OR ((ro.renter_id IN (1, 104) AND ro.owner_id = ?) 
+                         OR (ro.owner_id IN (1, 104) AND ro.renter_id = ?)))
+                       AND ro.order_code NOT IN ('#RE-10245', '#RE-10234')
+                       AND ro.order_code NOT LIKE '%10234%'";
+            $rParams = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $pId, $pId, $userId, $pId, $pId];
+
+            if ($currItem !== '' && strtolower($currItem) !== 'general' && strtolower($currItem) !== 'campus item') {
+                $rSql .= " AND (LOWER(ro.item_name) = ? OR LOWER(ri.name) = ? OR LOWER(ro.item_name) LIKE ?)";
+                $rParams[] = strtolower($currItem);
+                $rParams[] = strtolower($currItem);
+                $rParams[] = '%' . strtolower($currItem) . '%';
+            }
+
+            $rSql .= " ORDER BY ro.id DESC LIMIT 1";
             $rStmt = $db->prepare($rSql);
-            $rStmt->execute([$uEmail, $pEmail, $pEmail, $uEmail, $userId, $pId, $pId, $userId, $pId, $pId]);
+            $rStmt->execute($rParams);
             $rOrd = $rStmt->fetch();
+
             if ($rOrd) {
                 $hasTx = true;
                 $txCode = $rOrd['order_code'];
                 $txStatus = $rOrd['order_status'];
-            } else {
-                // Check Orders table
-                $uList = ($userId == 104) ? [1, 104] : [$userId];
-                $pList = ($pId == 104) ? [1, 104] : [$pId];
-                $uPlace = implode(',', array_fill(0, count($uList), '?'));
-                $pPlace = implode(',', array_fill(0, count($pList), '?'));
 
-                $oSql = "SELECT Id, Status FROM Orders 
-                         WHERE ((BuyerId IN ($uPlace) AND SellerId IN ($pPlace)) 
-                            OR (BuyerId IN ($pPlace) AND SellerId IN ($uPlace)))
-                         ORDER BY Id DESC LIMIT 1";
-                $oStmt = $db->prepare($oSql);
-                $oStmt->execute(array_merge($uList, $pList, $pList, $uList));
-                $ord = $oStmt->fetch();
-                if ($ord) {
-                    $hasTx = true;
-                    $txCode = '#ORD-' . $ord['Id'];
-                    $txStatus = $ord['Status'];
+                if (!empty($rOrd['item_name']) && (empty($c['ItemTitle']) || strtolower($c['ItemTitle']) === 'general' || strtolower($c['ItemTitle']) === 'campus item')) {
+                    $c['ItemTitle'] = $rOrd['item_name'];
+                }
+                if (!empty($rOrd['item_image'])) {
+                    $c['ItemImage'] = $rOrd['item_image'];
+                }
+
+                // Determine Ownership: My Item (Lender) vs Renting (Borrower)
+                $isOwner = ((int)$userId === (int)$rOrd['owner_id'] || (!empty($uEmail) && !empty($rOrd['owner_email']) && strtolower($uEmail) === strtolower($rOrd['owner_email'])));
+                if ((int)$userId === (int)$rOrd['renter_id'] || (!empty($uEmail) && !empty($rOrd['customer_email']) && strtolower($uEmail) === strtolower($rOrd['customer_email']))) {
+                    $isOwner = false;
+                }
+                $c['IsMyItem'] = $isOwner;
+                $c['RoleLabel'] = $isOwner ? 'My Item (Lender)' : 'Renting Item (Borrower)';
+                $c['RoleType'] = $isOwner ? 'OWNER' : 'RENTER';
+                $c['OwnerName'] = $rOrd['owner_name'] ?: 'Stock Owner';
+            } else {
+                // If no specific order, check rental_inventory
+                $invFound = false;
+                if ($currItem !== '' && strtolower($currItem) !== 'general') {
+                    try {
+                        $invStmt = $db->prepare("SELECT id, name, owner_id, owner_name, image_url FROM rental_inventory WHERE LOWER(name) = ? OR LOWER(name) LIKE ? LIMIT 1");
+                        $invStmt->execute([strtolower($currItem), '%' . strtolower($currItem) . '%']);
+                        $invItem = $invStmt->fetch();
+                        if ($invItem) {
+                            $invFound = true;
+                            $isOwner = ((int)$userId === (int)$invItem['owner_id'] || ($userId === 104 && (int)$invItem['owner_id'] === 104));
+                            $c['IsMyItem'] = $isOwner;
+                            $c['RoleLabel'] = $isOwner ? 'My Item (Lender)' : 'Renting Item (Borrower)';
+                            $c['RoleType'] = $isOwner ? 'OWNER' : 'RENTER';
+                            $c['ItemTitle'] = $invItem['name'];
+                            $c['OwnerName'] = $invItem['owner_name'] ?: 'Stock Owner';
+                            if (!empty($invItem['image_url'])) {
+                                $c['ItemImage'] = $invItem['image_url'];
+                            }
+                        }
+                    } catch (Exception $eInv) {}
+                }
+
+                if (!$invFound) {
+                    $c['IsMyItem'] = false;
+                    $c['RoleLabel'] = 'Inquiring to Rent';
+                    $c['RoleType'] = 'RENTER';
+                    $c['OwnerName'] = 'Campus Student';
                 }
             }
         } catch (Exception $eTx) {}

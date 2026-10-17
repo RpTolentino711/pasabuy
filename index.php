@@ -3576,6 +3576,23 @@
                                 }
 
                                 // Update Attached Equipment Card Details & Clear Owner Attribution
+                                const ownershipBadge = document.getElementById('chatItemOwnershipBadge');
+                                if (ownershipBadge) {
+                                    if (isOwner) {
+                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-crown text-warning me-1"></i>My Item (Lender)';
+                                        ownershipBadge.style.background = '#EDE9FE';
+                                        ownershipBadge.style.color = '#5B3FA8';
+                                        ownershipBadge.style.border = '1px solid #DDD6FE';
+                                        ownershipBadge.style.display = 'inline-flex';
+                                    } else {
+                                        ownershipBadge.innerHTML = '<i class="fa-solid fa-cart-shopping me-1"></i>Renting (Borrower)';
+                                        ownershipBadge.style.background = '#E0F2FE';
+                                        ownershipBadge.style.color = '#0369A1';
+                                        ownershipBadge.style.border = '1px solid #BAE6FD';
+                                        ownershipBadge.style.display = 'inline-flex';
+                                    }
+                                }
+
                                 const chatOwnerLabel = document.getElementById('chatItemOwnerLabel');
                                 if (chatOwnerLabel) {
                                     chatOwnerLabel.innerText = '• Owner: ' + (ord.owner_name || 'Stock Owner');
@@ -3599,20 +3616,6 @@
                                     if (chatItemFallback) chatItemFallback.style.display = 'none';
                                 }
 
-                                // 1. If timer is running or overdue, show TIMER BANNER
-                                if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
-                                    if (reqBanner) reqBanner.style.display = 'none';
-                                    if (timerBanner) timerBanner.style.display = 'block';
-
-                                    const titleEl = document.getElementById('chatTimerItemTitle');
-                                    if (titleEl) titleEl.innerText = `${ord.item_name} (${ord.order_code})`;
-                                    const endText = ord.rental_timer_end ? new Date(ord.rental_timer_end).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ord.rental_end_date;
-                                    const endEl = document.getElementById('chatTimerEndDisplay');
-                                    if (endEl) endEl.innerText = endText;
-
-                                    // Start or sync local live countdown with strict owner role passing
-                                    startChatTimerCountdown(ord.rental_timer_end, isOwner);
-                                } 
                                 // 1. If timer is running or overdue, show TIMER BANNER
                                 if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
                                     if (reqBanner) reqBanner.style.display = 'none';

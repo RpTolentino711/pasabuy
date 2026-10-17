@@ -3112,7 +3112,8 @@ if ($action === 'get_chat_partner_topics') {
     $postedItems = $itemStmt->fetchAll();
 
     // Fetch active / recent orders between user and partner
-    $ordStmt = $db->prepare("SELECT ro.id, ro.order_code, ro.item_name, ro.order_status, ro.rental_start_date, ro.rental_end_date, ro.total_amount, ri.image_url, ro.timer_status
+    $ordStmt = $db->prepare("SELECT ro.id, ro.order_code, ro.item_name, ro.order_status, ro.rental_start_date, ro.rental_end_date, 
+                                     ro.total_amount, ri.image_url, ro.timer_status, ro.owner_id, ro.renter_id, ro.owner_name, ro.customer_name
                              FROM rental_orders ro
                              LEFT JOIN rental_inventory ri ON ro.item_id = ri.id
                              WHERE ((ro.renter_id = ? AND ro.owner_id = ?) OR (ro.renter_id = ? AND ro.owner_id = ?)
@@ -3151,7 +3152,7 @@ if ($action === 'get_chat_partner_topics') {
         if ($cleanCt === '' || isset($existingNames[$cleanCt])) continue;
         $existingNames[$cleanCt] = true;
 
-        $itStmt = $db->prepare("SELECT id, name, price_per_day, image_url FROM rental_inventory WHERE LOWER(name) = ? LIMIT 1");
+        $itStmt = $db->prepare("SELECT id, name, price_per_day, image_url, owner_id, owner_name FROM rental_inventory WHERE LOWER(name) = ? LIMIT 1");
         $itStmt->execute([$cleanCt]);
         $it = $itStmt->fetch();
 
@@ -3164,8 +3165,22 @@ if ($action === 'get_chat_partner_topics') {
             'rental_end_date' => null,
             'total_amount' => $it['price_per_day'] ?? 0,
             'image_url' => $it['image_url'] ?? '',
-            'timer_status' => 'CHAT'
+            'timer_status' => 'CHAT',
+            'owner_id' => $it['owner_id'] ?? 0,
+            'renter_id' => 0,
+            'owner_name' => $it['owner_name'] ?? ''
         ];
+    }
+
+    foreach ($orders as &$ord) {
+        $ordOwnerId = (int)($ord['owner_id'] ?? 0);
+        $ordRenterId = (int)($ord['renter_id'] ?? 0);
+        $isOrdOwner = ($userId === $ordOwnerId || ($userId === 104 && $ordOwnerId === 104));
+        if ($userId === $ordRenterId || ($userId === 105 && $ordRenterId === 105)) {
+            $isOrdOwner = false;
+        }
+        $ord['is_owner'] = $isOrdOwner;
+        $ord['role_label'] = $isOrdOwner ? 'My Item (Lender)' : 'Renting (Borrower)';
     }
 
     echo json_encode([
