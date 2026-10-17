@@ -846,14 +846,24 @@
                 </button>
             </div>
         </div>
-        <!-- Owner Report Unreturned Item Button (Visible for Stock Owner ONLY when rental is overdue) -->
-        <div id="chatTimerOwnerReportRow" style="display:none !important;" class="pt-2 mt-2 border-top border-white border-opacity-15 rentchat-overdue-row">
-            <div class="d-flex align-items-center justify-content-between w-100 gap-2">
-                <span class="fs-9 text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i> Item overdue</span>
-                <button type="button" class="btn btn-sm rentchat-report-unreturned-btn" onclick="openReportUnreturnedModalFromChat()">
+        <!-- Owner Report & Restock Actions (Visible for Stock Owner ONLY when rental is overdue) -->
+        <div id="chatTimerOwnerReportRow" style="display:none !important;" class="pt-2 mt-2 border-top border-white border-opacity-15 rentchat-overdue-row flex-column gap-2">
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <span class="fs-9 text-warning fw-bold d-flex align-items-center gap-1">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Item overdue</span>
+                </span>
+                <button type="button" class="btn btn-sm rentchat-report-unreturned-btn py-1 px-2.5 fs-9" onclick="openReportUnreturnedModalFromChat()">
                     <i class="fa-solid fa-flag me-1"></i> Report Unreturned
                 </button>
             </div>
+            <button type="button" class="btn btn-sm rounded-pill w-100 py-1.5 px-3 fs-9 fw-extrabold text-white shadow-sm d-flex align-items-center justify-content-center gap-1.5" 
+                    style="background: linear-gradient(135deg, #10B981, #059669); border:none;" 
+                    id="btnChatOverdueRestock"
+                    onclick="markRentalReturnedAndRestockFromChat()">
+                <i class="fa-solid fa-boxes-packing"></i>
+                <span>Mark Returned &amp; Restock Item Back in Market</span>
+            </button>
         </div>
         <!-- Renter Overdue Warning (Visible for Renter ONLY when rental is overdue) -->
         <div id="chatTimerRenterOverdueRow" style="display:none !important;" class="pt-2 mt-2 border-top border-white border-opacity-15 rentchat-overdue-row">

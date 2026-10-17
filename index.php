@@ -4586,9 +4586,14 @@
                             }
 
                             const btn = document.getElementById('btnChatMarkReturnedRestock');
+                            const btnOverdue = document.getElementById('btnChatOverdueRestock');
                             if (btn) {
                                 btn.disabled = true;
                                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Restocking...';
+                            }
+                            if (btnOverdue) {
+                                btnOverdue.disabled = true;
+                                btnOverdue.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Restocking item in market...';
                             }
 
                             try {
@@ -4641,6 +4646,10 @@
                                 if (btn) {
                                     btn.disabled = false;
                                     btn.innerHTML = '<i class="fa-solid fa-boxes-packing me-1"></i> Mark Returned &amp; Restock';
+                                }
+                                if (btnOverdue) {
+                                    btnOverdue.disabled = false;
+                                    btnOverdue.innerHTML = '<i class="fa-solid fa-boxes-packing me-1"></i> Mark Returned &amp; Restock Item Back in Market';
                                 }
                             }
                         };
