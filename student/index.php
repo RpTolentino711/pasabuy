@@ -3723,14 +3723,10 @@
                                     const ratedStarsDisplay = document.getElementById('chatRatedStarsDisplay');
                                     const ratedReviewTextDisplay = document.getElementById('chatRatedReviewTextDisplay');
 
-                                    // Delete conversation ONLY shows after the renter rates the item!
-                                    if (hasRatedOrder) {
-                                        if (headerDeleteBtn) headerDeleteBtn.style.display = 'inline-flex';
-                                        if (deleteSection) deleteSection.style.display = 'block';
-                                    } else {
-                                        if (headerDeleteBtn) headerDeleteBtn.style.display = 'none';
-                                        if (deleteSection) deleteSection.style.display = 'none';
-                                    }
+                                    // Delete is shown ONLY in the returned banner section, never in the header
+                                    // Hide header delete button always to avoid duplicates
+                                    if (headerDeleteBtn) headerDeleteBtn.style.display = 'none';
+                                    if (deleteSection) deleteSection.style.display = hasRatedOrder ? 'block' : 'none';
 
                                     if (!isOwner) {
                                         // Current user is RENTER
