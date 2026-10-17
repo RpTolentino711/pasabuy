@@ -2033,8 +2033,9 @@
                                 return;
                             }
 
+                            window._chatConversationsMap = window._chatConversationsMap || {};
                             let html = '';
-                            convs.forEach(c => {
+                            convs.forEach((c, idx) => {
                                 const partnerId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
                                 const partnerName = c.PartnerName || (c.SenderId == currentUserId ? 'Campus Seller' : (c.SenderName || 'Campus Buyer'));
                                 const itemTitle = c.ItemTitle || 'Campus Item';
@@ -2047,13 +2048,19 @@
 
                                 const isMyItem = !!c.IsMyItem;
                                 const itemImage = c.ItemImage || '';
-                                const safePartnerName = partnerName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                                 const safePartnerNameAttr = partnerName.replace(/"/g, '&quot;');
-                                const safeItemTitle = itemTitle.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                                const safeItemImage = itemImage.replace(/'/g, "\\'");
-                                const safeAvatarUrl = avatarUrl.replace(/'/g, "\\'");
                                 const hasTx = !!(c.HasTransaction);
                                 const txOrder = c.TransactionOrderCode || '';
+
+                                const convKey = 'c_' + partnerId + '_' + idx;
+                                window._chatConversationsMap[convKey] = {
+                                    partnerId: partnerId,
+                                    partnerName: partnerName,
+                                    itemTitle: itemTitle,
+                                    itemPrice: '₱0.00',
+                                    avatarUrl: avatarUrl,
+                                    itemImage: itemImage
+                                };
 
                                 html += `
                 <div class="swipe-conv-wrapper position-relative mb-2 overflow-hidden rounded-4" style="touch-action: pan-y; -webkit-user-select: none; user-select: none;">
@@ -2069,7 +2076,7 @@
                     ` : `
                     <div class="swipe-delete-bg position-absolute top-0 bottom-0 end-0 d-flex align-items-center justify-content-end px-3 rounded-4 bg-danger text-white" 
                          style="width: 100%; z-index: 1; cursor: pointer;" 
-                         onclick="initiateDeleteConversation(${partnerId}, '${safePartnerName}', event)">
+                         onclick="initiateDeleteConversation(${partnerId}, '${safePartnerNameAttr}', event)">
                         <div class="d-flex flex-column align-items-center justify-content-center text-white" style="width: 65px;">
                             <i class="fa-solid fa-trash-can fs-5 mb-1"></i>
                             <span style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;">DELETE</span>
@@ -2078,10 +2085,11 @@
                     `}
                     <div class="swipe-conv-card p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center justify-content-between position-relative" 
                          style="z-index: 2; transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1); background: #ffffff; cursor: pointer;" 
+                         data-conv-key="${convKey}"
                          data-partner-id="${partnerId}" 
                          data-partner-name="${safePartnerNameAttr}" 
                          data-has-transaction="${hasTx ? '1' : '0'}"
-                         onclick="handleConversationCardClick(event, this, ${partnerId}, '${safePartnerName}', '${safeItemTitle}', '₱0.00', '${safeAvatarUrl}', '${safeItemImage}')">
+                         onclick="handleConversationCardClick(event, this, '${convKey}')">
                         <div class="d-flex align-items-center gap-3 min-w-0" style="pointer-events: none;">
                             <div class="position-relative flex-shrink-0">
                                 <img src="${avatarUrl}" class="rounded-circle border" width="48" height="48" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true';">
@@ -2093,7 +2101,7 @@
                                     
                                     ${isMyItem ? `
                                         <span class="badge rounded-pill fw-bold" style="background:#EDE9FE; color:#5B3FA8; border:1px solid #DDD6FE; font-size:0.62rem; padding: 2.5px 7px;">
-                                            <i class="fa-solid fa-crown text-warning me-0.5"></i>My Item (Lender)
+                                             <i class="fa-solid fa-crown text-warning me-0.5"></i>My Item (Lender)
                                         </span>
                                     ` : `
                                         <span class="badge rounded-pill fw-bold" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD; font-size:0.62rem; padding: 2.5px 7px;">
@@ -2157,6 +2165,7 @@
                                 let initialTranslateX = 0;
                                 let isDragging = false;
                                 let isHorizontalSwipe = false;
+                                let totalMovedX = 0;
 
                                 const setCardTransform = (x, animate = false) => {
                                     card.style.transition = animate ? 'transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1)' : 'none';
@@ -2172,8 +2181,8 @@
                                     initialTranslateX = parseFloat(card.dataset.currentX || '0');
                                     isDragging = true;
                                     isHorizontalSwipe = false;
+                                    totalMovedX = 0;
                                     card.dataset.hasDragged = '0';
-                                    card.style.transition = 'none';
                                     closeAllCards(card);
                                 }, { passive: true });
 
@@ -2183,11 +2192,12 @@
                                     const currentY = e.touches[0].clientY;
                                     const diffX = currentX - startX;
                                     const diffY = currentY - startY;
+                                    totalMovedX = Math.abs(diffX);
 
                                     if (!isHorizontalSwipe) {
-                                        if (Math.abs(diffX) > 7 && Math.abs(diffX) > Math.abs(diffY)) {
+                                        if (Math.abs(diffX) > 18 && Math.abs(diffX) > Math.abs(diffY) * 1.4) {
                                             isHorizontalSwipe = true;
-                                        } else if (Math.abs(diffY) > 7) {
+                                        } else if (Math.abs(diffY) > 12) {
                                             isDragging = false;
                                             return;
                                         }
@@ -2198,7 +2208,7 @@
                                         card.dataset.hasDragged = '1';
                                         let targetX = initialTranslateX + diffX;
                                         if (card.dataset.hasTransaction === '1' && targetX < 0) {
-                                            targetX = 0; // Prevent swipe delete on protected transaction chats
+                                            targetX = 0;
                                         }
                                         if (targetX > 0) {
                                             targetX = targetX * 0.15;
@@ -2225,25 +2235,34 @@
                                         setCardTransform(0, true);
                                     }
 
-                                    setTimeout(() => { card.dataset.hasDragged = '0'; }, 80);
+                                    if (totalMovedX > 18) {
+                                        setTimeout(() => { card.dataset.hasDragged = '0'; }, 80);
+                                    } else {
+                                        card.dataset.hasDragged = '0';
+                                    }
                                 });
 
                                 card.addEventListener('touchcancel', () => {
                                     isDragging = false;
+                                    card.dataset.hasDragged = '0';
                                     setCardTransform(0, true);
                                 });
 
-                                // Mouse drag handlers for desktop / emulator
+                                // Mouse drag handlers for desktop
                                 let mouseStartX = 0;
+                                let mouseStartY = 0;
+                                let mouseMovedX = 0;
 
                                 const onMouseMove = (e) => {
                                     if (!isDragging) return;
                                     const diffX = e.clientX - mouseStartX;
-                                    if (Math.abs(diffX) > 6) {
+                                    const diffY = e.clientY - mouseStartY;
+                                    mouseMovedX = Math.abs(diffX);
+                                    if (Math.abs(diffX) > 18 && Math.abs(diffX) > Math.abs(diffY)) {
                                         card.dataset.hasDragged = '1';
                                         let targetX = initialTranslateX + diffX;
                                         if (card.dataset.hasTransaction === '1' && targetX < 0) {
-                                            targetX = 0; // Prevent drag
+                                            targetX = 0;
                                         }
                                         if (targetX > 0) targetX = 0;
                                         if (targetX < -120) targetX = -120 + (targetX + 120) * 0.2;
@@ -2269,16 +2288,21 @@
                                         setCardTransform(0, true);
                                     }
 
-                                    setTimeout(() => { card.dataset.hasDragged = '0'; }, 80);
+                                    if (mouseMovedX > 18) {
+                                        setTimeout(() => { card.dataset.hasDragged = '0'; }, 80);
+                                    } else {
+                                        card.dataset.hasDragged = '0';
+                                    }
                                 };
 
                                 card.addEventListener('mousedown', (e) => {
                                     if (e.button !== 0) return;
                                     mouseStartX = e.clientX;
+                                    mouseStartY = e.clientY;
+                                    mouseMovedX = 0;
                                     initialTranslateX = parseFloat(card.dataset.currentX || '0');
                                     isDragging = true;
                                     card.dataset.hasDragged = '0';
-                                    card.style.transition = 'none';
                                     closeAllCards(card);
 
                                     window.addEventListener('mousemove', onMouseMove);
@@ -2287,19 +2311,28 @@
                             });
                         }
 
-                        function handleConversationCardClick(event, card, partnerId, partnerName, itemTitle, price, avatarUrl, itemImg) {
+                        window.handleConversationCardClick = function (event, card, convKeyOrPartnerId, partnerName, itemTitle, price, avatarUrl, itemImg) {
                             if (card && card.dataset.hasDragged === '1') {
                                 return;
                             }
-                            const currentX = parseFloat(card.dataset.currentX || '0');
+                            const currentX = parseFloat(card?.dataset?.currentX || '0');
                             if (currentX < -20) {
-                                card.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1)';
-                                card.style.transform = 'translateX(0px)';
-                                card.dataset.currentX = '0';
+                                if (card) {
+                                    card.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1)';
+                                    card.style.transform = 'translateX(0px)';
+                                    card.dataset.currentX = '0';
+                                }
                                 return;
                             }
-                            checkAndOpenChat(partnerId, partnerName, itemTitle || 'Campus Equipment', price || '₱0.00', avatarUrl, itemImg || '');
-                        }
+
+                            const key = (card && card.dataset.convKey) || convKeyOrPartnerId;
+                            const conv = (key && window._chatConversationsMap && window._chatConversationsMap[key]);
+                            if (conv) {
+                                checkAndOpenChat(conv.partnerId, conv.partnerName, conv.itemTitle, conv.itemPrice, conv.avatarUrl, conv.itemImage);
+                            } else {
+                                checkAndOpenChat(convKeyOrPartnerId, partnerName || 'Verified Student', itemTitle || 'Campus Equipment', price || '₱0.00', avatarUrl || '', itemImg || '');
+                            }
+                        };
 
                         window.promptOrOpenChatTopic = function (partnerId, partnerName, defaultItemTitle, defaultPrice, avatarUrl, itemImg) {
                             checkAndOpenChat(partnerId, partnerName, defaultItemTitle || 'Campus Equipment', defaultPrice || '₱0.00', avatarUrl, itemImg || '');
@@ -4241,11 +4274,19 @@
                                 }
                             }
 
-                            switchTab('messages');
+                            // Cleanly hide all tab screens and activate messages tab navigation
+                            const tabs = ['home', 'explore', 'cart', 'sell', 'wanted', 'messages', 'profile', 'track'];
+                            tabs.forEach(t => {
+                                const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+                                const nav = document.getElementById('tabNav' + t.charAt(0).toUpperCase() + t.slice(1));
+                                if (el) el.style.display = 'none';
+                                if (nav) nav.classList.toggle('active', t === 'messages');
+                            });
+
                             const tabMsgs = document.getElementById('tabMessages');
                             const chatVw = document.getElementById('chatView');
-                            if (tabMsgs) tabMsgs.style.display = 'none';
-                            if (chatVw) chatVw.style.display = 'flex';
+                            if (tabMsgs) tabMsgs.style.setProperty('display', 'none', 'important');
+                            if (chatVw) chatVw.style.setProperty('display', 'flex', 'important');
 
                             const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
                             if (stream) {
@@ -4255,6 +4296,10 @@
                             await refreshActiveChatStream();
                             startLiveChatPolling();
                         }
+
+                        window.checkAndOpenChat = checkAndOpenChat;
+                        window.openDirectChat = checkAndOpenChat;
+                        window.openChat = openChat;
 
                         async function sendChatMessage() {
                             const input = document.getElementById('chatInput');
