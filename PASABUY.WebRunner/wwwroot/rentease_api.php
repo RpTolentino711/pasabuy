@@ -2994,6 +2994,7 @@ if ($action === 'get_active_chat_rental') {
     $userId = (int)($data['user_id'] ?? $_GET['user_id'] ?? 104);
     $partnerId = (int)($data['partner_id'] ?? $_GET['partner_id'] ?? 105);
     $itemTitle = trim((string)($data['item_title'] ?? $_GET['item_title'] ?? ''));
+    $orderCode = trim((string)($data['order_code'] ?? $_GET['order_code'] ?? ''));
     $userEmail = strtolower(trim((string)($data['user_email'] ?? $_GET['user_email'] ?? '')));
 
     // Resolve emails
@@ -3018,7 +3019,10 @@ if ($action === 'get_active_chat_rental') {
                    OR (ro.`order_status` = 'CANCELLED' AND ro.`updated_at` >= NOW() - INTERVAL 1 DAY))";
     $params = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId];
 
-    if ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
+    if ($orderCode !== '') {
+        $sql .= " AND ro.`order_code` = ?";
+        $params[] = $orderCode;
+    } elseif ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
         $sql .= " AND (LOWER(ro.`item_name`) LIKE ? OR LOWER(ri.`name`) LIKE ?)";
         $params[] = '%' . strtolower($itemTitle) . '%';
         $params[] = '%' . strtolower($itemTitle) . '%';

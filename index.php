@@ -3483,7 +3483,8 @@
 
                             try {
                                 const activeTitle = document.getElementById('chatItemTitle')?.innerText || '';
-                                const res = await fetch(`/student/rentease_api.php?action=get_active_chat_rental&user_id=${currentUserId}&user_email=${encodeURIComponent(currentUserEmail)}&partner_id=${currentActiveChatSellerId}&item_title=${encodeURIComponent(activeTitle)}`);
+                                const orderParam = window.currentActiveChatOrderCode ? ('&order_code=' + encodeURIComponent(window.currentActiveChatOrderCode)) : '';
+                                const res = await fetch(`/student/rentease_api.php?action=get_active_chat_rental&user_id=${currentUserId}&user_email=${encodeURIComponent(currentUserEmail)}&partner_id=${currentActiveChatSellerId}&item_title=${encodeURIComponent(activeTitle)}${orderParam}`);
                                 const data = await res.json();
 
                                 const reqBanner = document.getElementById('chatRentalRequestBanner');
@@ -4741,7 +4742,8 @@
                             checkAndOpenChat(pId, partnerName || 'Verified Student', itemTitle || 'Campus Request', itemPrice || '₱0.00', '', itemImage || '');
                         }
 
-                        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar, itemImage, isMyItem, ownerName, isOverdueHint) {
+                        async function checkAndOpenChat(sellerId, sellerName, itemTitle, itemPrice, partnerAvatar, itemImage, isMyItem, ownerName, isOverdueHint, orderCode) {
+                            if (orderCode) window.currentActiveChatOrderCode = orderCode;
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
                             let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;

@@ -1586,23 +1586,31 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
 
                     if (status === 'CONFIRMED' || status === 'REQUESTED' || status === 'PENDING') {
                         statusBadgeClass = 'bg-primary text-white';
-                        statusLabel = status === 'REQUESTED' ? 'Step 1 • Requested' : 'Step 1 • Confirmed';
+                        statusLabel = 'Step 1 • Requested';
                         isStepActive = 1;
                     } else if (status === 'PREPARING' || status === 'PROCESSING') {
                         statusBadgeClass = 'bg-warning-subtle text-dark border border-warning-subtle';
-                        statusLabel = 'Step 2 • Preparing Gear';
+                        statusLabel = 'Step 2 • Photo Proof';
                         isStepActive = 2;
-                    } else if (status === 'MEETUP' || status === 'LOOKING_FOR_RIDER' || status === 'PICKUP' || status === 'ON_THE_WAY') {
+                    } else if (status === 'MEETUP') {
                         statusBadgeClass = 'bg-info-subtle text-info-emphasis border border-info-subtle';
-                        statusLabel = 'Step 3 • Meetup Set';
+                        statusLabel = 'Step 3 • Meetup Spot';
                         isStepActive = 3;
+                    } else if (status === 'HANDOVER' || status === 'LOOKING_FOR_RIDER' || status === 'PICKUP' || status === 'ON_THE_WAY') {
+                        statusBadgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+                        statusLabel = 'Step 4 • Handover';
+                        isStepActive = 4;
                     } else if (status === 'IN_PROGRESS' || status === 'RENTED' || status === 'DELIVERED') {
                         statusBadgeClass = 'bg-success text-white';
-                        statusLabel = 'Step 4 • Rental Active';
+                        statusLabel = 'Rental Active';
+                        isStepActive = 4;
+                    } else if (status === 'OVERDUE') {
+                        statusBadgeClass = 'bg-danger text-white';
+                        statusLabel = 'Overdue';
                         isStepActive = 4;
                     } else if (status === 'RETURNED' || status === 'COMPLETED') {
                         statusBadgeClass = 'bg-secondary text-white';
-                        statusLabel = 'Step 5 • Restocked';
+                        statusLabel = 'Returned & Restocked';
                         isStepActive = 5;
                     }
 
@@ -1689,27 +1697,37 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                             </div>
                         </div>
 
-                        <!-- Action Bar for Owner (Accurate by Step!) -->
+                        <!-- Action Bar for Owner (Following Message Tab Steps!) -->
                         <div class="d-flex align-items-center gap-2 pt-2 border-top">
                             ${(status === 'CONFIRMED' || status === 'REQUESTED' || status === 'PENDING') ? `
                                 <button class="btn btn-sm text-dark rounded-pill py-2 px-3 fs-9 fw-extrabold w-100 shadow-xs" 
                                         style="background: linear-gradient(135deg, #FBBF24, #F59E0B); border: 1px solid #F59E0B;" 
-                                        onclick="acceptOrderAndGoToMessages(${order.id}, '${orderCode}', '${customerName.replace(/'/g, "\\'")}', ${renterId}, '${orderItemName.replace(/'/g, "\\'")}', '${orderItemImg.replace(/'/g, "\\'")}')">
+                                        onclick="acceptOrderAndGoToMessages(${order.id}, '${orderCode}', '${customerName.replace(/'/g, "\'")}', ${renterId}, '${orderItemName.replace(/'/g, "\'")}', '${orderItemImg.replace(/'/g, "\'")}')">
                                     <i class="fa-solid fa-boxes-packing me-1"></i> Accept &amp; Prepare Equipment
                                 </button>
-                            ` : (status === 'PREPARING' || status === 'MEETUP' || status === 'LOOKING_FOR_RIDER' || status === 'PICKUP' || status === 'ON_THE_WAY') ? `
-                                <button class="btn btn-sm text-white rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background:#10B981; border:none;" onclick="ownerConfirmHandover('${orderCode}')">
-                                    <i class="fa-solid fa-handshake me-1"></i> Confirm Handover
+                            ` : (status === 'PREPARING' || status === 'PROCESSING') ? `
+                                <button class="btn btn-sm text-dark rounded-pill py-2 px-3 fs-9 fw-extrabold w-100 shadow-xs" 
+                                        style="background: #FEF3C7; border: 1px solid #FDE68A; color: #92400E !important;" 
+                                        onclick="acceptOrderAndGoToMessages(${order.id}, '${orderCode}', '${customerName.replace(/'/g, "\'")}', ${renterId}, '${orderItemName.replace(/'/g, "\'")}', '${orderItemImg.replace(/'/g, "\'")}')">
+                                    <i class="fa-solid fa-camera me-1"></i> Step 2: Upload Prep Photo in Chat
                                 </button>
-                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${orderCode}')">
-                                    <i class="fa-solid fa-eye me-1"></i> Track
+                            ` : (status === 'MEETUP') ? `
+                                <button class="btn btn-sm text-primary rounded-pill py-2 px-3 fs-9 fw-extrabold w-100 shadow-xs" 
+                                        style="background: #EFF6FF; border: 1px solid #BFDBFE; color: #1D4ED8 !important;" 
+                                        onclick="acceptOrderAndGoToMessages(${order.id}, '${orderCode}', '${customerName.replace(/'/g, "\'")}', ${renterId}, '${orderItemName.replace(/'/g, "\'")}', '${orderItemImg.replace(/'/g, "\'")}')">
+                                    <i class="fa-solid fa-location-dot me-1"></i> Step 3: Set Campus Meetup Spot in Chat
                                 </button>
-                            ` : (status === 'IN_PROGRESS' || status === 'RENTED' || status === 'DELIVERED' || status === 'RETURN_DELIVERY') ? `
-                                <button class="btn btn-sm btn-primary rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background: linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(${order.id}, '${orderCode}')">
+                            ` : (status === 'HANDOVER' || status === 'LOOKING_FOR_RIDER' || status === 'PICKUP' || status === 'ON_THE_WAY') ? `
+                                <button class="btn btn-sm text-white rounded-pill py-2 px-3 fs-9 fw-extrabold w-100 shadow-xs" 
+                                        style="background: #10B981; border: none;" 
+                                        onclick="acceptOrderAndGoToMessages(${order.id}, '${orderCode}', '${customerName.replace(/'/g, "\'")}', ${renterId}, '${orderItemName.replace(/'/g, "\'")}', '${orderItemImg.replace(/'/g, "\'")}')">
+                                    <i class="fa-solid fa-handshake me-1"></i> Step 4: Complete Handover &amp; Start Timer in Chat
+                                </button>
+                            ` : (status === 'IN_PROGRESS' || status === 'RENTED' || status === 'DELIVERED' || status === 'RETURN_DELIVERY' || status === 'OVERDUE') ? `
+                                <button class="btn btn-sm text-white rounded-pill py-2 px-3 fs-9 fw-extrabold w-100 shadow-xs" 
+                                        style="background: linear-gradient(135deg, #10B981, #059669); border:none;" 
+                                        onclick="confirmRestockOrder(${order.id}, '${orderCode}')">
                                     <i class="fa-solid fa-circle-check me-1"></i> Mark Returned &amp; Restock
-                                </button>
-                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${orderCode}')">
-                                    <i class="fa-solid fa-eye me-1"></i> Track
                                 </button>
                             ` : `
                                 <div class="w-100 text-center py-1 text-success fs-9 fw-bold d-flex align-items-center justify-content-center gap-1.5">
@@ -5275,38 +5293,16 @@ if (document.readyState === 'loading') {
 }
 
 
-window.acceptOrderAndGoToMessages = async function (orderId, orderCode, customerName, renterId, itemName, itemImage) {
-    try {
-        let storedUser = null;
-        try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-        const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
-
-        const apiEndpoint = typeof getRentEaseApiUrl === 'function' ? getRentEaseApiUrl('step1_owner_agree') : '/student/rentease_api.php?action=step1_owner_agree';
-        await fetch(apiEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order_code: orderCode, owner_id: ownerId })
-        });
-    } catch (e) {
-        console.error('Error accepting order:', e);
-    }
-
-    // Refresh owner dashboard so the Rent Out tab updates immediately
-    if (typeof loadOwnerRentalDashboard === 'function') {
-        loadOwnerRentalDashboard(true);
-    }
-
-    // Transition directly to the Messages Tab
+window.acceptOrderAndGoToMessages = function (orderId, orderCode, customerName, renterId, itemName, itemImage) {
+    window.currentActiveChatOrderCode = orderCode;
     if (typeof switchTab === 'function') {
         switchTab('messages');
     }
-
-    // Open chat conversation with the renter
     setTimeout(() => {
         if (typeof checkAndOpenChat === 'function') {
-            checkAndOpenChat(renterId || 105, customerName || 'Campus Renter', itemName || 'Rental Equipment', '₱0.00', '', itemImage || '', true, 'You');
+            checkAndOpenChat(renterId || 105, customerName || 'Campus Renter', itemName || 'Rental Equipment', '₱0.00', '', itemImage || '', true, 'You', false, orderCode);
         } else if (typeof openChatWithRenter === 'function') {
             openChatWithRenter(customerName, '', orderCode);
         }
-    }, 250);
+    }, 150);
 };
