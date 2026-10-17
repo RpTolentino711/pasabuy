@@ -1454,6 +1454,30 @@ if ($action === 'admin_delete_equipment' || $action === 'delete_item' || $action
         exit;
     }
 
+    // Check if this item is currently under an active rental transaction
+    try {
+        $nameStmt = $db->prepare("SELECT name FROM `rental_inventory` WHERE `id` = ? LIMIT 1");
+        $nameStmt->execute([$id]);
+        $itemName = (string)$nameStmt->fetchColumn();
+
+        $checkStmt = $db->prepare("SELECT order_code, order_status FROM `rental_orders` 
+            WHERE (item_id = ? OR (LOWER(item_name) = LOWER(?) AND ? != ''))
+              AND UPPER(order_status) NOT IN ('COMPLETED', 'CANCELLED', 'REJECTED')
+              AND NOT (UPPER(order_status) IN ('RETURNED') OR UPPER(COALESCE(timer_status, '')) = 'COMPLETED' OR COALESCE(has_rated, 0) = 1)
+            LIMIT 1");
+        $checkStmt->execute([$id, $itemName, $itemName]);
+        $activeTx = $checkStmt->fetch();
+
+        if ($activeTx) {
+            echo json_encode([
+                'success' => false,
+                'blocked' => true,
+                'message' => "Cannot delete or take down equipment: '" . ($itemName ?: "Item #$id") . "' is currently under an active rental booking (" . $activeTx['order_code'] . "). Equipment cannot be deleted while under an active transaction."
+            ]);
+            exit;
+        }
+    } catch (Exception $eTxCheck) {}
+
     $stmt = $db->prepare("DELETE FROM `rental_inventory` WHERE `id` = ?");
     $stmt->execute([$id]);
     try {
@@ -1533,6 +1557,28 @@ if ($action === 'delete_item' || $action === 'take_down_item' || $action === 'ow
 
     if ($db) {
         try {
+            // Check if this item is currently under an active rental transaction
+            $nameStmt = $db->prepare("SELECT name FROM `rental_inventory` WHERE `id` = ? LIMIT 1");
+            $nameStmt->execute([$id]);
+            $itemName = (string)$nameStmt->fetchColumn();
+
+            $checkStmt = $db->prepare("SELECT order_code, order_status FROM `rental_orders` 
+                WHERE (item_id = ? OR (LOWER(item_name) = LOWER(?) AND ? != ''))
+                  AND UPPER(order_status) NOT IN ('COMPLETED', 'CANCELLED', 'REJECTED')
+                  AND NOT (UPPER(order_status) IN ('RETURNED') OR UPPER(COALESCE(timer_status, '')) = 'COMPLETED' OR COALESCE(has_rated, 0) = 1)
+                LIMIT 1");
+            $checkStmt->execute([$id, $itemName, $itemName]);
+            $activeTx = $checkStmt->fetch();
+
+            if ($activeTx) {
+                echo json_encode([
+                    'success' => false,
+                    'blocked' => true,
+                    'message' => "Cannot take down or delete equipment: '" . ($itemName ?: "Item #$id") . "' is currently under an active rental booking (" . $activeTx['order_code'] . "). Equipment cannot be deleted while under an active transaction."
+                ]);
+                exit;
+            }
+
             $stmt = $db->prepare("DELETE FROM `rental_inventory` WHERE `id` = ?");
             $stmt->execute([$id]);
 

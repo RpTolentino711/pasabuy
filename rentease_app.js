@@ -1853,10 +1853,24 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                                     onclick="openEditStockPriceModal(${item.id}, '${safeName}', ${parseFloat(item.price_per_day || 0)}, ${avail}, ${total})">
                                 <i class="fa-solid fa-pen-to-square me-1"></i> Edit Stock
                             </button>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1.5 fs-9 fw-bold" 
-                                    onclick="deleteUserRentalItem(${item.id}, '${safeName}')" title="Take Down Listing">
-                                <i class="fa-solid fa-ban me-1"></i> Take Down
-                            </button>
+                            ${(rented > 0 || (data.incoming_requests && data.incoming_requests.some(req => {
+                                const st = (req.order_status || '').toUpperCase();
+                                const isDone = (st === 'RETURNED' || st === 'COMPLETED' || req.timer_status === 'COMPLETED' || req.has_rated == 1 || st === 'CANCELLED' || st === 'REJECTED');
+                                const match = (req.item_id && parseInt(req.item_id) === parseInt(item.id)) || 
+                                              (req.item_name && req.item_name.toLowerCase() === (item.name || '').toLowerCase());
+                                return match && !isDone;
+                            }))) ? `
+                                <button class="btn btn-sm btn-light text-muted border rounded-pill px-2.5 py-1.5 fs-9 fw-bold" 
+                                        onclick="alert('⚠️ Action Blocked: You cannot delete or take down &quot;${safeName}&quot; because it is currently under an active rental transaction. Once the rental is returned and completed, you can take down this item.');" 
+                                        title="Cannot delete: Equipment is currently in active rental transaction">
+                                    <i class="fa-solid fa-lock me-1 text-warning"></i> In Booking
+                                </button>
+                            ` : `
+                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1.5 fs-9 fw-bold" 
+                                        onclick="deleteUserRentalItem(${item.id}, '${safeName}')" title="Take Down Listing">
+                                    <i class="fa-solid fa-ban me-1"></i> Take Down
+                                </button>
+                            `}
                         </div>
                     </div>
                     `;
