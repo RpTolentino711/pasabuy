@@ -2972,6 +2972,7 @@ if ($action === 'get_active_chat_rental') {
     $userId = (int)($data['user_id'] ?? $_GET['user_id'] ?? 104);
     $partnerId = (int)($data['partner_id'] ?? $_GET['partner_id'] ?? 105);
     $itemTitle = trim((string)($data['item_title'] ?? $_GET['item_title'] ?? ''));
+    $userEmail = strtolower(trim((string)($data['user_email'] ?? $_GET['user_email'] ?? '')));
 
     // Resolve emails
     $emailStmt = $db->prepare("SELECT `Id`, `Email` FROM `Users` WHERE `Id` IN (?, ?)");
@@ -2981,7 +2982,7 @@ if ($action === 'get_active_chat_rental') {
     foreach ($rows as $r) {
         $emails[(int)$r['Id']] = strtolower(trim($r['Email']));
     }
-    $uEmail = $emails[$userId] ?? ($userId == 104 ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com');
+    $uEmail = $userEmail ?: ($emails[$userId] ?? ($userId == 104 ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com'));
     $pEmail = $emails[$partnerId] ?? ($partnerId == 104 ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com');
 
     $sql = "SELECT ro.*, ri.image_url AS item_image 
@@ -3010,7 +3011,13 @@ if ($action === 'get_active_chat_rental') {
         exit;
     }
 
-    $isOwner = ($userId == $ord['owner_id'] || $uEmail == strtolower($ord['owner_email']));
+    // Precise Ownership Check:
+    // Only the true equipment stock owner (lender) has is_owner = true
+    $isOwner = ((int)$userId === (int)$ord['owner_id'] || (!empty($uEmail) && !empty($ord['owner_email']) && strtolower($uEmail) === strtolower($ord['owner_email'])));
+    // If requesting user is the renter, they can NEVER be the stock owner
+    if ((int)$userId === (int)$ord['renter_id'] || (!empty($uEmail) && !empty($ord['customer_email']) && strtolower($uEmail) === strtolower($ord['customer_email']))) {
+        $isOwner = false;
+    }
     $timerStatus = $ord['timer_status'] ?: 'NOT_STARTED';
     $timerStart = $ord['rental_timer_start'];
     $timerEnd = $ord['rental_timer_end'];
@@ -3191,9 +3198,15 @@ if ($action === 'step1_owner_agree') {
         exit;
     }
 
+    // Security check: Only the actual stock owner can agree to rent!
+    if ($ownerId && (int)$ownerId === (int)$order['renter_id']) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: Only the equipment stock owner can accept and confirm this rental request.']);
+        exit;
+    }
+
     $now = date('Y-m-d H:i:s');
     $itemName = $order['item_name'] ?: 'Equipment';
-    $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
+    $ownerName = $order['owner_name'] ?: 'Stock Owner';
     $renterId = (int)$order['renter_id'];
 
     $db->prepare("UPDATE `rental_orders` SET 
@@ -3235,9 +3248,14 @@ if ($action === 'step2_owner_submit_prep_photo') {
         exit;
     }
 
+    if ($ownerId && (int)$ownerId === (int)$order['renter_id']) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: Only the equipment stock owner can submit the preparation photo.']);
+        exit;
+    }
+
     $now = date('Y-m-d H:i:s');
     $itemName = $order['item_name'] ?: 'Equipment';
-    $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
+    $ownerName = $order['owner_name'] ?: 'Stock Owner';
     $renterId = (int)$order['renter_id'];
 
     $db->prepare("UPDATE `rental_orders` SET 
@@ -3274,6 +3292,11 @@ if ($action === 'step2_renter_confirm_prep') {
         exit;
     }
 
+    if ($renterId && (int)$renterId === (int)$order['owner_id']) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: Only the renter can accept equipment preparation.']);
+        exit;
+    }
+
     if (empty($order['prep_photo_url']) && empty($order['pickup_proof_photo'])) {
         echo json_encode(['success' => false, 'message' => 'Owner has not uploaded preparation photo yet.']);
         exit;
@@ -3281,7 +3304,7 @@ if ($action === 'step2_renter_confirm_prep') {
 
     $now = date('Y-m-d H:i:s');
     $itemName = $order['item_name'] ?: 'Equipment';
-    $renterName = $order['customer_name'] ?: 'Pogilameg Tester';
+    $renterName = $order['customer_name'] ?: 'Student Renter';
     $ownerId = (int)$order['owner_id'];
 
     $db->prepare("UPDATE `rental_orders` SET 
@@ -3323,9 +3346,14 @@ if ($action === 'step3_owner_set_meetup_location') {
         exit;
     }
 
+    if ($ownerId && (int)$ownerId === (int)$order['renter_id']) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: Only the equipment stock owner can designate the campus meetup location.']);
+        exit;
+    }
+
     $now = date('Y-m-d H:i:s');
     $itemName = $order['item_name'] ?: 'Equipment';
-    $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
+    $ownerName = $order['owner_name'] ?: 'Stock Owner';
     $renterId = (int)$order['renter_id'];
 
     $db->prepare("UPDATE `rental_orders` SET 
@@ -3359,6 +3387,11 @@ if ($action === 'step4_owner_handover_start_timer' || $action === 'agree_and_sta
     $order = $stmt->fetch();
     if (!$order) {
         echo json_encode(['success' => false, 'message' => 'Rental order not found.']);
+        exit;
+    }
+
+    if ($ownerId && (int)$ownerId === (int)$order['renter_id']) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: Only the equipment stock owner can perform handover and start the timer.']);
         exit;
     }
 

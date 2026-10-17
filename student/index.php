@@ -3521,7 +3521,7 @@
 
                             try {
                                 const activeTitle = document.getElementById('chatItemTitle')?.innerText || '';
-                                const res = await fetch(`/student/rentease_api.php?action=get_active_chat_rental&user_id=${currentUserId}&partner_id=${currentActiveChatSellerId}&item_title=${encodeURIComponent(activeTitle)}`);
+                                const res = await fetch(`/student/rentease_api.php?action=get_active_chat_rental&user_id=${currentUserId}&user_email=${encodeURIComponent(currentUserEmail)}&partner_id=${currentActiveChatSellerId}&item_title=${encodeURIComponent(activeTitle)}`);
                                 const data = await res.json();
 
                                 const reqBanner = document.getElementById('chatRentalRequestBanner');
@@ -3538,23 +3538,36 @@
                                 const ord = data.order;
                                 currentChatRentalOrder = ord;
 
-                                // Precise Ownership & Role Check
-                                const isOwner = (currentUserId === parseInt(ord.owner_id)) ||
-                                    (currentUserEmail && ord.owner_email && currentUserEmail === ord.owner_email.toLowerCase()) ||
-                                    (currentUserName.includes('romeo') && !currentUserName.includes('pogilameg') && !currentUserEmail.includes('pogilameg')) ||
-                                    (currentUserId === 104 && !currentUserEmail.includes('pogilameg') && !currentUserName.includes('pogilameg'));
+                                // Precise Ownership & Role Check:
+                                // Is the currently logged-in user the STOCK OWNER of this equipment?
+                                let isOwner = false;
+                                if (typeof ord.is_owner === 'boolean') {
+                                    isOwner = ord.is_owner;
+                                } else {
+                                    if (currentUserId && ord.owner_id && parseInt(currentUserId) === parseInt(ord.owner_id)) {
+                                        isOwner = true;
+                                    } else if (currentUserEmail && ord.owner_email && currentUserEmail === ord.owner_email.toLowerCase()) {
+                                        isOwner = true;
+                                    }
+                                }
 
-                                // Update Header Role Badge Dynamically (Never show Verified Lender on the Renter!)
+                                // Strict override: If current user is the renter, they are NOT the stock owner!
+                                if ((currentUserId && ord.renter_id && parseInt(currentUserId) === parseInt(ord.renter_id)) ||
+                                    (currentUserEmail && ord.customer_email && currentUserEmail === ord.customer_email.toLowerCase())) {
+                                    isOwner = false;
+                                }
+
+                                // Update Header Role Badge Dynamically (Describes the counterparty / chat partner)
                                 const partnerRoleBadge = document.getElementById('chatPartnerRoleBadge');
                                 if (partnerRoleBadge) {
                                     if (isOwner) {
-                                        // Romeo is viewing Pogilameg (Renter)
+                                        // Current user is Stock Owner -> Chat Partner is Student Renter
                                         partnerRoleBadge.innerHTML = '<i class="fa-solid fa-user me-0.5"></i>Student Renter';
                                         partnerRoleBadge.style.background = '#EDE9FE';
                                         partnerRoleBadge.style.color = '#5B3FA8';
                                         partnerRoleBadge.style.borderColor = '#DDD6FE';
                                     } else {
-                                        // Pogilameg is viewing Romeo (Stock Owner / Lender)
+                                        // Current user is Renter -> Chat Partner is Stock Owner & Lender
                                         partnerRoleBadge.innerHTML = '<i class="fa-solid fa-circle-check me-0.5"></i>Stock Owner & Lender';
                                         partnerRoleBadge.style.background = '#ECFDF5';
                                         partnerRoleBadge.style.color = '#059669';
@@ -3565,7 +3578,7 @@
                                 // Update Attached Equipment Card Details & Clear Owner Attribution
                                 const chatOwnerLabel = document.getElementById('chatItemOwnerLabel');
                                 if (chatOwnerLabel) {
-                                    chatOwnerLabel.innerText = '• Owner: ' + (ord.owner_name || 'Romeo Paolo Tolentino');
+                                    chatOwnerLabel.innerText = '• Owner: ' + (ord.owner_name || 'Stock Owner');
                                 }
                                 const itemTitleEl = document.getElementById('chatItemTitle');
                                 if (itemTitleEl && ord.item_name) {
@@ -3861,7 +3874,7 @@
 
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104)) : (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104);
 
                             try {
                                 const res = await fetch('/student/rentease_api.php?action=step1_owner_agree', {
@@ -3914,7 +3927,7 @@
 
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104)) : (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104);
 
                             try {
                                 const res = await fetch('/student/rentease_api.php?action=step2_owner_submit_prep_photo', {
@@ -3946,7 +3959,7 @@
 
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const renterId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 105) : 105;
+                            const renterId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || (currentChatRentalOrder ? currentChatRentalOrder.renter_id : 105)) : (currentChatRentalOrder ? currentChatRentalOrder.renter_id : 105);
 
                             try {
                                 const res = await fetch('/student/rentease_api.php?action=step2_renter_confirm_prep', {
@@ -3981,7 +3994,7 @@
 
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104)) : (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104);
 
                             try {
                                 const res = await fetch('/student/rentease_api.php?action=step3_owner_set_meetup_location', {
@@ -4013,7 +4026,7 @@
 
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104)) : (currentChatRentalOrder ? currentChatRentalOrder.owner_id : 104);
 
                             try {
                                 const res = await fetch('/student/rentease_api.php?action=step4_owner_handover_start_timer', {
@@ -4050,10 +4063,20 @@
                                 currentUserId = (currentUserEmail.includes('pogilameg') || currentUserName.includes('pogilameg')) ? 105 : 104;
                             }
 
-                            const isOwner = (currentUserId === parseInt(currentChatRentalOrder.owner_id)) ||
-                                (currentUserEmail && currentChatRentalOrder.owner_email && currentUserEmail === currentChatRentalOrder.owner_email.toLowerCase()) ||
-                                (currentUserName.includes('romeo') && !currentUserName.includes('pogilameg')) ||
-                                (currentUserId === 104 && !currentUserEmail.includes('pogilameg'));
+                            let isOwner = false;
+                            if (typeof currentChatRentalOrder.is_owner === 'boolean') {
+                                isOwner = currentChatRentalOrder.is_owner;
+                            } else {
+                                if (currentUserId && currentChatRentalOrder.owner_id && parseInt(currentUserId) === parseInt(currentChatRentalOrder.owner_id)) {
+                                    isOwner = true;
+                                } else if (currentUserEmail && currentChatRentalOrder.owner_email && currentUserEmail === currentChatRentalOrder.owner_email.toLowerCase()) {
+                                    isOwner = true;
+                                }
+                            }
+                            if ((currentUserId && currentChatRentalOrder.renter_id && parseInt(currentUserId) === parseInt(currentChatRentalOrder.renter_id)) ||
+                                (currentUserEmail && currentChatRentalOrder.customer_email && currentUserEmail === currentChatRentalOrder.customer_email.toLowerCase())) {
+                                isOwner = false;
+                            }
 
                             if (!isOwner) {
                                 alert("❌ Action not allowed: Only the equipment stock owner (lender) can report an unreturned item.");
