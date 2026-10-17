@@ -3083,7 +3083,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const renterConfirmedPrep = (parseInt(o.prep_confirmed_by_renter) === 1);
                 const hasMeetupLoc = (o.meetup_location && o.meetup_location.trim() !== '' && o.meetup_location !== 'Campus Handover Meetup');
                 const isHandedOver = (parseInt(o.handed_over) === 1 || o.rental_timer_start || st === 'DELIVERED' || st === 'IN_PROGRESS' || st === 'RENTED');
-                const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED');
+                const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED' || o.timer_status === 'COMPLETED' || parseInt(o.has_rated) === 1 || parseInt(o.rating) > 0);
 
                 let activeIdx = 0;
                 if (isReturned) activeIdx = 4;
@@ -5657,13 +5657,23 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         function renderOrderStatusBadgeWithTimer(o) {
             const st = (o.order_status || 'CONFIRMED').toUpperCase();
             const timerSt = (o.timer_status || 'NOT_STARTED').toUpperCase();
-            const isTimerRunning = (timerSt === 'RUNNING' || o.is_timer_running || (st === 'IN_PROGRESS' && o.rental_timer_start));
-            const isOverdue = (timerSt === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue);
-            const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED');
+            const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED' || timerSt === 'COMPLETED' || parseInt(o.has_rated) === 1 || parseInt(o.rating) > 0);
+            const isTimerRunning = (!isReturned && (timerSt === 'RUNNING' || o.is_timer_running || (st === 'IN_PROGRESS' && o.rental_timer_start)));
+            const isOverdue = (!isReturned && (timerSt === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue));
             const isHandoverReady = (st === 'HANDOVER_READY');
             const isRequested = (st === 'REQUESTED');
             const isPreparing = (st === 'PREPARING' || st === 'PROCESSING');
             const isMeetup = (st === 'MEETUP' || st === 'PICKUP' || st === 'ON_THE_WAY' || st === 'LOOKING_FOR_RIDER');
+
+            if (isReturned) {
+                return `
+                    <div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-check-double me-1 text-success"></i> Returned
+                        </span>
+                        <div class="fs-11 text-muted mt-0.5">Restocked</div>
+                    </div>`;
+            }
 
             if (isOverdue) {
                 return `
@@ -5688,15 +5698,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     </div>`;
             }
 
-            if (isReturned) {
-                return `
-                    <div>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-2 py-0.5">
-                            <i class="fa-solid fa-check-double me-1 text-success"></i> Returned
-                        </span>
-                        <div class="fs-11 text-muted mt-0.5">Restocked</div>
-                    </div>`;
-            }
 
             if (isHandoverReady) {
                 return `

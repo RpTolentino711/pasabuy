@@ -536,8 +536,9 @@ if ($action === 'get_dashboard') {
     foreach ($recentOrders as &$ro) {
         $st = strtoupper((string)($ro['order_status'] ?? 'CONFIRMED'));
         $timerSt = strtoupper((string)($ro['timer_status'] ?? 'NOT_STARTED'));
-        $ro['is_timer_running'] = ($timerSt === 'RUNNING' || ($st === 'IN_PROGRESS' && !empty($ro['rental_timer_start'])));
-        $ro['is_overdue'] = ($timerSt === 'EXPIRED' || $st === 'OVERDUE');
+        $roReturned = in_array($st, ['RETURNED', 'RETURN_DELIVERY', 'COMPLETED']) || $timerSt === 'COMPLETED' || (int)($ro['has_rated'] ?? 0) === 1 || (int)($ro['rating'] ?? 0) > 0;
+        $ro['is_timer_running'] = (!$roReturned && ($timerSt === 'RUNNING' || ($st === 'IN_PROGRESS' && !empty($ro['rental_timer_start']))));
+        $ro['is_overdue'] = (!$roReturned && ($timerSt === 'EXPIRED' || $st === 'OVERDUE'));
     }
     unset($ro);
     $recentTickets = $db->query("SELECT * FROM `rental_issues` ORDER BY `id` DESC LIMIT 6")->fetchAll();
@@ -740,6 +741,8 @@ if ($action === 'get_orders') {
     }
     if ($subtab === 'incoming') {
         $sql .= " AND (o.`order_status` IN ('PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'MEETUP', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY', 'REQUESTED', 'IN_PROGRESS', 'RENTED') OR o.`order_status` IS NULL)";
+        // Exclude orders that are actually returned/rated even if order_status wasn't updated
+        $sql .= " AND (o.`timer_status` IS NULL OR o.`timer_status` != 'COMPLETED') AND (o.`has_rated` IS NULL OR o.`has_rated` != 1)";
     } elseif ($subtab === 'history') {
         $sql .= " AND o.`order_status` IN ('DELIVERED', 'RETURN_DELIVERY', 'RETURNED', 'COMPLETED', 'CANCELLED', 'RIDER_CANCELLED')";
     }
@@ -760,21 +763,24 @@ if ($action === 'get_orders') {
     foreach ($orders as &$ord) {
         $st = strtoupper((string)($ord['order_status'] ?? 'CONFIRMED'));
         $timerSt = strtoupper((string)($ord['timer_status'] ?? 'NOT_STARTED'));
-        $isTimerActive = ($timerSt === 'RUNNING' || in_array($st, ['IN_PROGRESS', 'RENTED', 'DELIVERED']));
-        $isOverdue = ($timerSt === 'EXPIRED' || $st === 'OVERDUE');
+
+        // Check returned/rated FIRST — these should NEVER show as timer running or overdue
+        $isReturned = in_array($st, ['RETURNED', 'RETURN_DELIVERY', 'COMPLETED']) || $timerSt === 'COMPLETED' || (int)($ord['has_rated'] ?? 0) === 1 || (int)($ord['rating'] ?? 0) > 0;
+        $isTimerActive = (!$isReturned && ($timerSt === 'RUNNING' || in_array($st, ['IN_PROGRESS', 'RENTED', 'DELIVERED'])));
+        $isOverdue = (!$isReturned && ($timerSt === 'EXPIRED' || $st === 'OVERDUE'));
 
         $ord['is_timer_running'] = $isTimerActive;
         $ord['is_overdue'] = $isOverdue;
 
-        if ($isOverdue) {
+        if ($isReturned) {
+            $ord['step_number'] = 5;
+            $ord['step_name'] = 'Step 5: Returned & Restocked';
+        } elseif ($isOverdue) {
             $ord['step_number'] = 4;
             $ord['step_name'] = 'Step 4: Overdue (Expired)';
         } elseif ($isTimerActive) {
             $ord['step_number'] = 4;
             $ord['step_name'] = 'Step 4: In Hand (Timer Running)';
-        } elseif ($st === 'RETURNED' || $st === 'RETURN_DELIVERY' || $st === 'COMPLETED') {
-            $ord['step_number'] = 5;
-            $ord['step_name'] = 'Step 5: Returned & Restocked';
         } elseif (in_array($st, ['MEETUP', 'LOOKING_FOR_RIDER', 'PICKUP', 'ON_THE_WAY'])) {
             $ord['step_number'] = 3;
             $ord['step_name'] = 'Step 3: Campus Meetup & Coordination';
@@ -830,7 +836,7 @@ if ($action === 'get_order_details') {
     $renterConfirmed = (int)($order['prep_confirmed_by_renter'] ?? 0) === 1;
     $meetupSet = !empty($order['meetup_location']) && $order['meetup_location'] !== 'Campus Handover Meetup' && !empty($order['meetup_location_at']);
     $handedOver = (int)($order['handed_over'] ?? 0) === 1 || in_array($order['order_status'], ['DELIVERED', 'IN_PROGRESS', 'RENTED']);
-    $isReturned = in_array($order['order_status'], ['RETURNED', 'COMPLETED']);
+    $isReturned = in_array($order['order_status'], ['RETURNED', 'COMPLETED']) || ($order['timer_status'] === 'COMPLETED') || (int)($order['has_rated'] ?? 0) === 1 || (int)($order['rating'] ?? 0) > 0;
 
     if ($isReturned) {
         $order['step_number'] = 5;
@@ -849,15 +855,18 @@ if ($action === 'get_order_details') {
         $order['step_title'] = 'Step 1: Booking Confirmation';
     }
 
+
     if (!empty($order['rental_timer_end'])) {
         $endSec = strtotime($order['rental_timer_end']);
         $nowSec = time();
         $order['seconds_remaining'] = max(0, $endSec - $nowSec);
-        $order['is_overdue'] = ($endSec < $nowSec);
+        // Never mark as overdue if the order is already returned/rated/completed
+        $order['is_overdue'] = ($isReturned ? false : ($endSec < $nowSec));
     } else {
         $order['seconds_remaining'] = 0;
         $order['is_overdue'] = false;
     }
+
 
     echo json_encode([
         'success' => true,
@@ -1293,7 +1302,7 @@ if ($action === 'get_deliveries') {
         $renterConfirmed = (int)($d['prep_confirmed_by_renter'] ?? 0) === 1;
         $meetupSet = !empty($d['meetup_location']) && $d['meetup_location'] !== 'Campus Handover Meetup' && !empty($d['meetup_location_at']);
         $handedOver = (int)($d['handed_over'] ?? 0) === 1 || in_array($d['order_status'], ['DELIVERED', 'IN_PROGRESS', 'RENTED']);
-        $isReturned = in_array($d['order_status'], ['RETURNED', 'COMPLETED']);
+        $isReturned = in_array($d['order_status'], ['RETURNED', 'COMPLETED']) || ($d['timer_status'] ?? '') === 'COMPLETED' || (int)($d['has_rated'] ?? 0) === 1 || (int)($d['rating'] ?? 0) > 0;
 
         if ($isReturned) {
             $d['step_number'] = 5;
