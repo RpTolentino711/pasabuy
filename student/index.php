@@ -3736,6 +3736,20 @@
                                         // Current user is RENTER
                                         if (!hasRatedOrder) {
                                             if (renterRatingBox) renterRatingBox.style.setProperty('display', 'block', 'important');
+                                            // Restore any saved draft star/review from localStorage
+                                            try {
+                                                const orderKey = ord.order_code || window.currentActiveChatOrderCode || 'rental_draft';
+                                                const savedDraft = JSON.parse(localStorage.getItem('rentrating_draft_' + orderKey) || '{}');
+                                                if (savedDraft.star >= 1) {
+                                                    window.currentSelectedRentalStar = savedDraft.star;
+                                                    if (typeof window.setRentalStarRating === 'function') window.setRentalStarRating(savedDraft.star);
+                                                }
+                                                if (savedDraft.review) {
+                                                    const reviewEl = document.getElementById('chatRatingReviewText');
+                                                    if (reviewEl && !reviewEl.value) reviewEl.value = savedDraft.review;
+                                                }
+                                                if (typeof window.checkRentalRatingFormValidity === 'function') window.checkRentalRatingFormValidity();
+                                            } catch(e) {}
                                             if (ratedSuccessBox) ratedSuccessBox.style.setProperty('display', 'none', 'important');
                                             if (ownerWaitingBox) ownerWaitingBox.style.setProperty('display', 'none', 'important');
                                         } else {
@@ -5051,6 +5065,13 @@
 
                         window.setRentalStarRating = function(star) {
                             window.currentSelectedRentalStar = parseInt(star) || 0;
+                            // Persist star selection so it survives back-navigation
+                            try {
+                                const orderKey = window.currentActiveChatOrderCode || 'rental_draft';
+                                const draft = JSON.parse(localStorage.getItem('rentrating_draft_' + orderKey) || '{}');
+                                draft.star = window.currentSelectedRentalStar;
+                                localStorage.setItem('rentrating_draft_' + orderKey, JSON.stringify(draft));
+                            } catch(e) {}
                             const container = document.getElementById('chatRatingStarsContainer');
                             if (container) {
                                 const starBtns = container.querySelectorAll('.rentchat-star');
@@ -5137,6 +5158,12 @@
                                 });
                                 const data = await res.json();
                                 if (data && data.success) {
+                                    // Clear saved draft after successful submission
+                                    try {
+                                        const orderKey = currentChatRentalOrder.order_code || window.currentActiveChatOrderCode || 'rental_draft';
+                                        localStorage.removeItem('rentrating_draft_' + orderKey);
+                                    } catch(e) {}
+                                    window.currentSelectedRentalStar = 0;
                                     alert(data.message || 'Rating & review submitted successfully!');
                                     if (typeof checkAndRenderChatRentalTimer === 'function') {
                                         await checkAndRenderChatRentalTimer();

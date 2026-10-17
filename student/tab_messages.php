@@ -836,18 +836,18 @@
             </div>
         </div>
 
-                <!-- Owner Mark Returned & Restock Button (Visible for Stock Owner ONLY when rental is active and overdue is zero) -->
+                <!-- Owner Active Rental Row / Early Restock (Visible for Stock Owner ONLY when rental is actively running) -->
         <div id="chatTimerRestockRow" style="display:none !important;" class="pt-2 mt-2 border-top border-white border-opacity-15">
             <div class="d-flex align-items-center justify-content-between w-100 gap-2 flex-wrap">
                 <span class="fs-9 text-white d-flex align-items-center gap-1.5">
-                    <i class="fa-solid fa-circle-check text-success"></i>
-                    <span>Item received back from renter?</span>
+                    <i class="fa-solid fa-shield-halved text-success"></i>
+                    <span>Rental In Progress • Gear with student renter</span>
                 </span>
-                <button type="button" class="btn btn-sm rounded-pill px-3 py-1.5 fs-9 fw-extrabold text-white shadow-sm flex-grow-1 flex-sm-grow-0" 
-                        style="background: linear-gradient(135deg, #10B981, #059669); border:none;" 
+                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2.5 py-1 fs-9 fw-bold" 
+                        style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.35);" 
                         id="btnChatMarkReturnedRestock"
                         onclick="markRentalReturnedAndRestockFromChat()">
-                    <i class="fa-solid fa-boxes-packing me-1"></i> Mark Returned &amp; Restock
+                    <i class="fa-solid fa-boxes-packing me-1"></i> Early Return &amp; Restock
                 </button>
             </div>
         </div>
@@ -920,7 +920,7 @@
                 </label>
                 <textarea class="form-control rounded-3 p-2 fs-8 mb-2" id="chatRatingReviewText" rows="2" 
                           placeholder="Please describe item condition, pickup/return smoothness, and your overall experience..."
-                          oninput="checkRentalRatingFormValidity()"></textarea>
+                          oninput="checkRentalRatingFormValidity(); try { const ok=window.currentActiveChatOrderCode||'rental_draft'; const d=JSON.parse(localStorage.getItem('rentrating_draft_'+ok)||'{}'); d.review=this.value; localStorage.setItem('rentrating_draft_'+ok,JSON.stringify(d)); } catch(e) {}"></textarea>
 
                 <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold" id="btnSubmitRentalRating" onclick="submitRentalRatingFromChat()" disabled>
                     <i class="fa-solid fa-paper-plane me-1"></i> Submit Rating &amp; Review
