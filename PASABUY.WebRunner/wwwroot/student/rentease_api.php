@@ -115,6 +115,13 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `handed_over` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `handed_over_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
 
+    // Step 2 photo review attempts and feedback loop
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `prep_photo_attempts` INT DEFAULT 1"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `prep_status` VARCHAR(50) DEFAULT 'PENDING_UPLOAD'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `prep_feedback` TEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `prep_feedback_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `cancelled_by` VARCHAR(150) DEFAULT NULL"); } catch (Exception $e) {}
+
     try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `assigned_rider_name` VARCHAR(100) NULL DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("UPDATE `rental_orders` SET `assigned_rider_name` = NULL, `rider_name` = NULL, `rider_phone` = NULL, `rider_vehicle` = NULL WHERE `order_status` IN ('CONFIRMED', 'PREPARING', 'LOOKING_FOR_RIDER') OR `assigned_rider_id` IS NULL"); } catch (Exception $e) {}
 
@@ -2992,7 +2999,8 @@ if ($action === 'get_active_chat_rental') {
                OR (LOWER(ro.`customer_email`) = ? AND LOWER(ro.`owner_email`) = ?)
                OR (ro.`renter_id` = ? AND ro.`owner_id` = ?)
                OR (ro.`renter_id` = ? AND ro.`owner_id` = ?))
-              AND ro.`order_status` NOT IN ('RETURNED', 'CANCELLED', 'REJECTED')";
+              AND (ro.`order_status` NOT IN ('RETURNED', 'CANCELLED', 'REJECTED')
+                   OR (ro.`order_status` = 'CANCELLED' AND ro.`updated_at` >= NOW() - INTERVAL 1 DAY))";
     $params = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId];
 
     if ($itemTitle !== '' && stripos($itemTitle, 'Campus') === false && stripos($itemTitle, 'General') === false) {
@@ -3062,6 +3070,12 @@ if ($action === 'get_active_chat_rental') {
             'prep_photo_at' => $ord['prep_photo_at'] ?: '',
             'prep_confirmed_by_renter' => (int)($ord['prep_confirmed_by_renter'] ?: 0),
             'prep_confirmed_at' => $ord['prep_confirmed_at'] ?: '',
+            'prep_photo_attempts' => max(1, (int)($ord['prep_photo_attempts'] ?? 1)),
+            'prep_status' => $ord['prep_status'] ?? 'PENDING_UPLOAD',
+            'prep_feedback' => $ord['prep_feedback'] ?? '',
+            'prep_feedback_at' => $ord['prep_feedback_at'] ?? '',
+            'cancelled_by' => $ord['cancelled_by'] ?? '',
+            'cancellation_reason' => $ord['cancellation_reason'] ?? '',
             'meetup_location' => $ord['meetup_location'] ?: ($ord['delivery_address'] ?: ''),
             'meetup_location_at' => $ord['meetup_location_at'] ?: '',
             'handed_over' => (int)($ord['handed_over'] ?: 0),
@@ -3272,26 +3286,143 @@ if ($action === 'step2_owner_submit_prep_photo') {
     $itemName = $order['item_name'] ?: 'Equipment';
     $ownerName = $order['owner_name'] ?: 'Stock Owner';
     $renterId = (int)$order['renter_id'];
+    $attempts = max(1, (int)($order['prep_photo_attempts'] ?? 1));
 
     $db->prepare("UPDATE `rental_orders` SET 
         `prep_photo_url` = ?,
         `prep_photo_at` = ?,
+        `prep_status` = 'AWAITING_APPROVAL',
         `pickup_proof_photo` = ?,
         `pickup_proof_time` = ?
         WHERE `id` = ?")->execute([$photoUrl, $now, $photoUrl, $now, $order['id']]);
 
-    $chatMsg = "📷 STEP 2 PHOTO SUBMITTED: {$ownerName} uploaded condition proof of prepared {$itemName}! Renter: please inspect the gear photo and tap 'Accept & Confirm Equipment' to unlock chat and proceed to meetup.";
+    $chatMsg = "📷 STEP 2 PHOTO SUBMITTED (Attempt {$attempts} of 3): {$ownerName} uploaded condition proof of prepared {$itemName}! Renter: please inspect the gear photo and tap 'Looks Good! Accept & Proceed to Meetup' or request another photo if unsatisfied.";
     try {
         $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`) VALUES (?, ?, ?, ?, ?)")
             ->execute([$ownerId, $renterId, $ownerName, $chatMsg, $itemName]);
     } catch (Exception $eChat) {}
 
-    echo json_encode(['success' => true, 'message' => 'Equipment preparation photo submitted!']);
+    echo json_encode([
+        'success' => true, 
+        'attempts' => $attempts,
+        'message' => 'Equipment preparation photo submitted! Waiting for renter to approve.'
+    ]);
     exit;
 }
 
 // ----------------------------------------------------------
-// STEP 2B: RENTER CONFIRMS EQUIPMENT PREPARATION
+// STEP 2B: RENTER REQUESTS ANOTHER PHOTO / GIVES FEEDBACK
+// ----------------------------------------------------------
+if ($action === 'step2_renter_request_new_photo') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    $renterId = (int)($data['renter_id'] ?? 105);
+    $feedback = trim((string)($data['feedback'] ?? ''));
+
+    if (empty($feedback)) {
+        echo json_encode(['success' => false, 'message' => 'Please provide feedback explaining what you need changed in the photo.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmt->execute([$orderCode]);
+    $order = $stmt->fetch();
+    if (!$order) {
+        echo json_encode(['success' => false, 'message' => 'Rental order not found.']);
+        exit;
+    }
+
+    $currentAttempts = max(1, (int)($order['prep_photo_attempts'] ?? 1));
+    $nextAttempts = $currentAttempts + 1;
+    $now = date('Y-m-d H:i:s');
+    $itemName = $order['item_name'] ?: 'Equipment';
+    $renterName = $order['customer_name'] ?: 'Student Renter';
+    $ownerId = (int)$order['owner_id'];
+
+    $db->prepare("UPDATE `rental_orders` SET 
+        `prep_photo_attempts` = ?,
+        `prep_feedback` = ?,
+        `prep_feedback_at` = ?,
+        `prep_status` = 'FEEDBACK_RECEIVED',
+        `prep_photo_url` = NULL
+        WHERE `id` = ?")->execute([$nextAttempts, $feedback, $now, $order['id']]);
+
+    $chatMsg = "⚠️ PHOTO FEEDBACK (Attempt {$currentAttempts} of 3): {$renterName} requested another photo: \"{$feedback}\". Stock owner has been notified to submit replacement photo (Attempt {$nextAttempts} of 3).";
+    try {
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`) VALUES (?, ?, ?, ?, ?)")
+            ->execute([$renterId, $ownerId, $renterName, $chatMsg, $itemName]);
+    } catch (Exception $eChat) {}
+
+    echo json_encode([
+        'success' => true, 
+        'attempts' => $nextAttempts,
+        'message' => 'Feedback sent to stock owner! They will upload another photo.'
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// STEP 2C: MUTUAL CANCELLATION (ACCESSIBLE ON 3 ATTEMPTS)
+// ----------------------------------------------------------
+if ($action === 'step2_cancel_rental') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    $role = strtoupper(trim((string)($data['role'] ?? 'RENTER')));
+    $reason = trim((string)($data['reason'] ?? ''));
+
+    if (empty($reason)) {
+        echo json_encode(['success' => false, 'message' => 'Please provide an explanation reason for cancelling this rental.']);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+    $stmt->execute([$orderCode]);
+    $order = $stmt->fetch();
+    if (!$order) {
+        echo json_encode(['success' => false, 'message' => 'Rental order not found.']);
+        exit;
+    }
+
+    $now = date('Y-m-d H:i:s');
+    $itemName = $order['item_name'] ?: 'Equipment';
+    $ownerName = $order['owner_name'] ?: 'Stock Owner';
+    $renterName = $order['customer_name'] ?: 'Student Renter';
+    $ownerId = (int)$order['owner_id'];
+    $renterId = (int)$order['renter_id'];
+    $attempts = max(1, (int)($order['prep_photo_attempts'] ?? 1));
+
+    $cancelledBy = ($role === 'OWNER') 
+        ? "Stock Owner ({$ownerName})" 
+        : "Student Renter ({$renterName})";
+
+    $db->prepare("UPDATE `rental_orders` SET 
+        `order_status` = 'CANCELLED',
+        `cancelled_by` = ?,
+        `cancellation_reason` = ?,
+        `updated_at` = ?
+        WHERE `id` = ?")->execute([$cancelledBy, $reason, $now, $order['id']]);
+
+    $senderId = ($role === 'OWNER') ? $ownerId : $renterId;
+    $receiverId = ($role === 'OWNER') ? $renterId : $ownerId;
+    $senderName = ($role === 'OWNER') ? $ownerName : $renterName;
+
+    $chatMsg = "❌ RENTAL CANCELLED by {$cancelledBy} after {$attempts} photo attempt(s): \"{$reason}\". This rental booking has been cancelled.";
+    try {
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`) VALUES (?, ?, ?, ?, ?)")
+            ->execute([$senderId, $receiverId, $senderName, $chatMsg, $itemName]);
+    } catch (Exception $eChat) {}
+
+    echo json_encode([
+        'success' => true, 
+        'message' => 'Rental order successfully cancelled.'
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------
+// STEP 2D: RENTER CONFIRMS EQUIPMENT PREPARATION
 // ----------------------------------------------------------
 if ($action === 'step2_renter_confirm_prep') {
     if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
@@ -3325,10 +3456,11 @@ if ($action === 'step2_renter_confirm_prep') {
     $db->prepare("UPDATE `rental_orders` SET 
         `prep_confirmed_by_renter` = 1,
         `prep_confirmed_at` = ?,
+        `prep_status` = 'ACCEPTED',
         `order_status` = 'MEETUP'
         WHERE `id` = ?")->execute([$now, $order['id']]);
 
-    $chatMsg = "✅ STEP 2 ACCEPTED: {$renterName} inspected and accepted the prepared equipment! Chat is fully unlocked. Moving to Step 3: Stock owner will set the campus meetup location.";
+    $chatMsg = "✅ STEP 2 ACCEPTED: {$renterName} inspected and accepted the prepared equipment! Moving to Step 3: Stock owner will set the campus meetup location.";
     try {
         $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`) VALUES (?, ?, ?, ?, ?)")
             ->execute([$renterId, $ownerId, $renterName, $chatMsg, $itemName]);

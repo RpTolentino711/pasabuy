@@ -3654,6 +3654,26 @@
                                     // Default chat state: enabled
                                     if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'Type your message...'; }
                                     if (sendBtn) sendBtn.disabled = false;
+                                    const isCancelled = (ord.order_status === 'CANCELLED');
+                                    const cancelledBanner = document.getElementById('chatRentalCancelledBanner');
+                                    const cancelledByEl = document.getElementById('chatCancelledByText');
+                                    const cancelledReasonEl = document.getElementById('chatCancelledReasonText');
+                                    const lifecycleIndicator = document.getElementById('chatLifecycleProgressIndicator');
+
+                                    if (isCancelled) {
+                                        if (cancelledBanner) cancelledBanner.style.setProperty('display', 'block', 'important');
+                                        if (cancelledByEl) cancelledByEl.innerText = ord.cancelled_by ? `Cancelled by ${ord.cancelled_by}` : 'Cancelled after photo review';
+                                        if (cancelledReasonEl) cancelledReasonEl.innerText = `"${ord.cancellation_reason || 'Photo verification did not meet expectations after 3 attempts.'}"`;
+                                        if (lifecycleIndicator) lifecycleIndicator.style.setProperty('display', 'none', 'important');
+                                        if (step1Row) step1Row.style.setProperty('display', 'none', 'important');
+                                        if (step2Row) step2Row.style.setProperty('display', 'none', 'important');
+                                        if (step3Row) step3Row.style.setProperty('display', 'none', 'important');
+                                        if (step4Row) step4Row.style.setProperty('display', 'none', 'important');
+                                        return;
+                                    } else {
+                                        if (cancelledBanner) cancelledBanner.style.setProperty('display', 'none', 'important');
+                                        if (lifecycleIndicator) lifecycleIndicator.style.setProperty('display', 'flex', 'important');
+                                    }
 
                                     const ownerAgreed = (parseInt(ord.owner_agreed) === 1);
                                     const hasPrepPhoto = (ord.prep_photo_url && ord.prep_photo_url.trim() !== '');
@@ -3685,33 +3705,101 @@
                                     }
                                     // STEP 2: Equipment Preparation & Photo Proof
                                     else if (!renterConfirmedPrep) {
-                                        if (stepPill) { stepPill.innerText = 'Step 2 of 4 • Equipment Preparation'; stepPill.style.background = '#FEF3C7'; stepPill.style.color = '#B45309'; }
+                                        const attempts = Math.max(1, parseInt(ord.prep_photo_attempts || 1));
+                                        const prepStatus = ord.prep_status || (hasPrepPhoto ? 'AWAITING_APPROVAL' : 'PENDING_UPLOAD');
+                                        const hasFeedback = (prepStatus === 'FEEDBACK_RECEIVED' && ord.prep_feedback && ord.prep_feedback.trim() !== '');
+
+                                        if (stepPill) {
+                                            stepPill.innerText = `Step 2 of 4 • Equipment Preparation (Attempt ${attempts} of 3)`;
+                                            stepPill.style.background = '#FEF3C7';
+                                            stepPill.style.color = '#B45309';
+                                        }
                                         if (step2Row) step2Row.style.setProperty('display', 'block', 'important');
+
+                                        // Update attempt badges
+                                        const ownerUploadBadge = document.getElementById('chatStep2AttemptBadgeOwner');
+                                        if (ownerUploadBadge) ownerUploadBadge.innerText = `Attempt ${attempts} of 3`;
+                                        const ownerWaitingBadge = document.getElementById('chatStep2OwnerWaitingAttemptBadge');
+                                        if (ownerWaitingBadge) ownerWaitingBadge.innerText = `Attempt ${attempts} of 3`;
+                                        const renterActionBadge = document.getElementById('chatStep2AttemptBadgeRenter');
+                                        if (renterActionBadge) renterActionBadge.innerText = `Attempt ${attempts} of 3`;
+
+                                        // Cancellation buttons unlock at 3 or more attempts
+                                        const ownerCancelWrap = document.getElementById('btnOwnerCancelStep2Wrap');
+                                        if (ownerCancelWrap) ownerCancelWrap.style.display = (attempts >= 3) ? 'block' : 'none';
+                                        const ownerWaitingCancelWrap = document.getElementById('btnOwnerWaitingCancelStep2Wrap');
+                                        if (ownerWaitingCancelWrap) ownerWaitingCancelWrap.style.display = (attempts >= 3) ? 'block' : 'none';
+                                        const renterCancelBtn = document.getElementById('btnRenterCancelStep2');
+                                        if (renterCancelBtn) renterCancelBtn.style.display = (attempts >= 3) ? 'block' : 'none';
+
+                                        const step2OwnerUpload = document.getElementById('chatStep2OwnerUploadBox');
+                                        const step2OwnerWaiting = document.getElementById('chatStep2OwnerWaiting');
+                                        const step2OwnerFeedback = document.getElementById('chatStep2OwnerFeedbackAlert');
+                                        const step2FeedbackText = document.getElementById('chatStep2FeedbackText');
+                                        const step2FeedbackAttemptNum = document.getElementById('chatStep2FeedbackAttemptNum');
+                                        const step2OwnerThumb = document.getElementById('chatStep2OwnerSubmittedThumb');
+                                        const submitBtnText = document.getElementById('btnSubmitPrepPhotoText');
 
                                         if (isOwner) {
                                             if (step2Owner) step2Owner.style.setProperty('display', 'block', 'important');
                                             if (step2Renter) step2Renter.style.setProperty('display', 'none', 'important');
+
+                                            // Awaiting renter approval after submit
+                                            const awaitingRenter = (hasPrepPhoto && prepStatus !== 'FEEDBACK_RECEIVED');
+
+                                            if (awaitingRenter) {
+                                                // SHOW WAITING STATE FOR OWNER
+                                                if (step2OwnerUpload) step2OwnerUpload.style.display = 'none';
+                                                if (step2OwnerWaiting) step2OwnerWaiting.style.setProperty('display', 'block', 'important');
+                                                if (step2OwnerThumb) step2OwnerThumb.src = ord.prep_photo_url;
+                                            } else {
+                                                // SHOW UPLOAD / RE-UPLOAD FORM
+                                                if (step2OwnerWaiting) step2OwnerWaiting.style.setProperty('display', 'none', 'important');
+                                                if (step2OwnerUpload) step2OwnerUpload.style.display = 'block';
+
+                                                // Show feedback alert if renter requested another photo
+                                                if (hasFeedback) {
+                                                    if (step2OwnerFeedback) step2OwnerFeedback.style.setProperty('display', 'block', 'important');
+                                                    if (step2FeedbackText) step2FeedbackText.innerText = `"${ord.prep_feedback}"`;
+                                                    if (step2FeedbackAttemptNum) step2FeedbackAttemptNum.innerText = `Attempt ${Math.max(1, attempts - 1)}`;
+                                                    if (submitBtnText) submitBtnText.innerText = `Submit Replacement Photo (Attempt ${attempts} of 3)`;
+                                                } else {
+                                                    if (step2OwnerFeedback) step2OwnerFeedback.style.setProperty('display', 'none', 'important');
+                                                    if (submitBtnText) submitBtnText.innerText = `Submit Preparation Photo`;
+                                                }
+                                            }
                                         } else {
+                                            // Renter view
                                             if (step2Owner) step2Owner.style.setProperty('display', 'none', 'important');
                                             if (step2Renter) step2Renter.style.setProperty('display', 'block', 'important');
 
-                                            if (!hasPrepPhoto) {
+                                            const renterWaitNotice = document.getElementById('chatStep2RenterWaitingText');
+
+                                            if (!hasPrepPhoto || prepStatus === 'FEEDBACK_RECEIVED') {
                                                 // Renter must wait for photo proof; chat locked until owner uploads photo!
                                                 if (step2RenterWait) step2RenterWait.style.setProperty('display', 'flex', 'important');
                                                 if (step2RenterAction) step2RenterAction.style.setProperty('display', 'none', 'important');
                                                 if (chatInput) {
-                                                    chatInput.disabled = true;
-                                                    chatInput.placeholder = 'Chat locked: Stock owner is preparing equipment & uploading photo proof...';
+                                                     chatInput.disabled = true;
+                                                     chatInput.placeholder = hasFeedback 
+                                                         ? `Chat locked: Stock owner is taking a replacement photo (Attempt ${attempts} of 3)...` 
+                                                         : 'Chat locked: Stock owner is preparing equipment & uploading photo proof...';
                                                 }
                                                 if (sendBtn) sendBtn.disabled = true;
+                                                if (renterWaitNotice) {
+                                                    renterWaitNotice.innerText = hasFeedback
+                                                        ? `Feedback sent (Attempt ${Math.max(1, attempts - 1)} of 3). Stock owner is preparing a replacement photo.`
+                                                        : 'Stock owner is inspecting and packaging your gear. Chat will unlock once preparation photo is submitted.';
+                                                }
                                             } else {
-                                                // Photo uploaded! Renter can view photo & click Accept
+                                                // Photo uploaded! Renter can view photo & click Accept or Request Another Photo
                                                 if (step2RenterWait) step2RenterWait.style.setProperty('display', 'none', 'important');
                                                 if (step2RenterAction) step2RenterAction.style.setProperty('display', 'block', 'important');
                                                 if (prepImgDisplay) prepImgDisplay.src = ord.prep_photo_url;
                                             }
                                         }
                                     }
+
                                     // STEP 3: Campus Meetup Spot
                                     else if (!hasMeetupLoc) {
                                         if (stepPill) { stepPill.innerText = 'Step 3 of 4 • Campus Meetup Location'; stepPill.style.background = '#E0F2FE'; stepPill.style.color = '#0369A1'; }
@@ -4055,6 +4143,149 @@
                                 console.error('Step 2 submit photo error:', e);
                             } finally {
                                 if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Submit Preparation Photo'; }
+                            }
+                        };
+
+                                                // STEP 2: RENTER FEEDBACK & MUTUAL CANCELLATION HELPERS
+                        window.openStep2FeedbackModal = function () {
+                            if (!currentChatRentalOrder) return;
+                            const attempts = Math.max(1, parseInt(currentChatRentalOrder.prep_photo_attempts || 1));
+                            const pill = document.getElementById('step2FeedbackAttemptBadge');
+                            if (pill) pill.innerText = `Attempt ${attempts} of 3`;
+                            const inp = document.getElementById('step2FeedbackInput');
+                            if (inp) inp.value = '';
+                            const modalEl = document.getElementById('step2FeedbackModal');
+                            if (modalEl && window.bootstrap) {
+                                const m = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                                m.show();
+                            }
+                        };
+
+                        window.appendStep2FeedbackChip = function (text) {
+                            const inp = document.getElementById('step2FeedbackInput');
+                            if (!inp) return;
+                            const cur = inp.value.trim();
+                            inp.value = cur ? `${cur}; ${text}` : text;
+                            inp.focus();
+                        };
+
+                        window.executeStep2SendFeedback = async function () {
+                            if (!currentChatRentalOrder) return;
+                            const inp = document.getElementById('step2FeedbackInput');
+                            const feedback = inp ? inp.value.trim() : '';
+                            if (!feedback) {
+                                alert('Please describe what needs improvement or select a quick feedback reason.');
+                                return;
+                            }
+                            const btn = document.getElementById('btnSubmitStep2Feedback');
+                            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Sending...'; }
+
+                            let storedUser = null;
+                            try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+                            const renterId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || (currentChatRentalOrder ? currentChatRentalOrder.renter_id : 105)) : (currentChatRentalOrder ? currentChatRentalOrder.renter_id : 105);
+
+                            try {
+                                const res = await fetch('/student/rentease_api.php?action=step2_renter_request_new_photo', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        order_code: currentChatRentalOrder.order_code,
+                                        renter_id: renterId,
+                                        feedback: feedback
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    const modalEl = document.getElementById('step2FeedbackModal');
+                                    if (modalEl && window.bootstrap) {
+                                        const m = bootstrap.Modal.getInstance(modalEl);
+                                        if (m) m.hide();
+                                    }
+                                    await checkAndRenderChatRentalTimer();
+                                    await refreshActiveChatStream();
+                                } else {
+                                    alert(data.message || 'Failed to submit feedback.');
+                                }
+                            } catch(e) {
+                                console.error('Step 2 feedback error:', e);
+                            } finally {
+                                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Send Feedback'; }
+                            }
+                        };
+
+                        window.openStep2CancelModal = function (role) {
+                            if (!currentChatRentalOrder) return;
+                            window._step2CancelRole = role || 'RENTER';
+                            const container = document.getElementById('step2CancelQuickChips');
+                            if (container) {
+                                if (role === 'OWNER') {
+                                    container.innerHTML = `
+                                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size:0.65rem;" onclick="appendStep2CancelChip('Unable to satisfy renter condition requirements after 3 attempts')">Cannot meet expectations</button>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size:0.65rem;" onclick="appendStep2CancelChip('Equipment is no longer in optimal condition to rent out')">Equipment issue</button>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size:0.65rem;" onclick="appendStep2CancelChip('Decided not to rent out this item at this time')">Prefer not to rent out</button>
+                                    `;
+                                } else {
+                                    container.innerHTML = `
+                                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size:0.65rem;" onclick="appendStep2CancelChip('Equipment condition does not meet my expectations after 3 photo reviews')">Condition not met</button>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size:0.65rem;" onclick="appendStep2CancelChip('Photos remained unclear or unverified after 3 attempts')">Unclear photos</button>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size:0.65rem;" onclick="appendStep2CancelChip('Found an alternative equipment rental on campus')">Alternative found</button>
+                                    `;
+                                }
+                            }
+                            const inp = document.getElementById('step2CancelReasonInput');
+                            if (inp) inp.value = '';
+                            const modalEl = document.getElementById('step2CancelModal');
+                            if (modalEl && window.bootstrap) {
+                                const m = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                                m.show();
+                            }
+                        };
+
+                        window.appendStep2CancelChip = function (text) {
+                            const inp = document.getElementById('step2CancelReasonInput');
+                            if (!inp) return;
+                            const cur = inp.value.trim();
+                            inp.value = cur ? `${cur}; ${text}` : text;
+                            inp.focus();
+                        };
+
+                        window.executeStep2ConfirmCancellation = async function () {
+                            if (!currentChatRentalOrder) return;
+                            const inp = document.getElementById('step2CancelReasonInput');
+                            const reason = inp ? inp.value.trim() : '';
+                            if (!reason) {
+                                alert('Please explain why you choose to cancel this rental item.');
+                                return;
+                            }
+                            const btn = document.getElementById('btnConfirmCancelRental');
+                            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Cancelling...'; }
+
+                            try {
+                                const res = await fetch('/student/rentease_api.php?action=step2_cancel_rental', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        order_code: currentChatRentalOrder.order_code,
+                                        role: window._step2CancelRole || 'RENTER',
+                                        reason: reason
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    const modalEl = document.getElementById('step2CancelModal');
+                                    if (modalEl && window.bootstrap) {
+                                        const m = bootstrap.Modal.getInstance(modalEl);
+                                        if (m) m.hide();
+                                    }
+                                    await checkAndRenderChatRentalTimer();
+                                    await refreshActiveChatStream();
+                                } else {
+                                    alert(data.message || 'Failed to cancel rental order.');
+                                }
+                            } catch(e) {
+                                console.error('Step 2 cancellation error:', e);
+                            } finally {
+                                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-ban me-1"></i> Confirm Cancel'; }
                             }
                         };
 

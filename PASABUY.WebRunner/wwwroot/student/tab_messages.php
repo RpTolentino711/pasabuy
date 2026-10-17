@@ -501,8 +501,21 @@
             </div>
         </div>
 
+        <!-- RENTAL CANCELLED BANNER (Shown when order_status === 'CANCELLED') -->
+        <div id="chatRentalCancelledBanner" style="display:none !important;" class="alert alert-danger p-2.5 rounded-3 mb-2 text-start border-danger shadow-xs">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <div class="d-flex align-items-center gap-1.5 text-danger fw-extrabold fs-8">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    <span>Rental Agreement Cancelled</span>
+                </div>
+                <span class="badge bg-danger text-white" style="font-size:0.62rem;">Cancelled</span>
+            </div>
+            <div class="text-dark fw-bold mb-1" style="font-size:0.73rem;" id="chatCancelledByText">Cancelled by counterparty</div>
+            <div class="bg-white p-2 rounded-2 border border-danger-subtle text-secondary fst-italic" style="font-size:0.68rem;" id="chatCancelledReasonText">"Reason..."</div>
+        </div>
+
         <!-- STEP PROGRESS INDICATOR -->
-        <div class="d-flex align-items-center justify-content-between px-1 mb-2.5 pb-2 border-bottom border-indigo-subtle" style="font-size:0.68rem;">
+        <div id="chatLifecycleProgressIndicator" class="d-flex align-items-center justify-content-between px-1 mb-2.5 pb-2 border-bottom border-indigo-subtle" style="font-size:0.68rem;">
             <span class="fw-bold text-dark d-flex align-items-center gap-1.5">
                 <i class="fa-solid fa-list-check text-primary"></i> Handover Lifecycle
             </span>
@@ -541,25 +554,81 @@
 
         <!-- STEP 2: EQUIPMENT PREPARATION & PHOTO PROOF -->
         <div id="chatStep2Row" style="display:none !important;" class="mb-2">
-            <!-- Owner View: Upload Preparation Photo -->
+            <!-- Owner View: Upload Preparation Photo OR Waiting for Renter Approval -->
             <div id="chatStep2OwnerBox" style="display:none !important;">
-                <div class="p-2.5 rounded-3 border bg-light mb-2 text-start">
-                    <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-camera text-primary me-1"></i> Step 2: Equipment Preparation Photo</div>
-                    <div class="text-muted" style="font-size:0.68rem;">Inspect the equipment and upload a condition photo proof before meeting the renter:</div>
-                    <div class="mt-2 d-flex gap-2 align-items-center">
-                        <input type="file" id="prepPhotoFileInput" accept="image/*" class="d-none" onchange="handlePrepPhotoUpload(event)">
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fs-9 fw-bold" onclick="document.getElementById('prepPhotoFileInput').click()">
-                            <i class="fa-solid fa-upload me-1"></i> Choose / Take Photo
-                        </button>
-                        <span id="prepPhotoNameLabel" class="text-muted fs-9 text-truncate" style="max-width:140px;">No photo selected</span>
+                <!-- Sub-state A: Upload Photo (Initial or Re-upload after renter feedback) -->
+                <div id="chatStep2OwnerUploadBox" style="display:block;">
+                    <div class="p-2.5 rounded-3 border bg-light mb-2 text-start">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <div class="fw-bold text-dark fs-9"><i class="fa-solid fa-camera text-primary me-1"></i> Step 2: Equipment Preparation Photo</div>
+                            <span class="badge bg-warning text-dark" id="chatStep2AttemptBadgeOwner" style="font-size:0.62rem;">Attempt 1 of 3</span>
+                        </div>
+
+                        <!-- Feedback banner if renter requested another photo -->
+                        <div id="chatStep2OwnerFeedbackAlert" style="display:none !important;" class="alert alert-warning py-2 px-2.5 mb-2 rounded-3 border-warning shadow-2xs">
+                            <div class="d-flex align-items-center gap-1.5 fw-bold text-warning-emphasis" style="font-size:0.72rem;">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                <span>Renter Feedback (<span id="chatStep2FeedbackAttemptNum">Attempt 1</span>):</span>
+                            </div>
+                            <div id="chatStep2FeedbackText" class="mt-1 text-dark fw-medium fst-italic bg-white p-2 rounded-2 border border-warning-subtle" style="font-size:0.7rem;">
+                                "Photo is blurry, please show the lens clearly."
+                            </div>
+                            <div class="text-secondary mt-1" style="font-size:0.65rem;">
+                                Please upload another photo addressing the renter's notes above.
+                            </div>
+                        </div>
+
+                        <div class="text-muted" style="font-size:0.68rem;">Inspect the equipment and upload a condition photo proof before meeting the renter:</div>
+                        <div class="mt-2 d-flex gap-2 align-items-center">
+                            <input type="file" id="prepPhotoFileInput" accept="image/*" class="d-none" onchange="handlePrepPhotoUpload(event)">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fs-9 fw-bold" onclick="document.getElementById('prepPhotoFileInput').click()">
+                                <i class="fa-solid fa-upload me-1"></i> Choose / Take Photo
+                            </button>
+                            <span id="prepPhotoNameLabel" class="text-muted fs-9 text-truncate" style="max-width:140px;">No photo selected</span>
+                        </div>
+                        <div id="prepPhotoPreviewWrap" style="display:none !important;" class="mt-2 text-center">
+                            <img id="prepPhotoPreviewImg" src="" class="rounded-3 border" style="max-height:100px; max-width:100%; object-fit:contain;">
+                        </div>
                     </div>
-                    <div id="prepPhotoPreviewWrap" style="display:none !important;" class="mt-2 text-center">
-                        <img id="prepPhotoPreviewImg" src="" class="rounded-3 border" style="max-height:100px; max-width:100%; object-fit:contain;">
+                    <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold" id="btnSubmitPrepPhoto" onclick="executeStep2SubmitPhoto()" disabled>
+                        <i class="fa-solid fa-paper-plane me-1"></i> <span id="btnSubmitPrepPhotoText">Submit Preparation Photo</span>
+                    </button>
+                    <!-- Owner Cancellation Button (Unlocks if attempts >= 3) -->
+                    <div id="btnOwnerCancelStep2Wrap" style="display:none;" class="mt-2 text-center">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100 rounded-pill py-1.5 fw-bold" style="font-size:0.74rem;" onclick="openStep2CancelModal('OWNER')">
+                            <i class="fa-solid fa-ban me-1"></i> Cancel Rental (3 Attempts Reached)
+                        </button>
                     </div>
                 </div>
-                <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold" id="btnSubmitPrepPhoto" onclick="executeStep2SubmitPhoto()" disabled>
-                    <i class="fa-solid fa-paper-plane me-1"></i> Submit Preparation Photo
-                </button>
+
+                <!-- Sub-state B: Waiting for Renter Approval (After successful submit) -->
+                <div id="chatStep2OwnerWaiting" style="display:none !important;" class="rentchat-waiting-box p-3 rounded-3 text-start mb-2" style="background:#FFFDF5; border:1px solid #FDE68A;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size:0.76rem;">Waiting for Renter Approval</div>
+                                <div class="text-muted" style="font-size:0.65rem;">Waiting for renter to approve if the item looks good</div>
+                            </div>
+                        </div>
+                        <span class="badge bg-warning text-dark" id="chatStep2OwnerWaitingAttemptBadge" style="font-size:0.62rem;">Attempt 1 of 3</span>
+                    </div>
+                    <div class="text-center p-2 rounded-2 bg-white border mb-2">
+                        <img id="chatStep2OwnerSubmittedThumb" src="" class="rounded-2 border" style="max-height:120px; max-width:100%; object-fit:contain;">
+                        <div class="text-muted mt-1" style="font-size:0.63rem;">
+                            <i class="fa-solid fa-circle-check text-success me-1"></i> Submitted condition photo proof
+                        </div>
+                    </div>
+                    <div class="text-muted mb-1" style="font-size:0.66rem;">
+                        <i class="fa-solid fa-circle-info text-primary me-1"></i> The student renter is inspecting your item photo. If they approve, you'll proceed to Step 3 (Set Campus Meetup Spot). If they request another photo, you will receive their feedback here.
+                    </div>
+                    <!-- Owner Cancellation Button in Waiting State (Unlocks if attempts >= 3) -->
+                    <div id="btnOwnerWaitingCancelStep2Wrap" style="display:none;" class="mt-2 text-center">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100 rounded-pill py-1.5 fw-bold" style="font-size:0.74rem;" onclick="openStep2CancelModal('OWNER')">
+                            <i class="fa-solid fa-ban me-1"></i> Cancel Rental (3 Attempts Reached)
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Renter View: Waiting or Inspecting Photo -->
@@ -571,19 +640,30 @@
                     </div>
                     <div style="font-size:0.72rem;">
                         <div class="fw-bold text-dark">Equipment Being Prepared</div>
-                        <div class="text-muted mt-0.5">Stock owner is inspecting and packaging your gear. Chat will unlock once preparation photo is submitted.</div>
+                        <div class="text-muted mt-0.5" id="chatStep2RenterWaitingText">Stock owner is inspecting and packaging your gear. Chat will unlock once preparation photo is submitted.</div>
                     </div>
                 </div>
-                <!-- If photo is submitted, renter inspects and clicks "Accept" -->
+                <!-- If photo is submitted, renter inspects and clicks "Accept" or "Request Another Photo" -->
                 <div id="chatStep2RenterAction" style="display:none !important;" class="p-2.5 rounded-3 border bg-light text-start">
-                    <div class="fw-bold text-dark fs-9 mb-1"><i class="fa-solid fa-circle-check text-success me-1"></i> Equipment Ready - Review Photo</div>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold text-dark fs-9"><i class="fa-solid fa-circle-check text-success me-1"></i> Equipment Ready - Review Photo</div>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle" id="chatStep2AttemptBadgeRenter" style="font-size:0.62rem;">Attempt 1 of 3</span>
+                    </div>
                     <div class="text-muted mb-2" style="font-size:0.68rem;">Stock owner submitted this photo of your gear:</div>
                     <div class="text-center mb-2">
-                        <img id="chatPrepPhotoDisplayRenter" src="" class="rounded-3 border shadow-xs" style="max-height:120px; max-width:100%; object-fit:contain;">
+                        <img id="chatPrepPhotoDisplayRenter" src="" class="rounded-3 border shadow-xs" style="max-height:130px; max-width:100%; object-fit:contain;">
                     </div>
-                    <button type="button" class="btn btn-success w-100 rounded-pill py-2 fw-bold text-white fs-8" onclick="executeStep2RenterAccept()">
-                        <i class="fa-solid fa-thumbs-up me-1"></i> Looks Good! Accept &amp; Proceed to Meetup
-                    </button>
+                    <div class="d-flex flex-column gap-1.5">
+                        <button type="button" class="btn btn-success w-100 rounded-pill py-2 fw-bold text-white fs-8 shadow-xs" onclick="executeStep2RenterAccept()">
+                            <i class="fa-solid fa-thumbs-up me-1"></i> Looks Good! Accept &amp; Proceed to Meetup
+                        </button>
+                        <button type="button" class="btn btn-outline-warning w-100 rounded-pill py-1.5 fw-bold text-dark fs-8 border-warning-subtle" style="background:#FFFDF5;" onclick="openStep2FeedbackModal()">
+                            <i class="fa-solid fa-camera-rotate text-warning me-1"></i> Request Another Photo / Give Feedback
+                        </button>
+                        <button type="button" id="btnRenterCancelStep2" style="display:none;" class="btn btn-outline-danger w-100 rounded-pill py-1.5 fw-bold fs-8" onclick="openStep2CancelModal('RENTER')">
+                            <i class="fa-solid fa-ban me-1"></i> Cancel Rental (3 Attempts Reached)
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -858,6 +938,117 @@
     </div>
 </div>
 
+<!-- STEP 2: RENTER FEEDBACK & REQUEST ANOTHER PHOTO MODAL -->
+<div class="modal fade" id="step2FeedbackModal" tabindex="-1" aria-labelledby="step2FeedbackModalLabel" aria-hidden="true" style="z-index: 1075;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-white">
+            <div class="modal-header border-0 pb-1 pt-1 px-1 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                         style="width: 36px; height: 36px; background: #FFFBEB; color: #D97706;">
+                        <i class="fa-solid fa-camera-rotate fs-6"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-extrabold text-dark mb-0 fs-8">Request Another Photo</h6>
+                        <div class="text-muted" style="font-size: 0.65rem;">Stock owner will receive feedback &amp; re-upload</div>
+                    </div>
+                </div>
+                <span class="badge bg-warning text-dark" id="step2FeedbackAttemptBadge" style="font-size:0.65rem;">Attempt 1 of 3</span>
+            </div>
+
+            <div class="modal-body p-1 pt-2">
+                <div class="alert alert-light border p-2 rounded-3 mb-2" style="background: #FFFDF5; border-color: #FDE68A !important; font-size: 0.7rem; color: #92400E;">
+                    <i class="fa-solid fa-circle-info text-warning me-1"></i>
+                    Let the stock owner know what needs improvement or what angle/condition you want verified before accepting.
+                </div>
+
+                <!-- Quick Reasons Selection -->
+                <div class="mb-2">
+                    <label class="form-label text-dark fw-bold mb-1" style="font-size: 0.72rem;">Quick Feedback (Tap to fill):</label>
+                    <div class="d-flex flex-wrap gap-1">
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size: 0.65rem;" onclick="appendStep2FeedbackChip('Photo is blurry or poorly lit')">Blurry / Poor lighting</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size: 0.65rem;" onclick="appendStep2FeedbackChip('Please show back, ports & lens clearly')">Show other angles</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size: 0.65rem;" onclick="appendStep2FeedbackChip('Visible scratch or damage not in listing')">Scratch / wear concern</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size: 0.65rem;" onclick="appendStep2FeedbackChip('Please verify if charger / accessories are included')">Check accessories</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-0.5 px-2" style="font-size: 0.65rem;" onclick="appendStep2FeedbackChip('Item model or color looks different than listing')">Model mismatch</button>
+                    </div>
+                </div>
+
+                <!-- Custom Feedback Notes -->
+                <div class="mb-3">
+                    <label for="step2FeedbackInput" class="form-label text-dark fw-bold mb-1" style="font-size: 0.72rem;">Specific Notes / Request:</label>
+                    <textarea class="form-control rounded-3 fs-8" id="step2FeedbackInput" rows="3" 
+                              placeholder="e.g. Please show the screen powered on and lens condition clearly..."></textarea>
+                    <div class="text-muted mt-1" style="font-size:0.64rem;">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Max 3 attempts. If expectations are not met after 3 attempts, you and the owner can cancel.
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light rounded-pill flex-fill py-2 fw-semibold fs-8 text-secondary border" data-bs-dismiss="modal">
+                        Back to Review
+                    </button>
+                    <button type="button" class="btn btn-warning rounded-pill flex-fill py-2 fw-extrabold fs-8 text-dark shadow-xs" id="btnSubmitStep2Feedback" onclick="executeStep2SendFeedback()">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Send Feedback
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- STEP 2: MUTUAL CANCELLATION MODAL (ACCESSIBLE AT 3 ATTEMPTS) -->
+<div class="modal fade" id="step2CancelModal" tabindex="-1" aria-labelledby="step2CancelModalLabel" aria-hidden="true" style="z-index: 1080;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-white">
+            <div class="modal-header border-0 pb-1 pt-1 px-1 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                         style="width: 38px; height: 38px; background: #FEE2E2; color: #DC2626;">
+                        <i class="fa-solid fa-ban fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-extrabold text-danger mb-0 fs-8">Cancel Rental Agreement</h6>
+                        <div class="text-muted" style="font-size: 0.65rem;">3 photo review attempts reached</div>
+                    </div>
+                </div>
+                <span class="badge bg-danger text-white" style="font-size:0.65rem;">3 of 3 Attempts</span>
+            </div>
+
+            <div class="modal-body p-1 pt-2">
+                <div class="alert alert-danger p-2 rounded-3 mb-2.5 border-danger-subtle" style="font-size: 0.7rem;">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    Expectations were not met across 3 photo attempts. Both you and the counterparty can now cancel this rental order. Please explain why you chose to cancel.
+                </div>
+
+                <!-- Quick Reasons Selection -->
+                <div class="mb-2">
+                    <label class="form-label text-dark fw-bold mb-1" style="font-size: 0.72rem;">Reason for cancellation (Select or write below):</label>
+                    <div class="d-flex flex-wrap gap-1" id="step2CancelQuickChips">
+                        <!-- Populated dynamically based on role (Renter vs Stock Owner) -->
+                    </div>
+                </div>
+
+                <!-- Custom Explanation Textarea -->
+                <div class="mb-3">
+                    <label for="step2CancelReasonInput" class="form-label text-dark fw-bold mb-1" style="font-size: 0.72rem;">Explanation details:</label>
+                    <textarea class="form-control rounded-3 fs-8" id="step2CancelReasonInput" rows="3" 
+                              placeholder="Explain why you didn't like to rent out or rent the item..."></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light rounded-pill flex-fill py-2 fw-semibold fs-8 text-secondary border" data-bs-dismiss="modal">
+                        Keep Agreement
+                    </button>
+                    <button type="button" class="btn btn-danger rounded-pill flex-fill py-2 fw-extrabold fs-8 text-white shadow-xs" id="btnConfirmCancelRental" onclick="executeStep2ConfirmCancellation()">
+                        <i class="fa-solid fa-ban me-1"></i> Confirm Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- APP-WIDE INCOMING PROPOSAL POP-UP TOAST -->
 <div id="step1IncomingProposalToast" class="shadow-lg" style="display:none; position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1090; width: 92%; max-width: 440px; background: #ffffff; border: 1.5px solid #8B5CF6; border-radius: 16px; padding: 12px 14px; animation: slideDownBounce 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);">
     <div class="d-flex align-items-start gap-2.5">
@@ -896,3 +1087,4 @@
     100% { transform: translate(-50%, 0); opacity: 1; }
 }
 </style>
+
