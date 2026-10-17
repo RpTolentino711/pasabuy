@@ -194,6 +194,17 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `review_text` TEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `has_rated` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rated_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}
+
+    // Auto-heal any orders that have already been rated so they are marked as RETURNED / COMPLETED and NOT overdue
+    try {
+        $db->exec("UPDATE `rental_orders` 
+                   SET `order_status` = 'RETURNED', 
+                       `status_display` = 'Returned to Owner Stock', 
+                       `timer_status` = 'COMPLETED', 
+                       `is_overdue` = 0 
+                   WHERE (`has_rated` = 1 OR `rating` > 0) AND (`order_status` != 'RETURNED' OR `is_overdue` = 1 OR `timer_status` != 'COMPLETED')");
+    } catch (Exception $e) {}
 
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_reviews` (
@@ -1964,9 +1975,32 @@ if ($action === 'submit_rental_rating') {
         $orderCode = $order['order_code'];
         $itemName = $order['item_name'] ?: 'Campus Equipment';
 
-        // Update rental order with rating and review
-        $updOrder = $db->prepare("UPDATE `rental_orders` SET `has_rated` = 1, `rating` = ?, `review_text` = ?, `rated_at` = NOW() WHERE `id` = ?");
+        // Update rental order with rating and review, AND mark as RETURNED / COMPLETED / NOT OVERDUE
+        $updOrder = $db->prepare("UPDATE `rental_orders` 
+                                  SET `has_rated` = 1, 
+                                      `rating` = ?, 
+                                      `review_text` = ?, 
+                                      `rated_at` = NOW(),
+                                      `order_status` = 'RETURNED',
+                                      `status_display` = 'Returned to Owner Stock',
+                                      `timer_status` = 'COMPLETED',
+                                      `is_overdue` = 0
+                                  WHERE `id` = ?");
         $updOrder->execute([$rating, $reviewText, $oId]);
+
+        // Restock inventory if not already returned
+        if ($itemId > 0 && ($order['order_status'] ?? '') !== 'RETURNED') {
+            try {
+                $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + 1, `qty_rented` = GREATEST(0, `qty_rented` - 1) WHERE `id` = ?")->execute([$itemId]);
+            } catch (Exception $eDirectStock) {}
+        }
+
+        // Clean up / resolve any unreturned tickets in rental_unreturned_reports & rental_issues
+        try {
+            $db->prepare("UPDATE `rental_unreturned_reports` SET `status` = 'RESOLVED_RETURNED', `solution` = 'Item Has Returned', `returned_at` = NOW() WHERE `order_code` = ?")->execute([$orderCode]);
+            $db->prepare("UPDATE `rental_issues` SET `status` = 'RESOLVED', `status_display` = 'Resolved • Item Has Returned', `resolution_notes` = 'Item Has Returned - Renter rated and completed rental' WHERE `order_code` = ?")->execute([$orderCode]);
+            $db->prepare("UPDATE `Users` SET `rental_suspended_until` = NULL, `rental_suspension_reason` = NULL WHERE `rental_suspension_report_id` IN (SELECT id FROM `rental_unreturned_reports` WHERE `order_code` = ?)")->execute([$orderCode]);
+        } catch (Exception $eClean) {}
 
         // Insert into rental_reviews
         try {
@@ -3179,7 +3213,7 @@ if ($action === 'get_active_chat_rental') {
                OR (ro.`renter_id` = ? AND ro.`owner_id` = ?)
                OR (ro.`renter_id` = ? AND ro.`owner_id` = ?))
               AND (ro.`order_status` NOT IN ('RETURNED', 'CANCELLED', 'REJECTED')
-                   OR (ro.`order_status` = 'RETURNED' AND (ro.`has_rated` = 0 OR ro.`updated_at` >= NOW() - INTERVAL 3 DAY))
+                   OR (ro.`order_status` = 'RETURNED' AND (ro.`has_rated` = 0 OR ro.`rated_at` >= NOW() - INTERVAL 14 DAY OR ro.`updated_at` >= NOW() - INTERVAL 14 DAY))
                    OR (ro.`order_status` = 'CANCELLED' AND ro.`updated_at` >= NOW() - INTERVAL 1 DAY))";
     $params = [$uEmail, $pEmail, $pEmail, $uEmail, $userId, $partnerId, $partnerId, $userId];
 
@@ -3222,8 +3256,17 @@ if ($action === 'get_active_chat_rental') {
     $timerEnd = $ord['rental_timer_end'];
     $secondsRemaining = 0;
     $isOverdue = false;
+    $orderStatus = (string)($ord['order_status'] ?? 'CONFIRMED');
 
-    if ($timerStatus === 'RUNNING' && $timerEnd) {
+    $isReturnedOrRated = ($orderStatus === 'RETURNED' || (int)($ord['has_rated'] ?? 0) === 1 || (int)($ord['rating'] ?? 0) > 0);
+
+    if ($isReturnedOrRated) {
+        // Once returned or rated, the rental is permanently completed and CANNOT be overdue
+        $timerStatus = 'COMPLETED';
+        $isOverdue = false;
+        $secondsRemaining = 0;
+        $orderStatus = 'RETURNED';
+    } elseif ($timerStatus === 'RUNNING' && $timerEnd) {
         $endTime = strtotime($timerEnd);
         $diff = $endTime - time();
         if ($diff <= 0) {
@@ -3233,6 +3276,9 @@ if ($action === 'get_active_chat_rental') {
         } else {
             $secondsRemaining = $diff;
         }
+    } elseif ($orderStatus === 'OVERDUE' || $timerStatus === 'EXPIRED') {
+        $isOverdue = true;
+        $timerStatus = 'EXPIRED';
     }
 
     // Check if an unreturned equipment report / ticket exists for this order code
@@ -3271,7 +3317,7 @@ if ($action === 'get_active_chat_rental') {
             'rental_end_date' => $ord['rental_end_date'],
             'rental_days' => (int)$ord['rental_days'],
             'total_amount' => (float)$ord['total_amount'],
-            'order_status' => $ord['order_status'],
+            'order_status' => $orderStatus,
             'owner_agreed' => (int)$ord['owner_agreed'],
             'owner_agreed_at' => $ord['owner_agreed_at'],
             'prep_photo_url' => $ord['prep_photo_url'] ?: ($ord['pickup_proof_photo'] ?: ''),

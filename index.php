@@ -3583,19 +3583,51 @@
                                     if (chatItemFallback) chatItemFallback.style.display = 'none';
                                 }
 
-                                // 1. If order is RETURNED, show RETURNED & RATING BANNER
-                                if (ord.order_status === 'RETURNED') {
-                                    if (reqBanner) reqBanner.style.display = 'none';
-                                    if (timerBanner) timerBanner.style.display = 'none';
+                                const isOrderReturnedOrRated = (
+                                    ord.order_status === 'RETURNED' ||
+                                    parseInt(ord.has_rated) === 1 ||
+                                    parseInt(ord.rating) > 0
+                                );
+
+                                // 1. If order is RETURNED or RATED, show RETURNED & RATING BANNER (NEVER OVERDUE!)
+                                if (isOrderReturnedOrRated) {
+                                    if (reqBanner) reqBanner.style.setProperty('display', 'none', 'important');
+                                    if (timerBanner) {
+                                        timerBanner.style.setProperty('display', 'none', 'important');
+                                        timerBanner.classList.remove('is-overdue');
+                                    }
                                     if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
 
                                     const headerBar = document.querySelector('.rentchat-header-bar');
                                     const chatVw = document.getElementById('chatView');
-                                    if (timerBanner) timerBanner.classList.remove('is-overdue');
                                     if (headerBar) headerBar.classList.remove('is-overdue');
                                     if (chatVw) chatVw.classList.remove('is-overdue');
 
-                                    if (returnedBanner) returnedBanner.style.display = 'block';
+                                    const headerStepBadge = document.getElementById('chatHeaderStepBadge');
+                                    const headerActionBadge = document.getElementById('chatHeaderActionBadge');
+                                    const hasRatedOrder = (parseInt(ord.has_rated) === 1 || parseInt(ord.rating) > 0);
+
+                                    if (headerStepBadge) {
+                                        headerStepBadge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i>Completed';
+                                        headerStepBadge.style.background = '#DCFCE7';
+                                        headerStepBadge.style.color = '#15803D';
+                                        headerStepBadge.style.borderColor = '#86EFAC';
+                                    }
+                                    if (headerActionBadge) {
+                                        if (hasRatedOrder) {
+                                            headerActionBadge.innerHTML = '<i class="fa-solid fa-star text-warning me-1"></i>Rated';
+                                            headerActionBadge.style.background = '#FFFBEB';
+                                            headerActionBadge.style.color = '#B45309';
+                                            headerActionBadge.style.borderColor = '#FDE68A';
+                                        } else {
+                                            headerActionBadge.innerHTML = '<i class="fa-solid fa-clock me-1 text-primary"></i>Awaiting Rating';
+                                            headerActionBadge.style.background = '#EDE9FE';
+                                            headerActionBadge.style.color = '#5B3FA8';
+                                            headerActionBadge.style.borderColor = '#DDD6FE';
+                                        }
+                                    }
+
+                                    if (returnedBanner) returnedBanner.style.setProperty('display', 'block', 'important');
                                     const deleteSection = document.getElementById('chatReturnedDeleteSection');
 
                                     const returnedOrderCodeEl = document.getElementById('chatReturnedOrderCodeDisplay');
@@ -3666,12 +3698,12 @@
                                     if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'Type your message...'; }
                                     if (sendBtn) sendBtn.disabled = false;
                                 }
-                                // 2. If timer is running or overdue, show TIMER BANNER
-                                else if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
-                                    if (returnedBanner) returnedBanner.style.display = 'none';
-                                    if (headerDeleteBtn) headerDeleteBtn.style.display = 'none';
-                                    if (reqBanner) reqBanner.style.display = 'none';
-                                    if (timerBanner) timerBanner.style.display = 'block';
+                                // 2. If timer is running or overdue, show TIMER BANNER (ONLY IF NOT RETURNED/RATED!)
+                                else if (!isOrderReturnedOrRated && (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE')) {
+                                    if (returnedBanner) returnedBanner.style.setProperty('display', 'none', 'important');
+                                    if (headerDeleteBtn) headerDeleteBtn.style.setProperty('display', 'none', 'important');
+                                    if (reqBanner) reqBanner.style.setProperty('display', 'none', 'important');
+                                    if (timerBanner) timerBanner.style.setProperty('display', 'block', 'important');
 
                                     const isOrderOverdue = !!(ord.is_overdue || ord.timer_status === 'EXPIRED' || ord.order_status === 'OVERDUE' || (ord.rental_timer_end && new Date(ord.rental_timer_end).getTime() <= Date.now()));
                                     const headerBar = document.querySelector('.rentchat-header-bar');
@@ -3684,6 +3716,35 @@
                                         if (timerBanner) timerBanner.classList.remove('is-overdue');
                                         if (headerBar) headerBar.classList.remove('is-overdue');
                                         if (chatVw) chatVw.classList.remove('is-overdue');
+                                    }
+
+                                    const headerStepBadge = document.getElementById('chatHeaderStepBadge');
+                                    const headerActionBadge = document.getElementById('chatHeaderActionBadge');
+                                    if (headerStepBadge) {
+                                        if (isOrderOverdue) {
+                                            headerStepBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>Overdue';
+                                            headerStepBadge.style.background = '#FEE2E2';
+                                            headerStepBadge.style.color = '#B91C1C';
+                                            headerStepBadge.style.borderColor = '#FCA5A5';
+                                        } else {
+                                            headerStepBadge.innerHTML = 'Step 4 of 4 • In Rental';
+                                            headerStepBadge.style.background = '#ECFDF5';
+                                            headerStepBadge.style.color = '#059669';
+                                            headerStepBadge.style.borderColor = '#A7F3D0';
+                                        }
+                                    }
+                                    if (headerActionBadge) {
+                                        if (isOrderOverdue) {
+                                            headerActionBadge.innerHTML = '<i class="fa-solid fa-rotate-left me-1"></i>Return Required';
+                                            headerActionBadge.style.background = '#FEF2F2';
+                                            headerActionBadge.style.color = '#DC2626';
+                                            headerActionBadge.style.borderColor = '#FECACA';
+                                        } else {
+                                            headerActionBadge.innerHTML = '<i class="fa-solid fa-stopwatch me-1 text-success"></i>Active Timer';
+                                            headerActionBadge.style.background = '#F0FDF4';
+                                            headerActionBadge.style.color = '#15803D';
+                                            headerActionBadge.style.borderColor = '#BBF7D0';
+                                        }
                                     }
 
                                     // Chat input is always unlocked when rental is active
@@ -3717,11 +3778,18 @@
                                 } 
                                 // 3. Step-by-Step Lifecycle (Before Timer Starts)
                                 else {
-                                    if (returnedBanner) returnedBanner.style.display = 'none';
-                                    if (headerDeleteBtn) headerDeleteBtn.style.display = 'none';
-                                    if (timerBanner) timerBanner.style.display = 'none';
+                                    if (returnedBanner) returnedBanner.style.setProperty('display', 'none', 'important');
+                                    if (headerDeleteBtn) headerDeleteBtn.style.setProperty('display', 'none', 'important');
+                                    if (timerBanner) {
+                                        timerBanner.style.setProperty('display', 'none', 'important');
+                                        timerBanner.classList.remove('is-overdue');
+                                    }
                                     if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
-                                    if (reqBanner) reqBanner.style.display = 'block';
+                                    const headerBar = document.querySelector('.rentchat-header-bar');
+                                    const chatVw = document.getElementById('chatView');
+                                    if (headerBar) headerBar.classList.remove('is-overdue');
+                                    if (chatVw) chatVw.classList.remove('is-overdue');
+                                    if (reqBanner) reqBanner.style.setProperty('display', 'block', 'important');
 
                                     const codeEl = document.getElementById('chatReqOrderCode');
                                     if (codeEl) codeEl.innerText = ord.order_code;
@@ -3960,9 +4028,47 @@
                         }
 
                         function startChatTimerCountdown(endIsoString, isOwner) {
-                            if (chatRentalTimerInterval) clearInterval(chatRentalTimerInterval);
+                            if (chatRentalTimerInterval) {
+                                clearInterval(chatRentalTimerInterval);
+                                chatRentalTimerInterval = null;
+                            }
+
+                            const isOrderReturnedOrRated = (currentChatRentalOrder && (
+                                currentChatRentalOrder.order_status === 'RETURNED' ||
+                                parseInt(currentChatRentalOrder.has_rated) === 1 ||
+                                parseInt(currentChatRentalOrder.rating) > 0
+                            ));
+
+                            const timerBanner = document.getElementById('chatRentalTimerBanner');
+                            const headerBar = document.querySelector('.rentchat-header-bar');
+                            const chatVw = document.getElementById('chatView');
+
+                            if (isOrderReturnedOrRated) {
+                                if (timerBanner) {
+                                    timerBanner.style.setProperty('display', 'none', 'important');
+                                    timerBanner.classList.remove('is-overdue');
+                                }
+                                if (headerBar) headerBar.classList.remove('is-overdue');
+                                if (chatVw) chatVw.classList.remove('is-overdue');
+                                return;
+                            }
 
                             const updateDisplay = () => {
+                                const isStillReturnedOrRated = (currentChatRentalOrder && (
+                                    currentChatRentalOrder.order_status === 'RETURNED' ||
+                                    parseInt(currentChatRentalOrder.has_rated) === 1 ||
+                                    parseInt(currentChatRentalOrder.rating) > 0
+                                ));
+                                if (isStillReturnedOrRated) {
+                                    if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
+                                    if (timerBanner) {
+                                        timerBanner.style.setProperty('display', 'none', 'important');
+                                        timerBanner.classList.remove('is-overdue');
+                                    }
+                                    if (headerBar) headerBar.classList.remove('is-overdue');
+                                    if (chatVw) chatVw.classList.remove('is-overdue');
+                                    return;
+                                }
                                 const cdText = document.getElementById('chatLiveCountdownText');
                                 const badge = document.getElementById('chatLiveTimerBadge');
                                 const cdLabel = document.getElementById('chatCountdownLabel');
