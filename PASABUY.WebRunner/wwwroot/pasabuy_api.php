@@ -661,8 +661,8 @@ if ($action === 'chat_conversations') {
         $userMatchIds = ($userId === 104 || $userId === 1) ? [1, 104] : [$userId];
         $uIdsList = implode(',', $userMatchIds);
         $rOrdersSql = "SELECT ro.*, ri.image_url as item_image,
-                              uOwner.FirstName as OwnerFirstName, uOwner.LastName as OwnerLastName, spOwner.ProfileImage as OwnerProfileImage,
-                              uRenter.FirstName as RenterFirstName, uRenter.LastName as RenterLastName, spRenter.ProfileImage as RenterProfileImage
+                              spOwner.FirstName as OwnerFirstName, spOwner.LastName as OwnerLastName, spOwner.ProfileImage as OwnerProfileImage,
+                              spRenter.FirstName as RenterFirstName, spRenter.LastName as RenterLastName, spRenter.ProfileImage as RenterProfileImage
                        FROM rental_orders ro
                        LEFT JOIN rental_inventory ri ON ro.item_id = ri.id
                        LEFT JOIN Users uOwner ON ro.owner_id = uOwner.Id
@@ -692,12 +692,17 @@ if ($action === 'chat_conversations') {
                 $isOwner = $ownerIsUser;
             }
 
-            // Skip if this conversation has been deleted by this user
-            if ($isOwner && !empty($ro['chat_deleted_by_owner']) && (int)$ro['chat_deleted_by_owner'] === 1) {
-                continue;
-            }
-            if (!$isOwner && !empty($ro['chat_deleted_by_renter']) && (int)$ro['chat_deleted_by_renter'] === 1) {
-                continue;
+            // Skip if this conversation has been deleted by this user (ONLY IF COMPLETED/RATED/RETURNED)
+            $checkSt = strtoupper(trim((string)$ro['order_status']));
+            $checkRated = ((int)($ro['has_rated'] ?? 0) === 1 || (int)($ro['rating'] ?? 0) > 0);
+            $checkReturned = (in_array($checkSt, ['RETURNED', 'RETURN_DELIVERY', 'COMPLETED']) || ($ro['timer_status'] ?? '') === 'COMPLETED' || $checkRated);
+            if ($checkReturned || $checkRated) {
+                if ($isOwner && !empty($ro['chat_deleted_by_owner']) && (int)$ro['chat_deleted_by_owner'] === 1) {
+                    continue;
+                }
+                if (!$isOwner && !empty($ro['chat_deleted_by_renter']) && (int)$ro['chat_deleted_by_renter'] === 1) {
+                    continue;
+                }
             }
 
             $partnerId = $isOwner ? (int)$ro['renter_id'] : (int)$ro['owner_id'];
