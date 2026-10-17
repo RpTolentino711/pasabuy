@@ -1892,12 +1892,16 @@ if ($action === 'decide_item_appeal') {
 // 12. UNRETURNED EQUIPMENT REPORTS & 5-DAY SUSPENSIONS
 // ----------------------------------------------------------
 if ($action === 'get_unreturned_reports') {
-    if (!$db) { echo json_encode(['success' => true, 'reports' => []]); exit; }
+    if (!$db) { echo json_encode(['success' => true, 'reports' => [], 'pending_count' => 0, 'approved_count' => 0, 'dismissed_count' => 0]); exit; }
     
     $status = trim((string)($req['status'] ?? 'All'));
-    $sql = "SELECT r.*, u.rental_suspended_until, u.Status as renter_account_status 
+    $sql = "SELECT r.*, u.rental_suspended_until, u.Status as renter_account_status,
+                   ri.image_url AS item_image,
+                   ro.rental_start_date, ro.rental_end_date, ro.rental_days, ro.total_amount
             FROM `rental_unreturned_reports` r 
             LEFT JOIN `Users` u ON r.renter_id = u.Id 
+            LEFT JOIN `rental_inventory` ri ON r.item_id = ri.id
+            LEFT JOIN `rental_orders` ro ON r.order_code = ro.order_code
             WHERE 1=1";
     $params = [];
     if ($status !== 'All' && $status !== '') {
@@ -1911,11 +1915,15 @@ if ($action === 'get_unreturned_reports') {
     $reports = $stmt->fetchAll();
 
     $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'PENDING'")->fetchColumn();
+    $approvedCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'APPROVED'")->fetchColumn();
+    $dismissedCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'DISMISSED'")->fetchColumn();
 
     echo json_encode([
         'success' => true,
         'count' => count($reports),
         'pending_count' => $pendingCount,
+        'approved_count' => $approvedCount,
+        'dismissed_count' => $dismissedCount,
         'reports' => $reports
     ]);
     exit;

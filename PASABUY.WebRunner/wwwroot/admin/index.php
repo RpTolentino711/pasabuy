@@ -283,35 +283,85 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             transform: translateY(-1px);
         }
 
-        /* Sub-tab Pills matching ADMIN UI.png */
+        /* Sub-tab Pills matching Modern Admin Dashboard */
         .subtab-nav {
             display: flex;
-            gap: 8px;
-            border-bottom: 1px solid var(--admin-card-border);
-            padding-bottom: 12px;
-            margin-bottom: 20px;
+            gap: 10px;
+            border-bottom: 1px solid #E2E8F0;
+            padding-bottom: 14px;
+            margin-bottom: 22px;
+            overflow-x: auto;
+            flex-wrap: wrap;
         }
 
         .subtab-btn {
-            background: none;
-            border: none;
-            padding: 6px 14px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            padding: 8px 18px;
             font-size: 0.82rem;
             font-weight: 600;
             color: #64748B;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            border-radius: 20px;
+            transition: all 0.22s cubic-bezier(0.2, 0.9, 0.4, 1);
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            white-space: nowrap;
         }
 
         .subtab-btn:hover {
             color: var(--admin-primary);
-            background: #F1F5F9;
+            background: #F8FAFC;
+            border-color: #CBD5E1;
+            transform: translateY(-1px);
         }
 
         .subtab-btn.active {
-            color: var(--admin-primary);
-            background: #EDE9FE;
+            color: #FFFFFF !important;
+            background: linear-gradient(135deg, #5B3FA8 0%, #432C81 100%) !important;
+            border-color: #432C81 !important;
+            box-shadow: 0 4px 14px rgba(91, 63, 168, 0.3) !important;
             font-weight: 700;
+        }
+
+        .subtab-btn.active i {
+            color: #FFFFFF !important;
+        }
+
+        .subtab-btn.active .badge {
+            background: #FFFFFF !important;
+            color: #5B3FA8 !important;
+        }
+
+        /* Avatar circle badge */
+        .avatar-initials-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.75rem;
+            color: #FFFFFF;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        /* Proof thumbnail container */
+        .unret-proof-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1.5px solid #CBD5E1;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .unret-proof-thumb:hover {
+            transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+            border-color: #EF4444;
         }
 
         /* Status Badges */
@@ -1303,14 +1353,82 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
 
                 <!-- PANE 4: UNRETURNED EQUIPMENT REPORTS & 5-DAY SUSPENSIONS -->
                 <div id="supportPaneUnreturned" class="support-module-pane" style="display:none;">
-                    <div class="admin-table-card p-3">
-                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                            <div>
-                                <h6 class="fw-extrabold text-dark mb-0"><i class="fa-solid fa-triangle-exclamation text-danger me-1.5"></i>Unreturned Equipment Reports</h6>
-                                <p class="text-muted fs-9 mb-0">Equipment owners submit photo proof when a renter fails to return items on time. <strong>Approving applies a strict 5-day rental suspension</strong> on the renter across campus.</p>
+                    
+                    <!-- Moderation KPI Cards Row -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="card-stat p-3 d-flex align-items-center gap-3">
+                                <div class="stat-icon-wrapper flex-shrink-0" style="background:#FFFBEB; color:#D97706; border:1px solid #FDE68A;">
+                                    <i class="fa-solid fa-hourglass-half"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-muted fs-9 fw-bold text-uppercase" style="letter-spacing:0.5px;">Pending Action</div>
+                                    <div class="fw-extrabold fs-5 text-dark" id="unretStatPending">0</div>
+                                    <div class="fs-10 text-warning fw-semibold">Awaiting review</div>
+                                </div>
                             </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <select class="form-select form-select-sm" id="unreturnedFilterStatus" style="width:160px;" onchange="loadUnreturnedReports()">
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="card-stat p-3 d-flex align-items-center gap-3">
+                                <div class="stat-icon-wrapper flex-shrink-0" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA;">
+                                    <i class="fa-solid fa-ban"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-muted fs-9 fw-bold text-uppercase" style="letter-spacing:0.5px;">Active 5-Day Bans</div>
+                                    <div class="fw-extrabold fs-5 text-dark" id="unretStatBans">0</div>
+                                    <div class="fs-10 text-danger fw-semibold">Suspensions enforced</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="card-stat p-3 d-flex align-items-center gap-3">
+                                <div class="stat-icon-wrapper flex-shrink-0" style="background:#F0FDF4; color:#16A34A; border:1px solid #BBF7D0;">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-muted fs-9 fw-bold text-uppercase" style="letter-spacing:0.5px;">Cases Dismissed</div>
+                                    <div class="fw-extrabold fs-5 text-dark" id="unretStatDismissed">0</div>
+                                    <div class="fs-10 text-success fw-semibold">Resolved without ban</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="card-stat p-3 d-flex align-items-center gap-3" style="background:linear-gradient(135deg, #F8FAFC, #EFF6FF); border-left:4px solid #3B82F6;">
+                                <div class="stat-icon-wrapper flex-shrink-0" style="background:#DBEAFE; color:#2563EB;">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="fw-bold fs-8 text-dark mb-0.5">Campus 5-Day Ban Policy</div>
+                                    <div class="fs-10 text-muted" style="line-height:1.3;">Approving an overdue report immediately suspends the renter across campus for 5 days.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Table Card -->
+                    <div class="admin-table-card p-3 p-md-4 shadow-sm mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3 pb-3 border-bottom">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge rounded-pill bg-danger-subtle text-danger px-2.5 py-1 fw-bold fs-9">
+                                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Overdue Moderation
+                                    </span>
+                                    <h5 class="fw-extrabold text-dark mb-0 fs-6">Unreturned Equipment Reports</h5>
+                                </div>
+                                <p class="text-muted fs-9 mb-0">
+                                    Equipment owners submit incident notes and photo evidence when items are not returned on time. 
+                                    <span class="text-danger fw-bold">Approving enforces an immediate 5-day rental suspension</span> on the renter across campus.
+                                </p>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <div class="input-group input-group-sm" style="width:230px;">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted fs-9"></i></span>
+                                    <input type="text" class="form-control bg-light border-start-0 fs-9" id="unretSearchInput" placeholder="Search order, item, member..." oninput="filterUnreturnedTable()">
+                                </div>
+                                <select class="form-select form-select-sm fw-semibold text-secondary" id="unreturnedFilterStatus" style="width:160px;" onchange="loadUnreturnedReports()">
                                     <option value="All">All Reports</option>
                                     <option value="PENDING" selected>Pending Review</option>
                                     <option value="APPROVED">Approved (5-Day Ban)</option>
@@ -1320,22 +1438,22 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table table-custom mb-0">
+                            <table class="table table-hover table-custom align-middle mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Report #</th>
-                                        <th>Order Ref</th>
-                                        <th>Equipment Item</th>
-                                        <th>Equipment Owner</th>
-                                        <th>Reported Renter</th>
+                                        <th style="width:130px;">Report &amp; Order</th>
+                                        <th style="width:180px;">Equipment Item</th>
+                                        <th style="width:200px;">Stock Owner (Lender)</th>
+                                        <th style="width:200px;">Reported Renter</th>
                                         <th>Incident &amp; Photo Proof</th>
-                                        <th>5-Day Ban Status</th>
-                                        <th>Status</th>
-                                        <th width="190">Moderation Actions</th>
+                                        <th style="width:180px;">Status &amp; Enforcement</th>
+                                        <th style="width:160px;" class="text-end">Moderation Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="unreturnedReportsTableBody">
-                                    <tr><td colspan="9" class="text-center py-4 text-muted">Loading unreturned reports...</td></tr>
+                                    <tr><td colspan="7" class="text-center py-5 text-muted">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading unreturned reports...
+                                    </td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -2193,7 +2311,117 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         </div>
     </div>
 
-    <!-- Bootstrap 5 Bundle JS -->
+        <!-- MODAL 1: APPROVE UNRETURNED REPORT & ENFORCE 5-DAY SUSPENSION -->
+    <div class="modal fade" id="unretApproveModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden">
+                <div class="modal-header border-0 pb-0" style="background:#FEF2F2;">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:38px; height:38px; background:linear-gradient(135deg, #EF4444, #B91C1C);">
+                            <i class="fa-solid fa-gavel fs-7"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-extrabold text-dark mb-0 fs-7">Enforce 5-Day Rental Suspension</h6>
+                            <span class="fs-9 text-danger fw-bold">Campus Equipment Violation Enforcement</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <input type="hidden" id="unretApproveReportId" value="0">
+                    <div class="p-3 rounded-3 mb-3" style="background:#FFF5F5; border:1px solid #FECACA;">
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom border-danger-subtle">
+                            <span class="text-muted">Report Reference:</span>
+                            <strong class="text-dark font-monospace" id="unretApproveModalReportId">#UNR-0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom border-danger-subtle">
+                            <span class="text-muted">Rental Order:</span>
+                            <span class="badge bg-light text-primary border font-monospace fw-bold" id="unretApproveModalOrderCode">#RE-0</span>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom border-danger-subtle">
+                            <span class="text-muted">Equipment Item:</span>
+                            <strong class="text-dark" id="unretApproveModalItemName">Equipment</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-9">
+                            <span class="text-muted">Reported Student:</span>
+                            <strong class="text-danger" id="unretApproveModalRenterName">Student</strong>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger py-2 px-3 fs-9 mb-3 rounded-3 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation fs-6 flex-shrink-0"></i>
+                        <div>
+                            <strong>Strict 5-Day Suspension Policy:</strong> Approving will immediately ban <span id="unretApproveModalRenterAlertName" class="fw-bold">the renter</span> from renting any equipment on campus for 5 days.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1">Admin Enforcement Notes</label>
+                        <textarea class="form-control fs-8" id="unretApproveAdminNotes" rows="2" placeholder="Enter notes for this suspension..."></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold" id="btnConfirmApproveUnret" onclick="confirmApproveUnreturned()">
+                            <i class="fa-solid fa-gavel me-1"></i> Apply 5-Day Suspension
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: VIEW HIGH-RES PHOTO EVIDENCE -->
+    <div class="modal fade" id="unretPhotoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden bg-dark text-white">
+                <div class="modal-header border-0 bg-dark py-2 px-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-camera text-danger fs-7"></i>
+                        <h6 class="fw-bold mb-0 text-white fs-8" id="unretPhotoModalTitle">Photo Evidence</h6>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a id="unretPhotoDownloadBtn" href="#" target="_blank" download="unreturned_evidence.jpg" class="btn btn-sm btn-outline-light rounded-pill px-2.5 py-0.5 fs-9">
+                            <i class="fa-solid fa-download me-1"></i> Open Original
+                        </a>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                </div>
+                <div class="modal-body p-0 text-center bg-black d-flex align-items-center justify-content-center" style="min-height:360px; max-height:75vh; overflow:hidden;">
+                    <img id="unretPhotoModalImg" src="" style="max-height:75vh; max-width:100%; object-fit:contain;" alt="Photo Evidence">
+                </div>
+                <div class="modal-footer border-0 bg-dark py-2 px-3 d-flex justify-content-between align-items-center fs-9 text-white-50">
+                    <span id="unretPhotoModalSubtitle">Owner submitted photo evidence for unreturned gear dispute.</span>
+                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: VIEW COMPREHENSIVE CASE FILE -->
+    <div class="modal fade" id="unretCaseFileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden">
+                <div class="modal-header border-0 pb-0" style="background:#F8FAFC;">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width:38px; height:38px; background:linear-gradient(135deg, #5B3FA8, #432C81);">
+                            <i class="fa-solid fa-folder-open fs-7"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-extrabold text-dark mb-0 fs-7" id="unretCaseModalTitle">Case File #UNR-0</h6>
+                            <span class="fs-9 text-muted" id="unretCaseModalSubtitle">Unreturned Equipment Dispute &amp; Moderation Record</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-3" id="unretCaseModalBody">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+<!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- ==========================================================
@@ -4613,132 +4841,462 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         // ----------------------------------------------------------
         // UNRETURNED EQUIPMENT REPORTS & 5-DAY SUSPENSIONS
         // ----------------------------------------------------------
+        // UNRETURNED EQUIPMENT & 5-DAY SUSPENSION MODERATION
+        // ----------------------------------------------------------
+        window._allUnreturnedReports = [];
+
+        function getAvatarInitials(name) {
+            if (!name) return "U";
+            const parts = name.trim().split(" ");
+            if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
         async function loadUnreturnedReports() {
-            const status = document.getElementById('unreturnedFilterStatus')?.value || 'All';
-            const tbody = document.getElementById('unreturnedReportsTableBody');
+            const status = document.getElementById("unreturnedFilterStatus")?.value || "All";
+            const tbody = document.getElementById("unreturnedReportsTableBody");
             if (!tbody) return;
 
             try {
                 const res = await fetch(`${API_URL}?action=get_unreturned_reports&status=${encodeURIComponent(status)}`);
                 const data = await res.json();
 
-                const uBadge = document.getElementById('adminUnreturnedBadge');
+                const uBadge = document.getElementById("adminUnreturnedBadge");
                 if (uBadge) {
                     const pCnt = parseInt(data.pending_count || 0);
                     if (pCnt > 0) {
                         uBadge.innerText = pCnt;
-                        uBadge.style.display = 'inline-block';
+                        uBadge.style.display = "inline-block";
                     } else {
-                        uBadge.style.display = 'none';
+                        uBadge.style.display = "none";
                     }
                 }
 
-                if (data.success && data.reports && data.reports.length > 0) {
-                    tbody.innerHTML = data.reports.map(r => {
-                        const safeRenterName = (r.renter_name || 'Renter').replace(/'/g, "\\'");
-                        const safeItemName = (r.item_name || 'Equipment').replace(/'/g, "\\'");
+                // Update KPI Cards
+                const statPending = document.getElementById("unretStatPending");
+                const statBans = document.getElementById("unretStatBans");
+                const statDismissed = document.getElementById("unretStatDismissed");
+                if (statPending) statPending.innerText = data.pending_count ?? 0;
+                if (statBans) statBans.innerText = data.approved_count ?? 0;
+                if (statDismissed) statDismissed.innerText = data.dismissed_count ?? 0;
 
-                        let banBadge = '<span class="badge bg-light text-muted border fs-9">No Ban</span>';
-                        if (r.status === 'APPROVED') {
-                            banBadge = `<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>SUSPENDED (5 Days)</span><div class="fs-9 text-muted mt-0.5">Until ${r.suspended_until || '5 days'}</div>`;
-                        } else if (r.status === 'PENDING') {
-                            banBadge = '<span class="badge bg-warning text-dark fs-9 fw-bold"><i class="fa-solid fa-clock me-1"></i>Pending Review</span>';
-                        }
-
-                        return `
-                            <tr>
-                                <td class="fw-bold text-muted">#UNR-${r.id}</td>
-                                <td><span class="badge bg-light text-primary border font-monospace fs-9 fw-bold">${r.order_code || 'N/A'}</span></td>
-                                <td>
-                                    <div class="fw-bold text-dark fs-8">${r.item_name || 'Equipment'}</div>
-                                    <div class="fs-9 text-muted">Item ID: ${r.item_id || 'N/A'}</div>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark fs-8">${r.owner_name}</div>
-                                    <div class="fs-9 text-muted">${r.owner_email || ''}</div>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark fs-8">${r.renter_name}</div>
-                                    <div class="fs-9 text-muted">${r.renter_email || ''}</div>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-danger fs-8">${r.reason || 'Unreturned'}</div>
-                                    <div class="fs-9 text-dark" style="max-width:220px; word-break:break-word;">${r.details || 'No additional details.'}</div>
-                                    ${r.photo_url ? `<a href="${r.photo_url}" target="_blank" class="badge bg-danger-subtle text-danger fs-9 mt-1 text-decoration-none d-inline-flex align-items-center gap-1"><i class="fa-solid fa-camera"></i> View Photo Proof</a>` : ''}
-                                </td>
-                                <td>${banBadge}</td>
-                                <td>
-                                    <span class="badge ${r.status === 'APPROVED' ? 'bg-danger-subtle text-danger' : (r.status === 'DISMISSED' ? 'bg-light text-muted border' : 'bg-warning-subtle text-warning')} fs-9">
-                                        ${r.status}
-                                    </span>
-                                </td>
-                                <td>
-                                    ${r.status === 'PENDING' ? `
-                                        <div class="d-flex gap-1 flex-wrap">
-                                            <button class="btn btn-sm btn-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="adminApproveUnreturned(${r.id}, '${safeRenterName}', '${safeItemName}')">
-                                                <i class="fa-solid fa-gavel me-1"></i>Approve & Suspend (5d)
-                                            </button>
-                                            <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 fs-9 text-secondary" onclick="adminDismissUnreturned(${r.id})">
-                                                <i class="fa-solid fa-xmark me-1"></i>Dismiss
-                                            </button>
-                                        </div>
-                                    ` : `
-                                        <span class="fs-9 text-muted"><i class="fa-solid fa-check-double me-1"></i>Reviewed</span>
-                                    `}
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No unreturned equipment reports found.</td></tr>';
-                }
+                window._allUnreturnedReports = (data.success && Array.isArray(data.reports)) ? data.reports : [];
+                renderUnreturnedReportsTable(window._allUnreturnedReports);
             } catch (e) {
                 console.error("loadUnreturnedReports error:", e);
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed to load reports: ${e.message}</td></tr>`;
             }
         }
 
-        async function adminApproveUnreturned(reportId, renterName, itemName) {
-            const promptMsg = `Approve unreturned item report for "${itemName}" against "${renterName}"?\n\nRENT-EASE POLICY:\n• Renter "${renterName}" will be IMMEDIATELY SUSPENDED from renting any items on campus for 5 DAYS.\n• The renter can submit an appeal if they have proof of return.\n\nEnter admin notes or confirmation:`;
-            const notes = prompt(promptMsg, 'Unreturned equipment confirmed with owner photo proof. 5-day rental suspension enforced.');
-            if (notes === null) return;
+        function filterUnreturnedTable() {
+            const q = (document.getElementById("unretSearchInput")?.value || "").toLowerCase().trim();
+            if (!q) {
+                renderUnreturnedReportsTable(window._allUnreturnedReports);
+                return;
+            }
+            const filtered = (window._allUnreturnedReports || []).filter(r => {
+                const orderCode = (r.order_code || "").toLowerCase();
+                const itemName = (r.item_name || "").toLowerCase();
+                const owner = (r.owner_name || "").toLowerCase() + " " + (r.owner_email || "").toLowerCase();
+                const renter = (r.renter_name || "").toLowerCase() + " " + (r.renter_email || "").toLowerCase();
+                const details = (r.details || "").toLowerCase();
+                const reason = (r.reason || "").toLowerCase();
+                return orderCode.includes(q) || itemName.includes(q) || owner.includes(q) || renter.includes(q) || details.includes(q) || reason.includes(q);
+            });
+            renderUnreturnedReportsTable(filtered);
+        }
+
+        function renderUnreturnedReportsTable(reports) {
+            const tbody = document.getElementById("unreturnedReportsTableBody");
+            if (!tbody) return;
+
+            if (!Array.isArray(reports) || reports.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-circle-check fs-2 text-success opacity-50 d-block mb-2"></i>
+                            <div class="fw-bold text-dark fs-8">No unreturned equipment reports</div>
+                            <span class="fs-9 text-muted">All equipment rentals are settled on time or no reports match the current filter.</span>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = reports.map(r => {
+                const safeRenterName = (r.renter_name || "Renter").replace(/"/g, "&quot;").replace(/'/g, "\'");
+                const safeItemName = (r.item_name || "Equipment").replace(/"/g, "&quot;").replace(/'/g, "\'");
+                const safeOrderCode = (r.order_code || "RE-0").replace(/"/g, "&quot;").replace(/'/g, "\'");
+                const safeRenterEmail = (r.renter_email || "").replace(/"/g, "&quot;").replace(/'/g, "\'");
+
+                const ownerInitials = getAvatarInitials(r.owner_name);
+                const renterInitials = getAvatarInitials(r.renter_name);
+
+                let dateFormatted = "Recently";
+                if (r.created_at) {
+                    try {
+                        const d = new Date(r.created_at);
+                        dateFormatted = d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                    } catch (eDate) {}
+                }
+
+                // Enforcement badge
+                let statusBadge = "";
+                if (r.status === "APPROVED") {
+                    statusBadge = `
+                        <span class="badge bg-danger text-white px-2.5 py-1.5 rounded-pill fw-bold fs-9 d-inline-flex align-items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-ban"></i> 5-Day Ban Active
+                        </span>
+                        <div class="text-danger fw-bold fs-10 mt-1">
+                            <i class="fa-solid fa-clock me-1"></i>Until ${r.suspended_until || "5 days"}
+                        </div>`;
+                } else if (r.status === "PENDING") {
+                    statusBadge = `
+                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2.5 py-1.5 rounded-pill fw-bold fs-9 d-inline-flex align-items-center gap-1.5">
+                            <i class="fa-solid fa-clock-rotate-left text-warning"></i> Pending Review
+                        </span>
+                        <div class="text-danger fw-semibold fs-10 mt-1">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>5-Day Ban on Approval
+                        </div>`;
+                } else {
+                    statusBadge = `
+                        <span class="badge bg-light text-secondary border px-2.5 py-1.5 rounded-pill fw-bold fs-9 d-inline-flex align-items-center gap-1.5">
+                            <i class="fa-solid fa-circle-xmark"></i> Dismissed
+                        </span>
+                        <div class="text-muted fs-10 mt-0.5">No action taken</div>`;
+                }
+
+                // Photo evidence thumbnail / button
+                let photoProofHtml = "";
+                if (r.photo_url && r.photo_url.trim() !== "") {
+                    photoProofHtml = `
+                        <div class="mt-2 d-flex align-items-center gap-2">
+                            <img src="${r.photo_url}" class="unret-proof-thumb" title="Click to enlarge photo proof" onclick="viewUnreturnedPhoto('${r.photo_url.replace(/'/g, "\'")}', '${safeItemName}', '${safeRenterName}')">
+                            <div>
+                                <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-0.5 fs-10 fw-bold d-inline-flex align-items-center gap-1" onclick="viewUnreturnedPhoto('${r.photo_url.replace(/'/g, "\'")}', '${safeItemName}', '${safeRenterName}')">
+                                    <i class="fa-solid fa-magnifying-glass-plus"></i> View Evidence Photo
+                                </button>
+                                <div class="fs-11 text-muted">Owner submitted proof</div>
+                            </div>
+                        </div>`;
+                } else {
+                    photoProofHtml = `
+                        <div class="mt-2">
+                            <span class="badge bg-light text-muted border fs-10 fw-normal">
+                                <i class="fa-solid fa-image-slash me-1"></i>No photo uploaded
+                            </span>
+                        </div>`;
+                }
+
+                // Actions cell
+                let actionsHtml = "";
+                if (r.status === "PENDING") {
+                    actionsHtml = `
+                        <div class="d-flex flex-column gap-1.5 align-items-end">
+                            <button class="btn btn-sm btn-danger rounded-pill px-3 py-1 fs-9 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm" onclick="openApproveUnreturnedModal(${r.id}, '${safeRenterName}', '${safeItemName}', '${safeOrderCode}', '${safeRenterEmail}')">
+                                <i class="fa-solid fa-gavel"></i> Approve &amp; Suspend
+                            </button>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-0.5 fs-10 text-secondary" onclick="adminDismissUnreturned(${r.id})">
+                                    <i class="fa-solid fa-xmark me-0.5"></i> Dismiss
+                                </button>
+                                <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-0.5 fs-10 text-primary" onclick="openUnreturnedInspectModal(${r.id})">
+                                    <i class="fa-solid fa-eye me-0.5"></i> Details
+                                </button>
+                            </div>
+                        </div>`;
+                } else {
+                    actionsHtml = `
+                        <div class="d-flex flex-column gap-1 align-items-end">
+                            <span class="fs-9 text-muted fw-semibold"><i class="fa-solid fa-check-double text-success me-1"></i>Reviewed</span>
+                            <button class="btn btn-sm btn-light border rounded-pill px-2.5 py-0.5 fs-10 text-primary" onclick="openUnreturnedInspectModal(${r.id})">
+                                <i class="fa-solid fa-folder-open me-1"></i> Case File
+                            </button>
+                        </div>`;
+                }
+
+                // Equipment image thumbnail
+                const itemImgHtml = (r.item_image && r.item_image.trim() !== "") 
+                    ? `<img src="${r.item_image}" class="rounded-3 border flex-shrink-0" width="38" height="38" style="object-fit:cover;">`
+                    : `<div class="rounded-3 bg-light border flex-shrink-0 d-flex align-items-center justify-content-center text-primary" style="width:38px; height:38px;"><i class="fa-solid fa-cube fs-8"></i></div>`;
+
+                return `
+                    <tr class="align-middle">
+                        <td>
+                            <div class="fw-extrabold font-monospace text-dark fs-8">#UNR-${r.id}</div>
+                            <span class="badge bg-light text-primary border font-monospace fs-10 fw-bold mt-1">
+                                <i class="fa-solid fa-receipt me-1"></i>${r.order_code || "N/A"}
+                            </span>
+                            <div class="fs-10 text-muted mt-1">
+                                <i class="fa-regular fa-clock me-0.5"></i>${dateFormatted}
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                ${itemImgHtml}
+                                <div class="min-w-0">
+                                    <div class="fw-bold text-dark fs-8 text-truncate" style="max-width:130px;" title="${safeItemName}">${r.item_name || "Equipment"}</div>
+                                    <span class="badge bg-light text-muted border fs-10 mt-0.5">ID: ${r.item_id || "N/A"}</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-initials-circle" style="background: linear-gradient(135deg, #5B3FA8, #432C81);">
+                                    ${ownerInitials}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="fw-bold text-dark fs-8 text-truncate" style="max-width:140px;">${r.owner_name}</div>
+                                    <div class="fs-10 text-muted text-truncate" style="max-width:140px;">${r.owner_email || ""}</div>
+                                    <span class="badge rounded-pill fw-bold mt-0.5" style="background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; font-size:0.62rem; padding:1.5px 6px;">
+                                        <i class="fa-solid fa-crown text-warning me-0.5"></i>Stock Owner
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-initials-circle" style="background: linear-gradient(135deg, #0284C7, #0369A1);">
+                                    ${renterInitials}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="fw-bold text-dark fs-8 text-truncate" style="max-width:140px;">${r.renter_name}</div>
+                                    <div class="fs-10 text-muted text-truncate" style="max-width:140px;">${r.renter_email || ""}</div>
+                                    <span class="badge rounded-pill fw-bold mt-0.5" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD; font-size:0.62rem; padding:1.5px 6px;">
+                                        <i class="fa-solid fa-user me-0.5"></i>Borrower
+                                    </span>
+                                    ${r.rental_suspended_until ? `<span class="badge rounded-pill bg-danger-subtle text-danger fw-bold fs-10 ms-1">Suspended</span>` : ""}
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="d-inline-flex align-items-center gap-1">
+                                <span class="badge bg-danger-subtle text-danger fw-bold fs-9">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>${r.reason || "Unreturned"}
+                                </span>
+                            </div>
+                            <div class="p-2 rounded-2 bg-light border-start border-3 border-danger fs-9 text-dark mt-1" style="max-width:230px; word-break:break-word;">
+                                "${r.details || "No statement provided."}"
+                            </div>
+                            ${photoProofHtml}
+                        </td>
+
+                        <td>
+                            ${statusBadge}
+                        </td>
+
+                        <td class="text-end">
+                            ${actionsHtml}
+                        </td>
+                    </tr>`;
+            }).join("");
+        }
+
+        // Open Lightbox Photo Proof Modal
+        window.viewUnreturnedPhoto = function(photoUrl, itemName, renterName) {
+            if (!photoUrl) return;
+            const img = document.getElementById("unretPhotoModalImg");
+            const title = document.getElementById("unretPhotoModalTitle");
+            const sub = document.getElementById("unretPhotoModalSubtitle");
+            const dl = document.getElementById("unretPhotoDownloadBtn");
+
+            if (img) img.src = photoUrl;
+            if (title) title.innerText = `Evidence: ${itemName} (Reported against ${renterName})`;
+            if (sub) sub.innerText = `Owner photo evidence submitted for unreturned gear case against ${renterName}.`;
+            if (dl) dl.href = photoUrl;
+
+            const modalEl = document.getElementById("unretPhotoModal");
+            if (modalEl) new bootstrap.Modal(modalEl).show();
+        };
+
+        // Open Approve Modal
+        window.openApproveUnreturnedModal = function(reportId, renterName, itemName, orderCode, renterEmail) {
+            const hId = document.getElementById("unretApproveReportId");
+            const refId = document.getElementById("unretApproveModalReportId");
+            const oCode = document.getElementById("unretApproveModalOrderCode");
+            const iName = document.getElementById("unretApproveModalItemName");
+            const rName = document.getElementById("unretApproveModalRenterName");
+            const rAlert = document.getElementById("unretApproveModalRenterAlertName");
+            const notes = document.getElementById("unretApproveAdminNotes");
+
+            if (hId) hId.value = reportId;
+            if (refId) refId.innerText = `#UNR-${reportId}`;
+            if (oCode) oCode.innerText = orderCode || "N/A";
+            if (iName) iName.innerText = itemName || "Equipment";
+            if (rName) rName.innerText = `${renterName} (${renterEmail || ""})`;
+            if (rAlert) rAlert.innerText = renterName;
+            if (notes) notes.value = `Unreturned equipment confirmed with owner incident report. Enforced 5-day rental suspension on renter ${renterName}.`;
+
+            const modalEl = document.getElementById("unretApproveModal");
+            if (modalEl) new bootstrap.Modal(modalEl).show();
+        };
+
+        // Confirm Approve & Suspend
+        window.confirmApproveUnreturned = async function() {
+            const reportId = document.getElementById("unretApproveReportId")?.value;
+            const notes = document.getElementById("unretApproveAdminNotes")?.value.trim();
+            if (!reportId) return;
+
+            const btn = document.getElementById("btnConfirmApproveUnret");
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Enforcing Suspension...`;
+            }
 
             try {
                 const res = await fetch(`${API_URL}?action=approve_unreturned_report`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ report_id: reportId, admin_notes: notes })
                 });
                 const data = await res.json();
+
+                const modalEl = document.getElementById("unretApproveModal");
+                if (modalEl) {
+                    const inst = bootstrap.Modal.getInstance(modalEl);
+                    if (inst) inst.hide();
+                }
+
                 if (data.success) {
-                    alert(data.message || 'Report approved and 5-day suspension enforced.');
+                    alert("✅ " + (data.message || "Report approved and 5-day suspension enforced successfully."));
                     loadUnreturnedReports();
-                    loadCustomers();
-                    loadDashboardStats();
+                    if (typeof loadCustomers === "function") loadCustomers();
+                    if (typeof loadDashboardStats === "function") loadDashboardStats();
                 } else {
-                    alert('❌ ' + (data.message || 'Failed to approve report.'));
+                    alert("❌ " + (data.message || "Failed to approve report."));
                 }
             } catch (e) {
-                alert('Connection error: ' + e.message);
+                alert("Connection error: " + e.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-gavel me-1"></i> Apply 5-Day Suspension`;
+                }
             }
-        }
+        };
 
+        // Dismiss unreturned report
         async function adminDismissUnreturned(reportId) {
-            if (!confirm('Dismiss this unreturned report without applying a suspension?')) return;
+            if (!confirm("Dismiss this unreturned report without applying a suspension?")) return;
             try {
                 const res = await fetch(`${API_URL}?action=dismiss_unreturned_report`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ report_id: reportId })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('✅ Report dismissed.');
+                    alert("✅ Report dismissed.");
                     loadUnreturnedReports();
+                } else {
+                    alert("❌ " + (data.message || "Failed to dismiss."));
                 }
-            } catch (e) {}
+            } catch (e) {
+                alert("Connection error: " + e.message);
+            }
         }
 
-        // ----------------------------------------------------------
+        // Open Case File Modal
+        window.openUnreturnedInspectModal = function(reportId) {
+            const report = (window._allUnreturnedReports || []).find(x => parseInt(x.id) === parseInt(reportId));
+            if (!report) return;
+
+            const title = document.getElementById("unretCaseModalTitle");
+            const sub = document.getElementById("unretCaseModalSubtitle");
+            const body = document.getElementById("unretCaseModalBody");
+
+            if (title) title.innerText = `Case File #UNR-${report.id} • ${report.order_code}`;
+            if (sub) sub.innerText = `Equipment: ${report.item_name} | Reported: ${report.created_at || "Recent"}`;
+
+            let photoSection = "";
+            if (report.photo_url) {
+                photoSection = `
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1">Attached Photo Evidence</label>
+                        <div class="rounded-3 overflow-hidden border bg-dark text-center" style="max-height:220px;">
+                            <img src="${report.photo_url}" style="max-height:220px; width:100%; object-fit:contain; cursor:pointer;" onclick="viewUnreturnedPhoto('${report.photo_url.replace(/'/g, "\'")}', '${(report.item_name || "").replace(/'/g, "\'")}', '${(report.renter_name || "").replace(/'/g, "\'")}')">
+                        </div>
+                        <div class="fs-10 text-muted mt-1 text-center">Click image to view full resolution</div>
+                    </div>`;
+            }
+
+            if (body) {
+                body.innerHTML = `
+                    <div class="p-3 rounded-3 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3">
+                                <span class="fs-10 text-muted d-block">Report Case</span>
+                                <strong class="fs-8 text-dark font-monospace">#UNR-${report.id}</strong>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="fs-10 text-muted d-block">Order Reference</span>
+                                <span class="badge bg-light text-primary border font-monospace fs-9 fw-bold">${report.order_code || "N/A"}</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="fs-10 text-muted d-block">Reported Date</span>
+                                <strong class="fs-8 text-dark">${report.created_at || "N/A"}</strong>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="fs-10 text-muted d-block">Current Status</span>
+                                <span class="badge ${report.status === "APPROVED" ? "bg-danger text-white" : (report.status === "DISMISSED" ? "bg-light text-secondary border" : "bg-warning-subtle text-dark border border-warning-subtle")} fs-9 fw-bold">
+                                    ${report.status}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <div class="p-3 rounded-3 bg-white border h-100">
+                                <div class="fs-9 fw-bold text-success text-uppercase mb-2"><i class="fa-solid fa-crown text-warning me-1"></i>Stock Owner (Lender)</div>
+                                <div class="fw-bold fs-7 text-dark">${report.owner_name}</div>
+                                <div class="fs-8 text-muted">${report.owner_email || ""}</div>
+                                <div class="fs-9 text-muted mt-2">Equipment: <strong class="text-dark">${report.item_name}</strong> (ID: ${report.item_id || "N/A"})</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="p-3 rounded-3 bg-white border h-100">
+                                <div class="fs-9 fw-bold text-danger text-uppercase mb-2"><i class="fa-solid fa-user-xmark me-1"></i>Reported Renter (Borrower)</div>
+                                <div class="fw-bold fs-7 text-dark">${report.renter_name}</div>
+                                <div class="fs-8 text-muted">${report.renter_email || ""}</div>
+                                <div class="fs-9 text-muted mt-2">Account ID: <strong class="text-dark">#${report.renter_id}</strong> ${report.suspended_until ? `• <span class="text-danger fw-bold">Suspended until ${report.suspended_until}</span>` : ""}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1">Violation Reason &amp; Statement</label>
+                        <div class="p-3 rounded-3 bg-light border fs-8 text-dark">
+                            <div class="badge bg-danger-subtle text-danger fw-bold mb-2 fs-9"><i class="fa-solid fa-triangle-exclamation me-1"></i>${report.reason || "Unreturned"}</div>
+                            <div>"${report.details || "No additional explanation provided."}"</div>
+                        </div>
+                    </div>
+
+                    ${photoSection}
+
+                    ${report.admin_notes ? `
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1">Admin Enforcement Notes</label>
+                        <div class="p-2.5 rounded-3 bg-light border fs-8 text-dark">${report.admin_notes}</div>
+                    </div>` : ""}
+
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+                        ${report.status === "PENDING" ? `
+                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold" onclick="bootstrap.Modal.getInstance(document.getElementById('unretCaseFileModal'))?.hide(); openApproveUnreturnedModal(${report.id}, '${(report.renter_name || "").replace(/'/g, "\'")}', '${(report.item_name || "").replace(/'/g, "\'")}', '${(report.order_code || "").replace(/'/g, "\'")}', '${(report.renter_email || "").replace(/'/g, "\'")}')">
+                            <i class="fa-solid fa-gavel me-1"></i> Proceed to Approve Ban
+                        </button>` : ""}
+                    </div>`;
+            }
+
+            const modalEl = document.getElementById("unretCaseFileModal");
+            if (modalEl) new bootstrap.Modal(modalEl).show();
+        };
+
+                // ----------------------------------------------------------
         // 5-DAY RENTAL SUSPENSION APPEALS
         // ----------------------------------------------------------
         async function loadSuspensionAppeals() {
