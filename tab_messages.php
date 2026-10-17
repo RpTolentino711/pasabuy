@@ -429,7 +429,7 @@
                 <div class="d-flex align-items-center gap-1.5 mb-0.5 flex-wrap">
                     <span class="badge rounded-pill fw-bold" style="background:#EDE9FE; color:#5B3FA8; font-size:0.62rem; padding: 2px 6px;">EQUIPMENT</span>
                     <span class="badge rounded-pill fw-bold" id="chatItemOwnershipBadge" style="display:none; font-size:0.62rem; padding: 2px 7px;"></span>
-                    <span class="text-muted fw-semibold" style="font-size:0.65rem;" id="chatItemOwnerLabel">• Owner: Romeo Paolo Tolentino</span>
+                    <span class="text-muted fw-semibold" style="font-size:0.65rem; display:none;" id="chatItemOwnerLabel"></span>
                 </div>
                 <h6 class="fw-bold fs-8 text-dark mb-0 text-truncate" id="chatItemTitle">Campus Item</h6>
                 <div class="d-flex align-items-baseline gap-1">
