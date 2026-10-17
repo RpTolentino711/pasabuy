@@ -1796,6 +1796,7 @@ if ($action === 'update_owner_order_status') {
             } catch (Exception $eN3) {}
         } elseif ($newStatus === 'RETURNED') {
             $statusDisplay = 'Returned to Owner Stock';
+            try { $db->prepare("UPDATE `rental_orders` SET `timer_status` = 'COMPLETED', `is_overdue` = 0 WHERE `id` = ?")->execute([$oId]); } catch (Exception $eTimerComp) {}
         }
 
         $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ? WHERE `id` = ?");

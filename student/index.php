@@ -3878,6 +3878,7 @@
                                 const badge = document.getElementById('chatLiveTimerBadge');
                                 const cdLabel = document.getElementById('chatCountdownLabel');
                                 const ownerReportRow = document.getElementById('chatTimerOwnerReportRow');
+                                const restockRow = document.getElementById('chatTimerRestockRow');
                                 const renterOverdueRow = document.getElementById('chatTimerRenterOverdueRow');
                                 const timerBanner = document.getElementById('chatRentalTimerBanner');
                                 const headerBar = document.querySelector('.rentchat-header-bar');
@@ -3887,6 +3888,7 @@
                                 if (!endIsoString) {
                                     cdText.innerText = '00:00:00';
                                     if (ownerReportRow) ownerReportRow.style.setProperty('display', 'none', 'important');
+                                    if (restockRow) restockRow.style.setProperty('display', 'none', 'important');
                                     if (renterOverdueRow) renterOverdueRow.style.setProperty('display', 'none', 'important');
                                     if (timerBanner) timerBanner.classList.remove('is-overdue');
                                     if (headerBar) headerBar.classList.remove('is-overdue');
@@ -3898,8 +3900,13 @@
                                 const now = Date.now();
                                 const diffMs = endTime - now;
 
-                                if (diffMs <= 0) {
-                                    // Timer expired: Turn banner, header bar, and chat red!
+                                const isOverdue = (diffMs <= 0) || (currentChatRentalOrder && (currentChatRentalOrder.is_overdue || currentChatRentalOrder.unreturned_reported == 1 || currentChatRentalOrder.order_status === 'OVERDUE'));
+
+                                if (isOverdue) {
+                                    // Timer expired / Overdue: Turn banner, header bar, and chat red!
+                                    // Overdue is NOT zero -> hide Restock button
+                                    if (restockRow) restockRow.style.setProperty('display', 'none', 'important');
+
                                     if (timerBanner) timerBanner.classList.add('is-overdue');
                                     if (headerBar) headerBar.classList.add('is-overdue');
                                     if (chatVw) chatVw.classList.add('is-overdue');
@@ -3925,12 +3932,19 @@
                                     return;
                                 }
 
-                                // Timer is still actively running: Normal state
+                                // Timer is still actively running: Normal state -> OVERDUE IS ZERO!
                                 if (timerBanner) timerBanner.classList.remove('is-overdue');
                                 if (headerBar) headerBar.classList.remove('is-overdue');
                                 if (chatVw) chatVw.classList.remove('is-overdue');
                                 if (ownerReportRow) ownerReportRow.style.setProperty('display', 'none', 'important');
                                 if (renterOverdueRow) renterOverdueRow.style.setProperty('display', 'none', 'important');
+
+                                // Overdue is ZERO: Show "Mark Returned & Restock" ONLY to the Stock Owner!
+                                if (isOwner) {
+                                    if (restockRow) restockRow.style.setProperty('display', 'block', 'important');
+                                } else {
+                                    if (restockRow) restockRow.style.setProperty('display', 'none', 'important');
+                                }
 
                                 const totalSecs = Math.floor(diffMs / 1000);
                                 const hours = Math.floor(totalSecs / 3600);
@@ -4557,6 +4571,79 @@
                                 if (btn) {
                                     btn.disabled = false;
                                     btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Submit Report';
+                                }
+                            }
+                        };
+
+                        
+                        window.markRentalReturnedAndRestockFromChat = async function () {
+                            if (!currentChatRentalOrder) {
+                                alert('No active rental order found in this conversation.');
+                                return;
+                            }
+                            const orderCode = currentChatRentalOrder.order_code;
+                            const orderId = currentChatRentalOrder.id;
+
+                            if (!confirm(`Confirm that order #${orderCode} has been delivered back and verified in good condition?\n\nThis will mark the rental as RETURNED and restock your equipment inventory automatically.`)) {
+                                return;
+                            }
+
+                            const btn = document.getElementById('btnChatMarkReturnedRestock');
+                            if (btn) {
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Restocking...';
+                            }
+
+                            try {
+                                const apiEndpoint = window.location.pathname.includes('/student/') ? 'rentease_api.php?action=update_owner_order_status' : '/student/rentease_api.php?action=update_owner_order_status';
+                                const res = await fetch(apiEndpoint, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        action: 'update_owner_order_status',
+                                        order_id: orderId,
+                                        order_code: orderCode,
+                                        new_status: 'RETURNED'
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data && data.success) {
+                                    alert(data.message || `Order #${orderCode} marked as RETURNED and restocked.`);
+                                    
+                                    // 1. Hide timer banner and stop interval in Messages tab
+                                    const timerBanner = document.getElementById('chatRentalTimerBanner');
+                                    if (timerBanner) timerBanner.style.display = 'none';
+                                    if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
+                                    currentChatRentalOrder = null;
+
+                                    // 2. Re-render chat timer / lifecycle state
+                                    if (typeof checkAndRenderChatRentalTimer === 'function') {
+                                        await checkAndRenderChatRentalTimer();
+                                    }
+                                    if (typeof refreshActiveChatStream === 'function') {
+                                        await refreshActiveChatStream();
+                                    }
+                                    if (typeof loadChatConversationsList === 'function') {
+                                        loadChatConversationsList();
+                                    }
+
+                                    // 3. Keep Orders / Rent Out tab in sync!
+                                    if (typeof loadOwnerRentalDashboard === 'function') {
+                                        loadOwnerRentalDashboard(true);
+                                    }
+                                    if (typeof loadRentEaseCatalog === 'function') {
+                                        loadRentEaseCatalog();
+                                    }
+                                } else {
+                                    alert(data?.message || 'Failed to update order status.');
+                                }
+                            } catch (e) {
+                                console.error('Error marking returned from chat:', e);
+                                alert('Server connection error.');
+                            } finally {
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = '<i class="fa-solid fa-boxes-packing me-1"></i> Mark Returned &amp; Restock';
                                 }
                             }
                         };

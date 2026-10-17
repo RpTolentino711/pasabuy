@@ -1554,6 +1554,10 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                     const customerInitials = customerName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'SR';
                     const rentalDays = order.rental_days || 1;
                     const totalAmt = parseFloat(order.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const renterId = parseInt(order.renter_id) || (customerName.toLowerCase().includes('pogi') ? 105 : 105);
+                    const firstItm = (order.items && order.items[0]) || {};
+                    const orderItemName = firstItm.product_name || order.item_name || 'Rental Equipment';
+                    const orderItemImg = firstItm.image_url || order.item_image || '';
                     
                     // Format dates compactly e.g. "Oct 16 – Oct 17"
                     let scheduleFormatted = 'Flexible Schedule';
@@ -1653,11 +1657,7 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                                     </div>
                                 </div>
                             </div>
-                            <button class="btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold text-white shadow-2xs" 
-                                    style="background: linear-gradient(135deg, #5B3FA8, #4027B0); border:none;" 
-                                    onclick="openChatWithRenter('${customerName}', '${order.customer_phone || ''}', '${orderCode}')">
-                                <i class="fa-solid fa-comment me-1"></i> Chat
-                            </button>
+                            
                         </div>
 
                         <!-- Item Manifest -->
@@ -1692,18 +1692,14 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                         <!-- Action Bar for Owner (Accurate by Step!) -->
                         <div class="d-flex align-items-center gap-2 pt-2 border-top">
                             ${(status === 'CONFIRMED' || status === 'REQUESTED' || status === 'PENDING') ? `
-                                <button class="btn btn-sm btn-outline-warning rounded-pill py-1.5 px-3 fs-9 fw-bold flex-grow-1" onclick="updateOwnerOrderStatus(${order.id}, '${orderCode}', 'PREPARING')">
+                                <button class="btn btn-sm text-dark rounded-pill py-2 px-3 fs-9 fw-extrabold w-100 shadow-xs" 
+                                        style="background: linear-gradient(135deg, #FBBF24, #F59E0B); border: 1px solid #F59E0B;" 
+                                        onclick="acceptOrderAndGoToMessages(${order.id}, '${orderCode}', '${customerName.replace(/'/g, "\\'")}', ${renterId}, '${orderItemName.replace(/'/g, "\\'")}', '${orderItemImg.replace(/'/g, "\\'")}')">
                                     <i class="fa-solid fa-boxes-packing me-1"></i> Accept &amp; Prepare Equipment
-                                </button>
-                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-3 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${orderCode}')">
-                                    <i class="fa-solid fa-eye me-1"></i> Details
                                 </button>
                             ` : (status === 'PREPARING' || status === 'MEETUP' || status === 'LOOKING_FOR_RIDER' || status === 'PICKUP' || status === 'ON_THE_WAY') ? `
                                 <button class="btn btn-sm text-white rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background:#10B981; border:none;" onclick="ownerConfirmHandover('${orderCode}')">
                                     <i class="fa-solid fa-handshake me-1"></i> Confirm Handover
-                                </button>
-                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-primary" onclick="openChatWithRenter('${customerName}', '${order.customer_phone || ''}', '${orderCode}')">
-                                    <i class="fa-solid fa-comment-dots me-1"></i> Coordinate
                                 </button>
                                 <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${orderCode}')">
                                     <i class="fa-solid fa-eye me-1"></i> Track
@@ -1711,9 +1707,6 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                             ` : (status === 'IN_PROGRESS' || status === 'RENTED' || status === 'DELIVERED' || status === 'RETURN_DELIVERY') ? `
                                 <button class="btn btn-sm btn-primary rounded-pill py-1.5 px-3 fs-9 fw-extrabold flex-grow-1 shadow-xs" style="background: linear-gradient(135deg, #10B981, #059669); border:none;" onclick="confirmRestockOrder(${order.id}, '${orderCode}')">
                                     <i class="fa-solid fa-circle-check me-1"></i> Mark Returned &amp; Restock
-                                </button>
-                                <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-primary" onclick="openChatWithRenter('${customerName}', '${order.customer_phone || ''}', '${orderCode}')">
-                                    <i class="fa-solid fa-comment me-1"></i> Chat
                                 </button>
                                 <button class="btn btn-sm btn-light rounded-pill py-1.5 px-2.5 fs-9 fw-bold border text-muted" onclick="openTrackScreen('${orderCode}')">
                                     <i class="fa-solid fa-eye me-1"></i> Track
@@ -1999,6 +1992,8 @@ window.updateOwnerOrderStatus = async function (orderId, orderCode, newStatus) {
             alert(data.message || `Order status updated to ${newStatus}.`);
             if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
             if (typeof loadRentEaseCatalog === 'function') loadRentEaseCatalog();
+            if (typeof checkAndRenderChatRentalTimer === 'function') checkAndRenderChatRentalTimer();
+            if (typeof loadChatConversationsList === 'function') loadChatConversationsList();
             if (currentTrackingOrderCode === orderCode && typeof openTrackScreen === 'function') {
                 openTrackScreen(orderCode);
             }
@@ -5278,3 +5273,40 @@ if (document.readyState === 'loading') {
 } else {
     initRentEaseAppBootstrap();
 }
+
+
+window.acceptOrderAndGoToMessages = async function (orderId, orderCode, customerName, renterId, itemName, itemImage) {
+    try {
+        let storedUser = null;
+        try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
+        const ownerId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+
+        const apiEndpoint = typeof getRentEaseApiUrl === 'function' ? getRentEaseApiUrl('step1_owner_agree') : '/student/rentease_api.php?action=step1_owner_agree';
+        await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_code: orderCode, owner_id: ownerId })
+        });
+    } catch (e) {
+        console.error('Error accepting order:', e);
+    }
+
+    // Refresh owner dashboard so the Rent Out tab updates immediately
+    if (typeof loadOwnerRentalDashboard === 'function') {
+        loadOwnerRentalDashboard(true);
+    }
+
+    // Transition directly to the Messages Tab
+    if (typeof switchTab === 'function') {
+        switchTab('messages');
+    }
+
+    // Open chat conversation with the renter
+    setTimeout(() => {
+        if (typeof checkAndOpenChat === 'function') {
+            checkAndOpenChat(renterId || 105, customerName || 'Campus Renter', itemName || 'Rental Equipment', '₱0.00', '', itemImage || '', true, 'You');
+        } else if (typeof openChatWithRenter === 'function') {
+            openChatWithRenter(customerName, '', orderCode);
+        }
+    }, 250);
+};
