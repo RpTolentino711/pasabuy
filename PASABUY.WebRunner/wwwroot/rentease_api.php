@@ -189,6 +189,7 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_agreed` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_agreed_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `unreturned_reported` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `status_display` VARCHAR(255) DEFAULT NULL"); } catch (Exception $e) {}
 
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_unreturned_reports` (
@@ -1799,19 +1800,32 @@ if ($action === 'update_owner_order_status') {
             try { $db->prepare("UPDATE `rental_orders` SET `timer_status` = 'COMPLETED', `is_overdue` = 0 WHERE `id` = ?")->execute([$oId]); } catch (Exception $eTimerComp) {}
         }
 
-        $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ? WHERE `id` = ?");
-        $upd->execute([$newStatus, $statusDisplay, $oId]);
+        try {
+            $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ?, `status_display` = ? WHERE `id` = ?");
+            $upd->execute([$newStatus, $statusDisplay, $oId]);
+        } catch (Exception $eStatDisp) {
+            $upd = $db->prepare("UPDATE `rental_orders` SET `order_status` = ? WHERE `id` = ?");
+            $upd->execute([$newStatus, $oId]);
+        }
 
         // If returned, automatically restock equipment inventory
         if ($newStatus === 'RETURNED') {
             $itemsStmt = $db->prepare("SELECT `product_id`, `quantity` FROM `rental_order_items` WHERE `order_id` = ?");
             $itemsStmt->execute([$oId]);
             $items = $itemsStmt->fetchAll();
+            $restockedItemIds = [];
             $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + ?, `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
             foreach ($items as $it) {
                 if ((int)$it['product_id'] > 0) {
                     $updStock->execute([(int)$it['quantity'], (int)$it['quantity'], (int)$it['product_id']]);
+                    $restockedItemIds[] = (int)$it['product_id'];
                 }
+            }
+            if (empty($restockedItemIds) && !empty($order['item_id'])) {
+                try {
+                    $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + 1, `qty_rented` = GREATEST(0, `qty_rented` - 1) WHERE `id` = ?")
+                       ->execute([(int)$order['item_id']]);
+                } catch (Exception $eDirectStock) {}
             }
 
             // Notification message to customer
