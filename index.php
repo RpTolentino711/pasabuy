@@ -1821,10 +1821,6 @@
                             }
                         }
 
-                        function checkAndOpenChat(sellerId, sellerName, title, price, avatar) {
-                            openDirectChat(sellerId, sellerName, title, price, avatar);
-                        }
-
                         function checkAndReserve(listingId, sellerId) {
                             try {
                                 const storedUser = localStorage.getItem('pasabuy_student_user');

@@ -1821,9 +1821,7 @@
                             }
                         }
 
-                        function checkAndOpenChat(sellerId, sellerName, title, price, avatar) {
-                            openDirectChat(sellerId, sellerName, title, price, avatar);
-                        }
+
 
                         function checkAndReserve(listingId, sellerId) {
                             try {
@@ -3517,20 +3515,6 @@
                                     if (chatItemFallback) chatItemFallback.style.display = 'none';
                                 }
 
-                                // 1. If timer is running or overdue, show TIMER BANNER
-                                if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
-                                    if (reqBanner) reqBanner.style.display = 'none';
-                                    if (timerBanner) timerBanner.style.display = 'block';
-
-                                    const titleEl = document.getElementById('chatTimerItemTitle');
-                                    if (titleEl) titleEl.innerText = `${ord.item_name} (${ord.order_code})`;
-                                    const endText = ord.rental_timer_end ? new Date(ord.rental_timer_end).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ord.rental_end_date;
-                                    const endEl = document.getElementById('chatTimerEndDisplay');
-                                    if (endEl) endEl.innerText = endText;
-
-                                    // Start or sync local live countdown with strict owner role passing
-                                    startChatTimerCountdown(ord.rental_timer_end, isOwner);
-                                } 
                                 // 1. If timer is running or overdue, show TIMER BANNER
                                 if (ord.timer_status === 'RUNNING' || ord.timer_status === 'EXPIRED' || ord.order_status === 'IN_PROGRESS' || ord.order_status === 'RENTED' || ord.order_status === 'OVERDUE') {
                                     if (reqBanner) reqBanner.style.display = 'none';
