@@ -3381,10 +3381,26 @@ function openPackageDetails(pkgId) {
 }
 
 function logoutRentEaseUser() {
-    if (confirm("Are you sure you want to log out of RentEase?")) {
-        localStorage.removeItem('pasabuy_student_logged_in');
-        window.location.reload();
+    const modalEl = document.getElementById('logoutConfirmModal');
+    if (modalEl) {
+        if (modalEl.parentElement !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    } else {
+        // Fallback to confirm if modal doesn't exist
+        if (confirm("Are you sure you want to log out of RentEase?")) {
+            localStorage.removeItem('pasabuy_student_logged_in');
+            window.location.reload();
+        }
     }
+}
+
+function executeLogout() {
+    localStorage.removeItem('pasabuy_student_logged_in');
+    localStorage.removeItem('pasabuy_student_user');
+    window.location.reload();
 }
 
 // ----------------------------------------------------------
