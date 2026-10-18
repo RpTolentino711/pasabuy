@@ -1995,9 +1995,10 @@
 
                             let convs = [];
                             try {
-                                const res = await fetch(`/pasabuy_api.php?action=chat_conversations&user_id=${currentUserId}`);
+                                const res = await fetch(`/pasabuy_api.php?action=chat_conversations&user_id=${currentUserId}`, { cache: 'no-store' });
                                 if (res.ok) {
-                                    convs = await res.json();
+                                    const payload = await res.json();
+                                    convs = Array.isArray(payload) ? payload : (Array.isArray(payload.conversations) ? payload.conversations : []);
                                 }
                             } catch (e) { }
 
