@@ -1917,7 +1917,7 @@ if (in_array($action, ['request_early_return', 'respond_early_return'], true)) {
         }
 
         $db->beginTransaction();
-        $db->prepare("UPDATE `rental_orders` SET `early_return_status` = 'COMPLETED', `early_return_verified_at` = NOW(), `order_status` = 'RETURNED', `timer_status` = 'COMPLETED', `is_overdue` = 0, `returned_at` = NOW() WHERE `id` = ?")
+        $db->prepare("UPDATE `rental_orders` SET `early_return_status` = 'COMPLETED', `early_return_verified_at` = NOW(), `order_status` = 'RETURNED', `timer_status` = 'COMPLETED', `is_overdue` = 0 WHERE `id` = ?")
             ->execute([(int)$order['id']]);
         $itemsStmt = $db->prepare("SELECT `product_id`, `product_name`, `quantity` FROM `rental_order_items` WHERE `order_id` = ?");
         $itemsStmt->execute([(int)$order['id']]);
