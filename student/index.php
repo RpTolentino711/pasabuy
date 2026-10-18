@@ -2211,9 +2211,14 @@
                                 const res = await fetch(`${apiPath}&user_id=${currentUserId}`, { cache: 'no-store' });
                                 if (res.ok) {
                                     const payload = await res.json();
+                                    console.log('Chat conversations API response:', payload);
                                     convs = Array.isArray(payload) ? payload : (Array.isArray(payload.conversations) ? payload.conversations : []);
+                                } else {
+                                    console.error('Chat conversations API error:', res.status, res.statusText);
                                 }
-                            } catch (e) { }
+                            } catch (e) {
+                                console.error('Chat conversations fetch error:', e);
+                            }
 
                             // Permanently wipe any local mock chat heads from browser storage
                             try { localStorage.removeItem('pasabuy_local_chat_heads'); } catch (e) { }
