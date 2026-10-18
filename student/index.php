@@ -1318,8 +1318,15 @@
                         }
 
                         async function submitReportToAdmin() {
-                            const reason = document.getElementById('reportReason').value;
-                            const details = document.getElementById('reportDetails').value;
+                            const reasonInput = document.getElementById('reportReason');
+                            const detailsInput = document.getElementById('reportDetails');
+                            const reason = reasonInput ? reasonInput.value.trim() : '';
+                            const details = detailsInput ? detailsInput.value.trim() : '';
+
+                            if (!reason || !details) {
+                                alert('Please select a report reason and enter the incident details.');
+                                return;
+                            }
 
                             try {
                                 await fetch(`${API_BASE}/reports`, {
