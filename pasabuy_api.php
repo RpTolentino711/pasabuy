@@ -2,6 +2,23 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display to client, log instead
+
+// Catch and log errors
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    error_log("PHP Error: [$errno] $errstr in $errfile on line $errline");
+    echo json_encode(['error' => "PHP Error: $errstr", 'file' => basename($errfile), 'line' => $errline]);
+    exit;
+});
+
+set_exception_handler(function($exception) {
+    error_log("Uncaught Exception: " . $exception->getMessage());
+    echo json_encode(['error' => $exception->getMessage(), 'file' => basename($exception->getFile()), 'line' => $exception->getLine()]);
+    exit;
+});
+
 // Enable CORS - Restrict in production
 $isDevelopment = (getenv('APP_ENV') === 'development') || !getenv('APP_ENV');
 if ($isDevelopment) {
