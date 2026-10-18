@@ -5000,7 +5000,7 @@
                             const order = currentChatRentalOrder;
                             if (!order) return;
                             const storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user') || '{}');
-                            const apiEndpoint = window.location.pathname.includes('/student/') ? 'rentease_api.php?action=respond_early_return' : '/student/rentease_api.php?action=respond_early_return';
+                            const apiEndpoint = window.location.pathname.includes('/student/') ? '../rentease_api.php?action=respond_early_return' : '/student/rentease_api.php?action=respond_early_return';
                             try {
                                 if (response === 'yes' && !(await window.showEarlyReturnModal(order.order_code, 'renter-confirm'))) return;
 
