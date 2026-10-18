@@ -649,7 +649,24 @@ function enableCarouselTouchAndDrag(carouselEl) {
     });
 }
 
+function styleProductDetailModal() {
+    if (document.getElementById('product-detail-modal-refresh')) return;
+    const style = document.createElement('style');
+    style.id = 'product-detail-modal-refresh';
+    style.textContent = `
+        #productDetailModal .modal-content { border: 0; border-radius: 24px; overflow: hidden; box-shadow: 0 24px 70px rgba(15, 23, 42, .24); }
+        #productDetailModal .modal-header { padding: 16px 18px; border-bottom: 1px solid #EEF2F7; background: #FFFFFF; }
+        #productDetailModal .modal-body { padding: 16px; background: #F8FAFC; }
+        #productDetailModal .detail-owner-panel, #productDetailModal #detailOwnerControlSection { border: 1px solid #E2E8F0; border-radius: 16px; background: #FFFFFF; box-shadow: 0 8px 24px rgba(15, 23, 42, .06); }
+        #productDetailModal .detail-clean-tested, #productDetailModal [data-detail-assurance="clean-tested"] { display: none !important; }
+        #productDetailModal .modal-footer { gap: 10px; padding: 12px 16px; border-top: 1px solid #EEF2F7; background: #FFFFFF; }
+        #productDetailModal.is-owner-listing #detailHeaderReportBtn, #productDetailModal.is-owner-listing #detailReportItemLink { display: none !important; }
+    `;
+    document.head.appendChild(style);
+}
+
 function openEquipmentDetail(id) {
+    styleProductDetailModal();
     let item = (rentEaseInventory || []).find(i => i.id == id);
     if (!item && typeof allProductsCache !== 'undefined') {
         const p = allProductsCache.find(x => x.id == id);
@@ -692,7 +709,7 @@ function openEquipmentDetail(id) {
     const priceEl = document.getElementById('detailPrice');
     if (priceEl) priceEl.innerText = '₱' + parseFloat(item.price_per_day || 0).toFixed(0);
     const descEl = document.getElementById('detailDescription');
-    if (descEl) descEl.innerText = item.description || 'Quality event equipment for rent, maintained and cleaned for every booking.';
+    if (descEl) descEl.innerText = item.description || 'No description provided for this listing.';
     const qtyValEl = document.getElementById('detailQtyVal');
     if (qtyValEl) qtyValEl.innerText = currentDetailQty;
 
@@ -727,13 +744,29 @@ function openEquipmentDetail(id) {
     const datesContainer = document.getElementById('detailDatesContainer');
     const reportButton = document.getElementById('detailHeaderReportBtn');
     const reportLink = document.getElementById('detailReportItemLink');
+    const buyerHeaderActions = document.getElementById('detailHeaderBuyerActions');
+    const ownerHeaderBadge = document.getElementById('detailHeaderOwnerBadge');
+    const buyerSafetyRow = document.getElementById('detailBuyerSafetyRow');
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
-
-    if (reportButton) {
-        reportButton.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    const modalElForOwner = document.getElementById('productDetailModal');
+    if (modalElForOwner) {
+        modalElForOwner.classList.toggle('is-owner-listing', !!isOwner);
+        modalElForOwner.querySelectorAll('.detail-clean-tested, [data-detail-assurance="clean-tested"]').forEach(el => el.remove());
     }
-    if (reportLink) {
-        reportLink.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+
+    const hideBuyerChrome = isOwner;
+    [reportButton, reportLink, buyerHeaderActions, buyerSafetyRow].forEach(el => {
+        if (!el) return;
+        el.style.setProperty('display', hideBuyerChrome ? 'none' : (el === reportLink || el === buyerHeaderActions || el === buyerSafetyRow ? 'flex' : 'flex'), 'important');
+    });
+    if (ownerHeaderBadge) {
+        ownerHeaderBadge.style.setProperty('display', isOwner ? 'flex' : 'none', 'important');
+    }
+    document.querySelectorAll('#productDetailModal .detail-buyer-only').forEach(el => {
+        el.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    });
+    if (!isOwner && reportButton) {
+        reportButton.style.setProperty('display', 'flex', 'important');
     }
 
     // Initialize rental schedule dates (today to tomorrow)
@@ -778,13 +811,13 @@ function openEquipmentDetail(id) {
 
         if (footerActions) {
             footerActions.innerHTML = `
-                <button type="button" class="btn btn-outline-danger rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 flex-grow-1" 
-                        onclick="promptTakeDownOwnerItem(${item.id}, '${safeTitle}')">
-                    <i class="fa-solid fa-trash-can me-1"></i> Take Down Listing
+                <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 border text-secondary flex-grow-1"
+                        data-bs-dismiss="modal" style="height:46px;">
+                    Done
                 </button>
-                <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 border text-secondary" 
-                        data-bs-dismiss="modal">
-                    Close
+                <button type="button" class="btn btn-outline-danger rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center"
+                        onclick="promptTakeDownOwnerItem(${item.id}, '${safeTitle}')" style="height:46px;">
+                    <i class="fa-solid fa-trash-can me-1"></i> Take down
                 </button>
             `;
         }

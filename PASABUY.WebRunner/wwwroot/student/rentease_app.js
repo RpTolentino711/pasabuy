@@ -649,7 +649,24 @@ function enableCarouselTouchAndDrag(carouselEl) {
     });
 }
 
+function styleProductDetailModal() {
+    if (document.getElementById('product-detail-modal-refresh')) return;
+    const style = document.createElement('style');
+    style.id = 'product-detail-modal-refresh';
+    style.textContent = `
+        #productDetailModal .modal-content { border: 0; border-radius: 24px; overflow: hidden; box-shadow: 0 24px 70px rgba(15, 23, 42, .24); }
+        #productDetailModal .modal-header { padding: 16px 18px; border-bottom: 1px solid #EEF2F7; background: #FFFFFF; }
+        #productDetailModal .modal-body { padding: 16px; background: #F8FAFC; }
+        #productDetailModal .detail-owner-panel, #productDetailModal #detailOwnerControlSection { border: 1px solid #E2E8F0; border-radius: 16px; background: #FFFFFF; box-shadow: 0 8px 24px rgba(15, 23, 42, .06); }
+        #productDetailModal .detail-clean-tested, #productDetailModal [data-detail-assurance="clean-tested"] { display: none !important; }
+        #productDetailModal .modal-footer { gap: 10px; padding: 12px 16px; border-top: 1px solid #EEF2F7; background: #FFFFFF; }
+        #productDetailModal.is-owner-listing #detailHeaderReportBtn, #productDetailModal.is-owner-listing #detailReportItemLink { display: none !important; }
+    `;
+    document.head.appendChild(style);
+}
+
 function openEquipmentDetail(id) {
+    styleProductDetailModal();
     let item = (rentEaseInventory || []).find(i => i.id == id);
     if (!item && typeof allProductsCache !== 'undefined') {
         const p = allProductsCache.find(x => x.id == id);
@@ -692,7 +709,7 @@ function openEquipmentDetail(id) {
     const priceEl = document.getElementById('detailPrice');
     if (priceEl) priceEl.innerText = '₱' + parseFloat(item.price_per_day || 0).toFixed(0);
     const descEl = document.getElementById('detailDescription');
-    if (descEl) descEl.innerText = item.description || 'Quality event equipment for rent, maintained and cleaned for every booking.';
+    if (descEl) descEl.innerText = item.description || 'No description provided for this listing.';
     const qtyValEl = document.getElementById('detailQtyVal');
     if (qtyValEl) qtyValEl.innerText = currentDetailQty;
 

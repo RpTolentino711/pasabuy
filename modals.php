@@ -944,6 +944,31 @@
     </div>
 </div>
 
+<style>
+    #productDetailModal.is-owner-listing .detail-buyer-only,
+    #productDetailModal.is-owner-listing #detailHeaderBuyerActions,
+    #productDetailModal.is-owner-listing #detailBuyerSafetyRow,
+    #productDetailModal.is-owner-listing #detailHeaderReportBtn,
+    #productDetailModal.is-owner-listing #detailReportItemLink {
+        display: none !important;
+    }
+    #productDetailModal:not(.is-owner-listing) #detailHeaderOwnerBadge {
+        display: none !important;
+    }
+    #productDetailModal .modal-content {
+        border-radius: 24px !important;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .24) !important;
+    }
+    #productDetailModal #productDetailModalBody {
+        background: #F8FAFC !important;
+    }
+    #productDetailModal #detailOwnerControlSection > div {
+        border-radius: 18px !important;
+        border-color: #E2E8F0 !important;
+        background: #FFFFFF !important;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+    }
+</style>
 <!-- PRODUCT DETAIL VIEW MODAL (MATCHING RENTEASE SCREEN 3 IN UIDESIFNAPP.png 1:1) -->
 <div class="modal fade" id="productDetailModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -954,15 +979,20 @@
                 <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" data-bs-dismiss="modal" title="Back">
                     <i class="fa-solid fa-arrow-left text-dark fs-7"></i>
                 </button>
-                <div class="fw-extrabold text-dark fs-7" id="detailHeaderTitle" style="letter-spacing: -0.2px;">Equipment Details</div>
-                <div class="d-flex align-items-center gap-2">
-                    <button type="button" id="detailHeaderReportBtn" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#fef2f2; border:1.5px solid #fee2e2; color:#ef4444; transition: transform 0.15s ease;" onclick="openReportItemModal()" title="Report Listing to Admin">
+                <div class="fw-extrabold text-dark fs-7 text-truncate px-2" id="detailHeaderTitle" style="letter-spacing: -0.2px;">Equipment Details</div>
+                <div id="detailHeaderOwnerBadge" class="d-flex align-items-center" style="display:none;">
+                    <span class="badge rounded-pill fw-bold px-2.5 py-2" style="background:#EEF2FF; color:#5B3FA8; font-size:0.72rem;">
+                        <i class="fa-solid fa-crown text-warning me-1"></i> Yours
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2" id="detailHeaderBuyerActions">
+                    <button type="button" id="detailHeaderReportBtn" class="btn btn-light rounded-circle p-0 align-items-center justify-content-center shadow-2xs detail-buyer-only" style="display:none; width:36px; height:36px; background:#fef2f2; border:1.5px solid #fee2e2; color:#ef4444; transition: transform 0.15s ease;" onclick="openReportItemModal()" title="Report Listing to Admin">
                         <i class="fa-solid fa-flag fs-7 text-danger"></i>
                     </button>
-                    <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="toggleWishlist(this, currentDetailProductId)" title="Wishlist">
+                    <button type="button" id="detailHeaderWishlistBtn" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs detail-buyer-only" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="toggleWishlist(this, currentDetailProductId)" title="Wishlist">
                         <i class="fa-regular fa-heart text-dark fs-7" id="detailWishlistIcon"></i>
                     </button>
-                    <button type="button" class="btn btn-light rounded-circle position-relative p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="openCartFromDetailModal()" title="View Cart" id="modalHeaderCartBtn">
+                    <button type="button" class="btn btn-light rounded-circle position-relative p-0 d-flex align-items-center justify-content-center shadow-2xs detail-buyer-only" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="openCartFromDetailModal()" title="View Cart" id="modalHeaderCartBtn">
                         <i class="fa-solid fa-cart-shopping text-dark fs-7"></i>
                         <span class="badge-cart-counter position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="modalCartCountBadge" style="display:none;">0</span>
                     </button>
@@ -1058,32 +1088,23 @@
                         <i class="fa-solid fa-circle-info text-primary" style="color:#5B3FA8 !important;"></i>
                         <span>Equipment Description</span>
                     </div>
-                    <p class="fs-8 text-secondary lh-sm mb-0" id="detailDescription">
-                        Quality event equipment for rent, maintained and cleaned for every booking.
-                    </p>
+                    <p class="fs-8 text-secondary lh-sm mb-0" id="detailDescription">No description provided for this listing.</p>
                 </div>
 
-                <!-- Feature Badges Row (3 Specs Cards) -->
+                <!-- Feature Badges Row -->
                 <div class="row g-2 mb-3">
-                    <div class="col-4">
+                    <div class="col-6">
                         <div class="p-2.5 rounded-3 text-center border h-100 d-flex flex-column align-items-center justify-content-center" style="background: #ECFDF5; border-color: #A7F3D0 !important;">
                             <i class="fa-solid fa-boxes-stacked text-success fs-6 mb-1"></i>
                             <span class="fs-9 fw-extrabold text-success-emphasis" id="detailStockBadge">10 Available</span>
                             <span class="text-muted" style="font-size:0.65rem;">Ready to Rent</span>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-6">
                         <div class="p-2.5 rounded-3 text-center border h-100 d-flex flex-column align-items-center justify-content-center" style="background: #F5F3FF; border-color: #DDD6FE !important;">
                             <i class="fa-regular fa-calendar-check fs-6 mb-1" style="color: #6D28D9;"></i>
                             <span class="fs-9 fw-extrabold" style="color: #6D28D9;">1 Day Min</span>
                             <span class="text-muted" style="font-size:0.65rem;">Daily Booking</span>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="p-2.5 rounded-3 text-center border h-100 d-flex flex-column align-items-center justify-content-center" style="background: #FFFBEB; border-color: #FDE68A !important;">
-                            <i class="fa-solid fa-wand-magic-sparkles text-warning fs-6 mb-1"></i>
-                            <span class="fs-9 fw-extrabold text-warning-emphasis">Clean & Tested</span>
-                            <span class="text-muted" style="font-size:0.65rem;">Quality Assured</span>
                         </div>
                     </div>
                 </div>
@@ -1131,65 +1152,55 @@
 
                 <!-- Owner Controls & Management Section (Visible ONLY when logged-in user is Owner) -->
                 <div id="detailOwnerControlSection" style="display:none;" class="mb-2">
-                    <!-- Owner Alert Banner with Take Down & Refund Warning -->
-                    <div class="p-3 rounded-4 bg-warning bg-opacity-15 border border-warning-subtle mb-3">
-                        <div class="d-flex align-items-start gap-2.5 mb-2">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-warning text-dark shadow-2xs mt-0.5" style="width:32px; height:32px; flex-shrink:0;">
-                                <i class="fa-solid fa-triangle-exclamation fs-6"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-extrabold text-dark fs-7 mb-1">⚠️ You Own This Equipment Listing</h6>
-                                <p class="fs-9 text-secondary mb-0">
-                                    This equipment is active on campus. Fellow students can rent it based on your stock and pricing below.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="p-2.5 rounded-3 bg-white border border-warning-subtle text-dark fs-9">
-                            <div class="fw-bold text-danger mb-0.5"><i class="fa-solid fa-shield-halved me-1 text-danger"></i> Take Down & Refund Notice:</div>
-                            <span>Taking this item down removes it immediately from catalog search. You are eligible for a <strong>refund of your posting fee</strong> provided no active bookings remain.</span>
-                        </div>
-                    </div>
-
-                    <!-- Inline Price & Stock Management Card -->
-                    <div class="card border-0 rounded-4 shadow-sm p-3 bg-light mb-2">
-                        <div class="d-flex align-items-center justify-content-between mb-1.5">
-                            <h6 class="fw-extrabold text-dark fs-8 mb-0">
-                                <i class="fa-solid fa-pen-to-square me-1" style="color: #5B3FA8;"></i> Edit Rental Rate & Stock
-                            </h6>
-                            <span class="badge bg-primary-subtle text-primary fw-bold fs-9">Live Update</span>
-                        </div>
-                        <p class="fs-9 text-muted mb-2.5">Update daily rate and available units directly in database.</p>
-                        
-                        <div class="row g-2 mb-2.5">
-                            <div class="col-6">
-                                <label class="form-label fs-9 fw-bold text-dark mb-1">Rental Rate (₱ / day)</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-white fw-extrabold text-dark fs-8">₱</span>
-                                    <input type="number" class="form-control rounded-end-3 fs-8 fw-bold" id="detailOwnerPriceInput" min="1" step="1" placeholder="Price">
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fs-9 fw-bold text-dark mb-1">Available Units</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" class="form-control rounded-start-3 fs-8 fw-bold" id="detailOwnerStockInput" min="0" step="1" placeholder="Stock">
-                                    <span class="input-group-text bg-white fs-9 text-muted">units</span>
-                                </div>
-                            </div>
+                    <div class="rounded-4 overflow-hidden mb-1" style="border:1.5px solid #E0E7FF; background:linear-gradient(180deg, #F5F3FF 0%, #FFFFFF 56px);">
+                        <div class="px-3 pt-3 pb-2">
+                            <span class="badge rounded-pill fw-bold mb-1" style="background:#5B3FA8; color:#fff; font-size:0.68rem;">
+                                <i class="fa-solid fa-crown text-warning me-1"></i> Your listing
+                            </span>
+                            <h6 class="fw-extrabold text-dark fs-7 mb-0.5">Manage this equipment</h6>
+                            <p class="fs-9 text-secondary mb-0">Update the daily rate and available units. Students book from this listing.</p>
                         </div>
 
-                        <button type="button" class="btn btn-sm btn-primary w-100 rounded-pill py-2 fw-extrabold fs-8 shadow-xs d-flex align-items-center justify-content-center gap-1.5" 
-                                style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" id="btnSaveOwnerDetailChanges" onclick="saveOwnerStockPriceFromDetail()">
-                            <i class="fa-solid fa-floppy-disk"></i> Save Stock & Price Changes
-                        </button>
+                        <div id="detailOwnerStrikesBanner" class="mx-3 mb-2 p-2 rounded-3" style="display:none; background:#FEF3C7; border:1px solid #FDE68A;">
+                            <span class="fs-9 fw-bold text-dark" id="detailOwnerStrikesText"></span>
+                        </div>
+
+                        <div class="p-3 pt-1">
+                            <div class="row g-2 mb-2.5">
+                                <div class="col-6">
+                                    <label class="form-label fs-9 fw-bold text-dark mb-1">Rate / day</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white fw-extrabold text-dark fs-8">₱</span>
+                                        <input type="number" class="form-control rounded-end-3 fs-8 fw-bold" id="detailOwnerPriceInput" min="1" step="1" placeholder="Price">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fs-9 fw-bold text-dark mb-1">Units</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control rounded-start-3 fs-8 fw-bold" id="detailOwnerStockInput" min="0" step="1" placeholder="Stock">
+                                        <span class="input-group-text bg-white fs-9 text-muted">pcs</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-sm w-100 rounded-4 py-2 fw-extrabold fs-8 shadow-xs d-flex align-items-center justify-content-center gap-1.5"
+                                    style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none; color:#fff;" id="btnSaveOwnerDetailChanges" onclick="saveOwnerStockPriceFromDetail()">
+                                <i class="fa-solid fa-floppy-disk"></i> Save changes
+                            </button>
+                            <p class="fs-9 text-muted mb-0 mt-2 lh-sm">
+                                <i class="fa-regular fa-circle-info me-1"></i>
+                                Taking this down removes it from search. Your posting fee is refundable if there are no active bookings.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Report Listing & Community Safety Link -->
-                <div class="d-flex align-items-center justify-content-between pt-2.5 pb-1 border-top mt-2">
+                <!-- Report Listing & Community Safety Link (renters only) -->
+                <div id="detailBuyerSafetyRow" class="detail-buyer-only d-flex align-items-center justify-content-between pt-2.5 pb-1 border-top mt-2">
                     <span class="text-muted fs-9 d-flex align-items-center gap-1">
                         <i class="fa-solid fa-shield-halved text-success"></i> Campus Safety (3-Strike Policy)
                     </span>
-                    <button type="button" id="detailReportItemLink" class="btn btn-link text-danger p-0 fs-9 text-decoration-none fw-bold d-flex align-items-center gap-1" onclick="openReportItemModal()">
+                    <button type="button" id="detailReportItemLink" class="btn btn-link text-danger p-0 fs-9 text-decoration-none fw-bold d-none align-items-center gap-1" onclick="openReportItemModal()">
                         <i class="fa-regular fa-flag"></i> Report this Item
                     </button>
                 </div>
@@ -2051,6 +2062,5 @@
         </div>
     </div>
 </div>
-
 
 

@@ -944,6 +944,21 @@
     </div>
 </div>
 
+<style>
+    #productDetailModal.is-owner-listing .detail-buyer-only,
+    #productDetailModal.is-owner-listing #detailHeaderBuyerActions,
+    #productDetailModal.is-owner-listing #detailBuyerSafetyRow,
+    #productDetailModal.is-owner-listing #detailHeaderReportBtn,
+    #productDetailModal.is-owner-listing #detailReportItemLink {
+        display: none !important;
+    }
+    #productDetailModal:not(.is-owner-listing) #detailHeaderOwnerBadge {
+        display: none !important;
+    }
+    #productDetailModal .modal-content { border-radius: 24px !important; box-shadow: 0 24px 70px rgba(15, 23, 42, .24) !important; }
+    #productDetailModal #productDetailModalBody { background: #F8FAFC !important; }
+    #productDetailModal #detailOwnerControlSection > div { border-radius: 18px !important; border-color: #E2E8F0 !important; background: #FFFFFF !important; box-shadow: 0 8px 24px rgba(15, 23, 42, .06); }
+</style>
 <!-- PRODUCT DETAIL VIEW MODAL (MATCHING RENTEASE SCREEN 3 IN UIDESIFNAPP.png 1:1) -->
 <div class="modal fade" id="productDetailModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -954,15 +969,20 @@
                 <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" data-bs-dismiss="modal" title="Back">
                     <i class="fa-solid fa-arrow-left text-dark fs-7"></i>
                 </button>
-                <div class="fw-extrabold text-dark fs-7" id="detailHeaderTitle" style="letter-spacing: -0.2px;">Equipment Details</div>
-                <div class="d-flex align-items-center gap-2">
-                    <button type="button" id="detailHeaderReportBtn" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="display:none !important; width:36px; height:36px; background:#fef2f2; border:1.5px solid #fee2e2; color:#ef4444; transition: transform 0.15s ease;" onclick="openReportItemModal()" title="Report Listing to Admin">
+                <div class="fw-extrabold text-dark fs-7 text-truncate px-2" id="detailHeaderTitle" style="letter-spacing: -0.2px;">Equipment Details</div>
+                <div id="detailHeaderOwnerBadge" class="d-flex align-items-center" style="display:none;">
+                    <span class="badge rounded-pill fw-bold px-2.5 py-2" style="background:#EEF2FF; color:#5B3FA8; font-size:0.72rem;">
+                        <i class="fa-solid fa-crown text-warning me-1"></i> Yours
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2" id="detailHeaderBuyerActions">
+                    <button type="button" id="detailHeaderReportBtn" class="btn btn-light rounded-circle p-0 align-items-center justify-content-center shadow-2xs detail-buyer-only" style="display:none; width:36px; height:36px; background:#fef2f2; border:1.5px solid #fee2e2; color:#ef4444; transition: transform 0.15s ease;" onclick="openReportItemModal()" title="Report Listing to Admin">
                         <i class="fa-solid fa-flag fs-7 text-danger"></i>
                     </button>
-                    <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="toggleWishlist(this, currentDetailProductId)" title="Wishlist">
+                    <button type="button" id="detailHeaderWishlistBtn" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs detail-buyer-only" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="toggleWishlist(this, currentDetailProductId)" title="Wishlist">
                         <i class="fa-regular fa-heart text-dark fs-7" id="detailWishlistIcon"></i>
                     </button>
-                    <button type="button" class="btn btn-light rounded-circle position-relative p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="openCartFromDetailModal()" title="View Cart" id="modalHeaderCartBtn">
+                    <button type="button" class="btn btn-light rounded-circle position-relative p-0 d-flex align-items-center justify-content-center shadow-2xs detail-buyer-only" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="openCartFromDetailModal()" title="View Cart" id="modalHeaderCartBtn">
                         <i class="fa-solid fa-cart-shopping text-dark fs-7"></i>
                         <span class="badge-cart-counter position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="modalCartCountBadge" style="display:none;">0</span>
                     </button>
@@ -1058,32 +1078,23 @@
                         <i class="fa-solid fa-circle-info text-primary" style="color:#5B3FA8 !important;"></i>
                         <span>Equipment Description</span>
                     </div>
-                    <p class="fs-8 text-secondary lh-sm mb-0" id="detailDescription">
-                        Quality event equipment for rent, maintained and cleaned for every booking.
-                    </p>
+                    <p class="fs-8 text-secondary lh-sm mb-0" id="detailDescription">No description provided for this listing.</p>
                 </div>
 
-                <!-- Feature Badges Row (3 Specs Cards) -->
+                <!-- Feature Badges Row -->
                 <div class="row g-2 mb-3">
-                    <div class="col-4">
+                    <div class="col-6">
                         <div class="p-2.5 rounded-3 text-center border h-100 d-flex flex-column align-items-center justify-content-center" style="background: #ECFDF5; border-color: #A7F3D0 !important;">
                             <i class="fa-solid fa-boxes-stacked text-success fs-6 mb-1"></i>
                             <span class="fs-9 fw-extrabold text-success-emphasis" id="detailStockBadge">10 Available</span>
                             <span class="text-muted" style="font-size:0.65rem;">Ready to Rent</span>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-6">
                         <div class="p-2.5 rounded-3 text-center border h-100 d-flex flex-column align-items-center justify-content-center" style="background: #F5F3FF; border-color: #DDD6FE !important;">
                             <i class="fa-regular fa-calendar-check fs-6 mb-1" style="color: #6D28D9;"></i>
                             <span class="fs-9 fw-extrabold" style="color: #6D28D9;">1 Day Min</span>
                             <span class="text-muted" style="font-size:0.65rem;">Daily Booking</span>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="p-2.5 rounded-3 text-center border h-100 d-flex flex-column align-items-center justify-content-center" style="background: #FFFBEB; border-color: #FDE68A !important;">
-                            <i class="fa-solid fa-wand-magic-sparkles text-warning fs-6 mb-1"></i>
-                            <span class="fs-9 fw-extrabold text-warning-emphasis">Clean & Tested</span>
-                            <span class="text-muted" style="font-size:0.65rem;">Quality Assured</span>
                         </div>
                     </div>
                 </div>
@@ -2051,5 +2062,4 @@
         </div>
     </div>
 </div>
-
 
