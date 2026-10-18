@@ -1822,7 +1822,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         </div>
     </div>
 
-    <!-- Order Detail & Live 6-Step Workflow Inspector Modal -->
+    <!-- Order Detail & Live 5-Step Workflow Inspector Modal -->
     <div class="modal fade" id="orderDetailModal" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden">
@@ -1986,7 +1986,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
                         <div>
                             <h6 class="fw-extrabold text-dark mb-0 fs-7">Proof of Delivery (POD)</h6>
-                            <span class="fs-9 text-muted" id="adminPodOrderSub">Handover Verification</span>
+                            <span class="fs-9 text-muted" id="adminPodOrderSub">Delivery record</span>
                         </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -3082,8 +3082,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const hasPrepPhoto = (o.prep_photo_url && o.prep_photo_url.trim() !== '');
                 const renterConfirmedPrep = (parseInt(o.prep_confirmed_by_renter) === 1);
                 const hasMeetupLoc = (o.meetup_location && o.meetup_location.trim() !== '' && o.meetup_location !== 'Campus Handover Meetup');
-                const isHandedOver = (parseInt(o.handed_over) === 1 || o.rental_timer_start || st === 'DELIVERED' || st === 'IN_PROGRESS' || st === 'RENTED');
-                const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED');
+                const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED' || o.timer_status === 'COMPLETED' || parseInt(o.has_rated) === 1 || parseInt(o.rating) > 0);
+                const isHandedOver = !isReturned && (parseInt(o.handed_over) === 1 || o.rental_timer_start || st === 'DELIVERED' || st === 'IN_PROGRESS' || st === 'RENTED');
 
                 let activeIdx = 0;
                 if (isReturned) activeIdx = 4;
@@ -3095,11 +3095,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 document.getElementById('mOrderTitle').innerText = `Order ${o.order_code}`;
                 const stageBadge = document.getElementById('mOrderLiveStageBadge');
                 if (stageBadge) {
-                    if (o.timer_status === 'RUNNING' || (isHandedOver && !isReturned)) {
+                    if (!isReturned && (o.timer_status === 'RUNNING' || isHandedOver)) {
                         stageBadge.className = 'badge fs-9 fw-bold text-white shadow-2xs';
                         stageBadge.style.background = 'linear-gradient(135deg, #10B981, #059669)';
                         stageBadge.innerHTML = '<i class="fa-solid fa-stopwatch fa-spin-pulse me-1"></i> IN RENTER HANDS (TIMER RUNNING)';
-                    } else if (o.timer_status === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue) {
+                    } else if (!isReturned && (o.timer_status === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue)) {
                         stageBadge.className = 'badge fs-9 fw-bold bg-danger text-white';
                         stageBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> OVERDUE (EXPIRED)';
                     } else if (st === 'HANDOVER_READY') {
@@ -3250,18 +3250,18 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                         <div>
                                             <strong class="fs-9 text-dark">Step 4: Physical Handover &amp; Rental Timer</strong>
                                             <div class="fs-10 text-muted">
-                                                ${isHandedOver ? `Handed over on campus. Return scheduled: <strong>${o.rental_timer_end || o.rental_end_date}</strong>` : 'Timer starts upon physical in-person equipment exchange'}
+                                                ${isReturned ? `Rental completed. Returned and restocked on <strong>${o.returned_at || o.updated_at || 'recorded completion'}</strong>` : (isHandedOver ? `Handed over on campus. Return scheduled: <strong>${o.rental_timer_end || o.rental_end_date}</strong>` : 'Timer starts after the owner and renter complete handover')}
                                             </div>
                                         </div>
                                     </div>
                                     <div class="text-end">
-                                        <span class="badge ${isHandedOver ? 'bg-success text-white' : 'bg-secondary-subtle text-secondary'} fs-10">
-                                            ${isHandedOver ? (o.is_overdue ? 'OVERDUE' : 'TIMER ACTIVE') : 'NOT STARTED'}
+                                        <span class="badge ${isReturned ? 'bg-success text-white' : (isHandedOver ? 'bg-success text-white' : 'bg-secondary-subtle text-secondary')} fs-10">
+                                            ${isReturned ? 'COMPLETED' : (isHandedOver ? (o.is_overdue ? 'OVERDUE' : 'TIMER ACTIVE') : 'NOT STARTED')}
                                         </span>
                                         <div class="fs-11 text-muted mt-0.5">${o.handed_over_at || o.rental_timer_start || '—'}</div>
                                     </div>
                                 </div>
-                                ${isHandedOver ? `
+                                ${isHandedOver && !isReturned ? `
                                     <div class="mt-2 pt-2 border-top d-flex align-items-center justify-content-between bg-white p-2 rounded-2 border border-success-subtle shadow-2xs">
                                         <div class="d-flex align-items-center gap-2">
                                             <i class="fa-solid fa-stopwatch text-success fs-6 fa-spin-pulse"></i>
@@ -3320,10 +3320,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
                     </div>
 
-                    <!-- 2. VERIFIED PROOF PHOTOS (SIDE-BY-SIDE) -->
+                    <!-- 2. EQUIPMENT CONDITION PROOF -->
                     <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-6">
-                            <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white" style="border-left: 4px solid #F59E0B !important;">
+                        <div class="col-12">
+                            <div class="card border-0 rounded-4 shadow-sm p-3 bg-white" style="border-left: 4px solid #F59E0B !important;">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
                                     <div class="d-flex align-items-center gap-1.5">
                                         <i class="fa-solid fa-box-archive text-warning fs-7"></i>
@@ -3349,34 +3349,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             </div>
                         </div>
 
-                        <div class="col-12 col-md-6">
-                            <div class="card border-0 rounded-4 shadow-sm p-3 h-100 bg-white" style="border-left: 4px solid #10B981 !important;">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div class="d-flex align-items-center gap-1.5">
-                                        <i class="fa-solid fa-circle-check text-success fs-7"></i>
-                                        <strong class="text-dark fs-8">Face-to-Face Handover Verification</strong>
-                                    </div>
-                                    <span class="badge ${o.delivery_proof_photo || o.order_status === 'DELIVERED' ? 'bg-success-subtle text-success' : 'bg-light text-muted'} fs-9">
-                                        ${o.delivery_proof_photo || o.order_status === 'DELIVERED' ? 'HANDOVER VERIFIED' : 'AWAITING HANDOVER'}
-                                    </span>
-                                </div>
-                                ${o.delivery_proof_photo || o.order_status === 'DELIVERED' ? `
-                                    <div class="rounded-3 overflow-hidden border mb-2 text-center bg-dark position-relative" style="max-height: 160px;">
-                                        <img src="${o.delivery_proof_photo || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80'}" class="w-100 object-fit-cover" style="max-height: 160px; cursor: pointer;" onclick="window.open(this.src, '_blank')" title="Click to open full photo">
-                                        <span class="position-absolute bottom-0 end-0 m-1.5 badge bg-dark bg-opacity-75 text-white fs-10"><i class="fa-solid fa-up-right-from-square me-1"></i> Zoom</span>
-                                    </div>
-                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-clock text-info me-1"></i> Time: <strong class="text-dark">${o.delivery_proof_time || 'Recorded on Handover'}</strong></div>
-                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-user-check text-success me-1"></i> Recipient: <strong class="text-dark">${o.delivery_proof_recipient || o.customer_name}</strong></div>
-                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-square-check text-success me-1"></i> Student Verification: ${o.renter_received_confirmed == 1 ? '<span class="badge bg-success text-white">Confirmed by Student</span>' : '<span class="badge bg-success-subtle text-success">Direct Handover Verified</span>'}</div>
-                                    <div class="p-1.5 rounded-2 bg-light border fs-9 text-secondary"><i class="fa-solid fa-quote-left text-muted me-1"></i> ${o.delivery_proof_note || 'Equipment inspected face-to-face and received in good condition.'}</div>
-                                ` : `
-                                    <div class="p-4 rounded-3 bg-light border text-center text-muted fs-9">
-                                        <i class="fa-solid fa-handshake fs-4 d-block mb-1 text-secondary opacity-50"></i>
-                                        Parties will meet face-to-face on campus for equipment handover.
-                                    </div>
-                                `}
-                            </div>
-                        </div>
                     </div>
 
                     <!-- 3. RENTER & STOCK OWNER DIRECT CONTACT (2 COLUMNS) -->
@@ -4123,7 +4095,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         function openAdminPodModal(encodedData) {
             try {
                 const d = JSON.parse(decodeURIComponent(encodedData));
-                document.getElementById('adminPodOrderSub').innerText = `${d.order_code} • Handover Verification`;
+                document.getElementById('adminPodOrderSub').innerText = `${d.order_code} • Delivery record`;
                 document.getElementById('adminPodPhotoImg').src = d.delivery_proof_photo || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
                 document.getElementById('adminPodRecipient').innerText = d.delivery_proof_recipient || d.customer_name || 'Verified Student';
                 document.getElementById('adminPodTime').innerText = d.delivery_proof_time || 'Completed on Handover';
@@ -5657,9 +5629,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         function renderOrderStatusBadgeWithTimer(o) {
             const st = (o.order_status || 'CONFIRMED').toUpperCase();
             const timerSt = (o.timer_status || 'NOT_STARTED').toUpperCase();
-            const isTimerRunning = (timerSt === 'RUNNING' || o.is_timer_running || (st === 'IN_PROGRESS' && o.rental_timer_start));
-            const isOverdue = (timerSt === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue);
-            const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED');
+            const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED' || timerSt === 'COMPLETED' || parseInt(o.has_rated) === 1 || parseInt(o.rating) > 0);
+            const isTimerRunning = (!isReturned && (timerSt === 'RUNNING' || o.is_timer_running || (st === 'IN_PROGRESS' && o.rental_timer_start)));
+            const isOverdue = (!isReturned && (timerSt === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue));
             const isHandoverReady = (st === 'HANDOVER_READY');
             const isRequested = (st === 'REQUESTED');
             const isPreparing = (st === 'PREPARING' || st === 'PROCESSING');
