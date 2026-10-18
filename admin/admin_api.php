@@ -738,7 +738,10 @@ if ($action === 'get_orders') {
     $subtab = trim((string)($req['subtab'] ?? 'incoming'));
 
     $sql = "SELECT o.*,
-                   (SELECT COUNT(*) FROM `rental_issues` WHERE `order_code` = o.order_code AND `status` != 'RESOLVED') as reported_issues_count
+                   (SELECT COUNT(*) FROM `rental_issues` WHERE `order_code` = o.order_code AND `status` != 'RESOLVED') as reported_issues_count,
+                   o.`early_return_status`,
+                   o.`early_return_requested_at`,
+                   o.`early_return_verified_at`
             FROM `rental_orders` o WHERE 1=1";
     $params = [];
 

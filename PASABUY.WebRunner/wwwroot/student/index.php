@@ -156,6 +156,140 @@
             z-index: 10 !important;
         }
 
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(95, 39, 205, 0.2);
+            border-radius: 50%;
+            border-top-color: #5F27CD;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .loading-overlay .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(95, 39, 205, 0.2);
+            border-radius: 50%;
+            border-top-color: #5F27CD;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .loading-overlay p {
+            color: #5F27CD;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 320px;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            border-left: 4px solid #10AC84;
+        }
+
+        .toast.error {
+            border-left: 4px solid #FF3B30;
+        }
+
+        .toast.info {
+            border-left: 4px solid #5F27CD;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Button Loading State */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94A3B8;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #CBD5E1;
+        }
+
+        .empty-state h5 {
+            color: #64748B;
+            font-weight: 600;
+        }
+
+        .empty-state p {
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+
         /* Main Body Scrollable Area */
         .app-body {
             flex: 1;
@@ -381,6 +515,15 @@
 
 <body>
 
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner"></div>
+        <p id="loadingText">Loading...</p>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <div class="app-container">
         <!-- App Header (Matching Reference Design) -->
         <div class="app-header bg-white border-bottom px-3 py-2.5 shadow-sm d-flex align-items-center justify-content-between" style="background:#fff; color:#1E293B;">
@@ -460,6 +603,73 @@
 
                     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                     <script>
+                        // Loading and Toast Notification Helpers
+                        window.showLoading = function(text = 'Loading...') {
+                            const overlay = document.getElementById('loadingOverlay');
+                            const textEl = document.getElementById('loadingText');
+                            if (overlay) {
+                                if (textEl) textEl.textContent = text;
+                                overlay.style.display = 'flex';
+                            }
+                        };
+
+                        window.hideLoading = function() {
+                            const overlay = document.getElementById('loadingOverlay');
+                            if (overlay) overlay.style.display = 'none';
+                        };
+
+                        window.showToast = function(message, type = 'info', duration = 3000) {
+                            const container = document.getElementById('toastContainer');
+                            if (!container) return;
+
+                            const toast = document.createElement('div');
+                            toast.className = `toast ${type}`;
+
+                            const iconMap = {
+                                success: 'fa-check-circle',
+                                error: 'fa-exclamation-circle',
+                                info: 'fa-info-circle'
+                            };
+
+                            const icon = iconMap[type] || iconMap.info;
+
+                            toast.innerHTML = `
+                                <i class="fa-solid ${icon}" style="font-size: 20px; color: ${type === 'success' ? '#10AC84' : type === 'error' ? '#FF3B30' : '#5F27CD'};"></i>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 0.9rem; color: #1E293B;">${message}</div>
+                                </div>
+                                <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 16px;">
+                                    <i class="fa-solid fa-times"></i>
+                                </button>
+                            `;
+
+                            container.appendChild(toast);
+
+                            setTimeout(() => {
+                                toast.style.animation = 'slideIn 0.3s ease reverse';
+                                setTimeout(() => toast.remove(), 300);
+                            }, duration);
+                        };
+
+                        window.setButtonLoading = function(buttonId, isLoading, originalText = '') {
+                            const btn = document.getElementById(buttonId);
+                            if (!btn) return;
+
+                            if (isLoading) {
+                                btn.dataset.originalText = btn.textContent;
+                                btn.classList.add('btn-loading');
+                                btn.disabled = true;
+                            } else {
+                                btn.classList.remove('btn-loading');
+                                btn.disabled = false;
+                                if (originalText) {
+                                    btn.textContent = originalText;
+                                } else if (btn.dataset.originalText) {
+                                    btn.textContent = btn.dataset.originalText;
+                                }
+                            }
+                        };
+
                         let notificationsModalInstance = null;
 
                         window.openNotificationsModal = async function () {
@@ -5024,16 +5234,41 @@
                             const apiEndpoint = window.location.pathname.includes('/student/') ? 'rentease_api.php?action=respond_early_return' : '/student/rentease_api.php?action=respond_early_return';
                             try {
                                 if (response === 'yes' && !(await window.showEarlyReturnModal(order.order_code, 'renter-confirm'))) return;
+
+                                // Show loading state
+                                if (typeof window.showLoading === 'function') {
+                                    window.showLoading('Verifying return...');
+                                }
+
                                 const res = await fetch(apiEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
                                     order_id: order.id, order_code: order.order_code, user_id: storedUser.id || storedUser.userId || storedUser.UserId || 0, user_email: storedUser.email || '', response: response
                                 })});
                                 const data = await res.json();
+
+                                if (typeof window.hideLoading === 'function') {
+                                    window.hideLoading();
+                                }
+
                                 if (!data.success) throw new Error(data.message || 'Unable to verify the return.');
-                                alert(data.message);
+
+                                // Show success toast
+                                if (typeof window.showToast === 'function') {
+                                    window.showToast(data.message, 'success', 4000);
+                                } else {
+                                    alert(data.message);
+                                }
+
                                 await checkAndRenderChatRentalTimer();
                                 if (typeof refreshActiveChatStream === 'function') await refreshActiveChatStream();
                             } catch (error) {
-                                alert(error.message || 'Unable to verify the early return.');
+                                if (typeof window.hideLoading === 'function') {
+                                    window.hideLoading();
+                                }
+                                if (typeof window.showToast === 'function') {
+                                    window.showToast(error.message || 'Unable to verify the early return.', 'error', 4000);
+                                } else {
+                                    alert(error.message || 'Unable to verify the early return.');
+                                }
                             }
                         };
 

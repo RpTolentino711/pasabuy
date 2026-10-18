@@ -5899,6 +5899,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         function renderOrderStatusBadgeWithTimer(o) {
             const st = (o.order_status || 'CONFIRMED').toUpperCase();
             const timerSt = (o.timer_status || 'NOT_STARTED').toUpperCase();
+            const earlyReturnStatus = (o.early_return_status || '').toUpperCase();
             const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED' || timerSt === 'COMPLETED' || parseInt(o.has_rated) === 1 || parseInt(o.rating) > 0);
             const isTimerRunning = (!isReturned && (timerSt === 'RUNNING' || o.is_timer_running || (st === 'IN_PROGRESS' && o.rental_timer_start)));
             const isOverdue = (!isReturned && (timerSt === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue));
@@ -5906,6 +5907,37 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             const isRequested = (st === 'REQUESTED');
             const isPreparing = (st === 'PREPARING' || st === 'PROCESSING');
             const isMeetup = (st === 'MEETUP' || st === 'PICKUP' || st === 'ON_THE_WAY' || st === 'LOOKING_FOR_RIDER');
+
+            // Show early return status if present
+            if (earlyReturnStatus === 'PENDING_RENTER') {
+                return `
+                    <div>
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i> Early Return Pending
+                        </span>
+                        <div class="fs-11 text-warning fw-bold mt-0.5">Awaiting Renter Confirmation</div>
+                    </div>`;
+            }
+
+            if (earlyReturnStatus === 'COMPLETED') {
+                return `
+                    <div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-check-double me-1 text-success"></i> Early Return Verified
+                        </span>
+                        <div class="fs-11 text-success fw-bold mt-0.5">Restocked Early</div>
+                    </div>`;
+            }
+
+            if (earlyReturnStatus === 'DECLINED') {
+                return `
+                    <div>
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-xmark me-1"></i> Early Return Declined
+                        </span>
+                        <div class="fs-11 text-muted mt-0.5">Renter Not Returned Yet</div>
+                    </div>`;
+            }
 
             if (isReturned) {
                 return `

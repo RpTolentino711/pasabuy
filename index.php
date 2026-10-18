@@ -5006,16 +5006,41 @@
                             const apiEndpoint = window.location.pathname.includes('/student/') ? 'rentease_api.php?action=respond_early_return' : '/student/rentease_api.php?action=respond_early_return';
                             try {
                                 if (response === 'yes' && !(await window.showEarlyReturnModal(order.order_code, 'renter-confirm'))) return;
+
+                                // Show loading state
+                                if (typeof window.showLoading === 'function') {
+                                    window.showLoading('Verifying return...');
+                                }
+
                                 const res = await fetch(apiEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
                                     order_id: order.id, order_code: order.order_code, user_id: storedUser.id || storedUser.userId || storedUser.UserId || 0, user_email: storedUser.email || '', response: response
                                 })});
                                 const data = await res.json();
+
+                                if (typeof window.hideLoading === 'function') {
+                                    window.hideLoading();
+                                }
+
                                 if (!data.success) throw new Error(data.message || 'Unable to verify the return.');
-                                alert(data.message);
+
+                                // Show success toast
+                                if (typeof window.showToast === 'function') {
+                                    window.showToast(data.message, 'success', 4000);
+                                } else {
+                                    alert(data.message);
+                                }
+
                                 await checkAndRenderChatRentalTimer();
                                 if (typeof refreshActiveChatStream === 'function') await refreshActiveChatStream();
                             } catch (error) {
-                                alert(error.message || 'Unable to verify the early return.');
+                                if (typeof window.hideLoading === 'function') {
+                                    window.hideLoading();
+                                }
+                                if (typeof window.showToast === 'function') {
+                                    window.showToast(error.message || 'Unable to verify the early return.', 'error', 4000);
+                                } else {
+                                    alert(error.message || 'Unable to verify the early return.');
+                                }
                             }
                         };
 

@@ -1938,6 +1938,21 @@ if (in_array($action, ['request_early_return', 'respond_early_return'], true)) {
             $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (0, ?, 'RentEase System', ?, ?, NOW())")
                 ->execute([(int)($order['owner_id'] ?? 0), "✅ Order {$order['order_code']} is verified by the renter and the item is now back in stock.", $order['item_name'] ?? 'Rental Return Complete']);
         } catch (Exception $eNotification) {}
+
+        // Add audit log for admin notification
+        try {
+            $auditDetails = "Early return verified by renter for Order {$order['order_code']}. Item(s) restocked to inventory. Order status changed to RETURNED.";
+            $db->prepare("INSERT INTO `AuditLogs` (`AdminId`, `Action`, `TargetType`, `TargetId`, `Details`, `Timestamp`, `IpAddress`) VALUES (?, ?, ?, ?, ?, NOW(), ?)")
+                ->execute([
+                    100, // System admin ID
+                    'EARLY_RETURN_COMPLETED',
+                    'rental_order',
+                    (string)$order['id'],
+                    $auditDetails,
+                    $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'
+                ]);
+        } catch (Exception $eAudit) {}
+
         $db->commit();
         echo json_encode(['success' => true, 'status' => 'COMPLETED', 'message' => $message]);
         exit;
