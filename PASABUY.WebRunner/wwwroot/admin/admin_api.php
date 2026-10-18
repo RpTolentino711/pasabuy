@@ -1782,9 +1782,24 @@ if ($action === 'dismiss_item_report') {
     $reportId = (int)($req['report_id'] ?? $req['id'] ?? 0);
     $notes = trim((string)($req['admin_notes'] ?? 'Report reviewed and dismissed as non-violating.'));
 
-    $stmt = $db->prepare("UPDATE `rental_item_reports` SET `status` = 'DISMISSED', `admin_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ?");
+    $check = $db->prepare("SELECT `status` FROM `rental_item_reports` WHERE `id` = ?");
+    $check->execute([$reportId]);
+    $currentStatus = $check->fetchColumn();
+    if (!$currentStatus) {
+        echo json_encode(['success' => false, 'message' => 'Report not found.']);
+        exit;
+    }
+    if (strtoupper((string)$currentStatus) !== 'PENDING') {
+        echo json_encode(['success' => false, 'message' => 'This report has already been reviewed.']);
+        exit;
+    }
+    $stmt = $db->prepare("UPDATE `rental_item_reports` SET `status` = 'DISMISSED', `admin_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ? AND `status` = 'PENDING'");
     $stmt->execute([$notes, $reportId]);
 
+    if ($stmt->rowCount() !== 1) {
+        echo json_encode(['success' => false, 'message' => 'The report could not be dismissed because its status changed.']);
+        exit;
+    }
     echo json_encode(['success' => true, 'message' => 'Report dismissed successfully.']);
     exit;
 }

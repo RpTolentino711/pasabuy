@@ -457,6 +457,21 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         </div>
     </div>
 
+    <div class="modal fade" id="adminEvidenceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+                <div class="modal-header border-0 pb-2">
+                    <h6 class="fw-bold mb-0" id="adminEvidenceTitle">Report Evidence</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-0 text-center">
+                    <div id="adminEvidenceEmpty" class="text-muted small py-4">Evidence photo unavailable.</div>
+                    <img id="adminEvidenceImage" src="" alt="Report evidence" class="img-fluid rounded-3 border" style="max-height:70vh; object-fit:contain; display:none;">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ==========================================================
          SIDEBAR NAVIGATION (Matches ADMIN UI.png)
          ========================================================== -->
@@ -1187,7 +1202,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
                         <h4 class="fw-extrabold mb-1 text-dark">Support &amp; Community Moderation</h4>
-                        <p class="text-muted fs-8 mb-0">Manage customer tickets, item violation reports (3-strike enforcement), and owner appeals.</p>
+                        <p class="text-muted fs-8 mb-0">Manage customer tickets, evidence-backed listing reports, and owner appeals.</p>
                     </div>
                 </div>
 
@@ -1278,7 +1293,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                             <div>
                                 <h6 class="fw-extrabold text-dark mb-0">Reported Equipment Listings</h6>
-                                <p class="text-muted fs-9 mb-0">Reports submitted by students. <strong>3 approved strikes</strong> will automatically terminate the listing and suspend the poster.</p>
+                                <p class="text-muted fs-9 mb-0">Reports submitted by students. An approved evidence-backed report takes down the listing and freezes the poster for 5 days.</p>
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <select class="form-select form-select-sm" id="reportFilterStatus" style="width:160px;" onchange="loadItemReports()">
@@ -4568,6 +4583,27 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             }
         }
 
+        let adminItemReportsById = {};
+
+        function openAdminEvidence(reportId) {
+            const report = adminItemReportsById[parseInt(reportId)];
+            const image = document.getElementById('adminEvidenceImage');
+            const empty = document.getElementById('adminEvidenceEmpty');
+            const title = document.getElementById('adminEvidenceTitle');
+            if (!report || !report.evidence_photo) {
+                if (image) { image.removeAttribute('src'); image.style.display = 'none'; }
+                if (empty) empty.style.display = 'block';
+            } else {
+                if (title) title.innerText = `Evidence: ${report.item_name || 'Reported listing'}`;
+                if (image) {
+                    image.onerror = function () { this.style.display = 'none'; if (empty) empty.style.display = 'block'; };
+                    image.onload = function () { this.style.display = 'inline-block'; if (empty) empty.style.display = 'none'; };
+                    image.src = report.evidence_photo;
+                }
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('adminEvidenceModal')).show();
+        }
+
         async function loadItemReports() {
             const status = document.getElementById('reportFilterStatus')?.value || 'All';
             const tbody = document.getElementById('itemReportsTableBody');
@@ -4589,6 +4625,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 }
 
                 if (data.success && data.reports && data.reports.length > 0) {
+                    adminItemReportsById = {};
+                    data.reports.forEach(report => { adminItemReportsById[parseInt(report.id)] = report; });
                     tbody.innerHTML = data.reports.map(r => {
                         const strikes = parseInt(r.approved_reports_count || 0);
                         const isTerminated = (r.item_status === 'TERMINATED');
@@ -4620,7 +4658,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <td>
                                     <div class="fw-bold text-danger fs-8">${r.reason}</div>
                                     <div class="fs-9 text-dark" style="max-width:240px; word-break:break-word;">${r.details}</div>
-                                    ${r.evidence_photo ? `<a href="${r.evidence_photo}" target="_blank" class="badge bg-danger-subtle text-danger fs-9 mt-1 text-decoration-none d-inline-block"><i class="fa-solid fa-camera me-1"></i>View Evidence Photo</a>` : ''}
+                                    ${r.evidence_photo ? `<button type="button" class="btn btn-sm badge bg-danger-subtle text-danger fs-9 mt-1 border-0" onclick="openAdminEvidence(${r.id})"><i class="fa-solid fa-camera me-1"></i>View Evidence Photo</button>` : '<div class="fs-9 text-muted mt-1"><i class="fa-solid fa-image me-1"></i>No evidence photo</div>'}
                                 </td>
                                 <td>
                                     ${isTerminated 
@@ -4686,19 +4724,22 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         }
 
         async function adminDismissReport(reportId) {
-            if (!confirm('Dismiss this violation report? No strike will be applied.')) return;
+            const notes = prompt('Dismiss this report? Enter the Admin reason:', 'Report reviewed and dismissed as non-violating.');
+            if (notes === null) return;
             try {
                 const res = await fetch(`${API_URL}?action=dismiss_item_report`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ report_id: reportId })
+                    body: JSON.stringify({ report_id: reportId, admin_notes: notes })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('✅ Report dismissed.');
+                    alert(data.message || '✅ Report dismissed.');
                     loadItemReports();
                 }
-            } catch (e) {}
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+            }
         }
 
         async function loadItemAppeals() {
