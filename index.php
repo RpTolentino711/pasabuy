@@ -6765,7 +6765,7 @@
                     const conversations = await response.json();
                     if (!Array.isArray(conversations) || !conversations.length) return;
                     container.innerHTML = conversations.map(c => `
-                        <button type="button" class="w-100 text-start border rounded-4 bg-white p-3 d-flex align-items-center gap-3 shadow-2xs" onclick="window.openDirectChat && window.openDirectChat(${Number(c.PartnerId || c.SenderId || 0)}, '${String(c.ItemTitle || 'Campus Item').replace(/'/g, "\\'")}')">
+                        <button type="button" class="w-100 text-start border rounded-4 bg-white p-3 d-flex align-items-center gap-3 shadow-2xs" onclick='window.openConversationCard(${JSON.stringify(c).replace(/</g, "\\u003c")} )'>
                             <img src="${c.PartnerAvatar || 'https://ui-avatars.com/api/?name=Chat&background=5B3FA8&color=fff'}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" alt="">
                             <span class="min-w-0"><strong class="d-block text-dark text-truncate">${c.PartnerName || 'Campus Student'}</strong><small class="text-muted text-truncate d-block">${c.ItemTitle || 'Rental conversation'}</small><small class="text-secondary text-truncate d-block">${c.MessageText || ''}</small></span>
                         </button>
@@ -6775,6 +6775,42 @@
                 }
             };
         }
+        window.openConversationCard = async function (conversation) {
+            const partnerId = Number(conversation.PartnerId || conversation.SenderId || 0);
+            const partnerName = conversation.PartnerName || 'Campus Student';
+            const itemTitle = conversation.ItemTitle || 'Campus Item';
+            const orderCode = conversation.OrderCode || conversation.RentalOrderCode || '';
+            if (typeof window.checkAndOpenChat === 'function') {
+                return window.checkAndOpenChat(
+                    partnerId,
+                    partnerName,
+                    itemTitle,
+                    conversation.ItemPrice || '₱0.00',
+                    conversation.PartnerAvatar || '',
+                    conversation.ItemImage || '',
+                    false,
+                    conversation.OwnerName || '',
+                    false,
+                    orderCode
+                );
+            }
+
+            window.currentActiveChatSellerId = partnerId;
+            window.currentActiveChatOrderCode = orderCode || null;
+            const messagesTab = document.getElementById('tabMessages');
+            const chatView = document.getElementById('chatView');
+            if (messagesTab) messagesTab.style.setProperty('display', 'none', 'important');
+            if (chatView) chatView.style.setProperty('display', 'flex', 'important');
+            const partnerNameEl = document.getElementById('chatPartnerName') || document.getElementById('chatRecipientName');
+            const itemTitleEl = document.getElementById('chatItemTitle');
+            if (partnerNameEl) partnerNameEl.textContent = partnerName;
+            if (itemTitleEl) itemTitleEl.textContent = itemTitle;
+            const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
+            if (stream) stream.innerHTML = '<div class="text-center my-4 text-muted">Loading conversation...</div>';
+            if (typeof window.refreshActiveChatStream === 'function') {
+                await window.refreshActiveChatStream();
+            }
+        };
     </script>
     <script src="rentease_app.js?v=<?= time() ?>"></script>
 </body>
