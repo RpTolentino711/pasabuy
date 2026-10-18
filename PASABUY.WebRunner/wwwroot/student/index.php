@@ -3506,6 +3506,16 @@
                         let currentChatRentalOrder = null;
                         let chatRentalTimerInterval = null;
 
+                        function updateRentalLifecycleStepper(step, isOwner) {
+                            const roleLabel = document.getElementById('chatLifecycleRoleLabel');
+                            if (roleLabel) roleLabel.textContent = isOwner ? 'Stock owner flow' : 'Renter flow';
+                            document.querySelectorAll('#chatLifecycleStepper .rentchat-step').forEach((el) => {
+                                const itemStep = parseInt(el.dataset.step || '0', 10);
+                                el.classList.toggle('is-complete', itemStep < step);
+                                el.classList.toggle('is-active', itemStep === step);
+                            });
+                        }
+
                         async function checkAndRenderChatRentalTimer() {
                             if (!currentActiveChatSellerId) return;
                             let storedUser = null;
@@ -3561,6 +3571,13 @@
                                     (currentUserEmail && ord.customer_email && currentUserEmail === ord.customer_email.toLowerCase())) {
                                     isOwner = false;
                                 }
+                                const lifecycleStatus = String(ord.order_status || '').trim().toUpperCase();
+                                const lifecycleStep = ['IN_PROGRESS', 'DELIVERED', 'RETURNED', 'COMPLETED', 'OVERDUE'].includes(lifecycleStatus)
+                                    || ['RUNNING', 'EXPIRED', 'COMPLETED'].includes(String(ord.timer_status || '').trim().toUpperCase()) ? 4
+                                    : ['MEETUP', 'HANDOVER_READY'].includes(lifecycleStatus) ? 3
+                                    : ['PREPARING', 'PROCESSING', 'CONFIRMED'].includes(lifecycleStatus) ? 2
+                                    : 1;
+                                updateRentalLifecycleStepper(lifecycleStep, isOwner);
 
                                 // Update Header Role Badge Dynamically (Describes the counterparty / chat partner)
                                 const partnerRoleBadge = document.getElementById('chatPartnerRoleBadge');

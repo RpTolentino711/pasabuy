@@ -313,6 +313,12 @@
         #chatView .rentchat-input-bar { padding: 6px !important; }
         #chatView .rentchat-textarea { min-height: 36px; padding: 7px 12px; font-size: 0.78rem; }
         #chatView .rentchat-send-btn { width: 36px; height: 36px; font-size: 0.78rem; }
+        .rentchat-stepper { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:6px 2px 2px; }
+        .rentchat-step { position:relative; text-align:center; color:#94A3B8; font-size:.58rem; font-weight:700; line-height:1.1; }
+        .rentchat-step::before { content:''; display:block; width:18px; height:18px; margin:0 auto 3px; border:2px solid #CBD5E1; border-radius:50%; background:#FFF; color:#94A3B8; line-height:14px; }
+        .rentchat-step.is-complete,.rentchat-step.is-active { color:#5B3FA8; }
+        .rentchat-step.is-complete::before { content:'✓'; border-color:#8B5CF6; background:#EDE9FE; color:#6D28D9; }
+        .rentchat-step.is-active::before { border-color:#6366F1; background:#6366F1; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
         @media (max-width: 576px) {
             #chatView {
                 max-height: calc(100dvh - 128px);
@@ -695,9 +701,13 @@
             <span class="fw-bold text-dark d-flex align-items-center gap-1.5">
                 <i class="fa-solid fa-list-check text-primary"></i> Handover Lifecycle
             </span>
+            <span class="badge rounded-pill fw-bold" id="chatLifecycleRoleLabel" style="background:#F1F5F9; color:#475569; font-size:0.6rem;">Renter flow</span>
             <span class="badge rounded-pill fw-bold" id="chatLifecycleStepPill" style="background:#EDE9FE; color:#5B3FA8; font-size:0.65rem;">
                 Step 1 of 4
             </span>
+        </div>
+        <div class="rentchat-stepper" id="chatLifecycleStepper" aria-label="Rental progress">
+            <div class="rentchat-step is-active" data-step="1">Request</div><div class="rentchat-step" data-step="2">Prepare</div><div class="rentchat-step" data-step="3">Meetup</div><div class="rentchat-step" data-step="4">Handover</div>
         </div>
 
         <!-- STEP 1: BOOKING CONFIRMATION -->
