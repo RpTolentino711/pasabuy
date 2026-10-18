@@ -5330,14 +5330,25 @@ if (document.readyState === 'loading') {
 
 window.acceptOrderAndGoToMessages = function (orderId, orderCode, customerName, renterId, itemName, itemImage) {
     window.currentActiveChatOrderCode = orderCode;
-    if (typeof switchTab === 'function') {
-        switchTab('messages');
+    const openTransactionChat = window.checkAndOpenChat || window.openDirectChat || window.openChatWithRenter;
+    if (typeof openTransactionChat !== 'function') {
+        console.error('Transaction chat handler is unavailable.');
+        alert('Unable to open the rental chat. Please refresh and try again.');
+        return;
     }
+
     setTimeout(() => {
-        if (typeof checkAndOpenChat === 'function') {
-            checkAndOpenChat(renterId || 105, customerName || 'Campus Renter', itemName || 'Rental Equipment', '₱0.00', '', itemImage || '', true, 'You', false, orderCode);
-        } else if (typeof openChatWithRenter === 'function') {
-            openChatWithRenter(customerName, '', orderCode);
-        }
-    }, 150);
+        openTransactionChat(
+            renterId || 105,
+            customerName || 'Campus Renter',
+            itemName || 'Rental Equipment',
+            '₱0.00',
+            '',
+            itemImage || '',
+            true,
+            'You',
+            false,
+            orderCode
+        );
+    }, 0);
 };
