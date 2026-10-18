@@ -1272,7 +1272,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     </div>
                 </div>
 
-                <!-- PANE 2: ITEM VIOLATION REPORTS (3-STRIKE POLICY) -->
+                <!-- PANE 2: ITEM VIOLATION REPORTS & ENFORCEMENT -->
                 <div id="supportPaneReports" class="support-module-pane" style="display:none;">
                     <div class="admin-table-card p-3">
                         <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
@@ -2851,11 +2851,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     tbody.innerHTML = data.products.map(p => {
                         const strikes = parseInt(p.approved_reports_count || 0);
                         const isTerminated = (p.status === 'TERMINATED');
-                        let strikeBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle fs-9"><i class="fa-solid fa-shield-check me-1"></i>Clean (0/3)</span>';
+                        let strikeBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle fs-9"><i class="fa-solid fa-shield-check me-1"></i>No approved reports</span>';
                         if (isTerminated) {
-                            strikeBadge = '<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>TERMINATED (3 Strikes)</span>';
+                            strikeBadge = '<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>TAKEN DOWN</span>';
                         } else if (strikes > 0) {
-                            strikeBadge = `<span class="badge bg-warning text-dark border border-warning-subtle fs-9 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>${strikes}/3 Strikes</span>`;
+                            strikeBadge = `<span class="badge bg-warning text-dark border border-warning-subtle fs-9 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>${strikes} approved report${strikes === 1 ? '' : 's'}</span>`;
                         }
 
                         return `
@@ -4530,7 +4530,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         }
 
         // ----------------------------------------------------------
-        // ITEM REPORTS & APPEALS MODERATION SYSTEM (3-STRIKE ENFORCEMENT)
+        // ITEM REPORTS & APPEALS MODERATION SYSTEM
         // ----------------------------------------------------------
         let currentSupportModule = 'tickets';
 
@@ -4622,10 +4622,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 </td>
                                 <td>
                                     ${isTerminated 
-                                        ? '<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>TERMINATED (3 Strikes)</span>'
+                                        ? '<span class="badge bg-danger text-white fs-9 fw-bold"><i class="fa-solid fa-ban me-1"></i>TAKEN DOWN</span>'
                                         : (strikes > 0 
-                                            ? `<span class="badge bg-warning text-dark border border-warning-subtle fs-9 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>${strikes}/3 Strikes</span>`
-                                            : '<span class="badge bg-light text-muted border fs-9">0/3 Strikes</span>'
+                                            ? `<span class="badge bg-warning text-dark border border-warning-subtle fs-9 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>${strikes} approved report${strikes === 1 ? '' : 's'}</span>`
+                                            : '<span class="badge bg-light text-muted border fs-9">No approved reports</span>'
                                           )
                                     }
                                 </td>
@@ -4638,7 +4638,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     ${r.status === 'PENDING' ? `
                                         <div class="d-flex gap-1 flex-wrap">
                                             <button class="btn btn-sm btn-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="adminApproveReport(${r.id}, ${r.item_id}, ${r.owner_id}, '${safeItemName}', '${safeOwnerName}')">
-                                                <i class="fa-solid fa-gavel me-1"></i>Approve Strike
+                                                <i class="fa-solid fa-gavel me-1"></i>Take Down & Freeze
                                             </button>
                                             <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 fs-9 text-secondary" onclick="adminDismissReport(${r.id})">
                                                 <i class="fa-solid fa-xmark me-1"></i>Dismiss
@@ -4660,7 +4660,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         }
 
         async function adminApproveReport(reportId, itemId, ownerId, itemName, ownerName) {
-            const reason = prompt(`Approve violation strike for "${itemName}" (Owner: ${ownerName})?\n\nRENT-EASE 3-STRIKE POLICY:\n• Approving adds 1 strike to this equipment post.\n• If this item reaches 3 strikes, the listing will be TERMINATED immediately and the owner SUSPENDED.\n\nEnter admin notes or confirm:`, 'Violation verified by moderation team.');
+            const reason = prompt(`Approve evidence-backed violation for "${itemName}" (Owner: ${ownerName})?\n\nThis will immediately take down the listing, issue no refund, freeze the owner for 5 days, and preserve order/chat audit history.\n\nEnter admin notes or confirm:`, 'Evidence-backed violation verified by moderation team.');
             if (reason === null) return;
 
             try {
@@ -4671,7 +4671,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(data.message || 'Report approved as violation strike.');
+                    alert(data.message || 'Report approved: listing taken down and owner frozen for 5 days.');
                     loadItemReports();
                     loadProducts();
                     loadDashboardStats();

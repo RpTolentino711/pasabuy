@@ -182,6 +182,13 @@ if ($db) {
     try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspended_until` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspension_reason` TEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspension_report_id` INT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `moderation_freeze_until` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `moderation_freeze_reason` TEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `moderation_permanent_frozen` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_item_appeals` ADD COLUMN `appeal_deadline` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try {
+        $db->exec("UPDATE `Users` SET `moderation_permanent_frozen` = 1, `Status` = 'SUSPENDED' WHERE `moderation_permanent_frozen` = 0 AND `moderation_freeze_until` IS NOT NULL AND `moderation_freeze_until` < NOW()");
+    } catch (Exception $e) {}
 
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_id` INT DEFAULT 104"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_id` INT DEFAULT 105"); } catch (Exception $e) {}
@@ -3153,14 +3160,31 @@ if ($action === 'submit_item_appeal') {
     $stmt->execute([$itemId]);
     $item = $stmt->fetch();
     $itemName = $item ? $item['name'] : "Equipment #{$itemId}";
-    if (!$ownerId && $item) $ownerId = (int)$item['owner_id'];
+    if ($item) $ownerId = (int)$item['owner_id'];
     if (!$ownerName && $item) $ownerName = $item['owner_name'];
     if (!$ownerEmail && $item) $ownerEmail = $item['owner_email'];
 
+    $ownerModeration = $db->prepare("SELECT `moderation_freeze_until`, `moderation_permanent_frozen` FROM `Users` WHERE `Id` = ? LIMIT 1");
+    $ownerModeration->execute([$ownerId]);
+    $moderation = $ownerModeration->fetch() ?: [];
+    if (!empty($moderation['moderation_permanent_frozen']) || (!empty($moderation['moderation_freeze_until']) && strtotime($moderation['moderation_freeze_until']) < time())) {
+        echo json_encode(['success' => false, 'message' => 'The 5-day appeal window has expired. This account is permanently frozen.']);
+        exit;
+    }
+    $appealDeadline = !empty($moderation['moderation_freeze_until'])
+        ? $moderation['moderation_freeze_until']
+        : date('Y-m-d H:i:s', time() + (5 * 86400));
+    $existingAppeal = $db->prepare("SELECT `id` FROM `rental_item_appeals` WHERE `item_id` = ? AND `owner_id` = ? AND `status` = 'PENDING' LIMIT 1");
+    $existingAppeal->execute([$itemId, $ownerId]);
+    if ($existingAppeal->fetchColumn()) {
+        echo json_encode(['success' => false, 'message' => 'An appeal for this listing is already pending.']);
+        exit;
+    }
+
     $ins = $db->prepare("INSERT INTO `rental_item_appeals` 
-        (`item_id`, `item_name`, `owner_id`, `owner_name`, `owner_email`, `appeal_reason`, `evidence_photo`, `status`) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')");
-    $ins->execute([$itemId, $itemName, $ownerId, $ownerName, $ownerEmail, $appealReason, $evidencePhoto]);
+        (`item_id`, `item_name`, `owner_id`, `owner_name`, `owner_email`, `appeal_reason`, `evidence_photo`, `status`, `appeal_deadline`)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)");
+    $ins->execute([$itemId, $itemName, $ownerId, $ownerName, $ownerEmail, $appealReason, $evidencePhoto, $appealDeadline]);
 
     try {
         $ticketCode = '#APL-' . rand(1000, 9999);
@@ -3171,7 +3195,7 @@ if ($action === 'submit_item_appeal') {
 
     echo json_encode([
         'success' => true, 
-        'message' => '✅ Appeal submitted successfully! Admin will review your explanation and evidence.'
+        'message' => "✅ Appeal submitted successfully. Admin will review it before {$appealDeadline}."
     ]);
     exit;
 }

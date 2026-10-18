@@ -139,6 +139,13 @@ if ($db) {
     try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspended_until` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspension_reason` TEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `Users` ADD COLUMN `rental_suspension_report_id` INT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `moderation_freeze_until` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `moderation_freeze_reason` TEXT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `Users` ADD COLUMN `moderation_permanent_frozen` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_item_appeals` ADD COLUMN `appeal_deadline` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try {
+        $db->exec("UPDATE `Users` SET `moderation_permanent_frozen` = 1, `Status` = 'SUSPENDED' WHERE `moderation_permanent_frozen` = 0 AND `moderation_freeze_until` IS NOT NULL AND `moderation_freeze_until` < NOW()");
+    } catch (Exception $e) {}
 
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_id` INT DEFAULT 104"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_id` INT DEFAULT 105"); } catch (Exception $e) {}
@@ -1686,7 +1693,7 @@ if ($action === 'save_settings') {
 }
 
 // ----------------------------------------------------------
-// 12. ITEM VIOLATION REPORTS & 3-STRIKE TERMINATION MODULE
+// 12. ITEM VIOLATION REPORTS & EVIDENCE-BACKED ENFORCEMENT
 // ----------------------------------------------------------
 if ($action === 'get_item_reports') {
     if (!$db) { echo json_encode(['success' => true, 'reports' => []]); exit; }
@@ -1731,6 +1738,10 @@ if ($action === 'approve_item_report') {
         echo json_encode(['success' => false, 'message' => 'Report not found.']);
         exit;
     }
+    if (strtoupper((string)$report['status']) !== 'PENDING') {
+        echo json_encode(['success' => false, 'message' => 'This report has already been reviewed.']);
+        exit;
+    }
 
     $itemId = (int)$report['item_id'];
     $ownerId = (int)$report['owner_id'];
@@ -1742,56 +1753,27 @@ if ($action === 'approve_item_report') {
     $upReport = $db->prepare("UPDATE `rental_item_reports` SET `status` = 'APPROVED', `admin_notes` = ?, `reviewed_at` = NOW() WHERE `id` = ?");
     $upReport->execute([$notes, $reportId]);
 
-    // 2. Increment approved reports count on inventory item
+    // Approved reports take down the listing immediately. Rental orders and chat
+    // history remain untouched so Admin can audit them; no refund is issued here.
     $upItem = $db->prepare("UPDATE `rental_inventory` SET `approved_reports_count` = COALESCE(`approved_reports_count`, 0) + 1 WHERE `id` = ?");
     $upItem->execute([$itemId]);
 
-    // 3. Check updated strike count
-    $stmtCount = $db->prepare("SELECT `approved_reports_count`, `qty_total`, `status` FROM `rental_inventory` WHERE `id` = ?");
-    $stmtCount->execute([$itemId]);
-    $itemRow = $stmtCount->fetch();
-    $strikes = $itemRow ? (int)$itemRow['approved_reports_count'] : 1;
-
-    $terminated = false;
-    if ($strikes >= 3) {
-        $terminated = true;
-        // Post will be terminated
-        $termStmt = $db->prepare("UPDATE `rental_inventory` SET `status` = 'TERMINATED', `qty_available` = 0, `termination_reason` = ?, `terminated_at` = NOW() WHERE `id` = ?");
-        $termStmt->execute(["TERMINATED: Reached 3 approved violation reports. Latest violation: {$reason}", $itemId]);
-
-        // Poster who posted the item will be suspended
-        if ($ownerId > 0) {
-            $db->prepare("UPDATE `Users` SET `Status` = 'SUSPENDED' WHERE `Id` = ?")->execute([$ownerId]);
-            $db->prepare("UPDATE `StudentProfiles` SET `VerificationStatus` = 'SUSPENDED' WHERE `UserId` = ?")->execute([$ownerId]);
-
-            // Notify owner in rental_issues log
-            try {
-                $db->prepare("INSERT INTO `rental_issues` (`ticket_number`, `customer_name`, `issue_title`, `priority`, `status`, `assigned_to`, `description`, `stage`) 
-                    VALUES (?, ?, ?, 'CRITICAL', 'Open', 'Security Team', ?, 'ACCOUNT_SUSPENSION')")
-                    ->execute([
-                        '#SUSP-' . rand(1000, 9999),
-                        $ownerName,
-                        "3 Strikes: Account Suspended & Listing Terminated ({$itemName})",
-                        "Listing '{$itemName}' (ID: {$itemId}) received 3 approved violation strikes and has been TERMINATED.\nOwner account #{$ownerId} ({$ownerName}) is now SUSPENDED.\nThe owner may submit an official appeal with evidence."
-                    ]);
-            } catch (Exception $eT) {}
-        }
-
-        echo json_encode([
-            'success' => true,
-            'terminated' => true,
-            'strikes' => $strikes,
-            'message' => "⚠️ Report approved as STRIKE 3/3! Listing '{$itemName}' has been TERMINATED and owner '{$ownerName}' (#{$ownerId}) has been SUSPENDED."
-        ]);
-        exit;
+    $termStmt = $db->prepare("UPDATE `rental_inventory` SET `status` = 'TERMINATED', `qty_available` = 0, `termination_reason` = ?, `terminated_at` = NOW() WHERE `id` = ?");
+    $termStmt->execute(["TAKEN DOWN: Evidence-backed violation approved by Admin. {$reason}", $itemId]);
+    $freezeUntil = date('Y-m-d H:i:s', time() + (5 * 86400));
+    if ($ownerId > 0) {
+        $db->prepare("UPDATE `Users` SET `Status` = 'SUSPENDED', `moderation_freeze_until` = ?, `moderation_freeze_reason` = ?, `moderation_permanent_frozen` = 0 WHERE `Id` = ?")->execute([$freezeUntil, "Approved listing violation for '{$itemName}': {$reason}", $ownerId]);
+        $db->prepare("UPDATE `StudentProfiles` SET `VerificationStatus` = 'SUSPENDED' WHERE `UserId` = ?")->execute([$ownerId]);
     }
-
-    echo json_encode([
-        'success' => true,
-        'terminated' => false,
-        'strikes' => $strikes,
-        'message' => "✅ Report approved. Listing '{$itemName}' now has {$strikes}/3 strikes. (Reaching 3 strikes will terminate the post and suspend the poster)."
-    ]);
+    $ownerMessage = "🚨 ADMIN MODERATION: Your listing '{$itemName}' was taken down after a report was approved. No refund was issued. Your account is frozen until {$freezeUntil}. You may appeal within 5 days.";
+    $reporterMessage = "✅ REPORT REVIEWED: Your report about '{$itemName}' was approved by Admin. The listing was taken down and the reported account was frozen for 5 days. Existing order and chat audit records were preserved.";
+    try {
+        $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, ?, 'RentEase Admin', ?, ?, NOW())");
+        if ($ownerId > 0) $chatStmt->execute([$ownerId, $ownerMessage, $itemName]);
+        $reporterId = (int)($report['reporter_id'] ?? 0);
+        if ($reporterId > 0 && $reporterId !== $ownerId) $chatStmt->execute([$reporterId, $reporterMessage, $itemName]);
+    } catch (Exception $eChat) {}
+    echo json_encode(['success' => true, 'terminated' => true, 'freeze_until' => $freezeUntil, 'message' => "✅ Report approved. Listing '{$itemName}' was taken down without refund and owner '{$ownerName}' was frozen for 5 days. Audit history was preserved."]);
     exit;
 }
 
@@ -1854,6 +1836,15 @@ if ($action === 'decide_item_appeal') {
         echo json_encode(['success' => false, 'message' => 'Appeal not found.']);
         exit;
     }
+    if (($appeal['status'] ?? '') !== 'PENDING') {
+        echo json_encode(['success' => false, 'message' => 'This appeal has already been decided.']);
+        exit;
+    }
+    if (!empty($appeal['appeal_deadline']) && strtotime($appeal['appeal_deadline']) < time()) {
+        $db->prepare("UPDATE `rental_item_appeals` SET `status` = 'REJECTED', `admin_decision_notes` = 'Appeal window expired.', `reviewed_at` = NOW() WHERE `id` = ?")->execute([$appealId]);
+        echo json_encode(['success' => false, 'message' => 'The 5-day appeal window has expired.']);
+        exit;
+    }
 
     $itemId = (int)$appeal['item_id'];
     $ownerId = (int)$appeal['owner_id'];
@@ -1871,7 +1862,7 @@ if ($action === 'decide_item_appeal') {
 
         // Unsuspend owner if suspended
         if ($ownerId > 0) {
-            $db->prepare("UPDATE `Users` SET `Status` = 'VERIFIED' WHERE `Id` = ?")->execute([$ownerId]);
+            $db->prepare("UPDATE `Users` SET `Status` = 'VERIFIED', `moderation_freeze_until` = NULL, `moderation_freeze_reason` = NULL, `moderation_permanent_frozen` = 0 WHERE `Id` = ?")->execute([$ownerId]);
             $db->prepare("UPDATE `StudentProfiles` SET `VerificationStatus` = 'VERIFIED' WHERE `UserId` = ?")->execute([$ownerId]);
         }
 
@@ -2190,4 +2181,3 @@ if ($action === 'purge_dummy_data' || $action === 'clean_database') {
 // Fallback unknown action
 echo json_encode(['success' => false, 'message' => "Unknown action '{$action}'."]);
 exit;
-
