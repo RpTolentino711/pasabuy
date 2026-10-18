@@ -5557,6 +5557,9 @@
                             window.currentSelectedRentalStar = 0;
                             loadChatConversationsList();
                         }
+                        window.checkAndOpenChat = checkAndOpenChat;
+                        window.refreshActiveChatStream = refreshActiveChatStream;
+                        window.closeChat = closeChat;
 
                         async function checkAndReserve(listingId, sellerId, itemTitle, sellerName) {
                             let storedUser = null;
