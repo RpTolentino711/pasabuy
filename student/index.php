@@ -2011,15 +2011,18 @@
                                 const msg = (c.MessageText || '').toLowerCase();
                                 const sId = parseInt(c.SenderId) || 0;
                                 const rId = parseInt(c.ReceiverId) || 0;
+                                const isRentalConversation = !!c.HasTransaction || !!c.TransactionOrderCode;
 
                                 if (sId === rId && sId > 0) return false;
                                 if (pId === currentUserId) return false;
-                                if (currentUserId === 104 && (pId === 1 || pId === 104)) return false;
-                                if (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) return false;
-                                if (isPogilameg && pName.includes('pogilameg')) return false;
-                                if (myFullName && pName === myFullName) return false;
-                                if (item === 'roem' || msg.includes('hi romeo')) return false;
-                                if (pName.includes('dispatch') || pName.includes('rider') || item.includes('dispatch') || item.includes('rider')) return false;
+                                if (!isRentalConversation) {
+                                    if (currentUserId === 104 && (pId === 1 || pId === 104)) return false;
+                                    if (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) return false;
+                                    if (isPogilameg && pName.includes('pogilameg')) return false;
+                                    if (myFullName && pName === myFullName) return false;
+                                    if (item === 'roem' || msg.includes('hi romeo')) return false;
+                                    if (pName.includes('dispatch') || pName.includes('rider') || item.includes('dispatch') || item.includes('rider')) return false;
+                                }
 
                                 return true;
                             });
