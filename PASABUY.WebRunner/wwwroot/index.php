@@ -2079,6 +2079,8 @@
                                     : (hasTx && !isCompletedOrRated);
 
                                 const isOverdue = !!(c.IsOverdue || c.isOverdue || c.ActionBadgeClass === 'badge-overdue' || c.TransactionStatus === 'OVERDUE' || c.TimerStatus === 'EXPIRED');
+                                const rawLastMsg = (c.MessageText || c.LastMessage || c.lastMessage || '');
+                                const lastMsg = rawLastMsg ? rawLastMsg.replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 80) : 'Tap to open conversation';
                                 const convKey = 'c_' + partnerId + '_' + idx;
                                 window._chatConversationsMap[convKey] = {
                                     partnerId: partnerId,
