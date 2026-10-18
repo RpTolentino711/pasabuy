@@ -2827,7 +2827,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     if (data.recent_tickets && data.recent_tickets.length > 0) {
                         allLoadedTickets = [...allLoadedTickets, ...data.recent_tickets.filter(ticket => !allLoadedTickets.some(existing => parseInt(existing.id) === parseInt(ticket.id)))];
                         tbodyT.innerHTML = data.recent_tickets.map(t => `
-                            <tr role="button" tabindex="0" style="cursor:pointer;" onclick="openAdminTicketModal(${t.id})" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openAdminTicketModal(${t.id}); }" title="Open ticket details">
+                            <tr role="button" tabindex="0" style="cursor:pointer;" onclick="openSupportTicketTab('${String(t.ticket_number || '').replace(/'/g, "\\'")}')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSupportTicketTab('${String(t.ticket_number || '').replace(/'/g, "\\'")}'); }" title="Open the related support tab">
                                 <td class="fw-bold text-muted">${t.ticket_number}</td>
                                 <td class="text-truncate" style="max-width:140px;" title="${t.issue_title}">${t.issue_title}</td>
                                 <td><span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span></td>
@@ -4549,6 +4549,23 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         // ITEM REPORTS & APPEALS MODERATION SYSTEM
         // ----------------------------------------------------------
         let currentSupportModule = 'tickets';
+
+        function openSupportTicketTab(ticketNumber) {
+            const number = String(ticketNumber || '').toUpperCase();
+            let moduleName = 'tickets';
+            if (number.indexOf('#RPT-') === 0) moduleName = 'reports';
+            else if (number.indexOf('#UNRET-') === 0) moduleName = 'unreturned';
+            else if (number.indexOf('#APPL-') === 0) moduleName = 'suspensionAppeals';
+
+            switchAdminTab('support');
+            const button = document.getElementById(
+                moduleName === 'reports' ? 'btnSupportModuleReports' :
+                moduleName === 'unreturned' ? 'btnSupportModuleUnreturned' :
+                moduleName === 'suspensionAppeals' ? 'btnSupportModuleRentalAppeals' :
+                'btnSupportModuleTickets'
+            );
+            switchSupportModule(moduleName, button);
+        }
 
         function switchSupportModule(moduleName, btn) {
             currentSupportModule = moduleName;
