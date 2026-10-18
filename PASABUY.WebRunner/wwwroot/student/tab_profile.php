@@ -221,10 +221,6 @@
                 <span class="fw-bold text-dark fs-8">Rental Bookings</span>
                 <span class="text-muted d-none d-sm-inline" style="font-size:0.68rem;" id="profileRequestsSubtext">• Students asking to rent</span>
             </div>
-            <div class="d-flex align-items-center gap-1 px-2 py-0.5 rounded-pill bg-success bg-opacity-10 border border-success-subtle">
-                <span class="rounded-circle bg-success d-inline-block" style="width: 5px; height: 5px; box-shadow: 0 0 5px #10B981;"></span>
-                <span class="fw-bold text-success" style="letter-spacing: 0.4px; font-size: 0.62rem;">LIVE</span>
-            </div>
         </div>
 
         <!-- Dynamic Rental Orders Container -->

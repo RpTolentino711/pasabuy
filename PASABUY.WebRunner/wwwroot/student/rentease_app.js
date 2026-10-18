@@ -18,6 +18,56 @@ let currentRentalDays = parseInt(localStorage.getItem('rentease_rental_days') ||
 let currentPaymentPlan = 'FULL'; // 'FULL' or 'DOWNPAYMENT_COD'
 let rentEaseMapInstance = null;
 
+function getRentEaseItemImage(item) {
+    if (!item) return 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+    let image = item.image_url || item.image || item.img || item.ImageUrl || item.imageUrl || item.photo_url || '';
+    const listings = typeof allProductsCache !== 'undefined' && Array.isArray(allProductsCache)
+        ? allProductsCache
+        : (Array.isArray(window.allProductsCache) ? window.allProductsCache : []);
+    const matchingListing = listings.find(listing =>
+        String(listing.id || '') === String(item.id || '') ||
+        String(listing.title || '').trim().toLowerCase() === String(item.name || '').trim().toLowerCase()
+    );
+    if (matchingListing) {
+        image = matchingListing.img || matchingListing.image_url || matchingListing.image || image;
+    }
+    return image || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+}
+
+function enableRentEaseHorizontalDrag(id) {
+    const element = document.getElementById(id);
+    if (!element || element.dataset.dragScrollReady === 'true') return;
+    element.dataset.dragScrollReady = 'true';
+    let isDragging = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+    element.addEventListener('pointerdown', event => {
+        isDragging = true;
+        startX = event.clientX;
+        startScrollLeft = element.scrollLeft;
+        element.setPointerCapture?.(event.pointerId);
+        element.style.cursor = 'grabbing';
+    });
+    element.addEventListener('pointermove', event => {
+        if (!isDragging) return;
+        element.scrollLeft = startScrollLeft - (event.clientX - startX);
+    });
+    const stopDragging = () => {
+        isDragging = false;
+        element.style.cursor = 'grab';
+    };
+    element.addEventListener('pointerup', stopDragging);
+    element.addEventListener('pointercancel', stopDragging);
+    element.addEventListener('pointerleave', stopDragging);
+    element.addEventListener('wheel', event => {
+        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+            event.preventDefault();
+            element.scrollLeft += event.deltaY;
+        }
+    }, { passive: false });
+    element.style.cursor = 'grab';
+}
+
 // API Base URL resolver
 function getRentEaseApiUrl(action, params = {}) {
     let base = window.location.pathname.includes('/student/') ? '../rentease_api.php' : 'rentease_api.php';
@@ -71,6 +121,8 @@ async function loadRentEaseCatalog() {
 
     renderFeaturedRentals();
     renderExploreCatalog();
+    enableRentEaseHorizontalDrag('exploreFilterChipsContainer');
+    enableRentEaseHorizontalDrag('categoryScrollWheel');
     updateCartBadgeCount();
     try {
         if (typeof loadUserRentedOutItems === 'function') {
@@ -119,7 +171,7 @@ function renderFeaturedRentals() {
                  style="padding: 8px; cursor:pointer;" onclick="openEquipmentDetail(${item.id})">
                 <div>
                     <div class="position-relative mb-1.5">
-                        <img src="${item.image_url}" class="rounded-3 w-100" style="height: 98px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                        <img src="${getRentEaseItemImage(item)}" class="rounded-3 w-100" style="height: 98px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
                         <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-xs" 
                                 style="width:24px; height:24px; background:rgba(255,255,255,0.9);" 
                                 onclick="event.stopPropagation(); toggleWishlist(this, ${item.id})">
@@ -406,7 +458,7 @@ function renderGridElements(items) {
                  style="padding: 8px; cursor:pointer;" onclick="openEquipmentDetail(${p.id})">
                 <div>
                     <div class="position-relative mb-1.5">
-                        <img src="${p.image_url}" class="rounded-3 w-100" style="height: 100px; object-fit: cover;" alt="${p.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                        <img src="${getRentEaseItemImage(p)}" class="rounded-3 w-100" style="height: 100px; object-fit: cover;" alt="${p.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
                         <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-xs" 
                                 style="width:24px; height:24px; background:rgba(255,255,255,0.9);" 
                                 onclick="event.stopPropagation(); toggleWishlist(this, ${p.id})">
