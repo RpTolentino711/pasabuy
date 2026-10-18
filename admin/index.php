@@ -2810,8 +2810,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     // Render recent tickets
                     const tbodyT = document.getElementById('dashTicketsTableBody');
                     if (data.recent_tickets && data.recent_tickets.length > 0) {
+                        allLoadedTickets = [...allLoadedTickets, ...data.recent_tickets.filter(ticket => !allLoadedTickets.some(existing => parseInt(existing.id) === parseInt(ticket.id)))];
                         tbodyT.innerHTML = data.recent_tickets.map(t => `
-                            <tr>
+                            <tr role="button" tabindex="0" style="cursor:pointer;" onclick="openAdminTicketModal(${t.id})" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openAdminTicketModal(${t.id}); }" title="Open ticket details">
                                 <td class="fw-bold text-muted">${t.ticket_number}</td>
                                 <td class="text-truncate" style="max-width:140px;" title="${t.issue_title}">${t.issue_title}</td>
                                 <td><span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span></td>
