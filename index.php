@@ -6880,47 +6880,6 @@
                 const container = document.getElementById('conversationHeadsList');
                 if (!container) return;
 
-                // Prevent multiple simultaneous loads
-                if (window._loadingChatConversations) return;
-                window._loadingChatConversations = true;
-
-                // Only show loading if container is truly empty (no cards)
-                const hasCards = container.querySelector('.conversation-card') || container.querySelector('.swipe-conv-wrapper');
-                if (!hasCards && !container.innerHTML.trim()) {
-                    container.innerHTML = `
-                        <div class="d-flex flex-column align-items-center justify-content-center py-5">
-                            <div class="chat-loading-bubbles">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                            <p class="text-muted fs-8 mt-3">Loading conversations...</p>
-                        </div>
-                        <style>
-                            .chat-loading-bubbles {
-                                display: flex;
-                                gap: 6px;
-                            }
-                            .chat-loading-bubbles span {
-                                width: 10px;
-                                height: 10px;
-                                background: #5F27CD;
-                                border-radius: 50%;
-                                animation: bounce 1.4s infinite ease-in-out both;
-                            }
-                            .chat-loading-bubbles span:nth-child(1) { animation-delay: -0.32s; }
-                            .chat-loading-bubbles span:nth-child(2) { animation-delay: -0.16s; }
-                            .chat-loading-bubbles span:nth-child(3) { animation-delay: 0s; }
-                            .chat-loading-bubbles span:nth-child(4) { animation-delay: 0.16s; }
-                            @keyframes bounce {
-                                0%, 80%, 100% { transform: scale(0); }
-                                40% { transform: scale(1); }
-                            }
-                        </style>
-                    `;
-                }
-
                 let user = {};
                 try { user = JSON.parse(localStorage.getItem('pasabuy_student_user') || '{}'); } catch (e) {}
                 const userId = user.id || user.userId || user.UserId || 104;
@@ -6933,7 +6892,6 @@
                                 <i class="fa-solid fa-comments fs-2 d-block mb-2 text-secondary opacity-50"></i>
                                 No active chat conversations yet.<br>Click <strong>Message</strong> on any item listing to start chatting!
                             </div>`;
-                        window._loadingChatConversations = false;
                         return;
                     }
                     container.innerHTML = conversations.map(c => `
@@ -6942,7 +6900,6 @@
                             <span class="min-w-0"><strong class="d-block text-dark text-truncate">${c.PartnerName || 'Campus Student'}</strong><small class="text-muted text-truncate d-block">${c.ItemTitle || 'Rental conversation'}</small><small class="text-secondary text-truncate d-block">${c.MessageText || ''}</small></span>
                         </button>
                     `).join('');
-                    window._loadingChatConversations = false;
                 } catch (e) {
                     console.error('Messages fallback loader failed:', e);
                     container.innerHTML = `
@@ -6950,7 +6907,6 @@
                             <i class="fa-solid fa-exclamation-triangle fs-2 d-block mb-2"></i>
                             Failed to load conversations. Please refresh.
                         </div>`;
-                    window._loadingChatConversations = false;
                 }
             };
         }
