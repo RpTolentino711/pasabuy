@@ -331,6 +331,12 @@
         #chatRentalRequestBanner [id*="Step4"] .rounded-3 {
             padding: 8px !important;
         }
+        #chatRentalRequestBanner.is-collapsed > :not(:first-child) {
+            display: none !important;
+        }
+        #chatRentalRequestBanner.is-collapsed {
+            padding-bottom: 8px !important;
+        }
         #chatRentalRequestBanner .rentchat-agree-btn {
             padding-top: 7px !important;
             padding-bottom: 7px !important;
@@ -731,6 +737,9 @@
                 <span class="rentchat-pulse-dot"></span>
                 <span>Pending Approval</span>
             </span>
+            <button type="button" class="btn btn-sm btn-light rounded-circle ms-2" id="chatRentalStepsToggle" onclick="toggleChatRentalSteps()" aria-label="Collapse rental steps" title="Collapse rental steps">
+                <i class="fa-solid fa-chevron-up"></i>
+            </button>
         </div>
 
         <!-- Specs Grid -->

@@ -2918,6 +2918,37 @@ if ($action === 'notify_owner_rental_intent') {
 // ----------------------------------------------------------
 // REPORT EQUIPMENT ITEM & 3-STRIKE VIOLATION MODULE
 // ----------------------------------------------------------
+if ($action === 'get_item_report_limit') {
+    $itemId = (int)($data['item_id'] ?? $_GET['item_id'] ?? 0);
+    $reporterId = (int)($data['reporter_id'] ?? $_GET['reporter_id'] ?? 0);
+    if (!$itemId || !$reporterId) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Item and reporter are required.']);
+        exit;
+    }
+
+    $itemStmt = $db->prepare("SELECT owner_id FROM `rental_inventory` WHERE id = ? LIMIT 1");
+    $itemStmt->execute([$itemId]);
+    $ownerId = (int)$itemStmt->fetchColumn();
+    if (!$ownerId) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Equipment item not found.']);
+        exit;
+    }
+
+    $countStmt = $db->prepare("SELECT COUNT(*) FROM `rental_item_reports` WHERE owner_id = ? AND status = 'PENDING'");
+    $countStmt->execute([$ownerId]);
+    $pendingCount = (int)$countStmt->fetchColumn();
+    echo json_encode([
+        'success' => true,
+        'owner_id' => $ownerId,
+        'pending_count' => $pendingCount,
+        'limit' => 5,
+        'can_report' => $pendingCount < 5
+    ]);
+    exit;
+}
+
 if ($action === 'submit_item_report') {
     $itemId = (int)($data['item_id'] ?? 0);
     $reason = trim((string)($data['reason'] ?? ''));
@@ -2949,6 +2980,19 @@ if ($action === 'submit_item_report') {
     $itemName = $item['name'];
     $ownerId = (int)($item['owner_id'] ?? 105);
     $ownerName = $item['owner_name'] ?? 'Equipment Owner';
+
+    $limitStmt = $db->prepare("SELECT COUNT(*) FROM `rental_item_reports` WHERE owner_id = ? AND status = 'PENDING'");
+    $limitStmt->execute([$ownerId]);
+    $pendingCount = (int)$limitStmt->fetchColumn();
+    if ($pendingCount >= 5) {
+        http_response_code(429);
+        echo json_encode([
+            'success' => false,
+            'limit_reached' => true,
+            'message' => 'This person already has 5 pending reports. Reporting is temporarily disabled until Admin reviews the existing reports.'
+        ]);
+        exit;
+    }
 
     $ins = $db->prepare("INSERT INTO `rental_item_reports` 
         (`item_id`, `item_name`, `owner_id`, `owner_name`, `reporter_id`, `reporter_name`, `reason`, `details`, `evidence_photo`, `status`) 

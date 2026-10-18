@@ -18,6 +18,32 @@ let currentRentalDays = parseInt(localStorage.getItem('rentease_rental_days') ||
 let currentPaymentPlan = 'FULL'; // 'FULL' or 'DOWNPAYMENT_COD'
 let rentEaseMapInstance = null;
 
+window.toggleChatRentalSteps = function () {
+    const banner = document.getElementById('chatRentalRequestBanner');
+    const toggle = document.getElementById('chatRentalStepsToggle');
+    if (!banner) return;
+    const collapsed = banner.classList.toggle('is-collapsed');
+    if (toggle) {
+        toggle.setAttribute('aria-label', collapsed ? 'Expand rental steps' : 'Collapse rental steps');
+        toggle.title = collapsed ? 'Expand rental steps' : 'Collapse rental steps';
+        toggle.innerHTML = `<i class="fa-solid fa-chevron-${collapsed ? 'down' : 'up'}"></i>`;
+    }
+};
+window.enableChatRentalStepSwipe = function () {
+    const banner = document.getElementById('chatRentalRequestBanner');
+    if (!banner || banner.dataset.swipeReady === 'true') return;
+    banner.dataset.swipeReady = 'true';
+    let startX = 0;
+    banner.addEventListener('touchstart', event => {
+        startX = event.touches[0].clientX;
+    }, { passive: true });
+    banner.addEventListener('touchend', event => {
+        if (startX - event.changedTouches[0].clientX > 50 && !banner.classList.contains('is-collapsed')) {
+            window.toggleChatRentalSteps();
+        }
+    }, { passive: true });
+};
+
 function getRentEaseItemImage(item) {
     if (!item) return 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
     let image = item.image_url || item.image || item.img || item.ImageUrl || item.imageUrl || item.photo_url || '';
@@ -849,6 +875,9 @@ function openEquipmentDetail(id) {
     [reportButton, reportLink].forEach(el => {
         if (el) el.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
     });
+    if (!isOwner) {
+        updateItemReportLimit(item);
+    }
     const modalElForOwner = document.getElementById('productDetailModal');
     if (modalElForOwner) {
         modalElForOwner.classList.toggle('is-owner-listing', isOwner);
@@ -5053,7 +5082,7 @@ window.openReportItemModal = function () {
     if (idEl) idEl.innerText = p.id;
     if (nameEl) nameEl.innerText = p.name || 'Equipment';
     if (ownerEl) ownerEl.innerText = p.owner_name || 'Campus Student';
-    if (thumbEl) thumbEl.src = p.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=100&q=80';
+    if (thumbEl) thumbEl.src = getRentEaseItemImage(p);
     if (reasonSel) reasonSel.selectedIndex = 0;
     if (detailsEl) detailsEl.value = '';
     if (fileInput) fileInput.value = '';
@@ -5077,6 +5106,33 @@ window.openReportItemModal = function () {
     }, 150);
 };
 
+async function updateItemReportLimit(item) {
+    const reportButton = document.getElementById('detailHeaderReportBtn');
+    const reportLink = document.getElementById('detailReportItemLink');
+    if (!item || (!reportButton && !reportLink)) return;
+    const currentUser = getRentEaseCurrentUser();
+    const reporterId = parseInt(currentUser.id || 0);
+    if (!reporterId) return;
+    try {
+        const res = await fetch(getRentEaseApiUrl('get_item_report_limit', {
+            item_id: parseInt(item.id || 0),
+            reporter_id: reporterId
+        }));
+        const data = await res.json();
+        const reached = data.success && data.pending_count >= data.limit;
+        [reportButton, reportLink].forEach(el => {
+            if (!el) return;
+            el.disabled = reached;
+            el.classList.toggle('disabled', reached);
+            el.style.pointerEvents = reached ? 'none' : '';
+            el.style.opacity = reached ? '0.45' : '';
+            el.title = reached ? 'Reporting is paused until Admin reviews existing reports.' : 'Report Listing to Admin';
+        });
+    } catch (e) {
+        console.error('Report limit check failed:', e);
+    }
+}
+
 window.submitItemReport = async function () {
     const p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
     const itemId = p ? parseInt(p.id) : (parseInt(document.getElementById('reportItemId')?.innerText || '0') || 1);
@@ -5097,6 +5153,22 @@ window.submitItemReport = async function () {
     }
 
     const currentUser = getRentEaseCurrentUser();
+    try {
+        const limitRes = await fetch(getRentEaseApiUrl('get_item_report_limit', {
+            item_id: itemId,
+            reporter_id: parseInt(currentUser.id || 0)
+        }));
+        const limitData = await limitRes.json();
+        if (limitData.success && limitData.pending_count >= limitData.limit) {
+            alert('This person already has 5 pending reports. Reporting is temporarily disabled until Admin reviews the existing reports.');
+            await updateItemReportLimit(p || { id: itemId });
+            return;
+        }
+    } catch (e) {
+        console.error('Report limit validation failed:', e);
+        alert('Unable to verify the report limit. Please try again.');
+        return;
+    }
     const btn = document.getElementById('btnSubmitItemReport');
     if (btn) {
         btn.disabled = true;

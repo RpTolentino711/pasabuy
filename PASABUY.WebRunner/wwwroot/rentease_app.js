@@ -18,6 +18,28 @@ let currentRentalDays = parseInt(localStorage.getItem('rentease_rental_days') ||
 let currentPaymentPlan = 'FULL'; // 'FULL' or 'DOWNPAYMENT_COD'
 let rentEaseMapInstance = null;
 
+window.toggleChatRentalSteps = function () {
+    const banner = document.getElementById('chatRentalRequestBanner');
+    const toggle = document.getElementById('chatRentalStepsToggle');
+    if (!banner) return;
+    const collapsed = banner.classList.toggle('is-collapsed');
+    if (toggle) {
+        toggle.setAttribute('aria-label', collapsed ? 'Expand rental steps' : 'Collapse rental steps');
+        toggle.title = collapsed ? 'Expand rental steps' : 'Collapse rental steps';
+        toggle.innerHTML = `<i class="fa-solid fa-chevron-${collapsed ? 'down' : 'up'}"></i>`;
+    }
+};
+window.enableChatRentalStepSwipe = function () {
+    const banner = document.getElementById('chatRentalRequestBanner');
+    if (!banner || banner.dataset.swipeReady === 'true') return;
+    banner.dataset.swipeReady = 'true';
+    let startX = 0;
+    banner.addEventListener('touchstart', event => { startX = event.touches[0].clientX; }, { passive: true });
+    banner.addEventListener('touchend', event => {
+        if (startX - event.changedTouches[0].clientX > 50 && !banner.classList.contains('is-collapsed')) window.toggleChatRentalSteps();
+    }, { passive: true });
+};
+
 function getRentEaseItemImage(item) {
     if (!item) return 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
     let image = item.image_url || item.image || item.img || item.ImageUrl || item.imageUrl || item.photo_url || '';
@@ -5027,7 +5049,7 @@ window.openReportItemModal = function () {
     if (idEl) idEl.innerText = p.id;
     if (nameEl) nameEl.innerText = p.name || 'Equipment';
     if (ownerEl) ownerEl.innerText = p.owner_name || 'Campus Student';
-    if (thumbEl) thumbEl.src = p.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=100&q=80';
+    if (thumbEl) thumbEl.src = getRentEaseItemImage(p);
     if (reasonSel) reasonSel.selectedIndex = 0;
     if (detailsEl) detailsEl.value = '';
     if (fileInput) fileInput.value = '';

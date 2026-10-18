@@ -5373,6 +5373,15 @@
 
                             // Reset shown modals for fresh chat entry
                             window._shownStep1Modals = new Set();
+                            const rentalStepsBanner = document.getElementById('chatRentalRequestBanner');
+                            if (rentalStepsBanner) rentalStepsBanner.classList.remove('is-collapsed');
+                            if (typeof window.enableChatRentalStepSwipe === 'function') window.enableChatRentalStepSwipe();
+                            const rentalStepsToggle = document.getElementById('chatRentalStepsToggle');
+                            if (rentalStepsToggle) {
+                                rentalStepsToggle.setAttribute('aria-label', 'Collapse rental steps');
+                                rentalStepsToggle.title = 'Collapse rental steps';
+                                rentalStepsToggle.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+                            }
                             const tabs = ['home', 'explore', 'cart', 'sell', 'wanted', 'messages', 'profile', 'track'];
                             tabs.forEach(t => {
                                 const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
