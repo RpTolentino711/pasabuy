@@ -463,11 +463,32 @@ window.setupDetailMediaCarousel = function (item) {
 
     // Collect all media items (photos and video)
     let media = [];
+    const mediaKey = (url) => {
+        const normalized = String(url || '').trim();
+        if (!normalized) return '';
+        try {
+            const parsed = new URL(normalized, window.location.href);
+            parsed.hash = '';
+            parsed.search = '';
+            return parsed.href.replace(/\/+$/, '').toLowerCase();
+        } catch (e) {
+            return normalized.replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase();
+        }
+    };
+    const mediaKeys = new Set();
+    const addImageMedia = (url) => {
+        const trimmedUrl = String(url || '').trim();
+        const key = mediaKey(trimmedUrl);
+        if (trimmedUrl && key && !mediaKeys.has(key)) {
+            media.push({ type: 'image', url: trimmedUrl });
+            mediaKeys.add(key);
+        }
+    };
 
     // 1. Primary photo
     const mainPhoto = item.image_url || item.img || item.ImageUrl || item.image;
     if (mainPhoto && typeof mainPhoto === 'string' && mainPhoto.trim()) {
-        media.push({ type: 'image', url: mainPhoto.trim() });
+        addImageMedia(mainPhoto);
     }
 
     // 2. Additional photos (arrays, JSON string, or comma-separated list)
@@ -481,9 +502,7 @@ window.setupDetailMediaCarousel = function (item) {
     }
     if (Array.isArray(extraPhotos)) {
         extraPhotos.forEach(u => {
-            if (u && typeof u === 'string' && u.trim() && !media.some(m => m.url === u.trim())) {
-                media.push({ type: 'image', url: u.trim() });
-            }
+            addImageMedia(u);
         });
     }
 
