@@ -6884,8 +6884,9 @@
                 if (window._loadingChatConversations) return;
                 window._loadingChatConversations = true;
 
-                // Show loading animation (4 bouncing bubbles) only if container is empty
-                if (!container.innerHTML.trim() || container.innerHTML.includes('chat-loading-bubbles')) {
+                // Only show loading if container is truly empty (no cards)
+                const hasCards = container.querySelector('.conversation-card') || container.querySelector('.swipe-conv-wrapper');
+                if (!hasCards && !container.innerHTML.trim()) {
                     container.innerHTML = `
                         <div class="d-flex flex-column align-items-center justify-content-center py-5">
                             <div class="chat-loading-bubbles">
