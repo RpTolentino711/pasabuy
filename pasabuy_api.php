@@ -71,23 +71,31 @@ function getDb() {
     $dbPass = getenv('DB_PASSWORD') ?: '';
 
     if (empty($dbPass)) {
+        // Log that we're using fallback
+        error_log("DB_PASSWORD is empty, attempting root user fallback");
         // Fallback to root user for development
         $dbUser = 'root';
         $dbPass = '';
     }
 
     try {
-        return new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
+        $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
         ]);
+        error_log("Database connection successful: host=$dbHost, db=$dbName, user=$dbUser");
+        return $pdo;
     } catch (Exception $e) {
+        error_log("Database connection failed (attempt 1): " . $e->getMessage());
         try {
-            return new PDO("mysql:host=localhost;dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
+            $pdo = new PDO("mysql:host=localhost;dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
             ]);
+            error_log("Database connection successful (fallback): host=localhost, db=$dbName, user=$dbUser");
+            return $pdo;
         } catch (Exception $e2) {
+            error_log("Database connection failed (attempt 2): " . $e2->getMessage());
             return null;
         }
     }
