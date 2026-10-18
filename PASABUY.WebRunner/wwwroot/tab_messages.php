@@ -291,6 +291,28 @@
             padding-top: 5px !important;
             padding-bottom: 5px !important;
         }
+        #chatRentalRequestBanner,
+        #chatRentalTimerBanner,
+        #chatRentalReturnedBanner {
+            padding: 8px !important;
+            margin-bottom: 6px !important;
+            border-radius: 12px !important;
+        }
+        #chatRentalRequestBanner .rentchat-card-icon-box { width: 26px; height: 26px; border-radius: 8px; }
+        #chatRentalRequestBanner > .d-flex:first-child { margin-bottom: 6px !important; padding-bottom: 6px !important; }
+        #chatRentalRequestBanner .rentchat-specs-grid { padding: 4px 8px !important; margin-bottom: 6px !important; border-radius: 9px !important; }
+        #chatRentalRequestBanner .rentchat-specs-grid > div { padding-top: 3px !important; padding-bottom: 3px !important; }
+        #chatRentalRequestBanner #chatLifecycleProgressIndicator { margin-bottom: 6px !important; padding-bottom: 5px !important; }
+        #chatRentalRequestBanner [id$="RenterBox"],
+        #chatRentalRequestBanner [id$="OwnerBox"] { padding: 8px !important; }
+        #chatRentalRequestBanner [id*="Step4"] { margin-bottom: 0 !important; }
+        #chatRentalRequestBanner [id*="Step4"] .border,
+        #chatRentalRequestBanner [id*="Step4"] .rounded-3 { padding: 8px !important; }
+        #chatRentalRequestBanner .rentchat-agree-btn { padding-top: 7px !important; padding-bottom: 7px !important; }
+        #chatView .rentchat-bubble { max-width: 84%; padding: 7px 10px; font-size: 0.76rem; line-height: 1.35; border-radius: 14px; }
+        #chatView .rentchat-input-bar { padding: 6px !important; }
+        #chatView .rentchat-textarea { min-height: 36px; padding: 7px 12px; font-size: 0.78rem; }
+        #chatView .rentchat-send-btn { width: 36px; height: 36px; font-size: 0.78rem; }
         @media (max-width: 576px) {
             #chatView {
                 max-height: calc(100dvh - 128px);
