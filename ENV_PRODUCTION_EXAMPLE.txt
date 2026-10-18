@@ -1,0 +1,26 @@
+# Production Environment Variables
+# Copy this file to .env and fill in your actual values
+
+# Database Connection
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=u321173822_pasabuy
+DB_USER=u321173822_Pogilameg
+DB_PASSWORD=your_database_password_here
+
+# PayMongo Payment Gateway
+PAYMONGO_SECRET_KEY=your_paymongo_secret_key
+PAYMONGO_TEST_SECRET_KEY=your_paymongo_test_secret_key
+PAYMONGO_PUBLIC_KEY=your_paymongo_public_key
+PAYMONGO_APP_BASE_URL=https://pasabuy.site
+
+# Email Settings (SMTP)
+SMTP_SERVER=smtp.hostinger.com
+SMTP_PORT=465
+SENDER_EMAIL=PASABUY@pasabuy.site
+SENDER_NAME=PasaBuy Verification OTP
+SENDER_PASSWORD=your_email_password_here
+SMTP_ENABLE_SSL=true
+
+# API Configuration
+API_BASE_URL=https://pasabuy.site/api

@@ -2,10 +2,20 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-// Enable CORS
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type');
+// Enable CORS - Restrict in production
+$isDevelopment = (getenv('APP_ENV') === 'development') || !getenv('APP_ENV');
+if ($isDevelopment) {
+    header('Access-Control-Allow-Origin: *');
+} else {
+    $allowedOrigins = ['https://pasabuy.site', 'https://www.pasabuy.site'];
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if (in_array($origin, $allowedOrigins)) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+    }
+}
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Credentials: true');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -14,12 +24,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 date_default_timezone_set('Asia/Manila');
 
+// Load environment variables from .env file
+function loadEnv() {
+    $envFile = __DIR__ . '/.env';
+    if (!file_exists($envFile)) return;
+
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+
+        list($key, $value) = explode('=', $line, 2);
+        $key = trim($key);
+        $value = trim($value);
+
+        if (!array_key_exists($key, $_ENV) && !array_key_exists($key, $_SERVER)) {
+            putenv("$key=$value");
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+        }
+    }
+}
+loadEnv();
+
 // Database Connection Helper
 function getDb() {
-    $dbHost = '127.0.0.1';
-    $dbName = 'u321173822_pasabuy';
-    $dbUser = 'u321173822_Pogilameg';
-    $dbPass = 'Pogilameg@10';
+    $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
+    $dbName = getenv('DB_NAME') ?: 'u321173822_pasabuy';
+    $dbUser = getenv('DB_USER') ?: 'u321173822_Pogilameg';
+    $dbPass = getenv('DB_PASSWORD') ?: '';
+
+    if (empty($dbPass)) {
+        // Fallback to root user for development
+        $dbUser = 'root';
+        $dbPass = '';
+    }
 
     try {
         return new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
@@ -33,14 +71,7 @@ function getDb() {
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
             ]);
         } catch (Exception $e2) {
-            try {
-                return new PDO("mysql:host=127.0.0.1;dbname={$dbName};charset=utf8mb4", "root", "", [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-                ]);
-            } catch (Exception $e3) {
-                return null;
-            }
+            return null;
         }
     }
 }

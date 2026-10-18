@@ -201,6 +201,121 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
 
         .admin-section.active {
             display: block;
+        }
+
+        /* Loading States */
+        .admin-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .admin-loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(91, 63, 168, 0.2);
+            border-radius: 50%;
+            border-top-color: #5B3FA8;
+            animation: adminSpin 0.8s linear infinite;
+        }
+
+        @keyframes adminSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notifications */
+        .admin-toast-container {
+            position: fixed;
+            top: 80px;
+            right: 28px;
+            z-index: 10000;
+            max-width: 380px;
+        }
+
+        .admin-toast {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: adminSlideIn 0.3s ease;
+            border-left: 4px solid #5B3FA8;
+        }
+
+        .admin-toast.success {
+            border-left-color: #10AC84;
+        }
+
+        .admin-toast.error {
+            border-left-color: #FF3B30;
+        }
+
+        @keyframes adminSlideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Sidebar */
+        @media (max-width: 992px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .admin-sidebar.open {
+                transform: translateX(0);
+            }
+
+            .admin-main-wrapper {
+                margin-left: 0;
+            }
+
+            .admin-top-header {
+                padding: 0 16px;
+            }
+
+            .admin-content-container {
+                padding: 16px;
+            }
+        }
+
+        /* Mobile Sidebar Toggle */
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: #5B3FA8;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar-toggle {
+                display: block;
+            }
+        }
+        }
+
+        .admin-section.active {
+            display: block;
             animation: fadeIn 0.25s ease-in-out;
         }
 
@@ -579,7 +694,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         <!-- Top Header Bar -->
         <header class="admin-top-header">
             <div class="d-flex align-items-center gap-3">
-                <button type="button" class="btn btn-sm btn-light d-md-none" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+                <button type="button" class="sidebar-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
                 <div class="admin-search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" class="form-control" id="adminGlobalSearch" placeholder="Search products, orders, customers..." oninput="handleGlobalSearch(this.value)">
@@ -2450,6 +2565,103 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         let salesChartInstance = null;
         let categoryChartInstance = null;
         let selectedOrderIdForModal = null;
+
+        // Loading and Toast Notification Helpers
+        window.showAdminLoading = function(text = 'Loading...') {
+            let overlay = document.getElementById('adminLoadingOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'adminLoadingOverlay';
+                overlay.className = 'admin-loading-overlay';
+                overlay.innerHTML = `
+                    <div class="admin-loading-spinner"></div>
+                    <p style="color: #5B3FA8; font-weight: 600; margin: 0;">${text}</p>
+                `;
+                document.body.appendChild(overlay);
+            } else {
+                overlay.querySelector('p').textContent = text;
+            }
+            overlay.style.display = 'flex';
+        };
+
+        window.hideAdminLoading = function() {
+            const overlay = document.getElementById('adminLoadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+
+        window.showAdminToast = function(message, type = 'info', duration = 3000) {
+            let container = document.getElementById('adminToastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'adminToastContainer';
+                container.className = 'admin-toast-container';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `admin-toast ${type}`;
+
+            const iconMap = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                info: 'fa-info-circle'
+            };
+
+            const icon = iconMap[type] || iconMap.info;
+
+            toast.innerHTML = `
+                <i class="fa-solid ${icon}" style="font-size: 20px; color: ${type === 'success' ? '#10AC84' : type === 'error' ? '#FF3B30' : '#5B3FA8'};"></i>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.9rem; color: #1E293B;">${message}</div>
+                </div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 16px;">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'adminSlideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        };
+
+        window.setAdminButtonLoading = function(buttonId, isLoading, originalText = '') {
+            const btn = document.getElementById(buttonId);
+            if (!btn) return;
+
+            if (isLoading) {
+                btn.dataset.originalText = btn.textContent;
+                btn.classList.add('btn-loading');
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+                if (originalText) {
+                    btn.textContent = originalText;
+                } else if (btn.dataset.originalText) {
+                    btn.textContent = btn.dataset.originalText;
+                }
+            }
+        };
+
+        // Sidebar Toggle for Mobile
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('adminSidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('open');
+            }
+        };
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('adminSidebar');
+            const toggleBtn = document.querySelector('.sidebar-toggle');
+            if (window.innerWidth <= 992 && sidebar && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
 
         // Auto clock & live real-time sync
         setInterval(() => {

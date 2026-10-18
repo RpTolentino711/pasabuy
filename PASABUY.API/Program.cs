@@ -41,7 +41,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Configure MySQL / SQLite Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Server=localhost;Port=3306;Database=pasabuy_db;User=root;Password=;";
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
+var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "3306";
+var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "pasabuy_db";
+var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "root";
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "";
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
+    $"Server={dbHost};Port={dbPort};Database={dbName};User={dbUser};Password={dbPassword};";
+
 builder.Services.AddDbContext<PasaBuyDbContext>(options =>
 {
     try
@@ -62,12 +70,29 @@ builder.Services.AddScoped<IPayMongoService, PayMongoService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 // CORS policy for Web Admin and Mobile App
+var isDevelopment = builder.Environment.IsDevelopment();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    if (isDevelopment)
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-    });
+        options.AddPolicy("AllowAll", policy =>
+        {
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        });
+    }
+    else
+    {
+        options.AddPolicy("ProductionCors", policy =>
+        {
+            policy.WithOrigins(
+                "https://pasabuy.site",
+                "https://www.pasabuy.site"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+        });
+    }
 });
 
 var app = builder.Build();
@@ -83,7 +108,15 @@ using (var scope = app.Services.CreateScope())
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors("AllowAll");
+if (builder.Environment.IsDevelopment())
+{
+    app.UseCors("AllowAll");
+}
+else
+{
+    app.UseCors("ProductionCors");
+}
+
 app.UseAuthorization();
 app.MapControllers();
 

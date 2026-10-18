@@ -24,11 +24,11 @@ namespace PASABUY.API.Services
         {
             try
             {
-                var smtpServer = _config["EmailSettings:SmtpServer"] ?? "smtp.hostinger.com";
-                var smtpPort = int.Parse(_config["EmailSettings:SmtpPort"] ?? "587");
-                var senderEmail = _config["EmailSettings:SenderEmail"] ?? "PASABUY@pasabuy.site";
-                var senderName = _config["EmailSettings:SenderName"] ?? "PasaBuy Verification OTP";
-                var senderPassword = _config["EmailSettings:SenderPassword"] ?? "Vanossgaming@10";
+                var smtpServer = Environment.GetEnvironmentVariable("SMTP_SERVER") ?? _config["EmailSettings:SmtpServer"] ?? "smtp.hostinger.com";
+                var smtpPort = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? _config["EmailSettings:SmtpPort"] ?? "587");
+                var senderEmail = Environment.GetEnvironmentVariable("SENDER_EMAIL") ?? _config["EmailSettings:SenderEmail"] ?? "PASABUY@pasabuy.site";
+                var senderName = Environment.GetEnvironmentVariable("SENDER_NAME") ?? _config["EmailSettings:SenderName"] ?? "PasaBuy Verification OTP";
+                var senderPassword = Environment.GetEnvironmentVariable("SENDER_PASSWORD") ?? _config["EmailSettings:SenderPassword"] ?? "";
 
                 using var message = new MailMessage();
                 message.From = new MailAddress(senderEmail, senderName);
