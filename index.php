@@ -3582,6 +3582,11 @@
                                     : ['PREPARING', 'PROCESSING', 'CONFIRMED'].includes(lifecycleStatus) ? 2
                                     : 1;
                                 updateRentalLifecycleStepper(lifecycleStep, isOwner);
+                                if (!isOwner && String(ord.early_return_status || '').toUpperCase() === 'PENDING_RENTER' &&
+                                    window._earlyReturnPromptOrder !== String(ord.id)) {
+                                    window._earlyReturnPromptOrder = String(ord.id);
+                                    window.showEarlyReturnModal(ord.order_code, 'renter');
+                                }
 
                                 // Update Header Role Badge Dynamically (Describes the counterparty / chat partner)
                                 const partnerRoleBadge = document.getElementById('chatPartnerRoleBadge');
@@ -4267,10 +4272,23 @@
                                 if (ownerReportRow) ownerReportRow.style.setProperty('display', 'none', 'important');
                                 if (renterOverdueRow) renterOverdueRow.style.setProperty('display', 'none', 'important');
 
-                                // Overdue is ZERO: Show "Mark Returned & Restock" ONLY to the Stock Owner!
-                                if (isOwner) {
+                                const earlyReturnPending = currentChatRentalOrder && String(currentChatRentalOrder.early_return_status || '').toUpperCase() === 'PENDING_RENTER';
+                                const earlyReturnButton = document.getElementById('btnChatMarkReturnedRestock');
+                                if (earlyReturnPending && isOwner) {
                                     if (restockRow) restockRow.style.setProperty('display', 'block', 'important');
-                                } else {
+                                    if (earlyReturnButton) {
+                                        earlyReturnButton.disabled = true;
+                                        earlyReturnButton.innerHTML = '<i class="fa-solid fa-hourglass-half fa-spin me-1"></i> Waiting for renter verification';
+                                    }
+                                } else if (earlyReturnButton) {
+                                    earlyReturnButton.disabled = false;
+                                    earlyReturnButton.innerHTML = '<i class="fa-solid fa-boxes-packing me-1"></i> Early Return &amp; Restock';
+                                }
+
+                                // Overdue is ZERO: Show "Mark Returned & Restock" ONLY to the Stock Owner!
+                                if (isOwner && !earlyReturnPending) {
+                                    if (restockRow) restockRow.style.setProperty('display', 'block', 'important');
+                                } else if (!isOwner) {
                                     if (restockRow) restockRow.style.setProperty('display', 'none', 'important');
                                 }
 
@@ -4911,47 +4929,93 @@
                             }
                             const orderCode = currentChatRentalOrder.order_code;
                             const orderId = currentChatRentalOrder.id;
-
-                            // Check if an unreturned ticket was reported for this order
-                            const hasReportedTicket = (
-                                currentChatRentalOrder.has_unreturned_ticket ||
-                                currentChatRentalOrder.unreturned_reported == 1 ||
-                                currentChatRentalOrder.order_status === 'OVERDUE' ||
-                                currentChatRentalOrder.order_status === 'REPORTED_UNRETURNED'
-                            );
-
-                            if (hasReportedTicket) {
-                                // Populate and open confirmReturnReportedTicketModal
-                                const codeEl = document.getElementById('confirmReturnTicketOrderCode');
-                                const nameEl = document.getElementById('confirmReturnTicketItemName');
-                                if (codeEl) codeEl.innerText = orderCode;
-                                if (nameEl) nameEl.innerText = currentChatRentalOrder.item_name || 'Equipment';
-
-                                const modalEl = document.getElementById('confirmReturnReportedTicketModal');
-                                if (modalEl) {
-                                    new bootstrap.Modal(modalEl).show();
-                                    return;
-                                }
+                            const storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user') || '{}');
+                            const userId = storedUser.id || storedUser.userId || storedUser.UserId || 0;
+                            const userEmail = storedUser.email || '';
+                            const isOwner = (parseInt(userId) === parseInt(currentChatRentalOrder.owner_id)) ||
+                                (userEmail && userEmail.toLowerCase() === String(currentChatRentalOrder.owner_email || '').toLowerCase());
+                            if (!isOwner) {
+                                alert('The stock owner must start the early-return request. You will receive a verification prompt here.');
+                                return;
                             }
-
-                            const endTime = currentChatRentalOrder.rental_timer_end ? new Date(currentChatRentalOrder.rental_timer_end).getTime() : 0;
-                            const isTimerStillRunning = (endTime > Date.now());
-                            if (isTimerStillRunning) {
-                                const diffSec = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-                                const hours = Math.floor(diffSec / 3600);
-                                const mins = Math.floor((diffSec % 3600) / 60);
-                                const timeRemainingStr = `${hours}h ${mins}m`;
-                                const confirmMsg = `⚠️ Early Return Confirmation for Order #${orderCode}:\n\nThe rental timer is still actively running with ${timeRemainingStr} remaining.\n\nHas the student renter already delivered the equipment back early in good condition?\n\nConfirming will end the timer early, restock the gear back in your catalog, and prompt the student renter to submit their 1–5 star rating.`;
-                                if (!confirm(confirmMsg)) {
-                                    return;
-                                }
-                            } else {
-                                if (!confirm(`Confirm that order #${orderCode} has been delivered back and verified in good condition?\n\nThis will mark the rental as RETURNED and restock your equipment inventory automatically.`)) {
-                                    return;
-                                }
+                            if (!(await window.showEarlyReturnModal(orderCode, 'owner'))) return;
+                            const apiEndpoint = window.location.pathname.includes('/student/') ? 'rentease_api.php?action=request_early_return' : '/student/rentease_api.php?action=request_early_return';
+                            const btn = document.getElementById('btnChatMarkReturnedRestock');
+                            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Waiting for renter'; }
+                            try {
+                                const res = await fetch(apiEndpoint, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ order_id: orderId, order_code: orderCode, user_id: userId, user_email: userEmail })
+                                });
+                                const data = await res.json();
+                                if (!data.success) throw new Error(data.message || 'Unable to send request.');
+                                alert(data.message);
+                                await checkAndRenderChatRentalTimer();
+                            } catch (error) {
+                                alert(error.message || 'Unable to send the early-return request.');
+                            } finally {
+                                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-boxes-packing me-1"></i> Early Return &amp; Restock'; }
                             }
+                        };
 
-                            await doExecuteMarkRentalReturnedRestock(orderId, orderCode);
+                        window.showEarlyReturnModal = function (orderCode, role) {
+                            const id = 'earlyReturnVerificationModal';
+                            let modal = document.getElementById(id);
+                            if (!modal) {
+                                modal = document.createElement('div');
+                                modal.id = id;
+                                modal.className = 'modal fade';
+                                modal.tabIndex = -1;
+                                document.body.appendChild(modal);
+                            }
+                            const owner = role === 'owner';
+                            const renterFinal = role === 'renter-confirm';
+                            modal.innerHTML = `<div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 rounded-4 shadow-lg p-2">
+                                <div class="modal-header border-0 pb-1"><h5 class="modal-title fw-bold">${owner ? 'Request early return?' : renterFinal ? 'Confirm restock?' : 'Did you return the item early?'}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                <div class="modal-body pt-1"><p class="text-muted mb-0">${owner ? `Order #${orderCode} is still active. Ask the renter to verify before anything is restocked.` : renterFinal ? 'Please confirm one more time. This will end the rental and put the item back in the owner\\'s available stock.' : `The stock owner is asking you to verify the return for Order #${orderCode}. The item will be restocked only after you confirm.`}</p></div>
+                                <div class="modal-footer border-0 pt-1">${owner
+                                    ? '<button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Not now</button><button type="button" class="btn btn-primary rounded-pill px-4" id="earlyReturnModalConfirm">Send request</button>'
+                                    : renterFinal ? '<button type="button" class="btn btn-light rounded-pill px-4" id="earlyReturnModalCancel">Cancel</button><button type="button" class="btn btn-success rounded-pill px-4" id="earlyReturnModalConfirm">Yes, restock now</button>'
+                                    : '<button type="button" class="btn btn-light rounded-pill px-4" id="earlyReturnModalNo">No, not yet</button><button type="button" class="btn btn-success rounded-pill px-4" id="earlyReturnModalYes">Yes, I returned it</button>'}</div>
+                            </div></div>`;
+                            const instance = bootstrap.Modal.getOrCreateInstance(modal);
+                            instance.show();
+                            if (owner) {
+                                document.getElementById('earlyReturnModalConfirm').onclick = () => { instance.hide(); modal.dataset.confirmed = '1'; };
+                                return new Promise(resolve => {
+                                    modal.addEventListener('hidden.bs.modal', () => resolve(modal.dataset.confirmed === '1'), { once: true });
+                                });
+                            }
+                            if (renterFinal) {
+                                return new Promise(resolve => {
+                                    document.getElementById('earlyReturnModalCancel').onclick = () => { instance.hide(); resolve(false); };
+                                    document.getElementById('earlyReturnModalConfirm').onclick = () => { instance.hide(); resolve(true); };
+                                });
+                            }
+                            document.getElementById('earlyReturnModalNo').onclick = () => { instance.hide(); window.respondToEarlyReturn('no'); };
+                            document.getElementById('earlyReturnModalYes').onclick = () => { instance.hide(); window.respondToEarlyReturn('yes'); };
+                            return true;
+                        };
+
+                        window.respondToEarlyReturn = async function (response) {
+                            const order = currentChatRentalOrder;
+                            if (!order) return;
+                            const storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user') || '{}');
+                            const apiEndpoint = window.location.pathname.includes('/student/') ? 'rentease_api.php?action=respond_early_return' : '/student/rentease_api.php?action=respond_early_return';
+                            try {
+                                if (response === 'yes' && !(await window.showEarlyReturnModal(order.order_code, 'renter-confirm'))) return;
+                                const res = await fetch(apiEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                                    order_id: order.id, order_code: order.order_code, user_id: storedUser.id || storedUser.userId || storedUser.UserId || 0, user_email: storedUser.email || '', response: response
+                                })});
+                                const data = await res.json();
+                                if (!data.success) throw new Error(data.message || 'Unable to verify the return.');
+                                alert(data.message);
+                                await checkAndRenderChatRentalTimer();
+                                if (typeof refreshActiveChatStream === 'function') await refreshActiveChatStream();
+                            } catch (error) {
+                                alert(error.message || 'Unable to verify the early return.');
+                            }
                         };
 
                         window.executeConfirmReturnReportedOrder = async function () {
@@ -4967,7 +5031,7 @@
                                 yesBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Restocking...';
                             }
                             try {
-                                await doExecuteMarkRentalReturnedRestock(currentChatRentalOrder.id, currentChatRentalOrder.order_code);
+                                await window.markRentalReturnedAndRestockFromChat();
                             } finally {
                                 if (yesBtn) {
                                     yesBtn.disabled = false;

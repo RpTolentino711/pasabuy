@@ -114,6 +114,10 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `meetup_location_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `handed_over` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `handed_over_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `early_return_status` VARCHAR(30) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `early_return_requested_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `early_return_requested_by` INT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `early_return_verified_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
 
     // Step 2 photo review attempts and feedback loop
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `prep_photo_attempts` INT DEFAULT 1"); } catch (Exception $e) {}
@@ -1130,6 +1134,9 @@ if ($action === 'get_order_tracking') {
                 'timer_status' => $order['timer_status'] ?? 'NOT_STARTED',
                 'rental_timer_start' => $order['rental_timer_start'] ?? null,
                 'rental_timer_end' => $order['rental_timer_end'] ?? null,
+                'early_return_status' => $order['early_return_status'] ?? null,
+                'early_return_requested_at' => $order['early_return_requested_at'] ?? null,
+                'early_return_verified_at' => $order['early_return_verified_at'] ?? null,
                 'renter_received_confirmed' => (int)($order['renter_received_confirmed'] ?? 0),
                 'renter_received_time' => $order['renter_received_time'] ?? null,
                 'proof_of_pickup' => [
@@ -1833,12 +1840,119 @@ if ($action === 'delete_all_inventory' || $action === 'clear_all_stock') {
     }
 }
 
+if (in_array($action, ['request_early_return', 'respond_early_return'], true)) {
+    $orderId = (int)($data['order_id'] ?? 0);
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    $actorId = (int)($data['user_id'] ?? 0);
+    $actorEmail = strtolower(trim((string)($data['user_email'] ?? '')));
+    $response = strtolower(trim((string)($data['response'] ?? '')));
+
+    try {
+        $stmt = $orderId > 0
+            ? $db->prepare("SELECT * FROM `rental_orders` WHERE `id` = ? LIMIT 1")
+            : $db->prepare("SELECT * FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+        $stmt->execute([$orderId > 0 ? $orderId : $orderCode]);
+        $order = $stmt->fetch();
+        if (!$order) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Rental order not found.']);
+            exit;
+        }
+
+        $isOwner = ($actorId > 0 && $actorId === (int)($order['owner_id'] ?? 0))
+            || ($actorEmail !== '' && $actorEmail === strtolower((string)($order['owner_email'] ?? '')));
+        $isRenter = ($actorId > 0 && $actorId === (int)($order['renter_id'] ?? 0))
+            || ($actorEmail !== '' && $actorEmail === strtolower((string)($order['customer_email'] ?? '')));
+
+        if ($action === 'request_early_return') {
+            if (!$isOwner) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Only the stock owner can request an early return.']);
+                exit;
+            }
+            if (($order['order_status'] ?? '') === 'RETURNED' || ($order['early_return_status'] ?? '') === 'COMPLETED') {
+                echo json_encode(['success' => false, 'message' => 'This rental has already been returned and restocked.']);
+                exit;
+            }
+            $currentEarlyStatus = strtoupper((string)($order['early_return_status'] ?? ''));
+            if ($currentEarlyStatus === 'PENDING_RENTER') {
+                echo json_encode(['success' => true, 'status' => 'PENDING_RENTER', 'message' => 'Waiting for the renter to verify the early return.']);
+                exit;
+            }
+            $db->prepare("UPDATE `rental_orders` SET `early_return_status` = 'PENDING_RENTER', `early_return_requested_at` = NOW(), `early_return_requested_by` = ? WHERE `id` = ?")
+                ->execute([$actorId ?: (int)($order['owner_id'] ?? 0), (int)$order['id']]);
+            try {
+                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'RentEase System', ?, ?, NOW())")
+                    ->execute([(int)($order['owner_id'] ?? 0), (int)($order['renter_id'] ?? 0), "The stock owner requested an early return for Order {$order['order_code']}. Please confirm whether you returned the item.", $order['item_name'] ?? 'Rental item']);
+            } catch (Exception $eNotification) {}
+            echo json_encode(['success' => true, 'status' => 'PENDING_RENTER', 'message' => 'Request sent. Waiting for the renter to verify the return.']);
+            exit;
+        }
+
+        if (!$isRenter) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Only the renter can respond to this request.']);
+            exit;
+        }
+        if (!in_array($response, ['yes', 'no'], true)) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'message' => 'Choose Yes or No to verify the return.']);
+            exit;
+        }
+        if (($order['early_return_status'] ?? '') !== 'PENDING_RENTER') {
+            echo json_encode(['success' => false, 'message' => 'There is no pending early-return request for this rental.']);
+            exit;
+        }
+        if ($response === 'no') {
+            $db->prepare("UPDATE `rental_orders` SET `early_return_status` = 'DECLINED' WHERE `id` = ?")->execute([(int)$order['id']]);
+            echo json_encode(['success' => true, 'status' => 'DECLINED', 'message' => 'The stock owner has been told that the item has not been returned yet.']);
+            exit;
+        }
+
+        $db->beginTransaction();
+        $db->prepare("UPDATE `rental_orders` SET `early_return_status` = 'COMPLETED', `early_return_verified_at` = NOW(), `order_status` = 'RETURNED', `timer_status` = 'COMPLETED', `is_overdue` = 0, `returned_at` = NOW() WHERE `id` = ?")
+            ->execute([(int)$order['id']]);
+        $itemsStmt = $db->prepare("SELECT `product_id`, `product_name`, `quantity` FROM `rental_order_items` WHERE `order_id` = ?");
+        $itemsStmt->execute([(int)$order['id']]);
+        $items = $itemsStmt->fetchAll();
+        if (!$items && !empty($order['item_id'])) {
+            $items = [['product_id' => $order['item_id'], 'product_name' => $order['item_name'] ?? 'Rental item', 'quantity' => $order['qty_total'] ?? 1]];
+        }
+        $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + ?, `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
+        foreach ($items as $item) {
+            $qty = max(1, (int)($item['quantity'] ?? 1));
+            $productId = (int)($item['product_id'] ?? 0);
+            if ($productId > 0) $updStock->execute([$qty, $qty, $productId]);
+        }
+        $message = "✅ Your item for Order {$order['order_code']} has been verified and restocked. The rental is now complete.";
+        try {
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (0, ?, 'RentEase System', ?, ?, NOW())")
+                ->execute([(int)($order['renter_id'] ?? 0), $message, $order['item_name'] ?? 'Rental Return Complete']);
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (0, ?, 'RentEase System', ?, ?, NOW())")
+                ->execute([(int)($order['owner_id'] ?? 0), "✅ Order {$order['order_code']} is verified by the renter and the item is now back in stock.", $order['item_name'] ?? 'Rental Return Complete']);
+        } catch (Exception $eNotification) {}
+        $db->commit();
+        echo json_encode(['success' => true, 'status' => 'COMPLETED', 'message' => $message]);
+        exit;
+    } catch (Exception $eEarlyReturn) {
+        if ($db->inTransaction()) $db->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to update the early-return request.']);
+        exit;
+    }
+}
+
 if ($action === 'update_owner_order_status') {
     $orderId = (int)($data['order_id'] ?? 0);
     $orderCode = trim((string)($data['order_code'] ?? ''));
     $newStatus = strtoupper(trim((string)($data['new_status'] ?? 'PREPARING')));
 
     try {
+        if ($newStatus === 'RETURNED') {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'message' => 'Returns require renter verification. Start an Early Return & Restock request instead.']);
+            exit;
+        }
         if ($orderId > 0) {
             $stmt = $db->prepare("SELECT * FROM `rental_orders` WHERE `id` = ? LIMIT 1");
             $stmt->execute([$orderId]);
@@ -3432,6 +3546,9 @@ if ($action === 'get_active_chat_rental') {
             'timer_status' => $timerStatus,
             'rental_timer_start' => $timerStart,
             'rental_timer_end' => $timerEnd,
+            'early_return_status' => $ord['early_return_status'] ?? null,
+            'early_return_requested_at' => $ord['early_return_requested_at'] ?? null,
+            'early_return_verified_at' => $ord['early_return_verified_at'] ?? null,
             'seconds_remaining' => $secondsRemaining,
             'is_overdue' => $isOverdue,
             'unreturned_reported' => (int)($ord['unreturned_reported'] ?? 0),
