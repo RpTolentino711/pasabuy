@@ -5239,21 +5239,35 @@
 
                         window.respondToEarlyReturn = async function (response) {
                             const order = currentChatRentalOrder;
-                            if (!order) return;
+                            if (!order) {
+                                console.error('No current chat rental order found');
+                                return;
+                            }
                             const storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user') || '{}');
                             const apiEndpoint = window.location.pathname.includes('/student/') ? '../rentease_api.php?action=respond_early_return' : '/student/rentease_api.php?action=respond_early_return';
+                            
+                            console.log('respondToEarlyReturn called:', { response, orderCode: order.order_code, userId: storedUser.id, apiEndpoint });
+                            
                             try {
-                                if (response === 'yes' && !(await window.showEarlyReturnModal(order.order_code, 'renter-confirm'))) return;
-
-                                // Show loading state
+                                // Show loading state immediately
                                 if (typeof window.showLoading === 'function') {
                                     window.showLoading('Verifying return...');
                                 }
 
-                                const res = await fetch(apiEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-                                    order_id: order.id, order_code: order.order_code, user_id: storedUser.id || storedUser.userId || storedUser.UserId || 0, user_email: storedUser.email || '', response: response
-                                })});
+                                const payload = {
+                                    order_id: order.id,
+                                    order_code: order.order_code,
+                                    user_id: storedUser.id || storedUser.userId || storedUser.UserId || 0,
+                                    user_email: storedUser.email || '',
+                                    response: response
+                                };
+                                
+                                console.log('Sending API request to:', apiEndpoint, 'with payload:', payload);
+
+                                const res = await fetch(apiEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)});
                                 const data = await res.json();
+
+                                console.log('API response:', data);
 
                                 if (typeof window.hideLoading === 'function') {
                                     window.hideLoading();
@@ -5271,6 +5285,7 @@
                                 await checkAndRenderChatRentalTimer();
                                 if (typeof refreshActiveChatStream === 'function') await refreshActiveChatStream();
                             } catch (error) {
+                                console.error('respondToEarlyReturn error:', error);
                                 if (typeof window.hideLoading === 'function') {
                                     window.hideLoading();
                                 }
