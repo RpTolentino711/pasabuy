@@ -1978,6 +1978,42 @@
                     </div>
                 </div>
 
+                <div class="modal fade" id="earlyReturnRequestModal" tabindex="-1" style="z-index: 1085;">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 410px;">
+                        <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-white">
+                            <div class="modal-header border-0 pb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width:42px;height:42px;">
+                                        <i class="fa-solid fa-rotate-left fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-extrabold text-dark mb-0 fs-7">Request Early Return?</h6>
+                                        <span class="fs-9 text-muted">Order <strong id="earlyReturnRequestOrderCode">#RE-00000</strong></span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close fs-9" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-2">
+                                <div class="p-3 rounded-3 mb-3" style="background:#EFF6FF;border:1.5px solid #BFDBFE;">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="fa-solid fa-shield-halved text-primary mt-1"></i>
+                                        <div class="fs-8 text-secondary" style="line-height:1.5;">
+                                            The renter must verify the return before this item can be marked returned or restocked.
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-dark fw-semibold fs-8 mb-3">Send an early-return request to the renter?</p>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-light border rounded-pill w-50 fw-bold py-2 fs-8" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-primary rounded-pill w-50 fw-bold py-2 fs-8" id="earlyReturnRequestConfirm">
+                                        <i class="fa-solid fa-paper-plane me-1"></i> Send Request
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="p-2.5 rounded-3 bg-light border mb-2.5 fs-8 text-secondary" style="line-height:1.45;">
                     <div class="fw-bold text-dark mb-1.5"><i class="fa-solid fa-info-circle text-primary me-1"></i>If you confirm receipt:</div>
                     <ul class="mb-0 ps-3 fs-9">
@@ -2062,5 +2098,4 @@
         </div>
     </div>
 </div>
-
 

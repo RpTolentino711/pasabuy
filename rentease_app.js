@@ -2168,7 +2168,22 @@ window.checkOwnerRentalNotifications = async function () {
 };
 
 window.confirmRestockOrder = async function (orderId, orderCode) {
-    if (!confirm(`Request early return for order #${orderCode}?\n\nThe renter must verify the return before this item is marked returned or restocked.`)) {
+    const confirmed = await new Promise(resolve => {
+        const modalEl = document.getElementById('earlyReturnRequestModal');
+        if (!modalEl || typeof bootstrap === 'undefined') {
+            resolve(window.confirm(`Request early return for order #${orderCode}?\n\nThe renter must verify the return before this item is marked returned or restocked.`));
+            return;
+        }
+        const codeEl = document.getElementById('earlyReturnRequestOrderCode');
+        const confirmBtn = document.getElementById('earlyReturnRequestConfirm');
+        if (codeEl) codeEl.textContent = `#${String(orderCode).replace(/^#/, '')}`;
+        const instance = bootstrap.Modal.getOrCreateInstance(modalEl);
+        const finish = value => { instance.hide(); resolve(value); };
+        confirmBtn.onclick = () => finish(true);
+        modalEl.addEventListener('hidden.bs.modal', () => resolve(false), { once: true });
+        instance.show();
+    });
+    if (!confirmed) {
         return;
     }
     let user = {};
