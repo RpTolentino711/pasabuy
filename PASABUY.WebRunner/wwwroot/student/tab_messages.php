@@ -348,6 +348,10 @@
             box-shadow: 0 10px 25px -5px rgba(30, 27, 75, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
             position: relative;
             overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .rentchat-timer-card:hover {
+            box-shadow: 0 12px 30px -5px rgba(30, 27, 75, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
         .rentchat-timer-card::before {
             content: '';
@@ -358,6 +362,20 @@
             height: 130px;
             background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
             pointer-events: none;
+        }
+        .rentchat-timer-card #rentalTimerHeader {
+            transition: background 0.2s ease;
+        }
+        .rentchat-timer-card #rentalTimerHeader:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .rentchat-timer-card #rentalTimerToggleBtn {
+            transition: transform 0.2s ease, background 0.2s ease;
+            border-radius: 50%;
+        }
+        .rentchat-timer-card #rentalTimerToggleBtn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.1);
         }
         .rentchat-live-pulse-ring {
             width: 22px;
@@ -923,9 +941,10 @@
         </div>
     </div>
 
-    <!-- ACTIVE RENTAL LIVE COUNTDOWN TIMER BANNER (Sleek Redesign) -->
+    <!-- ACTIVE RENTAL LIVE COUNTDOWN TIMER BANNER (Collapsible Redesign) -->
     <div id="chatRentalTimerBanner" class="rentchat-timer-card p-3 mb-2 flex-shrink-0 text-white" style="display:none;">
-        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
+        <!-- Header with Collapse Toggle -->
+        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10 cursor-pointer" onclick="toggleRentalTimerBanner()" id="rentalTimerHeader">
             <div class="d-flex align-items-center gap-2">
                 <div class="rentchat-live-pulse-ring">
                     <span class="rentchat-live-pulse"></span>
@@ -935,34 +954,42 @@
                     <div class="text-white-50 fs-10 font-monospace" id="chatTimerItemTitle">POSPT • #RE-10000</div>
                 </div>
             </div>
-            <span class="badge rounded-pill fw-bold px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1.5" id="chatLiveTimerBadge" 
-                  style="background:rgba(16, 185, 129, 0.2); color:#34D399; border:1px solid rgba(52, 211, 153, 0.35);">
-                <i class="fa-solid fa-play fs-11"></i>
-                <span>Timer Running</span>
-            </span>
-        </div>
-
-        <!-- Center Digital Countdown Display Board -->
-        <div class="rentchat-timer-display-box rounded-3 p-2.5 text-center mb-2">
-            <div class="text-white-50 fs-10 text-uppercase fw-bold mb-1" style="letter-spacing:0.8px;" id="chatCountdownLabel">Time Remaining Until Return</div>
-            <div class="rentchat-countdown-digits font-monospace fw-extrabold" id="chatLiveCountdownText">
-                23h 57m 04s
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge rounded-pill fw-bold px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1.5" id="chatLiveTimerBadge"
+                      style="background:rgba(16, 185, 129, 0.2); color:#34D399; border:1px solid rgba(52, 211, 153, 0.35);">
+                    <i class="fa-solid fa-play fs-11"></i>
+                    <span>Timer Running</span>
+                </span>
+                <button type="button" class="btn btn-sm text-white p-0 ms-1" id="rentalTimerToggleBtn" style="background:none; border:none; width:28px; height:28px; display:flex; align-items:center; justify-content:center;">
+                    <i class="fa-solid fa-chevron-up" id="rentalTimerToggleIcon"></i>
+                </button>
             </div>
         </div>
 
-        <!-- Return Details Grid (Formatted cleanly without awkward wraps) -->
-        <div class="rentchat-timer-meta-grid rounded-3 p-2">
-            <div class="d-flex align-items-center justify-content-between py-1 border-bottom border-white border-opacity-10 fs-9">
-                <span class="text-white-50 d-flex align-items-center gap-1.5">
-                    <i class="fa-solid fa-clock-rotate-left text-warning opacity-75"></i> Return Deadline
-                </span>
-                <span class="fw-bold text-white text-end" id="chatTimerEndDisplay">Oct 18, 2026 • 12:55 AM</span>
+        <!-- Collapsible Content -->
+        <div id="rentalTimerContent" class="transition-all" style="overflow: hidden; transition: max-height 0.3s ease-out;">
+            <!-- Center Digital Countdown Display Board -->
+            <div class="rentchat-timer-display-box rounded-3 p-2.5 text-center mb-2">
+                <div class="text-white-50 fs-10 text-uppercase fw-bold mb-1" style="letter-spacing:0.8px;" id="chatCountdownLabel">Time Remaining Until Return</div>
+                <div class="rentchat-countdown-digits font-monospace fw-extrabold" id="chatLiveCountdownText">
+                    23h 57m 04s
+                </div>
             </div>
-            <div class="d-flex align-items-center justify-content-between pt-1 fs-9">
-                <span class="text-white-50 d-flex align-items-center gap-1.5">
-                    <i class="fa-solid fa-location-dot text-danger opacity-75"></i> Handover Spot
-                </span>
-                <span class="fw-semibold text-white text-end text-truncate ms-2" id="chatTimerMeetupDisplay" style="max-width: 170px;">Campus Activity Center</span>
+
+            <!-- Return Details Grid (Formatted cleanly without awkward wraps) -->
+            <div class="rentchat-timer-meta-grid rounded-3 p-2">
+                <div class="d-flex align-items-center justify-content-between py-1 border-bottom border-white border-opacity-10 fs-9">
+                    <span class="text-white-50 d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left text-warning opacity-75"></i> Return Deadline
+                    </span>
+                    <span class="fw-bold text-white text-end" id="chatTimerEndDisplay">Oct 18, 2026 • 12:55 AM</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between pt-1 fs-9">
+                    <span class="text-white-50 d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-location-dot text-danger opacity-75"></i> Handover Spot
+                    </span>
+                    <span class="fw-semibold text-white text-end text-truncate ms-2" id="chatTimerMeetupDisplay" style="max-width: 170px;">Campus Activity Center</span>
+                </div>
             </div>
         </div>
 

@@ -3776,6 +3776,11 @@
                                 const ord = data.order;
                                 currentChatRentalOrder = ord;
 
+                                // Auto-expand timer banner when showing (user returned to chat)
+                                if (timerBanner && timerBanner.style.display === 'none') {
+                                    expandRentalTimerBanner();
+                                }
+
                                 // Precise Ownership & Role Check:
                                 // Is the currently logged-in user the STOCK OWNER of this equipment?
                                 let isOwner = false;
@@ -5270,6 +5275,39 @@
                                     alert(error.message || 'Unable to verify the early return.');
                                 }
                             }
+                        };
+
+                        // Rental Timer Banner Collapse/Expand Functions
+                        window.toggleRentalTimerBanner = function() {
+                            const content = document.getElementById('rentalTimerContent');
+                            const icon = document.getElementById('rentalTimerToggleIcon');
+                            if (!content || !icon) return;
+
+                            const isCollapsed = content.style.maxHeight === '0px';
+
+                            if (isCollapsed) {
+                                expandRentalTimerBanner();
+                            } else {
+                                collapseRentalTimerBanner();
+                            }
+                        };
+
+                        window.expandRentalTimerBanner = function() {
+                            const content = document.getElementById('rentalTimerContent');
+                            const icon = document.getElementById('rentalTimerToggleIcon');
+                            if (!content || !icon) return;
+
+                            content.style.maxHeight = content.scrollHeight + 'px';
+                            icon.className = 'fa-solid fa-chevron-up';
+                        };
+
+                        window.collapseRentalTimerBanner = function() {
+                            const content = document.getElementById('rentalTimerContent');
+                            const icon = document.getElementById('rentalTimerToggleIcon');
+                            if (!content || !icon) return;
+
+                            content.style.maxHeight = '0px';
+                            icon.className = 'fa-solid fa-chevron-down';
                         };
 
                         window.executeConfirmReturnReportedOrder = async function () {
