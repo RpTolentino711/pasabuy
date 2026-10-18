@@ -214,6 +214,55 @@
             flex-shrink: 0;
         }
 
+        #chatView {
+            min-height: 0;
+            max-height: calc(100dvh - 136px);
+            overflow: hidden;
+        }
+        #chatStream {
+            min-height: 0;
+            overscroll-behavior: contain;
+        }
+        #chatView .rentchat-header-bar {
+            margin-bottom: 6px !important;
+            padding: 7px 10px;
+        }
+        #chatView .rentchat-item-card,
+        #chatView .rentchat-safety-banner {
+            margin-bottom: 6px !important;
+        }
+        #chatView .rentchat-item-card {
+            padding: 6px 8px !important;
+        }
+        #chatView .rentchat-safety-banner {
+            padding: 5px 8px !important;
+        }
+        #chatReturnedDeleteSection {
+            padding-top: 4px !important;
+        }
+        #chatReturnedDeleteSection .btn {
+            padding-top: 5px !important;
+            padding-bottom: 5px !important;
+        }
+        @media (max-width: 576px) {
+            #chatView {
+                max-height: calc(100dvh - 128px);
+            }
+            #chatView .rentchat-avatar-wrapper,
+            #chatView .rentchat-avatar-img {
+                width: 32px;
+                height: 32px;
+            }
+            #chatView .rentchat-online-dot {
+                width: 8px;
+                height: 8px;
+            }
+            #chatView .rentchat-header-bar .rentchat-report-btn {
+                padding: 3px 8px;
+                font-size: 0.65rem;
+            }
+        }
+
         /* Ultra-Modern Live Countdown Timer Card */
         .rentchat-timer-card {
             background: linear-gradient(135deg, #1E1B4B 0%, #2E1065 100%);
@@ -462,9 +511,6 @@
             </div>
         </div>
         <div class="d-flex align-items-center gap-1">
-            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1" id="chatHeaderDeleteBtn" onclick="initiateDeleteCurrentChatConversation()" style="font-size:0.72rem; display:none;" title="Delete this conversation safely">
-                <i class="fa-solid fa-trash-can me-1"></i> Delete
-            </button>
             <button type="button" class="rentchat-report-btn" onclick="openReportModal()" title="Report user or issue">
                 <i class="fa-solid fa-shield-halved fs-9"></i> Report
             </button>
@@ -1270,4 +1316,3 @@
     100% { transform: translate(-50%, 0); opacity: 1; }
 }
 </style>
-
