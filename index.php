@@ -6811,6 +6811,15 @@
                 await window.refreshActiveChatStream();
             }
         };
+        if (typeof window.closeChat !== 'function') {
+            window.closeChat = function () {
+                const chatView = document.getElementById('chatView');
+                const messagesTab = document.getElementById('tabMessages');
+                if (chatView) chatView.style.setProperty('display', 'none', 'important');
+                if (messagesTab) messagesTab.style.setProperty('display', 'block', 'important');
+                if (typeof window.loadChatConversationsList === 'function') window.loadChatConversationsList();
+            };
+        }
     </script>
     <script src="rentease_app.js?v=<?= time() ?>"></script>
 </body>

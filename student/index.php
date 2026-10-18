@@ -6814,6 +6814,13 @@
             if (partner) partner.textContent = conversation.PartnerName || 'Campus Student';
             if (title) title.textContent = conversation.ItemTitle || 'Campus Item';
         };
+        if (typeof window.closeChat !== 'function') {
+            window.closeChat = function () {
+                document.getElementById('chatView')?.style.setProperty('display', 'none', 'important');
+                document.getElementById('tabMessages')?.style.setProperty('display', 'block', 'important');
+                if (typeof window.loadChatConversationsList === 'function') window.loadChatConversationsList();
+            };
+        }
     </script>
     <script src="rentease_app.js?v=<?= time() ?>"></script>
 </body>
