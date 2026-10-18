@@ -628,7 +628,7 @@ if ($action === 'chat_conversations') {
     if ($userId <= 1) $userId = 104;
 
     // Resolve current user email
-    $uEmail = ($userId == 104) ? 'romeopaolotolentino@gmail.com' : (($userId == 105) ? 'pogilameg@gmail.com' : '');
+    $uEmail = '';
     try {
         $uStmt = $db->prepare("SELECT Email FROM `Users` WHERE Id = ?");
         $uStmt->execute([$userId]);
@@ -639,7 +639,7 @@ if ($action === 'chat_conversations') {
     $allConvs = [];
     // 1. Fetch all rental orders involving this user
     try {
-        $userMatchIds = ($userId === 104 || $userId === 1) ? [1, 104] : [$userId];
+        $userMatchIds = [$userId];
         $uIdsList = implode(',', $userMatchIds);
         $rOrdersSql = "SELECT ro.*, ri.image_url as item_image,
                               spOwner.FirstName as OwnerFirstName, spOwner.LastName as OwnerLastName, spOwner.ProfileImage as OwnerProfileImage,
@@ -688,7 +688,7 @@ if ($action === 'chat_conversations') {
 
             $partnerId = $isOwner ? (int)$ro['renter_id'] : (int)$ro['owner_id'];
             if ($partnerId <= 0 || in_array($partnerId, $userMatchIds)) {
-                $partnerId = ($userId === 104) ? 105 : 104;
+                continue; // Skip if partner ID is invalid or is the current user
             }
 
             $rawOwnerName = trim((string)($ro['owner_name'] ?? ''));
@@ -699,10 +699,10 @@ if ($action === 'chat_conversations') {
             if ($isOwner) {
                 $pName = trim(($ro['RenterFirstName'] ?? '') . ' ' . ($ro['RenterLastName'] ?? ''));
                 if ($pName === '') $pName = trim((string)($ro['customer_name'] ?? ''));
-                if ($pName === '') $pName = ($partnerId === 105 ? 'Pogilameg Tester' : 'Campus Renter');
+                if ($pName === '') $pName = 'Campus Renter';
                 $pAvatar = !empty($ro['RenterProfileImage']) ? $ro['RenterProfileImage'] : '';
             } else {
-                $pName = $rawOwnerName !== '' ? $rawOwnerName : ($partnerId === 104 ? 'Romeo Paolo Tolentino' : 'Stock Owner');
+                $pName = $rawOwnerName !== '' ? $rawOwnerName : 'Stock Owner';
                 $pAvatar = !empty($ro['OwnerProfileImage']) ? $ro['OwnerProfileImage'] : '';
             }
 
@@ -997,20 +997,15 @@ if ($action === 'chat_conversations') {
         $sId = (int)($c['SenderId'] ?? 0);
         $rId = (int)($c['ReceiverId'] ?? 0);
         if ($sId === $rId || $pId === $userId) return false;
-        if ($userId === 104 && ($pId === 1 || $pId === 104)) return false;
 
         $pName = strtolower($c['PartnerName'] ?? '');
         $sName = strtolower($c['SenderName'] ?? '');
         $item = strtolower($c['ItemTitle'] ?? '');
 
-        // If user is Romeo (104), never show Romeo as partner
-        if ($userId === 104 && (str_contains($pName, 'romeo') || str_contains($pName, 'tolentino'))) return false;
-        // If user is Pogilameg (105), never show Pogilameg as partner
-        if ($userId === 105 && str_contains($pName, 'pogilameg')) return false;
-
-        return !str_contains($pName, 'dispatch') 
-            && !str_contains($pName, 'rider') 
-            && !str_contains($sName, 'dispatch') 
+        // Only filter out system dispatch/rider conversations
+        return !str_contains($pName, 'dispatch')
+            && !str_contains($pName, 'rider')
+            && !str_contains($sName, 'dispatch')
             && !str_contains($sName, 'rider')
             && !str_contains($item, 'dispatch');
     }));
@@ -1026,18 +1021,17 @@ if ($action === 'chat_messages' || $action === 'get_messages') {
     if ($senderId <= 1) $senderId = 104;
     if ($receiverId <= 1) $receiverId = 104;
 
-    $sList = ($senderId == 104) ? [1, 104] : [$senderId];
-    $rList = ($receiverId == 104) ? [1, 104] : [$receiverId];
+    $sList = [$senderId];
+    $rList = [$receiverId];
 
     $sPlaceholders = implode(',', array_fill(0, count($sList), '?'));
     $rPlaceholders = implode(',', array_fill(0, count($rList), '?'));
 
-    $sql = "SELECT * FROM ChatMessages 
-            WHERE ((SenderId IN ($sPlaceholders) AND ReceiverId IN ($rPlaceholders)) 
-               OR (SenderId IN ($rPlaceholders) AND ReceiverId IN ($sPlaceholders))) 
+    $sql = "SELECT * FROM ChatMessages
+            WHERE ((SenderId IN ($sPlaceholders) AND ReceiverId IN ($rPlaceholders))
+               OR (SenderId IN ($rPlaceholders) AND ReceiverId IN ($sPlaceholders)))
               AND SenderId != ReceiverId
-              AND NOT (SenderId IN (1, 104) AND ReceiverId IN (1, 104))
-              AND SenderName NOT LIKE '%Fleet Dispatch%' 
+              AND SenderName NOT LIKE '%Fleet Dispatch%'
               AND SenderName NOT LIKE '%Rider%'";
     $params = array_merge($sList, $rList, $rList, $sList);
 
