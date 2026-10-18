@@ -44,9 +44,17 @@ date_default_timezone_set('Asia/Manila');
 // Load environment variables from .env file
 function loadEnv() {
     $envFile = __DIR__ . '/.env';
-    if (!file_exists($envFile)) return;
+    error_log("Looking for .env file at: " . $envFile);
+    error_log(".env file exists: " . (file_exists($envFile) ? 'YES' : 'NO'));
+    
+    if (!file_exists($envFile)) {
+        error_log("ERROR: .env file not found!");
+        return;
+    }
 
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    error_log("Loaded " . count($lines) . " lines from .env");
+    
     foreach ($lines as $line) {
         if (strpos(trim($line), '#') === 0) continue;
 
@@ -58,10 +66,14 @@ function loadEnv() {
             putenv("$key=$value");
             $_ENV[$key] = $value;
             $_SERVER[$key] = $value;
+            error_log("Set env var: $key");
         }
     }
 }
 loadEnv();
+error_log("DB_HOST after loadEnv: " . (getenv('DB_HOST') ?: 'NOT SET'));
+error_log("DB_NAME after loadEnv: " . (getenv('DB_NAME') ?: 'NOT SET'));
+error_log("DB_USER after loadEnv: " . (getenv('DB_USER') ?: 'NOT SET'));
 
 // Database Connection Helper
 function getDb() {
