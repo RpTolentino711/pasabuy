@@ -726,7 +726,7 @@ if ($action === 'chat_conversations') {
             }
 
             // Fallback avatar
-            if (empty($pAvatar) || str_contains($pAvatar, 'dicebear')) {
+            if (empty($pAvatar) || str_contains($pAvatar, 'dicebear') || strpos($pAvatar, 'data:') === 0) {
                 $pAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($pName) . '&background=5B3FA8&color=fff&bold=true&rounded=true';
             }
 
@@ -932,7 +932,7 @@ if ($action === 'chat_conversations') {
                     $pName = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
                     $pAvatar = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
                 }
-                if (empty($pAvatar) || str_contains($pAvatar, 'dicebear')) {
+                if (empty($pAvatar) || str_contains($pAvatar, 'dicebear') || strpos($pAvatar, 'data:') === 0) {
                     $pAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($pName) . '&background=5B3FA8&color=fff&bold=true&rounded=true';
                 }
 
