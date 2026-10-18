@@ -1001,15 +1001,16 @@ if ($action === 'chat_conversations') {
             }
 
             if (in_array((int)$c['SenderId'], [1, $userId])) {
-                    $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
-                    $pName = $rName !== '' ? $rName : 'Campus Seller';
-                    $pAvatar = !empty($c['ReceiverProfileImage']) ? $c['ReceiverProfileImage'] : '';
-                } else {
-                    $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
-                    $pName = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
-                    $pAvatar = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
-                }
-                if (empty($pAvatar) || str_contains($pAvatar, 'dicebear') || strpos($pAvatar, 'data:') === 0) {
+                $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
+                $pName = $rName !== '' ? $rName : 'Campus Seller';
+                $pAvatar = !empty($c['ReceiverProfileImage']) ? $c['ReceiverProfileImage'] : '';
+            } else {
+                $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
+                $pName = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
+                $pAvatar = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
+            }
+
+            if (empty($pAvatar) || str_contains($pAvatar, 'dicebear') || strpos($pAvatar, 'data:') === 0) {
                     $pAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($pName) . '&background=5B3FA8&color=fff&bold=true&rounded=true';
                 }
 
@@ -1090,7 +1091,6 @@ if ($action === 'chat_conversations') {
                     'TotalAmount' => '0.00',
                     'RentalDays' => 1
                 ];
-            }
         }
     } catch (Exception $eMsg) {}
 

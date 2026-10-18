@@ -957,41 +957,6 @@ if ($action === 'chat_conversations') {
                 ];
             }
         }
-                'Id' => (int)$ro['id'],
-                'SenderId' => $userId,
-                'ReceiverId' => $partnerId,
-                'SenderName' => $isOwner ? ($ro['owner_name'] ?: 'Stock Owner') : ($ro['customer_name'] ?: 'Campus Renter'),
-                'PartnerId' => $partnerId,
-                'PartnerName' => $pName,
-                'PartnerAvatar' => $pAvatar,
-                'ItemTitle' => $ro['item_name'],
-                'ItemImage' => $ro['item_image'] ?: '',
-                'MessageText' => $lastMsg,
-                'CreatedAt' => $lastMsgTime,
-                'HasTransaction' => true,
-                'HasActiveTransaction' => (!$isReturned && !$hasRated),
-                'IsCompleted' => $isReturned,
-                'HasRated' => $hasRated,
-                'Rating' => (int)($ro['rating'] ?? 0),
-                'TransactionOrderCode' => $ro['order_code'],
-                'TransactionStatus' => $ro['order_status'],
-                'IsMyItem' => $isOwner,
-                'RoleLabel' => $isOwner ? 'My Item (Lender)' : 'Renting (Borrower)',
-                'RoleType' => $isOwner ? 'OWNER' : 'RENTER',
-                'OwnerName' => $isOwner ? 'You' : ($rawOwnerName !== '' ? $rawOwnerName : $pName),
-                'IsOverdue' => $isOverdue,
-                'IsTimerRunning' => $isTimerRunning,
-                'RentalTimerEnd' => $ro['rental_timer_end'] ?? null,
-                'TimerStatus' => $isOverdue ? 'EXPIRED' : ($ro['timer_status'] ?: 'NOT_STARTED'),
-                'StepLevel' => $stepLevel,
-                'StepTitle' => $stepTitle,
-                'IsActionRequired' => $isActionRequired,
-                'ActionPrompt' => $actionPrompt,
-                'ActionBadgeClass' => $actionBadgeClass,
-                'TotalAmount' => $ro['total_amount'],
-                'RentalDays' => $ro['rental_days']
-            ];
-        }
     } catch (Exception $eOrders) {}
 
     // 2. Also check any standalone ChatMessages not already covered by an order
@@ -1035,19 +1000,19 @@ if ($action === 'chat_conversations') {
                 continue;
             }
 
-            if (!isset($allConvs[$convKey])) {
-                if (in_array((int)$c['SenderId'], [1, $userId])) {
-                    $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
-                    $pName = $rName !== '' ? $rName : 'Campus Seller';
-                    $pAvatar = !empty($c['ReceiverProfileImage']) ? $c['ReceiverProfileImage'] : '';
-                } else {
-                    $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
-                    $pName = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
-                    $pAvatar = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
-                }
-                if (empty($pAvatar) || str_contains($pAvatar, 'dicebear') || strpos($pAvatar, 'data:') === 0) {
-                    $pAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($pName) . '&background=5B3FA8&color=fff&bold=true&rounded=true';
-                }
+            if (in_array((int)$c['SenderId'], [1, $userId])) {
+                $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
+                $pName = $rName !== '' ? $rName : 'Campus Seller';
+                $pAvatar = !empty($c['ReceiverProfileImage']) ? $c['ReceiverProfileImage'] : '';
+            } else {
+                $sName = trim(($c['SenderFirstName'] ?? '') . ' ' . ($c['SenderLastName'] ?? ''));
+                $pName = $sName !== '' ? $sName : ($c['SenderName'] ?: 'Campus Buyer');
+                $pAvatar = !empty($c['SenderProfileImage']) ? $c['SenderProfileImage'] : '';
+            }
+
+            if (empty($pAvatar) || str_contains($pAvatar, 'dicebear') || strpos($pAvatar, 'data:') === 0) {
+                $pAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($pName) . '&background=5B3FA8&color=fff&bold=true&rounded=true';
+            }
 
                 // Resolve item ownership from rental_inventory or rental_orders
                 $isItemMine = false;
@@ -1126,7 +1091,6 @@ if ($action === 'chat_conversations') {
                     'TotalAmount' => '0.00',
                     'RentalDays' => 1
                 ];
-            }
         }
     } catch (Exception $eMsg) {}
 
