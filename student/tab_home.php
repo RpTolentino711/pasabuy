@@ -146,7 +146,6 @@
     <div class="mb-2.5">
         <div class="d-flex align-items-center justify-content-between mb-2">
             <h6 class="fw-extrabold mb-0 text-dark fs-8">Featured Rentals</h6>
-            <a href="javascript:void(0)" class="text-decoration-none fs-9 fw-bold" style="color: #5B3FA8;" onclick="openCategoryTab('All')">See All <i class="fa-solid fa-arrow-right ms-0.5"></i></a>
         </div>
 
         <div class="row g-2" id="homeFeaturedContainer">
