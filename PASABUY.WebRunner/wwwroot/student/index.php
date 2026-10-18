@@ -6785,6 +6785,23 @@
                         }
 
                     </script>
+    <script>
+        if (typeof window.loadChatConversationsList !== 'function') {
+            window.loadChatConversationsList = async function () {
+                const container = document.getElementById('conversationHeadsList');
+                if (!container) return;
+                let user = {};
+                try { user = JSON.parse(localStorage.getItem('pasabuy_student_user') || '{}'); } catch (e) {}
+                const userId = user.id || user.userId || user.UserId || 104;
+                try {
+                    const response = await fetch(`/pasabuy_api.php?action=chat_conversations&user_id=${encodeURIComponent(userId)}&_t=${Date.now()}`, { cache: 'no-store' });
+                    const conversations = await response.json();
+                    if (!Array.isArray(conversations) || !conversations.length) return;
+                    container.innerHTML = conversations.map(c => `<button type="button" class="w-100 text-start border rounded-4 bg-white p-3 d-flex align-items-center gap-3 shadow-2xs"><img src="${c.PartnerAvatar || 'https://ui-avatars.com/api/?name=Chat&background=5B3FA8&color=fff'}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" alt=""><span class="min-w-0"><strong class="d-block text-dark text-truncate">${c.PartnerName || 'Campus Student'}</strong><small class="text-muted text-truncate d-block">${c.ItemTitle || 'Rental conversation'}</small><small class="text-secondary text-truncate d-block">${c.MessageText || ''}</small></span></button>`).join('');
+                } catch (e) { console.error('Messages fallback loader failed:', e); }
+            };
+        }
+    </script>
     <script src="rentease_app.js?v=<?= time() ?>"></script>
 </body>
 
