@@ -1702,8 +1702,13 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                     let statusBadgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
                     let statusLabel = status;
                     let isStepActive = 1;
+                    const earlyReturnPending = String(order.early_return_status || '').toUpperCase() === 'PENDING_RENTER';
 
-                    if (status === 'CONFIRMED' || status === 'REQUESTED' || status === 'PENDING') {
+                    if (earlyReturnPending) {
+                        statusBadgeClass = 'bg-warning-subtle text-dark border border-warning-subtle';
+                        statusLabel = 'Waiting for renter verification';
+                        isStepActive = 4;
+                    } else if (status === 'CONFIRMED' || status === 'REQUESTED' || status === 'PENDING') {
                         statusBadgeClass = 'bg-primary text-white';
                         statusLabel = 'Step 1 • Requested';
                         isStepActive = 1;
@@ -1841,6 +1846,11 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                                         style="background: #10B981; border: none;" 
                                         onclick="acceptOrderAndGoToMessages(${order.id}, '${orderCode}', '${customerName.replace(/'/g, "\'")}', ${renterId}, '${orderItemName.replace(/'/g, "\'")}', '${orderItemImg.replace(/'/g, "\'")}')">
                                     <i class="fa-solid fa-handshake me-1"></i> Step 4: Complete Handover &amp; Start Timer in Chat
+                                </button>
+                            ` : (earlyReturnPending) ? `
+                                <button class="btn btn-sm text-dark rounded-pill py-2 px-3 fs-9 fw-extrabold w-100 shadow-xs" disabled
+                                        style="background: #FEF3C7; border: 1px solid #F59E0B; color: #92400E !important;">
+                                    <i class="fa-solid fa-hourglass-half fa-spin me-1"></i> Waiting for renter verification
                                 </button>
                             ` : (status === 'IN_PROGRESS' || status === 'RENTED' || status === 'DELIVERED' || status === 'RETURN_DELIVERY' || status === 'OVERDUE') ? `
                                 <button class="btn btn-sm text-white rounded-pill py-2 px-3 fs-9 fw-extrabold w-100 shadow-xs" 
@@ -2106,10 +2116,37 @@ window.checkOwnerRentalNotifications = async function () {
 };
 
 window.confirmRestockOrder = async function (orderId, orderCode) {
-    if (!confirm(`Confirm that order #${orderCode} has been delivered back and verified in good condition?\n\nThis will mark the rental as RETURNED and restock your equipment inventory automatically.`)) {
+    if (!confirm(`Request early return for order #${orderCode}?\n\nThe renter must verify the return before this item is marked returned or restocked.`)) {
         return;
     }
-    updateOwnerOrderStatus(orderId, orderCode, 'RETURNED');
+    let user = {};
+    try { user = JSON.parse(localStorage.getItem('pasabuy_student_user') || '{}'); } catch (e) {}
+    const userId = user.id || user.userId || user.UserId || 0;
+    const userEmail = user.email || '';
+    try {
+        const res = await fetch(getRentEaseApiUrl('request_early_return'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'request_early_return',
+                order_id: orderId,
+                order_code: orderCode,
+                user_id: userId,
+                user_email: userEmail
+            })
+        });
+        const data = await res.json();
+        if (!data || !data.success) {
+            alert(data?.message || 'Unable to send the early-return request.');
+            return;
+        }
+        alert(data.message || 'Request sent. Waiting for renter verification.');
+        if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
+        if (typeof switchTab === 'function') switchTab('messages');
+    } catch (e) {
+        console.error('Early return request error:', e);
+        alert('Server connection error while sending the early-return request.');
+    }
 };
 
 window.updateOwnerOrderStatus = async function (orderId, orderCode, newStatus) {
