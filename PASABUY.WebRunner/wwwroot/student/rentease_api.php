@@ -2933,7 +2933,8 @@ if ($action === 'submit_item_report') {
     }
 
     if (!$db) {
-        echo json_encode(['success' => true, 'message' => 'Report recorded locally.']);
+        http_response_code(503);
+        echo json_encode(['success' => false, 'message' => 'Reporting is temporarily unavailable. Please try again later.']);
         exit;
     }
 
@@ -2949,6 +2950,12 @@ if ($action === 'submit_item_report') {
     $itemName = $item['name'];
     $ownerId = (int)($item['owner_id'] ?? 105);
     $ownerName = $item['owner_name'] ?? 'Equipment Owner';
+
+    if ($reporterId > 0 && $reporterId === $ownerId) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'You cannot report your own equipment listing.']);
+        exit;
+    }
 
     $ins = $db->prepare("INSERT INTO `rental_item_reports` 
         (`item_id`, `item_name`, `owner_id`, `owner_name`, `reporter_id`, `reporter_name`, `reason`, `details`, `evidence_photo`, `status`) 

@@ -142,6 +142,25 @@ namespace PASABUY.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateReport([FromBody] CreateReportRequest req)
         {
+            if (req.ReporterId <= 0)
+                return BadRequest(new { message = "A valid reporter is required." });
+
+            if (req.ListingId.HasValue)
+            {
+                var listing = await _db.Listings
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(l => l.Id == req.ListingId.Value);
+
+                if (listing == null)
+                    return NotFound(new { message = "Listing not found." });
+
+                if (listing.SellerId == req.ReporterId)
+                    return StatusCode(StatusCodes.Status403Forbidden,
+                        new { message = "You cannot report your own listing." });
+
+                req.ReportedUserId ??= listing.SellerId;
+            }
+
             var report = new Report
             {
                 ReporterId = req.ReporterId,
