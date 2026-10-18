@@ -875,41 +875,87 @@ if ($action === 'chat_conversations') {
 
             // Group by partner only, not partner + item, to avoid duplicates
             $convKey = $partnerId . '_' . $partnerId;
-            $allConvs[$convKey] = [
-                'Id' => (int)$ro['id'],
-                'SenderId' => $userId,
-                'ReceiverId' => $partnerId,
-                'SenderName' => $isOwner ? ($ro['owner_name'] ?: 'Stock Owner') : ($ro['customer_name'] ?: 'Campus Renter'),
-                'PartnerId' => $partnerId,
-                'PartnerName' => $pName,
-                'PartnerAvatar' => $pAvatar,
-                'ItemTitle' => $ro['item_name'],
-                'ItemImage' => $ro['item_image'] ?: '',
-                'MessageText' => $lastMsg,
-                'CreatedAt' => $lastMsgTime,
-                'HasTransaction' => true,
-                'HasActiveTransaction' => (!$isReturned && !$hasRated),
-                'IsCompleted' => $isReturned,
-                'HasRated' => $hasRated,
-                'Rating' => (int)($ro['rating'] ?? 0),
-                'TransactionOrderCode' => $ro['order_code'],
-                'TransactionStatus' => $ro['order_status'],
-                'IsMyItem' => $isOwner,
-                'RoleLabel' => $isOwner ? 'My Item (Lender)' : 'Renting (Borrower)',
-                'RoleType' => $isOwner ? 'OWNER' : 'RENTER',
-                'OwnerName' => $isOwner ? 'You' : ($rawOwnerName !== '' ? $rawOwnerName : $pName),
-                'IsOverdue' => $isOverdue,
-                'IsTimerRunning' => $isTimerRunning,
-                'RentalTimerEnd' => $ro['rental_timer_end'] ?? null,
-                'TimerStatus' => $isOverdue ? 'EXPIRED' : ($ro['timer_status'] ?: 'NOT_STARTED'),
-                'StepLevel' => $stepLevel,
-                'StepTitle' => $stepTitle,
-                'IsActionRequired' => $isActionRequired,
-                'ActionPrompt' => $actionPrompt,
-                'ActionBadgeClass' => $actionBadgeClass,
-                'TotalAmount' => $ro['total_amount'],
-                'RentalDays' => $ro['rental_days']
-            ];
+            
+            // If this conversation already exists, only update if this one is more recent
+            if (isset($allConvs[$convKey])) {
+                $existingTime = strtotime($allConvs[$convKey]['CreatedAt'] ?? '0');
+                $newTime = strtotime($lastMsgTime ?? '0');
+                if ($newTime > $existingTime) {
+                    // Keep the newer conversation
+                    $allConvs[$convKey] = [
+                        'Id' => (int)$ro['id'],
+                        'SenderId' => $userId,
+                        'ReceiverId' => $partnerId,
+                        'SenderName' => $isOwner ? ($ro['owner_name'] ?: 'Stock Owner') : ($ro['customer_name'] ?: 'Campus Renter'),
+                        'PartnerId' => $partnerId,
+                        'PartnerName' => $pName,
+                        'PartnerAvatar' => $pAvatar,
+                        'ItemTitle' => $ro['item_name'],
+                        'ItemImage' => $ro['item_image'] ?: '',
+                        'MessageText' => $lastMsg,
+                        'CreatedAt' => $lastMsgTime,
+                        'HasTransaction' => true,
+                        'HasActiveTransaction' => (!$isReturned && !$hasRated),
+                        'IsCompleted' => $isReturned,
+                        'HasRated' => $hasRated,
+                        'Rating' => (int)($ro['rating'] ?? 0),
+                        'TransactionOrderCode' => $ro['order_code'],
+                        'TransactionStatus' => $ro['order_status'],
+                        'IsMyItem' => $isOwner,
+                        'RoleLabel' => $isOwner ? 'My Item (Lender)' : 'Renting (Borrower)',
+                        'RoleType' => $isOwner ? 'OWNER' : 'RENTER',
+                        'OwnerName' => $isOwner ? 'You' : ($rawOwnerName !== '' ? $rawOwnerName : $pName),
+                        'IsOverdue' => $isOverdue,
+                        'IsTimerRunning' => $isTimerRunning,
+                        'RentalTimerEnd' => $ro['rental_timer_end'] ?? null,
+                        'TimerStatus' => $isOverdue ? 'EXPIRED' : ($ro['timer_status'] ?: 'NOT_STARTED'),
+                        'StepLevel' => $stepLevel,
+                        'StepTitle' => $stepTitle,
+                        'IsActionRequired' => $isActionRequired,
+                        'ActionPrompt' => $actionPrompt,
+                        'ActionBadgeClass' => $actionBadgeClass,
+                        'TotalAmount' => $ro['total_amount'],
+                        'RentalDays' => $ro['rental_days']
+                    ];
+                }
+            } else {
+                // Conversation doesn't exist yet, add it
+                $allConvs[$convKey] = [
+                    'Id' => (int)$ro['id'],
+                    'SenderId' => $userId,
+                    'ReceiverId' => $partnerId,
+                    'SenderName' => $isOwner ? ($ro['owner_name'] ?: 'Stock Owner') : ($ro['customer_name'] ?: 'Campus Renter'),
+                    'PartnerId' => $partnerId,
+                    'PartnerName' => $pName,
+                    'PartnerAvatar' => $pAvatar,
+                    'ItemTitle' => $ro['item_name'],
+                    'ItemImage' => $ro['item_image'] ?: '',
+                    'MessageText' => $lastMsg,
+                    'CreatedAt' => $lastMsgTime,
+                    'HasTransaction' => true,
+                    'HasActiveTransaction' => (!$isReturned && !$hasRated),
+                    'IsCompleted' => $isReturned,
+                    'HasRated' => $hasRated,
+                    'Rating' => (int)($ro['rating'] ?? 0),
+                    'TransactionOrderCode' => $ro['order_code'],
+                    'TransactionStatus' => $ro['order_status'],
+                    'IsMyItem' => $isOwner,
+                    'RoleLabel' => $isOwner ? 'My Item (Lender)' : 'Renting (Borrower)',
+                    'RoleType' => $isOwner ? 'OWNER' : 'RENTER',
+                    'OwnerName' => $isOwner ? 'You' : ($rawOwnerName !== '' ? $rawOwnerName : $pName),
+                    'IsOverdue' => $isOverdue,
+                    'IsTimerRunning' => $isTimerRunning,
+                    'RentalTimerEnd' => $ro['rental_timer_end'] ?? null,
+                    'TimerStatus' => $isOverdue ? 'EXPIRED' : ($ro['timer_status'] ?: 'NOT_STARTED'),
+                    'StepLevel' => $stepLevel,
+                    'StepTitle' => $stepTitle,
+                    'IsActionRequired' => $isActionRequired,
+                    'ActionPrompt' => $actionPrompt,
+                    'ActionBadgeClass' => $actionBadgeClass,
+                    'TotalAmount' => $ro['total_amount'],
+                    'RentalDays' => $ro['rental_days']
+                ];
+            }
         }
     } catch (Exception $eOrders) {}
 
@@ -946,10 +992,15 @@ if ($action === 'chat_conversations') {
             $pId = in_array((int)$c['SenderId'], [1, $userId]) ? (int)$c['ReceiverId'] : (int)$c['SenderId'];
             $itemTitle = trim((string)($c['ItemTitle'] ?? ''));
             if ($itemTitle === '') $itemTitle = 'General';
-            $convKey = $pId . '_' . strtolower($itemTitle);
+            // Group by partner only, not partner + item, to avoid duplicates
+            $convKey = $pId . '_' . $pId;
 
-            if (!isset($allConvs[$convKey])) {
-                if (in_array((int)$c['SenderId'], [1, $userId])) {
+            // If conversation already exists from rental orders, skip standalone messages
+            if (isset($allConvs[$convKey])) {
+                continue;
+            }
+
+            if (in_array((int)$c['SenderId'], [1, $userId])) {
                     $rName = trim(($c['ReceiverFirstName'] ?? '') . ' ' . ($c['ReceiverLastName'] ?? ''));
                     $pName = $rName !== '' ? $rName : 'Campus Seller';
                     $pAvatar = !empty($c['ReceiverProfileImage']) ? $c['ReceiverProfileImage'] : '';
