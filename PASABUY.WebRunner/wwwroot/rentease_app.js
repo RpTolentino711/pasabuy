@@ -725,7 +725,16 @@ function openEquipmentDetail(id) {
     const ownerNotice = document.getElementById('detailOwnerNoticeContainer');
     const footerActions = document.getElementById('detailFooterActions');
     const datesContainer = document.getElementById('detailDatesContainer');
+    const reportButton = document.getElementById('detailHeaderReportBtn');
+    const reportLink = document.getElementById('detailReportItemLink');
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
+
+    if (reportButton) {
+        reportButton.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    }
+    if (reportLink) {
+        reportLink.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    }
 
     // Initialize rental schedule dates (today to tomorrow)
     const todayStr = new Date().toISOString().split('T')[0];
@@ -4913,6 +4922,11 @@ window.openReportItemModal = function () {
         window.currentDetailProduct = p;
     }
 
+    if (isCurrentUserOwnerOfItem(p)) {
+        alert("You cannot report your own equipment listing.");
+        return;
+    }
+
     const idEl = document.getElementById('reportItemId');
     const nameEl = document.getElementById('reportItemName');
     const ownerEl = document.getElementById('reportItemOwner');
@@ -4951,6 +4965,10 @@ window.openReportItemModal = function () {
 
 window.submitItemReport = async function () {
     const p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
+    if (p && isCurrentUserOwnerOfItem(p)) {
+        alert("You cannot report your own equipment listing.");
+        return;
+    }
     const itemId = p ? parseInt(p.id) : (parseInt(document.getElementById('reportItemId')?.innerText || '0') || 1);
     const reason = document.getElementById('reportReasonSelect')?.value || '';
     const details = (document.getElementById('reportDetailsText')?.value || '').trim();

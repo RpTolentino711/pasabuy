@@ -956,7 +956,7 @@
                 </button>
                 <div class="fw-extrabold text-dark fs-7" id="detailHeaderTitle" style="letter-spacing: -0.2px;">Equipment Details</div>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" id="detailHeaderReportBtn" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#fef2f2; border:1.5px solid #fee2e2; color:#ef4444; transition: transform 0.15s ease;" onclick="openReportItemModal()" title="Report Listing to Admin">
+                    <button type="button" id="detailHeaderReportBtn" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="display:none !important; width:36px; height:36px; background:#fef2f2; border:1.5px solid #fee2e2; color:#ef4444; transition: transform 0.15s ease;" onclick="openReportItemModal()" title="Report Listing to Admin">
                         <i class="fa-solid fa-flag fs-7 text-danger"></i>
                     </button>
                     <button type="button" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="toggleWishlist(this, currentDetailProductId)" title="Wishlist">
@@ -1189,7 +1189,7 @@
                     <span class="text-muted fs-9 d-flex align-items-center gap-1">
                         <i class="fa-solid fa-shield-halved text-success"></i> Campus Safety (3-Strike Policy)
                     </span>
-                    <button type="button" id="detailReportItemLink" class="btn btn-link text-danger p-0 fs-9 text-decoration-none fw-bold d-flex align-items-center gap-1" onclick="openReportItemModal()">
+                    <button type="button" id="detailReportItemLink" class="btn btn-link text-danger p-0 fs-9 text-decoration-none fw-bold d-none align-items-center gap-1" onclick="openReportItemModal()">
                         <i class="fa-regular fa-flag"></i> Report this Item
                     </button>
                 </div>
@@ -2051,6 +2051,5 @@
         </div>
     </div>
 </div>
-
 
 

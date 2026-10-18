@@ -730,10 +730,10 @@ function openEquipmentDetail(id) {
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
 
     if (reportButton) {
-        reportButton.style.display = isOwner ? 'none' : 'flex';
+        reportButton.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
     }
     if (reportLink) {
-        reportLink.style.display = isOwner ? 'none' : 'flex';
+        reportLink.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
     }
 
     // Initialize rental schedule dates (today to tomorrow)
