@@ -5346,25 +5346,39 @@ if (document.readyState === 'loading') {
 
 window.acceptOrderAndGoToMessages = function (orderId, orderCode, customerName, renterId, itemName, itemImage) {
     window.currentActiveChatOrderCode = orderCode;
-    const openTransactionChat = window.checkAndOpenChat || window.openDirectChat || window.openChatWithRenter;
-    if (typeof openTransactionChat !== 'function') {
+    if (typeof switchTab === 'function') switchTab('messages');
+
+    const partnerId = renterId || 105;
+    const partnerName = customerName || 'Campus Renter';
+    const title = itemName || 'Rental Equipment';
+    const image = itemImage || '';
+    let attempts = 0;
+    const openChatWhenReady = () => {
+        const openTransactionChat = window.checkAndOpenChat || window.openDirectChat || window.openChatWithRenter;
+        const chatView = document.getElementById('chatView');
+        const messagesTab = document.getElementById('tabMessages');
+
+        if (typeof openTransactionChat === 'function') {
+            openTransactionChat(partnerId, partnerName, title, '₱0.00', '', image, true, 'You', false, orderCode);
+            setTimeout(() => {
+                if (chatView && chatView.style.display === 'none' && attempts < 10) {
+                    attempts += 1;
+                    openChatWhenReady();
+                }
+            }, 120);
+            return;
+        }
+
+        if (messagesTab) messagesTab.style.display = 'block';
+        if (attempts < 10) {
+            attempts += 1;
+            setTimeout(openChatWhenReady, 100);
+            return;
+        }
+
         console.error('Transaction chat handler is unavailable.');
         alert('Unable to open the rental chat. Please refresh and try again.');
-        return;
-    }
+    };
 
-    setTimeout(() => {
-        openTransactionChat(
-            renterId || 105,
-            customerName || 'Campus Renter',
-            itemName || 'Rental Equipment',
-            '₱0.00',
-            '',
-            itemImage || '',
-            true,
-            'You',
-            false,
-            orderCode
-        );
-    }, 0);
+    openChatWhenReady();
 };
