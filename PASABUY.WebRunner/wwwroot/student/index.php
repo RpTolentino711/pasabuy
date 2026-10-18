@@ -2245,9 +2245,28 @@
                                 const res = await fetch(`${apiPath}&user_id=${currentUserId}`, { cache: 'no-store' });
                                 if (res.ok) {
                                     const payload = await res.json();
+                                    console.log('Chat conversations API response:', payload);
                                     convs = Array.isArray(payload) ? payload : (Array.isArray(payload.conversations) ? payload.conversations : []);
+                                } else {
+                                    console.error('Chat conversations API error:', res.status, res.statusText);
+                                    // Clear loading state on error
+                                    container.innerHTML = `
+                                        <div class="text-center py-5 text-danger fs-8 bg-white rounded-4 border p-4">
+                                            <i class="fa-solid fa-exclamation-triangle fs-2 d-block mb-2"></i>
+                                            Failed to load conversations. Please refresh.
+                                        </div>`;
+                                    return;
                                 }
-                            } catch (e) { }
+                            } catch (e) {
+                                console.error('Chat conversations fetch error:', e);
+                                // Clear loading state on error
+                                container.innerHTML = `
+                                    <div class="text-center py-5 text-danger fs-8 bg-white rounded-4 border p-4">
+                                        <i class="fa-solid fa-exclamation-triangle fs-2 d-block mb-2"></i>
+                                        Failed to load conversations. Please refresh.
+                                    </div>`;
+                                return;
+                            }
 
                             // Permanently wipe any local mock chat heads from browser storage
                             try { localStorage.removeItem('pasabuy_local_chat_heads'); } catch (e) { }
@@ -7204,9 +7223,23 @@
                 try {
                     const response = await fetch(`/pasabuy_api.php?action=chat_conversations&user_id=${encodeURIComponent(userId)}&_t=${Date.now()}`, { cache: 'no-store' });
                     const conversations = await response.json();
-                    if (!Array.isArray(conversations) || !conversations.length) return;
+                    if (!Array.isArray(conversations) || !conversations.length) {
+                        container.innerHTML = `
+                            <div class="text-center py-5 text-muted fs-8 bg-white rounded-4 border p-4">
+                                <i class="fa-solid fa-comments fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                                No active chat conversations yet.<br>Click <strong>Message</strong> on any item listing to start chatting!
+                            </div>`;
+                        return;
+                    }
                     container.innerHTML = conversations.map(c => `<button type="button" class="conversation-card w-100 text-start border rounded-4 bg-white p-3 d-flex align-items-center gap-3 shadow-2xs" onclick='window.openConversationCard(${JSON.stringify(c).replace(/</g, "\\u003c")})'><img src="${c.PartnerAvatar || 'https://ui-avatars.com/api/?name=Chat&background=5B3FA8&color=fff'}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" alt=""><span class="min-w-0"><strong class="d-block text-dark text-truncate">${c.PartnerName || 'Campus Student'}</strong><small class="text-muted text-truncate d-block">${c.ItemTitle || 'Rental conversation'}</small><small class="text-secondary text-truncate d-block">${c.MessageText || ''}</small></span></button>`).join('');
-                } catch (e) { console.error('Messages fallback loader failed:', e); }
+                } catch (e) {
+                    console.error('Messages fallback loader failed:', e);
+                    container.innerHTML = `
+                        <div class="text-center py-5 text-danger fs-8 bg-white rounded-4 border p-4">
+                            <i class="fa-solid fa-exclamation-triangle fs-2 d-block mb-2"></i>
+                            Failed to load conversations. Please refresh.
+                        </div>`;
+                }
             };
         }
         window.openConversationCard = async function (conversation) {
