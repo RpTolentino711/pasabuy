@@ -77,18 +77,11 @@ error_log("DB_USER after loadEnv: " . (getenv('DB_USER') ?: 'NOT SET'));
 
 // Database Connection Helper
 function getDb() {
-    $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
-    $dbName = getenv('DB_NAME') ?: 'u321173822_pasabuy';
-    $dbUser = getenv('DB_USER') ?: 'u321173822_Pogilameg';
-    $dbPass = getenv('DB_PASSWORD') ?: '';
-
-    if (empty($dbPass)) {
-        // Log that we're using fallback
-        error_log("DB_PASSWORD is empty, attempting root user fallback");
-        // Fallback to root user for development
-        $dbUser = 'root';
-        $dbPass = '';
-    }
+    // Temporarily use direct credentials to get it working
+    $dbHost = '127.0.0.1';
+    $dbName = 'u321173822_pasabuy';
+    $dbUser = 'u321173822_Pogilameg';
+    $dbPass = 'Pogilameg@10';
 
     try {
         $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
