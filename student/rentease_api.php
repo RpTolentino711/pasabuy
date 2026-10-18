@@ -1958,8 +1958,9 @@ if (in_array($action, ['request_early_return', 'respond_early_return'], true)) {
         exit;
     } catch (Exception $eEarlyReturn) {
         if ($db->inTransaction()) $db->rollBack();
+        error_log("Early return error: " . $eEarlyReturn->getMessage() . " in " . $eEarlyReturn->getFile() . " line " . $eEarlyReturn->getLine());
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Unable to update the early-return request.']);
+        echo json_encode(['success' => false, 'message' => 'Unable to update the early-return request: ' . $eEarlyReturn->getMessage()]);
         exit;
     }
 }
