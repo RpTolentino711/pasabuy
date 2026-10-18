@@ -4693,11 +4693,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 </td>
                                 <td>
                                     ${r.status === 'PENDING' ? `
-                                        <div class="d-flex gap-1 flex-wrap">
-                                            <button class="btn btn-sm btn-danger rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="adminApproveReport(${r.id}, ${r.item_id}, ${r.owner_id}, '${safeItemName}', '${safeOwnerName}')">
+                                        <div class="d-flex flex-column gap-2 align-items-stretch" style="min-width:145px;">
+                                            <button class="btn btn-sm btn-danger rounded-pill px-2 py-2 fs-9 fw-bold text-nowrap" onclick="adminApproveReport(${r.id}, ${r.item_id}, ${r.owner_id}, '${safeItemName}', '${safeOwnerName}')">
                                                 <i class="fa-solid fa-gavel me-1"></i>Take Down & Freeze
                                             </button>
-                                            <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 fs-9 text-secondary" onclick="adminDismissReport(${r.id})">
+                                            <button class="btn btn-sm btn-light border rounded-pill px-2 py-1 fs-9 text-secondary text-nowrap" onclick="adminDismissReport(${r.id})">
                                                 <i class="fa-solid fa-xmark me-1"></i>Dismiss
                                             </button>
                                         </div>
