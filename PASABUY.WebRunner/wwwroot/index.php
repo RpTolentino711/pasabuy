@@ -5206,6 +5206,32 @@
                             return true;
                         };
 
+                        window.showRatingSuccessModal = function () {
+                            const id = 'ratingSuccessModal';
+                            let modal = document.getElementById(id);
+                            if (!modal) {
+                                modal = document.createElement('div');
+                                modal.id = id;
+                                modal.className = 'modal fade';
+                                modal.tabIndex = -1;
+                                document.body.appendChild(modal);
+                            }
+                            modal.innerHTML = `<div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 rounded-4 shadow-lg p-4 text-center">
+                                    <div class="mb-3">
+                                        <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex align-items-center justify-content-center p-3" style="width:64px; height:64px;">
+                                            <i class="fa-solid fa-star fs-2"></i>
+                                        </div>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-2">Thank You!</h5>
+                                    <p class="text-muted mb-4">Your rating and review have been submitted successfully. Conversation can now be safely deleted.</p>
+                                    <button type="button" class="btn btn-warning rounded-pill px-4" data-bs-dismiss="modal">Got it</button>
+                                </div>
+                            </div>`;
+                            const instance = bootstrap.Modal.getOrCreateInstance(modal);
+                            instance.show();
+                        };
+
                         window.showEarlyReturnSuccessModal = function (orderCode) {
                             const id = 'earlyReturnSuccessModal';
                             let modal = document.getElementById(id);
@@ -5457,7 +5483,7 @@
                             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 105) : 105;
 
                             try {
-                                const apiEndpoint = window.location.pathname.includes('/student/') ? 'rentease_api.php?action=submit_rental_rating' : '/student/rentease_api.php?action=submit_rental_rating';
+                                const apiEndpoint = window.location.pathname.includes('/student/') ? '../rentease_api.php?action=submit_rental_rating' : '/student/rentease_api.php?action=submit_rental_rating';
                                 const res = await fetch(apiEndpoint, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
@@ -5472,7 +5498,7 @@
                                 });
                                 const data = await res.json();
                                 if (data && data.success) {
-                                    alert(data.message || 'Rating & review submitted successfully!');
+                                    showRatingSuccessModal();
                                     if (typeof checkAndRenderChatRentalTimer === 'function') {
                                         await checkAndRenderChatRentalTimer();
                                     }

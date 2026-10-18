@@ -873,7 +873,8 @@ if ($action === 'chat_conversations') {
             $lastMsg = "Rental Order {$ro['order_code']} • {$ro['item_name']} (" . ($ro['rental_days'] ?: 1) . " Day) • ₱" . number_format((float)($ro['total_amount'] ?: 0), 2);
             $lastMsgTime = $ro['created_at'];
 
-            $convKey = $partnerId . '_' . strtolower($ro['item_name']);
+            // Group by partner only, not partner + item, to avoid duplicates
+            $convKey = $partnerId . '_' . $partnerId;
             $allConvs[$convKey] = [
                 'Id' => (int)$ro['id'],
                 'SenderId' => $userId,
