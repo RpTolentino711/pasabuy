@@ -2144,7 +2144,8 @@
                             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
 
                             try {
-                                const res = await fetch(`/pasabuy_api.php?action=get_unread&user_id=${currentUserId}`);
+                                const apiPath = window.location.pathname.includes('/student/') ? '../pasabuy_api.php?action=get_unread' : '/pasabuy_api.php?action=get_unread';
+                                const res = await fetch(`${apiPath}&user_id=${currentUserId}`);
                                 if (res.ok) {
                                     const data = await res.json();
                                     const unreadCount = data.unreadCount || 0;
@@ -2178,7 +2179,8 @@
                             const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
 
                             try {
-                                await fetch(`/pasabuy_api.php?action=mark_messages_read&user_id=${currentUserId}`);
+                                const apiPath = window.location.pathname.includes('/student/') ? '../pasabuy_api.php?action=mark_messages_read' : '/pasabuy_api.php?action=mark_messages_read';
+                                await fetch(`${apiPath}&user_id=${currentUserId}`);
                             } catch(e) {}
 
                             const tabBadge = document.getElementById('tabMessagesBadge');
@@ -2205,7 +2207,8 @@
 
                             let convs = [];
                             try {
-                                const res = await fetch(`/pasabuy_api.php?action=chat_conversations&user_id=${currentUserId}`, { cache: 'no-store' });
+                                const apiPath = window.location.pathname.includes('/student/') ? '../pasabuy_api.php?action=chat_conversations' : '/pasabuy_api.php?action=chat_conversations';
+                                const res = await fetch(`${apiPath}&user_id=${currentUserId}`, { cache: 'no-store' });
                                 if (res.ok) {
                                     const payload = await res.json();
                                     convs = Array.isArray(payload) ? payload : (Array.isArray(payload.conversations) ? payload.conversations : []);
