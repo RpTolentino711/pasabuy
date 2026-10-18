@@ -1977,7 +1977,7 @@
                             if (notifBadge) notifBadge.style.display = 'none';
                         }
 
-                        async function loadChatConversationsList() {
+                        window.loadChatConversationsList = async function loadChatConversationsList() {
                             const container = document.getElementById('conversationHeadsList');
                             if (!container) return;
 
@@ -5101,7 +5101,9 @@
                                         await refreshActiveChatStream();
                                     }
                                     if (typeof loadChatConversationsList === 'function') {
-                                        loadChatConversationsList();
+                                        if (typeof window.loadChatConversationsList === 'function') {
+                                            window.loadChatConversationsList();
+                                        }
                                     }
 
                                     // 3. Keep Orders / Rent Out tab in sync!
