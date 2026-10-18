@@ -4996,6 +4996,32 @@
                             return true;
                         };
 
+                        window.showEarlyReturnSuccessModal = function (orderCode) {
+                            const id = 'earlyReturnSuccessModal';
+                            let modal = document.getElementById(id);
+                            if (!modal) {
+                                modal = document.createElement('div');
+                                modal.id = id;
+                                modal.className = 'modal fade';
+                                modal.tabIndex = -1;
+                                document.body.appendChild(modal);
+                            }
+                            modal.innerHTML = `<div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 rounded-4 shadow-lg p-4 text-center">
+                                    <div class="mb-3">
+                                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center p-3" style="width:64px; height:64px;">
+                                            <i class="fa-solid fa-check fs-2"></i>
+                                        </div>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-2">Return Verified!</h5>
+                                    <p class="text-muted mb-4">Order #${orderCode} has been verified and the item is now back in stock. The rental timer has stopped.</p>
+                                    <button type="button" class="btn btn-success rounded-pill px-4" data-bs-dismiss="modal">Got it</button>
+                                </div>
+                            </div>`;
+                            const instance = bootstrap.Modal.getOrCreateInstance(modal);
+                            instance.show();
+                        };
+
                         window.respondToEarlyReturn = async function (response) {
                             const order = currentChatRentalOrder;
                             if (!order) {
@@ -5034,12 +5060,8 @@
 
                                 if (!data.success) throw new Error(data.message || 'Unable to verify the return.');
 
-                                // Show success toast
-                                if (typeof window.showToast === 'function') {
-                                    window.showToast(data.message, 'success', 4000);
-                                } else {
-                                    alert(data.message);
-                                }
+                                // Show success modal
+                                showEarlyReturnSuccessModal(order.order_code);
 
                                 await checkAndRenderChatRentalTimer();
                                 if (typeof refreshActiveChatStream === 'function') await refreshActiveChatStream();
