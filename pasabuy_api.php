@@ -627,22 +627,6 @@ if ($action === 'chat_conversations') {
     $userId = (int)($_GET['user_id'] ?? 104);
     if ($userId <= 1) $userId = 104;
 
-    $db->exec("CREATE TABLE IF NOT EXISTS `ChatMessages` (
-      `Id` int(11) NOT NULL AUTO_INCREMENT,
-      `SenderId` int(11) NOT NULL,
-      `ReceiverId` int(11) NOT NULL,
-      `SenderName` varchar(255) NOT NULL,
-      `MessageText` text NOT NULL,
-      `ItemTitle` varchar(255) DEFAULT NULL,
-      `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`Id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-    // Auto-clean any obsolete fleet dispatch, rider, self-messages, or old test messages from database
-    try {
-        $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100 OR `ReceiverId` = 100 OR `SenderId` = `ReceiverId` OR (`SenderId` IN (1, 104) AND `ReceiverId` IN (1, 104)) OR (`SenderId` = 105 AND `ReceiverId` = 105) OR `ItemTitle` = 'Roem' OR `MessageText` LIKE '%Hi Romeo%'");
-    } catch (Exception $eClean) {}
-
     // Resolve current user email
     $uEmail = ($userId == 104) ? 'romeopaolotolentino@gmail.com' : (($userId == 105) ? 'pogilameg@gmail.com' : '');
     try {
@@ -653,9 +637,6 @@ if ($action === 'chat_conversations') {
     } catch (Exception $eUser) {}
 
     $allConvs = [];
-    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `chat_deleted_by_renter` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `chat_deleted_by_owner` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
-
     // 1. Fetch all rental orders involving this user
     try {
         $userMatchIds = ($userId === 104 || $userId === 1) ? [1, 104] : [$userId];
@@ -828,25 +809,8 @@ if ($action === 'chat_conversations') {
                 $actionBadgeClass = 'badge-step1';
             }
 
-            // Get latest message for this product
-            $lastMsg = '';
+            $lastMsg = "Rental Order {$ro['order_code']} • {$ro['item_name']} (" . ($ro['rental_days'] ?: 1) . " Day) • ₱" . number_format((float)($ro['total_amount'] ?: 0), 2);
             $lastMsgTime = $ro['created_at'];
-            try {
-                $msgStmt = $db->prepare("SELECT MessageText, CreatedAt FROM ChatMessages 
-                                         WHERE ((SenderId = ? AND ReceiverId = ?) OR (SenderId = ? AND ReceiverId = ?))
-                                           AND (LOWER(ItemTitle) = ? OR MessageText LIKE ?)
-                                         ORDER BY Id DESC LIMIT 1");
-                $msgStmt->execute([$userId, $partnerId, $partnerId, $userId, strtolower($ro['item_name']), '%' . $ro['order_code'] . '%']);
-                $msgRow = $msgStmt->fetch();
-                if ($msgRow) {
-                    $lastMsg = $msgRow['MessageText'];
-                    $lastMsgTime = $msgRow['CreatedAt'];
-                }
-            } catch (Exception $eM) {}
-
-            if ($lastMsg === '') {
-                $lastMsg = "Rental Order {$ro['order_code']} • {$ro['item_name']} (" . ($ro['rental_days'] ?: 1) . " Day) • ₱" . number_format((float)($ro['total_amount'] ?: 0), 2);
-            }
 
             $convKey = $partnerId . '_' . strtolower($ro['item_name']);
             $allConvs[$convKey] = [
