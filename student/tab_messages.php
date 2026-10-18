@@ -227,6 +227,53 @@
             margin-bottom: 6px !important;
             padding: 7px 10px;
         }
+        #conversationHeadsList {
+            gap: 8px !important;
+        }
+        #conversationHeadsList .swipe-conv-wrapper {
+            margin-bottom: 0 !important;
+        }
+        #conversationHeadsList .swipe-conv-card {
+            min-height: 76px;
+            padding: 10px 11px !important;
+            border-color: #E2E8F0 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+        }
+        #conversationHeadsList .swipe-conv-card > div:first-child {
+            gap: 10px !important;
+        }
+        #conversationHeadsList .swipe-conv-card img {
+            width: 40px !important;
+            height: 40px !important;
+        }
+        #conversationHeadsList .swipe-conv-card img + span {
+            width: 10px !important;
+            height: 10px !important;
+        }
+        #conversationHeadsList .swipe-conv-card h6 {
+            font-size: 0.84rem !important;
+            line-height: 1.15;
+            max-width: 170px !important;
+        }
+        #conversationHeadsList .swipe-conv-card .badge {
+            font-size: 0.58rem !important;
+            line-height: 1.1;
+            padding: 2px 5px !important;
+        }
+        #conversationHeadsList .swipe-conv-card .conversation-meta {
+            color: #475569;
+            font-size: 0.68rem;
+        }
+        #conversationHeadsList .swipe-conv-card .conversation-preview {
+            max-width: 210px !important;
+            font-size: 0.68rem !important;
+            line-height: 1.2;
+        }
+        #conversationHeadsList .swipe-conv-card .conversation-delete-btn {
+            width: 28px !important;
+            height: 28px !important;
+        }
         #chatView .rentchat-item-card,
         #chatView .rentchat-safety-banner {
             margin-bottom: 6px !important;

@@ -2116,7 +2116,7 @@
                         </div>
                     </div>
                     `}
-                    <div class="swipe-conv-card p-3 ${isOverdue ? 'is-overdue' : 'bg-white'} rounded-4 border shadow-sm d-flex align-items-center justify-content-between position-relative" 
+                    <div class="swipe-conv-card p-2 ${isOverdue ? 'is-overdue' : 'bg-white'} rounded-4 border shadow-sm d-flex align-items-center justify-content-between position-relative"
                          style="z-index: 2; transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1); cursor: pointer;" 
                          data-conv-key="${convKey}"
                          data-partner-id="${partnerId}" 
@@ -2126,13 +2126,13 @@
                          data-is-overdue="${isOverdue ? '1' : '0'}"
                          data-order-code="${txOrder || ''}"
                          onclick="handleConversationCardClick(event, this, '${convKey}')">
-                        <div class="d-flex align-items-center gap-3 min-w-0" style="pointer-events: none;">
+                        <div class="d-flex align-items-center gap-2 min-w-0" style="pointer-events: none;">
                             <div class="position-relative flex-shrink-0">
-                                <img src="${avatarUrl}" class="rounded-circle border ${isOverdue ? 'border-danger border-2 shadow-sm' : ''}" width="48" height="48" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true';">
+                                <img src="${avatarUrl}" class="rounded-circle border ${isOverdue ? 'border-danger border-2 shadow-sm' : ''}" width="40" height="40" style="object-fit:cover; background:#f0f3f8;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true';">
                                 <span class="position-absolute bottom-0 end-0 ${isOverdue ? 'bg-danger' : 'bg-success'} rounded-circle border border-2 border-white" style="width:13px; height:13px;"></span>
                             </div>
                             <div class="min-w-0">
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1">
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap mb-0.5">
                                     <h6 class="fw-bold mb-0 ${isOverdue ? 'text-danger' : 'text-dark'} fs-7 text-truncate" style="max-width:140px;">${partnerName}</h6>
                                     
                                     ${isOverdue ? `
@@ -2162,24 +2162,9 @@
                                     ` : '')}
                                 </div>
                                 
-                                <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
-                                    <span class="badge rounded-pill fw-bold" style="background:#F1F5F9; color:#1E293B; border:1px solid #CBD5E1; font-size:0.68rem; padding: 2.5px 8px;">
-                                        <i class="fa-solid fa-cube text-primary me-1"></i>Item: <span class="fw-extrabold text-dark">${itemTitle}</span>
-                                    </span>
-                                    ${isMyItem ? `
-                                        <span class="badge rounded-pill fw-bold shadow-2xs" style="background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; font-size:0.65rem; padding: 2.5px 8px;">
-                                            <i class="fa-solid fa-crown text-warning me-1"></i>Your Item (You Own This)
-                                        </span>
-                                    ` : `
-                                        <span class="badge rounded-pill fw-bold shadow-2xs" style="background:#FFFBEB; color:#B45309; border:1px solid #FDE68A; font-size:0.65rem; padding: 2.5px 8px;">
-                                             <i class="fa-solid fa-user-tag text-warning me-1"></i>Owner: <span class="fw-bold text-dark">${safeOwnerName}</span>
-                                        </span>
-                                    `}
-                                    ${txOrder && txOrder !== 'Order' ? `
-                                        <span class="badge bg-light text-muted border rounded-pill font-monospace" style="font-size:0.60rem; padding: 2px 6px;">
-                                            ${txOrder}
-                                        </span>
-                                    ` : ''}
+                                <div class="conversation-meta text-truncate mb-1">
+                                    <i class="fa-solid fa-cube text-primary me-1"></i>${itemTitle}
+                                    ${txOrder && txOrder !== 'Order' ? ` <span class="text-muted">• ${txOrder}</span>` : ''}
                                 </div>
 
                                 <div class="${isOverdue ? 'text-danger fw-bold' : 'text-muted'} fs-8 text-truncate" style="max-width:210px;">${isOverdue ? '⚠️ Rental timer expired • Handover item back now' : lastMsg}</div>
@@ -2187,7 +2172,7 @@
                         </div>
                         <div class="d-flex align-items-center gap-1.5 flex-shrink-0 ms-2">
                             ${!hasActiveTx ? `
-                            <button type="button" class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center p-0" 
+                            <button type="button" class="conversation-delete-btn btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center p-0"
                                     style="width: 32px; height: 32px; border-color: #FECACA; background: #FEF2F2;" 
                                     title="Delete Conversation" 
                                     onclick="initiateDeleteConversation(${partnerId}, '${safePartnerNameAttr}', event, '${safeItemTitleAttr}', '${txOrder}')">
