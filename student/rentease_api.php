@@ -2282,14 +2282,14 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
         $categoryDefaults = [
             'Chairs' => 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80',
             'Tables' => 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=500&q=80',
-            'Tents' => 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
+            'Tents' => 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=Tents',
             'Sound System' => 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80',
             'Lights' => 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=500&q=80',
             'Decorations' => 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=500&q=80',
             'Stages' => 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=500&q=80',
             'Others' => 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=500&q=80'
         ];
-        $imgUrl = $categoryDefaults[$category] ?? 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+        $imgUrl = $categoryDefaults[$category] ?? 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
     }
 
     if (!$db) {

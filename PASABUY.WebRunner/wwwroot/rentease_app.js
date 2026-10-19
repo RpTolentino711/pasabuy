@@ -41,7 +41,7 @@ window.enableChatRentalStepSwipe = function () {
 };
 
 function getRentEaseItemImage(item) {
-    if (!item) return 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+    if (!item) return 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
     let image = item.image_url || item.image || item.img || item.ImageUrl || item.imageUrl || item.photo_url || '';
     const listings = typeof allProductsCache !== 'undefined' && Array.isArray(allProductsCache)
         ? allProductsCache
@@ -53,7 +53,7 @@ function getRentEaseItemImage(item) {
     if (matchingListing) {
         image = matchingListing.img || matchingListing.image_url || matchingListing.image || image;
     }
-    return image || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+    return image || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
 }
 
 function enableRentEaseHorizontalDrag(id) {
@@ -193,7 +193,7 @@ function renderFeaturedRentals() {
                  style="padding: 8px; cursor:pointer;" onclick="openEquipmentDetail(${item.id})">
                 <div>
                     <div class="position-relative mb-1.5">
-                        <img src="${getRentEaseItemImage(item)}" class="rounded-3 w-100" style="height: 98px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                        <img src="${getRentEaseItemImage(item)}" class="rounded-3 w-100" style="height: 98px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
                         <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-xs" 
                                 style="width:24px; height:24px; background:rgba(255,255,255,0.9);" 
                                 onclick="event.stopPropagation(); toggleWishlist(this, ${item.id})">
@@ -480,7 +480,7 @@ function renderGridElements(items) {
                  style="padding: 8px; cursor:pointer;" onclick="openEquipmentDetail(${p.id})">
                 <div>
                     <div class="position-relative mb-1.5">
-                        <img src="${getRentEaseItemImage(p)}" class="rounded-3 w-100" style="height: 100px; object-fit: cover;" alt="${p.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                        <img src="${getRentEaseItemImage(p)}" class="rounded-3 w-100" style="height: 100px; object-fit: cover;" alt="${p.name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
                         <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-xs" 
                                 style="width:24px; height:24px; background:rgba(255,255,255,0.9);" 
                                 onclick="event.stopPropagation(); toggleWishlist(this, ${p.id})">
@@ -588,7 +588,7 @@ window.setupDetailMediaCarousel = function (item) {
 
     // Fallback if no media at all
     if (media.length === 0) {
-        media.push({ type: 'image', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80' });
+        media.push({ type: 'image', url: 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image' });
     }
 
     // Build Slides & Indicators HTML
@@ -620,7 +620,7 @@ window.setupDetailMediaCarousel = function (item) {
             slidesHtml += `
             <div class="carousel-item ${isActive}" style="height:260px;">
                 <img src="${m.url}" class="d-block w-100 h-100" style="object-fit:cover;" alt="${item.name || 'Equipment'}"
-                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                     onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
             </div>`;
         }
     });
@@ -768,7 +768,7 @@ function openEquipmentDetail(id) {
                 id: p.id,
                 name: p.title,
                 price_per_day: parseFloat(String(p.price || 0).replace(/[^\d.]/g, '')) || 0,
-                image_url: p.img || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
+                image_url: p.img || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image',
                 video_url: p.videoUrl || '',
                 photos: p.photos || p.images || [],
                 description: p.description || '',
@@ -1740,10 +1740,10 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
 
                     const itemsHtml = (order.items || []).map(it => `
                         <div class="d-flex align-items-center gap-2.5 p-2 bg-light rounded-3 mb-1.5 border border-light-subtle">
-                            <img src="${it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" 
+                            <img src="${it.image_url || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image'}" 
                                  class="rounded-3 border object-fit-cover shadow-2xs" 
                                  style="width:42px; height:42px; flex-shrink:0;" 
-                                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
                             <div class="flex-grow-1 min-w-0">
                                 <div class="fw-bold text-dark fs-9 text-truncate">${it.product_name || order.item_name || 'Equipment'}</div>
                                 <div class="fs-10 text-muted d-flex align-items-center gap-1.5">
@@ -1927,10 +1927,10 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                         <!-- Header with Image & Title -->
                         <div class="d-flex align-items-start gap-3 mb-2.5">
                             <div class="position-relative flex-shrink-0">
-                                <img src="${item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'}" 
+                                <img src="${item.image_url || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image'}" 
                                      class="rounded-3 border object-fit-cover shadow-2xs" 
                                      style="width:68px; height:68px;" 
-                                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                                     onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
                             </div>
                             <div class="flex-grow-1 min-w-0">
                                 <div class="d-flex align-items-center justify-content-between mb-1">
@@ -2258,7 +2258,7 @@ function addRentEaseCartItem(product, qty = 1) {
     const pid = product.id || product.listingId;
     const title = product.name || product.title;
     const price = parseFloat(product.price_per_day || product.price || 0);
-    const img = product.image_url || product.img || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+    const img = product.image_url || product.img || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
 
     const existingIndex = rentEaseCart.findIndex(i => (i.id && i.id == pid) || (i.listingId && i.listingId == pid) || (title && (i.title === title || i.name === title)));
     if (existingIndex > -1) {
@@ -2377,7 +2377,7 @@ async function renderCartScreen() {
                 title: it.title || it.name,
                 price_per_day: parseFloat(it.price) || 0,
                 quantity: parseInt(it.quantity) || 1,
-                image_url: it.img || it.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'
+                image_url: it.img || it.image_url || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image'
             }));
             localStorage.setItem('rentease_cart', JSON.stringify(rentEaseCart));
         }
@@ -2445,7 +2445,7 @@ async function renderCartScreen() {
         html += `
         <div class="card border-0 rounded-4 shadow-sm p-3 bg-white d-flex flex-row align-items-center justify-content-between mb-2">
             <div class="d-flex align-items-center gap-3">
-                <img src="${item.image_url}" class="rounded-3 border" width="60" height="60" style="object-fit:cover;" alt="${item.title}" onerror="this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                <img src="${item.image_url}" class="rounded-3 border" width="60" height="60" style="object-fit:cover;" alt="${item.title}" onerror="this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
                 <div>
                     <h6 class="fw-bold text-dark fs-8 mb-0.5">${item.title}</h6>
                     <div class="fs-9 text-muted mb-2">₱${itemDailyRate.toFixed(0)} / day</div>
@@ -4740,7 +4740,7 @@ window.loadUserRentedOutItems = async function () {
     }
 
     container.innerHTML = myItems.map(item => {
-        const img = item.image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80';
+        const img = item.image_url || 'https://via.placeholder.com/300x300/5B3FA8/FFFFFF?text=No+Image';
         const price = parseFloat(item.price_per_day || item.price || 0).toLocaleString();
         const rawPrice = parseFloat(item.price_per_day || item.price || 100);
         const availStock = item.qty_available ?? item.qty_total ?? 1;

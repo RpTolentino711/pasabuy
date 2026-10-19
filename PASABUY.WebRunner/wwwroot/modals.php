@@ -999,9 +999,9 @@
                     <!-- Carousel Inner Slides (Images & Videos) -->
                     <div class="carousel-inner" id="detailCarouselInner" style="max-height:260px; min-height:230px; background:#0f172a;">
                         <div class="carousel-item active" style="height:260px;">
-                            <img id="detailMainImg" src="https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80" 
+                            <img id="detailMainImg" src="https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image"
                                  class="d-block w-100 h-100" style="object-fit:cover;"
-                                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';">
+                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
                         </div>
                     </div>
 
@@ -1252,7 +1252,7 @@
             <div class="modal-body pt-1">
                 <!-- Reported Item Summary Card -->
                 <div class="p-2.5 rounded-3 bg-light border mb-3 d-flex align-items-center gap-2.5">
-                    <img id="reportItemThumb" src="https://images.unsplash.com/photo-1519741497674-611481863552?w=100&q=80" class="rounded-2 border" style="width:44px; height:44px; object-fit:cover;">
+                    <img id="reportItemThumb" src="https://via.placeholder.com/100x100/5B3FA8/FFFFFF?text=No+Image" class="rounded-2 border" style="width:44px; height:44px; object-fit:cover;">
                     <div class="min-w-0 flex-grow-1">
                         <div class="fw-bold text-dark fs-8 text-truncate" id="reportItemName">POSPT</div>
                         <div class="fs-9 text-muted">Owner: <span class="fw-semibold text-secondary" id="reportItemOwner">Romeo Paolo Tolentino</span></div>
