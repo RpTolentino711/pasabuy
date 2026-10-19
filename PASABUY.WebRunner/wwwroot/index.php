@@ -1069,14 +1069,14 @@
                             if (typeof window.setupDetailMediaCarousel === 'function') {
                                 window.setupDetailMediaCarousel({
                                     name: listing.title,
-                                    image_url: listing.img || 'LOGO.png',
+                                    image_url: listing.image_url || listing.img || listing.imageUrl || 'LOGO.png',
                                     photos: listing.photos || listing.images || [],
                                     video_url: listing.videoUrl || ''
                                 });
                             } else {
                                 const mainImg = document.getElementById('detailMainImg');
                                 if (mainImg) {
-                                    mainImg.src = listing.img || 'LOGO.png';
+                                    mainImg.src = listing.image_url || listing.img || listing.imageUrl || 'LOGO.png';
                                     mainImg.style.display = 'block';
                                 }
                             }
@@ -3555,7 +3555,7 @@
                             document.getElementById('editConditionSelect').value = listing.condition || 'Good';
                             document.getElementById('editMeetupInput').value = listing.location || 'Campus Library';
                             document.getElementById('editDescriptionInput').value = listing.description || '';
-                            document.getElementById('editImageUrlInput').value = listing.img || '';
+                            document.getElementById('editImageUrlInput').value = listing.image_url || listing.img || listing.imageUrl || '';
                             document.getElementById('editVideoUrlInput').value = listing.videoUrl || '';
 
                             const videoPreview = document.getElementById('editVideoPreview');
@@ -6010,7 +6010,7 @@
                             document.getElementById('editConditionSelect').value = listing.condition || 'Good';
                             document.getElementById('editMeetupInput').value = listing.location || 'Campus Library';
                             document.getElementById('editDescriptionInput').value = listing.description || '';
-                            document.getElementById('editImageUrlInput').value = listing.img || '';
+                            document.getElementById('editImageUrlInput').value = listing.image_url || listing.img || listing.imageUrl || '';
                             document.getElementById('editVideoUrlInput').value = listing.videoUrl || '';
 
                             const videoPreview = document.getElementById('editVideoPreview');
