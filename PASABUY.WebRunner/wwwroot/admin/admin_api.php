@@ -533,12 +533,8 @@ if ($action === 'get_dashboard') {
                     if ($isReturned) {
                         $db->prepare("UPDATE `rental_issues` SET `status` = 'RESOLVED', `status_display` = 'Resolved (Item Returned)', `priority` = 'LOW', `resolution_notes` = 'Auto-resolved: Equipment returned by renter and restocked into inventory. Overdue report is obsolete/void.' WHERE `id` = ?")
                            ->execute([$pi['id']]);
-                        $db->prepare("UPDATE `rental_unreturned_reports` SET `status` = 'RESOLVED_RETURNED', `admin_notes` = 'Equipment returned by renter late and restocked. Dispute void.' WHERE `order_code` = ? AND `status` = 'PENDING'")
+                        $db->prepare("UPDATE `rental_unreturned_reports` SET `status` = 'RESOLVED_RETURNED', `solution` = 'Item Returned Late & Restocked', `returned_at` = NOW(), `admin_notes` = 'Equipment returned by renter late and restocked. Dispute void.' WHERE `order_code` = ? AND `status` = 'PENDING'")
                            ->execute([$ordCode]);
-                        try {
-                            $db->prepare("UPDATE `admin_tickets` SET `status` = 'Resolved', `priority` = 'LOW', `resolution_notes` = 'Auto-resolved: Equipment returned by renter and restocked.' WHERE `ticket_number` = ? OR `order_number` = ?")
-                               ->execute([$pi['ticket_number'], $ordCode]);
-                        } catch (Exception $eAt) {}
                     }
                 }
             }
