@@ -195,7 +195,7 @@ function renderFeaturedRentals() {
     const container = document.getElementById('homeFeaturedContainer');
     if (!container) return;
 
-    // Prioritize verified renter most-hearted equipment (TikTok-style), featured, then rating and newest
+    // Prioritize verified renter most-hearted equipment, featured, then rating and newest
     const sorted = [...(rentEaseInventory || [])].sort((a, b) => {
         const heartsA = parseInt(a.hearts_count || 0);
         const heartsB = parseInt(b.hearts_count || 0);
@@ -263,7 +263,7 @@ function renderFeaturedRentals() {
                             <i class="fa-solid fa-layer-group me-0.5" style="font-size:0.55rem;"></i>${catName}
                         </span>
 
-                        <!-- Top-Right Badges: Owner Crown vs TikTok-Style Verified Hearts Pill -->
+                        <!-- Top-Right Badges: Owner Crown vs Verified Hearts Pill -->
                         <div class="position-absolute top-0 end-0 m-1.5 d-flex align-items-center gap-1 z-2">
                             ${isOwner ? `
                                 <span class="badge rounded-pill px-2 py-0.5 fw-extrabold shadow-xs" 
@@ -272,7 +272,7 @@ function renderFeaturedRentals() {
                                 </span>
                             ` : ''}
 
-                            <!-- TikTok-Style Heart Badge (Verified Renter Recommendations) -->
+                            <!-- Verified Renter Heart Badge (Campus Recommendations) -->
                             <div class="badge rounded-pill px-2 py-0.5 fw-extrabold shadow-xs d-flex align-items-center gap-1 rentease-heart-pill"
                                  style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid rgba(244, 63, 94, 0.25); color: #E11D48; font-size: 0.62rem; cursor: pointer; transition: transform 0.15s ease;"
                                  onclick="event.stopPropagation(); handleHeartClickOnCard(${item.id}, ${isOwner})"
@@ -5783,10 +5783,10 @@ window.acceptOrderAndGoToMessages = function (orderId, orderCode, customerName, 
 };
 
 // ==========================================================
-// TIKTOK-STYLE VERIFIED RENTER HEART SYSTEM & POPULARITY
+// VERIFIED RENTER HEART SYSTEM & POPULARITY RANKING
 // ==========================================================
 
-window.triggerTikTokHeartAnimation = function () {
+window.triggerFloatingHeartsAnimation = function () {
     const colors = ['#F43F5E', '#EC4899', '#FB7185', '#E11D48', '#FDA4AF', '#BE185D'];
     const startX = window.innerWidth / 2;
     for (let i = 0; i < 18; i++) {
@@ -5922,7 +5922,7 @@ window.confirmRenterHeartItem = async function () {
             }
 
             // Trigger floating heart celebration animation!
-            window.triggerTikTokHeartAnimation();
+            window.triggerFloatingHeartsAnimation();
 
             // Update item in local inventory cache
             if (Array.isArray(rentEaseInventory)) {

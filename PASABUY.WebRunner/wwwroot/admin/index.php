@@ -854,7 +854,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     </div>
                 </div>
 
-                <!-- Most Popular Equipment in the System (TikTok-Style Top Hearted) -->
+                <!-- Most Popular Equipment in the System (Verified Renter Leaderboard) -->
                 <div class="row g-4 mt-1">
                     <div class="col-12">
                         <div class="admin-table-card p-3">
