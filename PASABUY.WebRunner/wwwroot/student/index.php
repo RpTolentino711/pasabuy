@@ -2102,7 +2102,7 @@
                                 const tabBadge = document.getElementById('tabMessagesBadge');
                                 if (tabBadge) tabBadge.style.display = 'none';
                                 markMessagesAsRead();
-                                loadChatConversationsList();
+                                if (typeof window.loadChatConversationsList === 'function') window.loadChatConversationsList();
                             } else if (tabName === 'explore') {
                                 if (!window._isExplicitCategory) {
                                     if (typeof currentCategory !== 'undefined') currentCategory = 'All';
@@ -2797,8 +2797,8 @@
                                     if (typeof currentActiveChatSellerId !== 'undefined' && currentActiveChatSellerId == pendingDeletePartnerId) {
                                         if (typeof closeChat === 'function') closeChat();
                                     }
-                                    if (typeof loadChatConversationsList === 'function') {
-                                        await loadChatConversationsList();
+                                    if (typeof window.loadChatConversationsList === 'function') {
+                                        await window.loadChatConversationsList();
                                     }
                                 } else {
                                     alert(result.message || 'Failed to delete conversation.');
@@ -3665,7 +3665,7 @@
                                     if (chatVw && chatVw.style.display !== 'none' && currentActiveChatSellerId > 0) {
                                         await refreshActiveChatStream();
                                     } else if (tabMsgs && tabMsgs.style.display !== 'none') {
-                                        await loadChatConversationsList();
+                                        await window.loadChatConversationsList();
                                     }
                                     await updateUnreadBadges();
                                 } catch (e) { }
@@ -5453,10 +5453,8 @@
                                     if (typeof refreshActiveChatStream === 'function') {
                                         await refreshActiveChatStream();
                                     }
-                                    if (typeof loadChatConversationsList === 'function') {
-                                        if (typeof window.loadChatConversationsList === 'function') {
-                                            window.loadChatConversationsList();
-                                        }
+                                    if (typeof window.loadChatConversationsList === 'function') {
+                                        window.loadChatConversationsList();
                                     }
 
                                     // 3. Keep Orders / Rent Out tab in sync!
@@ -5594,8 +5592,8 @@
                                     if (typeof refreshActiveChatStream === 'function') {
                                         await refreshActiveChatStream();
                                     }
-                                    if (typeof loadChatConversationsList === 'function') {
-                                        loadChatConversationsList();
+                                    if (typeof window.loadChatConversationsList === 'function') {
+                                        window.loadChatConversationsList();
                                     }
                                 } else {
                                     alert(data?.message || 'Failed to submit rating.');
@@ -5941,7 +5939,7 @@
                             if (hDelBtn) hDelBtn.style.display = 'none';
                             if (chatRentalTimerInterval) { clearInterval(chatRentalTimerInterval); chatRentalTimerInterval = null; }
                             window.currentSelectedRentalStar = 0;
-                            loadChatConversationsList();
+                            if (typeof window.loadChatConversationsList === 'function') window.loadChatConversationsList();
                         }
                         window.checkAndOpenChat = checkAndOpenChat;
                         window.refreshActiveChatStream = refreshActiveChatStream;

@@ -2204,7 +2204,7 @@ window.updateOwnerOrderStatus = async function (orderId, orderCode, newStatus) {
             if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
             if (typeof loadRentEaseCatalog === 'function') loadRentEaseCatalog();
             if (typeof checkAndRenderChatRentalTimer === 'function') checkAndRenderChatRentalTimer();
-            if (typeof loadChatConversationsList === 'function') loadChatConversationsList();
+            if (typeof window.loadChatConversationsList === 'function') window.loadChatConversationsList();
             if (currentTrackingOrderCode === orderCode && typeof openTrackScreen === 'function') {
                 openTrackScreen(orderCode);
             }
@@ -4420,7 +4420,7 @@ window.switchTab = function (tabName) {
         const tabBadge = document.getElementById('tabMessagesBadge');
         if (tabBadge) tabBadge.style.display = 'none';
         if (typeof markMessagesAsRead === 'function') markMessagesAsRead();
-        if (typeof loadChatConversationsList === 'function') loadChatConversationsList();
+        if (typeof window.loadChatConversationsList === 'function') window.loadChatConversationsList();
     } else if (tabName === 'home') {
         if (typeof updateUnreadBadges === 'function') updateUnreadBadges();
         if (typeof pollRentEaseUnreadMessages === 'function') pollRentEaseUnreadMessages();
