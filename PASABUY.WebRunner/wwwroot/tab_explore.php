@@ -93,6 +93,36 @@
         </button>
     </div>
 
+    <!-- Discovery Sorting Bar (Most Popular, Recent/Newest, In Stock, All) -->
+    <div class="d-flex align-items-center mb-2.5 px-0.5 overflow-x-auto no-scrollbar" style="scrollbar-width:none; -webkit-overflow-scrolling:touch;">
+        <div class="d-flex align-items-center gap-1.5 flex-nowrap" id="exploreSortFilterChips">
+            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip active" 
+                    id="sortChipPopular"
+                    onclick="setRentEaseCatalogSort('popular', this)" 
+                    style="background:#FFF1F2; color:#E11D48; border:1px solid #FECDD3; font-size:0.7rem; white-space:nowrap; transition:all 0.15s ease;">
+                <i class="fa-solid fa-heart me-1 text-danger"></i>Most Popular
+            </button>
+            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip bg-white text-secondary border" 
+                    id="sortChipRecent"
+                    onclick="setRentEaseCatalogSort('recent', this)" 
+                    style="font-size:0.7rem; white-space:nowrap; border-color:#E2E8F0 !important; transition:all 0.15s ease;">
+                <i class="fa-solid fa-clock-rotate-left me-1 text-primary"></i>Recent &amp; Newest
+            </button>
+            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip bg-white text-secondary border" 
+                    id="sortChipInStock"
+                    onclick="setRentEaseCatalogSort('instock', this)" 
+                    style="font-size:0.7rem; white-space:nowrap; border-color:#E2E8F0 !important; transition:all 0.15s ease;">
+                <i class="fa-solid fa-box-check me-1 text-success"></i>Available Now
+            </button>
+            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip bg-white text-secondary border" 
+                    id="sortChipAll"
+                    onclick="setRentEaseCatalogSort('all', this)" 
+                    style="font-size:0.7rem; white-space:nowrap; border-color:#E2E8F0 !important; transition:all 0.15s ease;">
+                <i class="fa-solid fa-layer-group me-1 text-muted"></i>All Gear
+            </button>
+        </div>
+    </div>
+
     <!-- 2-Column Product Grid (Compact) -->
     <div class="row g-2" id="exploreProductGrid">
         <div class="col-12 text-center py-3 bg-white rounded-4 border p-3">

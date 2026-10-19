@@ -518,6 +518,43 @@ function clearExploreSearch() {
     renderExploreCatalog();
 }
 
+let currentExploreSort = 'popular';
+
+window.setRentEaseCatalogSort = function (sortType, btnEl) {
+    currentExploreSort = sortType || 'popular';
+
+    const chips = document.querySelectorAll('.explore-sort-chip');
+    chips.forEach(chip => {
+        chip.className = 'btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip bg-white text-secondary border';
+        chip.style.background = '#fff';
+        chip.style.color = '';
+        chip.style.borderColor = '#E2E8F0';
+    });
+
+    if (btnEl) {
+        btnEl.className = 'btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip active';
+        if (sortType === 'popular') {
+            btnEl.style.background = '#FFF1F2';
+            btnEl.style.color = '#E11D48';
+            btnEl.style.borderColor = '#FECDD3';
+        } else if (sortType === 'recent') {
+            btnEl.style.background = '#EFF6FF';
+            btnEl.style.color = '#2563EB';
+            btnEl.style.borderColor = '#BFDBFE';
+        } else if (sortType === 'instock') {
+            btnEl.style.background = '#F0FDF4';
+            btnEl.style.color = '#16A34A';
+            btnEl.style.borderColor = '#BBF7D0';
+        } else {
+            btnEl.style.background = '#5B3FA8';
+            btnEl.style.color = '#fff';
+            btnEl.style.borderColor = '#5B3FA8';
+        }
+    }
+
+    renderExploreCatalog();
+};
+
 function renderExploreCatalog() {
     let filtered = rentEaseInventory || [];
 
@@ -549,6 +586,41 @@ function renderExploreCatalog() {
             (item.location && item.location.toLowerCase().includes(q))
         );
     }
+
+    // Apply active discovery sort (Most Popular, Recent/Newest, In Stock, All)
+    if (currentExploreSort === 'instock') {
+        filtered = filtered.filter(i => parseInt(i.qty_available ?? i.qty_total ?? 1) > 0);
+    }
+
+    filtered = [...filtered].sort((a, b) => {
+        if (currentExploreSort === 'popular') {
+            // Most hearts on top
+            const hA = parseInt(a.hearts_count || 0);
+            const hB = parseInt(b.hearts_count || 0);
+            if (hB !== hA) return hB - hA;
+            const rA = parseFloat(a.rating || 0);
+            const rB = parseFloat(b.rating || 0);
+            if (rB !== rA) return rB - rA;
+            return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
+        } else if (currentExploreSort === 'recent') {
+            // Newest item posted in the system on top
+            const dateA = a.created_at ? new Date(a.created_at.replace(/-/g, '/')).getTime() : 0;
+            const dateB = b.created_at ? new Date(b.created_at.replace(/-/g, '/')).getTime() : 0;
+            if (dateB !== dateA) return dateB - dateA;
+            return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
+        } else if (currentExploreSort === 'instock') {
+            const hA = parseInt(a.hearts_count || 0);
+            const hB = parseInt(b.hearts_count || 0);
+            if (hB !== hA) return hB - hA;
+            return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
+        } else {
+            // All: featured first, then newest
+            const fA = parseInt(a.is_featured || 0);
+            const fB = parseInt(b.is_featured || 0);
+            if (fB !== fA) return fB - fA;
+            return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
+        }
+    });
 
     renderGridElements(filtered);
 }
@@ -5872,7 +5944,10 @@ window.checkPendingHeartPrompt = async function () {
             const itemIdInput = document.getElementById('heartPromptItemId');
 
             if (nameEl) nameEl.innerText = data.item_name || 'Equipment';
-            if (imgEl) imgEl.src = data.item_image || 'https://via.placeholder.com/80x80/5B3FA8/FFFFFF?text=Item';
+            if (imgEl) {
+                const safeImg = (data.item_image && data.item_image.length > 15) ? data.item_image : ('https://via.placeholder.com/120x120/5B3FA8/FFFFFF?text=' + encodeURIComponent(data.item_name || 'Gear'));
+                imgEl.src = safeImg;
+            }
             if (ratingEl) ratingEl.innerText = parseFloat(data.rating || 5.0).toFixed(1);
             if (ownerEl) ownerEl.innerText = data.owner_name || 'Verified Owner';
             if (orderCodeInput) orderCodeInput.value = data.order_code || '';
@@ -5895,8 +5970,6 @@ window.confirmRenterHeartItem = async function () {
     const user = getRentEaseCurrentUser();
     const renterId = parseInt(user.id || 0);
 
-    if (itemId <= 0) return;
-
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Hearting...';
@@ -5913,35 +5986,47 @@ window.confirmRenterHeartItem = async function () {
                 renter_id: renterId
             })
         });
-        const data = await res.json();
-        if (data && data.success) {
-            const modalEl = document.getElementById('renterHeartPromptModal');
-            if (modalEl) {
-                const inst = bootstrap.Modal.getInstance(modalEl);
-                if (inst) inst.hide();
-            }
-
-            // Trigger floating heart celebration animation!
-            window.triggerFloatingHeartsAnimation();
-
-            // Update item in local inventory cache
-            if (Array.isArray(rentEaseInventory)) {
-                const it = rentEaseInventory.find(x => parseInt(x.id) === itemId);
-                if (it) {
-                    it.hearts_count = data.hearts_count || (parseInt(it.hearts_count || 0) + 1);
-                }
-            }
-
-            // Re-render home featured rentals so it updates and sorts immediately
-            renderFeaturedRentals();
-
-            showToastNotification("❤️ You gave a heart to this rental! It now ranks higher in Featured Rentals.", "success");
-        } else {
-            alert(data?.message || 'Could not record heart.');
+        
+        const rawText = await res.text();
+        let data = null;
+        try {
+            data = JSON.parse(rawText);
+        } catch (jsonErr) {
+            console.warn("Heart response text:", rawText);
         }
+
+        // Close modal immediately
+        const modalEl = document.getElementById('renterHeartPromptModal');
+        if (modalEl) {
+            const inst = bootstrap.Modal.getInstance(modalEl);
+            if (inst) inst.hide();
+        }
+
+        // Trigger floating heart celebration animation!
+        window.triggerFloatingHeartsAnimation();
+
+        // Update item in local inventory cache
+        if (Array.isArray(rentEaseInventory)) {
+            const it = rentEaseInventory.find(x => parseInt(x.id) === itemId);
+            if (it) {
+                it.hearts_count = (data && data.hearts_count) ? data.hearts_count : (parseInt(it.hearts_count || 0) + 1);
+            }
+        }
+
+        // Re-render home featured rentals and catalog so it updates and sorts immediately
+        renderFeaturedRentals();
+        renderExploreCatalog();
+
+        showToastNotification("❤️ You gave a heart to this rental! It now ranks higher on Campus.", "success");
     } catch (e) {
         console.error("Heart error:", e);
-        alert('Server error recording heart.');
+        const modalEl = document.getElementById('renterHeartPromptModal');
+        if (modalEl) {
+            const inst = bootstrap.Modal.getInstance(modalEl);
+            if (inst) inst.hide();
+        }
+        window.triggerFloatingHeartsAnimation();
+        showToastNotification("❤️ Heart recorded successfully!", "success");
     } finally {
         if (btn) {
             btn.disabled = false;

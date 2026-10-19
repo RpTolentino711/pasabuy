@@ -2246,7 +2246,7 @@
 
                 <!-- Product Summary Card -->
                 <div class="p-2.5 rounded-3 bg-light border d-flex align-items-center gap-2.5 text-start mb-3" style="border-color: #E2E8F0 !important;">
-                    <img id="heartPromptItemImg" src="https://via.placeholder.com/80x80/5B3FA8/FFFFFF?text=Item" class="rounded-2 border" style="width:52px; height:52px; object-fit:cover;">
+                    <img id="heartPromptItemImg" src="https://via.placeholder.com/80x80/5B3FA8/FFFFFF?text=Item" class="rounded-2 border" style="width:52px; height:52px; object-fit:cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/120x120/5B3FA8/FFFFFF?text=Equipment';">
                     <div class="min-w-0 flex-grow-1">
                         <span class="badge rounded-pill bg-success-subtle text-success px-2 py-0.5 fw-bold" style="font-size: 0.62rem;">
                             <i class="fa-solid fa-check-circle me-0.5"></i>Verified Return &amp; Rated
