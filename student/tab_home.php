@@ -15,9 +15,10 @@
         </div>
     </div>
 
-    <!-- Hero Promotional Banner: "Make Your Event Special" (Compact Ribbon) -->
+    <!-- Hero Promotional Banner: "Make Your Event Special" (Interactive Modal Trigger) -->
     <div class="card border-0 rounded-4 shadow-sm mb-2.5 text-white overflow-hidden position-relative" 
-         style="background: linear-gradient(135deg, #5B3FA8 0%, #341F97 100%); min-height: 96px;">
+         style="background: linear-gradient(135deg, #5B3FA8 0%, #341F97 100%); min-height: 96px; cursor: pointer;"
+         onclick="openMakeEventSpecialModal()" title="View Top 3 Most-Loved Campus Equipment">
         <div class="row g-0 h-100 align-items-center">
             <div class="col-7 p-2.5 ps-3 z-2">
                 <div class="d-inline-flex align-items-center gap-1 badge rounded-pill px-2 py-0.5 mb-1 text-white shadow-2xs" 
@@ -30,8 +31,8 @@
                 <p class="text-white-50 mb-1.5" style="font-size: 0.72rem; line-height: 1.2;">
                     Top-rated equipment loved by student renters.
                 </p>
-                <button class="btn btn-warning btn-sm rounded-pill fw-bold text-dark shadow-sm d-inline-flex align-items-center gap-1" 
-                        style="background: #F4B942; border: none; font-size: 0.72rem; padding: 2px 10px;" onclick="scrollToTopHeartedRentals()">
+                <button type="button" class="btn btn-warning btn-sm rounded-pill fw-bold text-dark shadow-sm d-inline-flex align-items-center gap-1" 
+                        style="background: #F4B942; border: none; font-size: 0.72rem; padding: 2px 10px;" onclick="event.stopPropagation(); openMakeEventSpecialModal()">
                     <i class="fa-solid fa-heart text-danger" style="font-size:0.65rem;"></i> Explore Most Loved
                 </button>
             </div>

@@ -2284,3 +2284,115 @@
     </div>
 </div>
 
+<!-- ==========================================================
+     MAKE YOUR EVENT SPECIAL: TOP 3 HEARTED GEAR MODAL
+     ========================================================== -->
+<div class="modal fade" id="modalMakeEventSpecial" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 430px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <!-- Modal Header -->
+            <div class="modal-header border-0 py-3 px-3.5 text-white position-relative" 
+                 style="background: linear-gradient(135deg, #5B3FA8 0%, #341F97 100%);">
+                <div class="pe-4">
+                    <div class="d-inline-flex align-items-center gap-1 badge rounded-pill px-2 py-0.5 mb-1 text-white shadow-2xs" 
+                         style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); font-size: 0.62rem; border: 1px solid rgba(255, 255, 255, 0.3);">
+                        <i class="fa-solid fa-heart text-danger"></i> Campus Top Hearted Gear
+                    </div>
+                    <h5 class="fw-extrabold mb-0.5 text-white" style="font-size: 1.05rem; letter-spacing: -0.2px;">
+                        Make Your Event Special ✨
+                    </h5>
+                    <p class="text-white text-opacity-75 mb-0" style="font-size: 0.72rem;">
+                        Top-rated party &amp; event equipment loved by student renters.
+                    </p>
+                </div>
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 fs-9" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-3 bg-light">
+                <!-- Top 3 Slides Carousel -->
+                <div id="eventSpecialCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3500">
+                    <!-- Carousel Indicators -->
+                    <div class="carousel-indicators mb-1.5" id="eventSpecialIndicators">
+                        <button type="button" data-bs-target="#eventSpecialCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                        <button type="button" data-bs-target="#eventSpecialCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                        <button type="button" data-bs-target="#eventSpecialCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+                    </div>
+
+                    <!-- Carousel Slides Container -->
+                    <div class="carousel-inner rounded-4 shadow-sm bg-white overflow-hidden border" id="eventSpecialSlidesContainer" style="border-color:#E2E8F0 !important;">
+                        <div class="carousel-item active p-4 text-center">
+                            <div class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
+                            <div class="text-muted fs-8">Loading top-hearted campus equipment...</div>
+                        </div>
+                    </div>
+
+                    <!-- Carousel Controls -->
+                    <button class="carousel-control-prev" type="button" data-bs-target="#eventSpecialCarousel" data-bs-slide="prev" style="width: 32px;">
+                        <span class="carousel-control-prev-icon rounded-circle bg-dark bg-opacity-50 p-2" aria-hidden="true" style="background-size: 55%;"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#eventSpecialCarousel" data-bs-slide="next" style="width: 32px;">
+                        <span class="carousel-control-next-icon rounded-circle bg-dark bg-opacity-50 p-2" aria-hidden="true" style="background-size: 55%;"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+
+                <!-- Verification Advertisement / Status Banner Container -->
+                <div id="specialModalVerificationContainer" class="mt-2.5">
+                    <!-- Populated dynamically based on user verification status -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================
+     TAKE DOWN EQUIPMENT CONFIRMATION MODAL
+     ========================================================== -->
+<div class="modal fade" id="modalTakeDownEquipment" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 390px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 pb-0 pt-3 px-3 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-danger shadow-xs" 
+                         style="width: 36px; height: 36px; background: #FFF1F2; border: 1px solid #FFE4E6;">
+                        <i class="fa-solid fa-triangle-exclamation fs-6"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-extrabold text-dark fs-7 mb-0">Take Down Equipment Listing</h6>
+                        <span class="text-muted" style="font-size: 0.65rem;">Unlist gear from campus catalog</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close fs-9" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="p-2.5 rounded-3 mb-2.5 bg-light border text-center">
+                    <span class="text-muted fs-8 d-block mb-0.5">Are you sure you want to take down</span>
+                    <strong class="text-dark fs-7 text-truncate d-block" id="takeDownEquipmentName">"Equipment"</strong>
+                </div>
+
+                <div class="card border-0 rounded-3 p-2.5 mb-2 text-start" style="background: #FFFBEB; border: 1px solid #FEF3C7 !important;">
+                    <div class="fw-bold text-dark fs-9 mb-1.5 d-flex align-items-center gap-1">
+                        <i class="fa-solid fa-circle-info text-warning fs-8"></i> Notice on unlisting:
+                    </div>
+                    <ul class="text-secondary ps-3 mb-0" style="font-size: 0.72rem; line-height: 1.45;">
+                        <li class="mb-1"><strong>Posting Fee Refund:</strong> If eligible, you can get a refund on your posting fee (provided no active bookings remain unfulfilled).</li>
+                        <li class="mb-1"><strong>Instant Removal:</strong> This equipment will immediately be unlisted from campus search and student catalog.</li>
+                        <li><strong>Ongoing Bookings:</strong> Any accepted active bookings must still be fulfilled and returned.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-3 pb-3 d-flex gap-2">
+                <button type="button" class="btn btn-light rounded-pill px-3 py-2 fs-8 fw-bold text-dark border flex-grow-1" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger rounded-pill px-3 py-2 fs-8 fw-bold text-white border-0 flex-grow-1 shadow-xs d-flex align-items-center justify-content-center gap-1.5" 
+                        id="confirmTakeDownBtn" onclick="executeTakeDownEquipment()">
+                    <i class="fa-solid fa-ban"></i> Take Down
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+

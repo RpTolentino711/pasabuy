@@ -5204,21 +5204,38 @@ window.saveRentalStockPriceChanges = async function () {
     }
 };
 
-window.deleteUserRentalItem = async function (id, name) {
-    const warningMsg = 
-`⚠️ WARNING: TAKE DOWN EQUIPMENT LISTING
+function isRentEaseUserVerified(user) {
+    const u = user || getRentEaseCurrentUser();
+    if (!u) return false;
+    const isRomeo = (u.id === 104 || (u.email && u.email.toLowerCase().includes('romeopaolo')));
+    const isPogilameg = (u.id === 105 || (u.email && u.email.toLowerCase().includes('pogilameg')));
+    return isRomeo || isPogilameg || (u.is_verified === 1 || u.is_verified === '1' || u.is_verified === true || u.verification_status === 'VERIFIED' || u.verification_status === 'APPROVED' || u.Status === 'VERIFIED');
+}
 
-Are you sure you want to take down "${name || 'this equipment'}"?
+window.deleteUserRentalItem = function (id, name) {
+    window._pendingTakeDownId = id;
+    window._pendingTakeDownName = name;
 
-• NOTICE: If you take down this listing, you can get a refund on your posting fee (provided no active bookings remain unfulfilled).
-• Once taken down, this equipment will immediately be unlisted and removed from campus search and student catalog.
-• Any ongoing accepted bookings must still be honored.
+    const modalEl = document.getElementById('modalTakeDownEquipment');
+    const nameEl = document.getElementById('takeDownEquipmentName');
+    if (nameEl) nameEl.innerText = `"${name || 'this equipment'}"`;
 
-Do you want to proceed and take down this listing?`;
-
-    if (!confirm(warningMsg)) {
-        return;
+    if (modalEl) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    } else {
+        const warningMsg = `Are you sure you want to take down "${name || 'this equipment'}"?\n\n• Your posting fee refund request will be logged.\n• Equipment will be unlisted immediately from search.\n• Ongoing accepted rentals must still be fulfilled.`;
+        if (confirm(warningMsg)) {
+            executeTakeDownEquipment();
+        }
     }
+};
+
+window.executeTakeDownEquipment = async function () {
+    const id = window._pendingTakeDownId;
+    const name = window._pendingTakeDownName || 'Equipment';
+    const modalEl = document.getElementById('modalTakeDownEquipment');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    if (!id) return;
 
     try {
         const currentUser = getRentEaseCurrentUser();
@@ -5246,19 +5263,244 @@ Do you want to proceed and take down this listing?`;
             await loadRentEaseCatalog();
             await loadUserRentedOutItems();
             if (typeof loadOwnerRentalDashboard === 'function') await loadOwnerRentalDashboard(true);
-            alert(`✅ Equipment "${name}" has been taken down.\n\nYour posting fee refund request has been logged.`);
+            showToastNotification(`✅ "${name}" has been taken down. Posting fee refund request logged.`, "success");
         } else {
-            alert('❌ ' + (data.message || 'Failed to take down equipment.'));
+            showToastNotification('❌ ' + (data.message || 'Failed to take down equipment.'), "danger");
         }
     } catch (e) {
         console.error("Delete rental item error:", e);
-        alert('❌ Error connecting to server to take down equipment.');
+        showToastNotification('❌ Error connecting to server to take down equipment.', "danger");
     }
 };
+
 window.confirmTakeDownOwnerItem = function(id, name) {
-    if (typeof window.deleteUserRentalItem === 'function') {
-        window.deleteUserRentalItem(id, name);
+    window.deleteUserRentalItem(id, name);
+};
+
+// ==========================================================
+// MAKE YOUR EVENT SPECIAL: TOP 3 HEARTED GEAR MODAL & ADS
+// ==========================================================
+window.openMakeEventSpecialModal = function () {
+    const modalEl = document.getElementById('modalMakeEventSpecial');
+    if (!modalEl) return;
+
+    // 1. Gather all active equipment items
+    let items = (rentEaseInventory || []).filter(i => (i.status !== 'TERMINATED' && i.status !== 'INACTIVE'));
+    // Sort by hearts descending, then rating descending, then ID descending
+    items.sort((a, b) => {
+        const hA = parseInt(a.hearts_count || 0);
+        const hB = parseInt(b.hearts_count || 0);
+        if (hB !== hA) return hB - hA;
+        const rA = parseFloat(a.rating || 0);
+        const rB = parseFloat(b.rating || 0);
+        if (rB !== rA) return rB - rA;
+        return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
+    });
+
+    // Top 3 items (fallback if fewer)
+    const top3 = items.slice(0, 3);
+    if (top3.length === 0) {
+        top3.push({
+            id: 0,
+            name: 'Campus Event Sound System',
+            category: 'Sound System',
+            price_per_day: 150,
+            rating: 5.0,
+            hearts_count: 12,
+            image_url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80',
+            location: 'Main Campus Center'
+        });
     }
+
+    const rankTitles = [
+        { badge: '🥇 #1 Most Loved on Campus', bg: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', color: '#92400E', border: '#FCD34D' },
+        { badge: '🥈 #2 Top Event Favorite', bg: 'linear-gradient(135deg, #F1F5F9, #E2E8F0)', color: '#334155', border: '#CBD5E1' },
+        { badge: '🥉 #3 Trending Gear', bg: 'linear-gradient(135deg, #FFEDD5, #FED7AA)', color: '#9A3412', border: '#FDBA74' }
+    ];
+
+    // 2. Build Carousel Slides
+    const slidesContainer = document.getElementById('eventSpecialSlidesContainer');
+    const indicatorsContainer = document.getElementById('eventSpecialIndicators');
+
+    if (slidesContainer) {
+        slidesContainer.innerHTML = top3.map((item, idx) => {
+            const rank = rankTitles[idx] || rankTitles[2];
+            const img = getRentEaseItemImage(item);
+            const price = parseFloat(item.price_per_day || 0).toLocaleString();
+            const hearts = parseInt(item.hearts_count || 0);
+            const safeName = (item.name || 'Equipment').replace(/'/g, "\\'");
+
+            return `
+            <div class="carousel-item ${idx === 0 ? 'active' : ''} p-2.5">
+                <!-- Slide Card -->
+                <div class="position-relative rounded-4 overflow-hidden mb-2 bg-dark" style="height: 175px;">
+                    <img src="${img}" class="w-100 h-100 object-fit-cover opacity-90" alt="${item.name}"
+                         onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=Equipment';">
+                    
+                    <!-- Top Overlays: Rank + Large Heart Badge -->
+                    <div class="position-absolute top-0 start-0 end-0 p-2 d-flex align-items-center justify-content-between z-2">
+                        <span class="badge rounded-pill fw-extrabold shadow-sm px-2.5 py-1" 
+                              style="background:${rank.bg}; color:${rank.color}; border:1px solid ${rank.border}; font-size:0.68rem;">
+                            ${rank.badge}
+                        </span>
+                        <div class="badge rounded-pill px-2.5 py-1 fw-extrabold shadow-sm d-flex align-items-center gap-1.5" 
+                             style="background:rgba(255,255,255,0.96); backdrop-filter:blur(6px); border:1px solid #FFE4E6; color:#E11D48; font-size:0.75rem;">
+                            <i class="fa-solid fa-heart text-danger fs-8"></i>
+                            <span class="fw-black">${hearts} ${hearts === 1 ? 'Heart' : 'Hearts'}</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Gradient Overlay: Price & Category -->
+                    <div class="position-absolute bottom-0 start-0 end-0 p-2.5 text-white z-2" 
+                         style="background: linear-gradient(to top, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.45) 60%, transparent 100%);">
+                        <div class="d-flex align-items-center gap-1.5 mb-0.5">
+                            <span class="badge bg-light text-dark fw-bold border-0" style="font-size:0.62rem;">${item.category || 'Event Gear'}</span>
+                            <span class="text-warning fs-9 fw-bold"><i class="fa-solid fa-star me-0.5"></i>${parseFloat(item.rating || 5.0).toFixed(1)}</span>
+                        </div>
+                        <h6 class="fw-extrabold text-white mb-0 text-truncate fs-7" title="${item.name}">${item.name}</h6>
+                    </div>
+                </div>
+
+                <!-- Price & Dual Action Buttons (Rent Now or Post Now) -->
+                <div class="d-flex align-items-center justify-content-between mb-2.5 px-1">
+                    <div>
+                        <span class="text-muted fs-9 d-block">Daily Rental Rate</span>
+                        <div class="d-flex align-items-baseline gap-0.5">
+                            <span class="fw-black fs-6" style="color:#5B3FA8;">₱${price}</span>
+                            <span class="text-muted fs-9">/ day</span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 fs-9 fw-bold">
+                            <i class="fa-solid fa-check me-0.5"></i>Ready on Campus
+                        </span>
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-6">
+                        <button type="button" class="btn btn-primary rounded-pill w-100 py-2 fs-8 fw-extrabold shadow-sm d-flex align-items-center justify-content-center gap-1.5"
+                                style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;"
+                                onclick="selectAndRentEventSpecialItem(${item.id})">
+                            <i class="fa-solid fa-cart-shopping"></i> Rent Now
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-outline-primary rounded-pill w-100 py-2 fs-8 fw-extrabold d-flex align-items-center justify-content-center gap-1.5"
+                                style="color: #5B3FA8; border-color: #5B3FA8;"
+                                onclick="selectAndPostEventSpecialItem()">
+                            <i class="fa-solid fa-plus"></i> Post Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    if (indicatorsContainer) {
+        indicatorsContainer.innerHTML = top3.map((_, idx) => `
+            <button type="button" data-bs-target="#eventSpecialCarousel" data-bs-slide-to="${idx}" 
+                    class="${idx === 0 ? 'active' : ''}" aria-current="${idx === 0 ? 'true' : 'false'}" 
+                    aria-label="Slide ${idx + 1}" style="width: 22px; height: 4px; border-radius: 2px;"></button>
+        `).join('');
+    }
+
+    // 3. Verification Advertisement / Status Banner
+    const verifContainer = document.getElementById('specialModalVerificationContainer');
+    const user = getRentEaseCurrentUser();
+    const isVer = isRentEaseUserVerified(user);
+
+    if (verifContainer) {
+        if (!isVer) {
+            verifContainer.innerHTML = `
+            <div class="card border-0 rounded-4 p-3 text-white position-relative overflow-hidden shadow-sm" 
+                 style="background: linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #8B5CF6 100%);">
+                <div class="position-absolute end-0 top-0 m-n2 rounded-circle" style="width: 100px; height: 100px; background: rgba(255,255,255,0.08); pointer-events:none;"></div>
+                
+                <div class="d-flex align-items-start gap-2.5 position-relative z-1 mb-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 text-white shadow-xs" 
+                         style="width: 40px; height: 40px; background: rgba(255, 255, 255, 0.22); border: 1.5px solid rgba(255,255,255,0.35);">
+                        <i class="fa-solid fa-shield-halved text-warning fs-5"></i>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <span class="badge bg-warning text-dark fw-extrabold rounded-pill px-2 py-0.5 mb-1" style="font-size: 0.62rem;">
+                            <i class="fa-solid fa-bolt me-0.5"></i>STUDENT PERKS
+                        </span>
+                        <h6 class="fw-extrabold text-white mb-1" style="font-size: 0.88rem; letter-spacing: -0.2px;">
+                            Wanna Post and Rent Gear? Get Verified!
+                        </h6>
+                        <p class="text-white text-opacity-90 mb-0" style="font-size: 0.72rem; line-height: 1.35;">
+                            Join trusted campus renters! Verified students get instant booking approvals, ₱0 deposit, and can post sound, tents, cameras &amp; chairs to earn daily cash.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top border-white border-opacity-20 flex-wrap gap-2 position-relative z-1">
+                    <div class="d-flex align-items-center gap-1.5 text-white-50" style="font-size: 0.68rem;">
+                        <span><i class="fa-solid fa-id-card text-white me-1"></i>Student ID</span>
+                        <span>•</span>
+                        <span><i class="fa-solid fa-lock text-white me-1"></i>100% Safe</span>
+                    </div>
+                    <button type="button" class="btn btn-warning btn-sm rounded-pill fw-extrabold text-dark px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1.5" 
+                            style="background: #FBBF24; border:none; font-size: 0.75rem;" 
+                            onclick="goToVerificationFromSpecialModal()">
+                        <i class="fa-solid fa-certificate"></i> Get Verified Now <i class="fa-solid fa-arrow-right ms-0.5"></i>
+                    </button>
+                </div>
+            </div>
+            `;
+        } else {
+            verifContainer.innerHTML = `
+            <div class="p-2.5 rounded-4 bg-white border d-flex align-items-center justify-content-between shadow-2xs">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-success" 
+                         style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25);">
+                        <i class="fa-solid fa-shield-check fs-6"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark fs-8">Verified Student Account</div>
+                        <div class="text-muted" style="font-size: 0.68rem;">You have full access to rent gear and earn by listing equipment!</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-2.5 py-1 fs-9 fw-bold text-white shadow-2xs" 
+                        style="background: #5B3FA8; border:none;" onclick="selectAndPostEventSpecialItem()">
+                    <i class="fa-solid fa-plus me-1"></i> Post Gear
+                </button>
+            </div>
+            `;
+        }
+    }
+
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+};
+
+window.selectAndRentEventSpecialItem = function (itemId) {
+    const modalEl = document.getElementById('modalMakeEventSpecial');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    if (itemId && typeof openEquipmentDetail === 'function') {
+        setTimeout(() => openEquipmentDetail(itemId), 250);
+    } else {
+        switchTab('rentals');
+    }
+};
+
+window.selectAndPostEventSpecialItem = function () {
+    const modalEl = document.getElementById('modalMakeEventSpecial');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    switchTab('sell');
+};
+
+window.goToVerificationFromSpecialModal = function () {
+    const modalEl = document.getElementById('modalMakeEventSpecial');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    setTimeout(() => {
+        if (typeof openVerificationModal === 'function') {
+            openVerificationModal();
+        } else {
+            switchTab('profile');
+        }
+    }, 250);
 };
 
 // Rider license file preview
