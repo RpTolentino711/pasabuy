@@ -520,9 +520,18 @@ function renderGridElements(items) {
 // 2. SCREEN 3: PRODUCT DETAIL MODAL & DYNAMIC MEDIA CAROUSEL
 // ----------------------------------------------------------
 window.setupDetailMediaCarousel = function (item) {
+    console.log('setupDetailMediaCarousel called with item:', item);
+    console.log('Item image fields:', {
+        image_url: item.image_url,
+        img: item.img,
+        ImageUrl: item.ImageUrl,
+        image: item.image,
+        photo_url: item.photo_url
+    });
+
     const carouselEl = document.getElementById('detailMediaCarousel');
     const innerEl = document.getElementById('detailCarouselInner');
-    const indicatorsEl = document.getElementById('detailCarouselIndicators');
+    const indicatorsEl = document.getElementById('detailIndicators');
     const prevBtn = document.getElementById('detailCarouselPrevBtn');
     const nextBtn = document.getElementById('detailCarouselNextBtn');
     const badgeEl = document.getElementById('detailMediaBadge');
@@ -782,6 +791,16 @@ function openEquipmentDetail(id) {
         }
     }
     if (!item) return;
+
+    // Debug: log the item to see what fields it has
+    console.log('Opening item detail:', id, item);
+    console.log('Item image fields:', {
+        image_url: item.image_url,
+        img: item.img,
+        imageUrl: item.imageUrl,
+        image: item.image,
+        photo_url: item.photo_url
+    });
 
     currentDetailProduct = item;
     window.currentDetailProduct = item;
