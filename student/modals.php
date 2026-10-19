@@ -288,7 +288,7 @@
                 <button type="button" class="btn btn-light rounded-pill px-4 fs-8"
                     data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold"
-                    onclick="window.saveProfileSettings()"><i class="fa-solid fa-floppy-disk me-1"></i> Save & Update
+                    onclick="saveProfileSettings()"><i class="fa-solid fa-floppy-disk me-1"></i> Save & Update
                     Profile</button>
             </div>
         </div>
@@ -949,10 +949,12 @@
     #productDetailModal.is-owner-listing #detailHeaderBuyerActions,
     #productDetailModal.is-owner-listing #detailBuyerSafetyRow,
     #productDetailModal.is-owner-listing #detailHeaderReportBtn,
+    #productDetailModal.is-owner-listing #detailHeaderBuyerActions,
     #productDetailModal.is-owner-listing #detailReportItemLink {
         display: none !important;
     }
-    #productDetailModal:not(.is-owner-listing) #detailHeaderOwnerBadge {
+    #productDetailModal:not(.is-owner-listing) #detailHeaderOwnerBadge,
+    #productDetailModal:not(.is-owner-listing) #detailOwnerOverviewBanner {
         display: none !important;
     }
     #productDetailModal .modal-content {
@@ -967,6 +969,19 @@
         border-color: #E2E8F0 !important;
         background: #FFFFFF !important;
         box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+    }
+    .rentease-product-card {
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+    }
+    .rentease-product-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(91, 63, 168, 0.12) !important;
+    }
+    .rentease-product-card:hover .rentease-card-img {
+        transform: scale(1.05);
+    }
+    .is-owner-card {
+        background: linear-gradient(180deg, #FFFFFF 0%, #FAF5FF 100%) !important;
     }
 </style>
 <!-- PRODUCT DETAIL VIEW MODAL (MATCHING RENTEASE SCREEN 3 IN UIDESIFNAPP.png 1:1) -->
@@ -1046,11 +1061,11 @@
                 <div id="detailVideoContainer" style="display:none;"><video id="detailVideoPlayer"></video></div>
 
                 <!-- Category Tag & Verification Row -->
-                <div class="d-flex align-items-center justify-content-between mb-1">
+                <div class="d-flex align-items-center justify-content-between mb-1.5">
                     <span class="badge rounded-pill px-2.5 py-1 text-primary fw-bold" style="background: #F3E8FF; font-size: 0.7rem;" id="detailCategoryBadge">
                         <i class="fa-solid fa-layer-group me-1"></i> Rental Equipment
                     </span>
-                    <span class="badge rounded-pill px-2 py-0.5 text-success fw-bold" style="background: #ECFDF5; font-size: 0.68rem;">
+                    <span class="badge rounded-pill px-2.5 py-1 text-success fw-bold" style="background: #ECFDF5; border: 1px solid #A7F3D0; font-size: 0.68rem;">
                         <i class="fa-solid fa-shield-halved me-1"></i> Campus Verified
                     </span>
                 </div>
@@ -1058,7 +1073,7 @@
                 <!-- Title, Rating & Reviews -->
                 <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle" style="letter-spacing:-0.2px;">Equipment Details</h4>
                 
-                <div class="d-flex align-items-center gap-1.5 mb-3">
+                <div class="d-flex align-items-center gap-1.5 mb-3 flex-wrap">
                     <div class="d-flex align-items-center gap-1 bg-warning bg-opacity-10 px-2 py-0.5 rounded-pill">
                         <i class="fa-solid fa-star text-warning fs-9"></i>
                         <span class="fw-extrabold text-dark fs-8" id="detailRatingVal">5.0</span>
@@ -1066,6 +1081,59 @@
                     <span class="text-muted fs-8">(<span id="detailReviewCount">1</span> reviews)</span>
                     <span class="text-secondary opacity-50">•</span>
                     <span class="text-muted fs-8"><i class="fa-solid fa-location-dot text-danger fs-9 me-0.5"></i> Campus Meetup</span>
+                </div>
+
+                <!-- OWNER PERSPECTIVE: Overview & Quick Metrics Banner -->
+                <div id="detailOwnerOverviewBanner" style="display:none;" class="mb-3">
+                    <div class="p-3 rounded-4" style="background: linear-gradient(135deg, #FAF5FF 0%, #EEF2FF 100%); border: 1.5px solid #E0E7FF; box-shadow: 0 4px 16px rgba(91, 63, 168, 0.05);">
+                        <div class="d-flex align-items-center justify-content-between mb-2.5">
+                            <span class="badge rounded-pill fw-extrabold px-2.5 py-1" style="background: #5B3FA8; color: #fff; font-size: 0.68rem;">
+                                <i class="fa-solid fa-crown text-warning me-1"></i> Your Equipment Listing
+                            </span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-bold fs-9">
+                                <i class="fa-solid fa-circle-dot me-1"></i>Live on Campus
+                            </span>
+                        </div>
+                        <div class="row g-2 text-center">
+                            <div class="col-4">
+                                <div class="bg-white rounded-3 p-2 border shadow-2xs h-100 d-flex flex-column justify-content-center">
+                                    <span class="text-muted fw-bold text-uppercase" style="font-size:0.6rem;">Daily Rate</span>
+                                    <strong class="fs-6 mt-0.5" style="color:#5B3FA8;" id="ownerMetricPrice">₱2</strong>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="bg-white rounded-3 p-2 border shadow-2xs h-100 d-flex flex-column justify-content-center">
+                                    <span class="text-muted fw-bold text-uppercase" style="font-size:0.6rem;">Available Stock</span>
+                                    <strong class="fs-6 text-success mt-0.5" id="ownerMetricStock">11 pcs</strong>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="bg-white rounded-3 p-2 border shadow-2xs h-100 d-flex flex-column justify-content-center">
+                                    <span class="text-muted fw-bold text-uppercase" style="font-size:0.6rem;">Account Health</span>
+                                    <strong class="fs-6 text-dark mt-0.5" id="ownerMetricStrikes">0 Strikes</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RENTER PERSPECTIVE: Lender Profile Card -->
+                <div class="p-3 rounded-4 mb-3 d-flex align-items-center justify-content-between" style="background: #F8FAFC; border: 1.5px solid #E2E8F0;" id="detailLenderInfoCard">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-extrabold shadow-2xs" style="width: 42px; height: 42px; background: linear-gradient(135deg, #6366F1, #4F46E5); font-size: 0.85rem;" id="detailLenderAvatar">
+                            RP
+                        </div>
+                        <div>
+                            <div class="fw-extrabold text-dark fs-7" id="detailLenderName">Romeo Paolo Tolentino</div>
+                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                <span class="badge bg-primary-subtle text-primary fw-bold" style="font-size: 0.62rem;"><i class="fa-solid fa-graduation-cap me-0.5"></i>Verified Student Lender</span>
+                                <span class="text-muted" style="font-size: 0.62rem;">• Fast Responder</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-white rounded-pill px-2.5 py-1 border shadow-2xs text-primary fw-bold fs-9 d-flex align-items-center gap-1" style="color: #5B3FA8 !important; border-color: #CBD5E1 !important;" onclick="chatWithOwnerFromDetail()">
+                        <i class="fa-regular fa-comment-dots"></i> Chat
+                    </button>
                 </div>
 
                 <!-- Price Highlight Card -->
@@ -1077,16 +1145,24 @@
                             <span class="text-muted fs-7 fw-semibold">/ day</span>
                         </div>
                     </div>
-                    <span class="badge rounded-pill px-3 py-1.5 fw-bold" style="background: #EDE9FE; color: #5B3FA8; font-size: 0.72rem;">
-                        <i class="fa-regular fa-clock me-1"></i> 1 Day Min Rental
-                    </span>
+                    <div class="text-end">
+                        <span class="badge rounded-pill px-3 py-1.5 fw-bold d-inline-block mb-1" style="background: #EDE9FE; color: #5B3FA8; font-size: 0.72rem;">
+                            <i class="fa-regular fa-clock me-1"></i> 1 Day Min Rental
+                        </span>
+                        <div class="text-muted fs-10 fw-semibold"><i class="fa-solid fa-shield-check text-success me-0.5"></i>₱0 Security Deposit</div>
+                    </div>
                 </div>
 
                 <!-- Description Card -->
                 <div class="p-3 rounded-4 mb-3" style="background: #FFFFFF; border: 1.5px solid #F1F5F9; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-                    <div class="d-flex align-items-center gap-1.5 fw-bold text-dark fs-8 mb-1.5">
-                        <i class="fa-solid fa-circle-info text-primary" style="color:#5B3FA8 !important;"></i>
-                        <span>Equipment Description</span>
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <div class="d-flex align-items-center gap-1.5 fw-bold text-dark fs-8">
+                            <i class="fa-solid fa-circle-info text-primary" style="color:#5B3FA8 !important;"></i>
+                            <span>Equipment Description</span>
+                        </div>
+                        <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5 fs-10 fw-normal">
+                            <i class="fa-solid fa-sparkles text-warning me-0.5"></i>Cleaned &amp; Tested
+                        </span>
                     </div>
                     <p class="fs-8 text-secondary lh-sm mb-0" id="detailDescription">No description provided for this listing.</p>
                 </div>
@@ -1150,47 +1226,70 @@
                     </div>
                 </div>
 
-                <!-- Owner Controls & Management Section (Visible ONLY when logged-in user is Owner) -->
-                <div id="detailOwnerControlSection" style="display:none;" class="mb-2">
-                    <div class="rounded-4 overflow-hidden mb-1" style="border:1.5px solid #E0E7FF; background:linear-gradient(180deg, #F5F3FF 0%, #FFFFFF 56px);">
-                        <div class="px-3 pt-3 pb-2">
-                            <span class="badge rounded-pill fw-bold mb-1" style="background:#5B3FA8; color:#fff; font-size:0.68rem;">
-                                <i class="fa-solid fa-crown text-warning me-1"></i> Your listing
+                <!-- Renter Protection Banner (renters only) -->
+                <div class="p-2.5 rounded-3 mb-3 d-flex align-items-center gap-2" style="background: #ECFDF5; border: 1px solid #A7F3D0;" id="detailRenterSafetyNotice">
+                    <i class="fa-solid fa-shield-halved text-success fs-6 flex-shrink-0"></i>
+                    <div class="fs-9 text-success-emphasis">
+                        <strong>RentEase Campus Protection:</strong> Inspected face-to-face at campus meetup. 100% money-back guarantee if equipment does not match description.
+                    </div>
+                </div>
+
+                <!-- OWNER PERSPECTIVE: Management & Pricing Controls -->
+                <div id="detailOwnerControlSection" style="display:none;" class="mb-3">
+                    <div class="rounded-4 overflow-hidden border shadow-sm" style="border-color: #E0E7FF !important; background: #FFFFFF;">
+                        <!-- Header with Gradient -->
+                        <div class="px-3 py-2.5 d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #F5F3FF 0%, #EEF2FF 100%); border-bottom: 1px solid #E0E7FF;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-2xs" style="width: 28px; height: 28px; background: #5B3FA8;">
+                                    <i class="fa-solid fa-sliders fs-9"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-extrabold text-dark fs-8 mb-0">Inventory &amp; Pricing Controls</h6>
+                                    <span class="fs-10 text-muted">Adjust listing rates and available units</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-white text-primary border rounded-pill px-2 py-0.5 fw-bold fs-10 shadow-2xs" style="color:#5B3FA8 !important;">
+                                <i class="fa-solid fa-arrows-rotate me-0.5"></i>Live Sync
                             </span>
-                            <h6 class="fw-extrabold text-dark fs-7 mb-0.5">Manage this equipment</h6>
-                            <p class="fs-9 text-secondary mb-0">Update the daily rate and available units. Students book from this listing.</p>
                         </div>
 
-                        <div id="detailOwnerStrikesBanner" class="mx-3 mb-2 p-2 rounded-3" style="display:none; background:#FEF3C7; border:1px solid #FDE68A;">
-                            <span class="fs-9 fw-bold text-dark" id="detailOwnerStrikesText"></span>
+                        <!-- Strikes / Warning Banner -->
+                        <div id="detailOwnerStrikesBanner" class="m-3 mb-0 p-2.5 rounded-3" style="display:none; background:#FEF3C7; border:1px solid #FDE68A;">
+                            <span class="fs-9 fw-bold text-dark d-flex align-items-center gap-1.5" id="detailOwnerStrikesText"></span>
                         </div>
 
-                        <div class="p-3 pt-1">
-                            <div class="row g-2 mb-2.5">
+                        <!-- Inputs -->
+                        <div class="p-3">
+                            <div class="row g-2 mb-3">
                                 <div class="col-6">
-                                    <label class="form-label fs-9 fw-bold text-dark mb-1">Rate / day</label>
+                                    <label class="form-label fs-9 fw-bold text-dark mb-1">Daily Rate</label>
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white fw-extrabold text-dark fs-8">₱</span>
-                                        <input type="number" class="form-control rounded-end-3 fs-8 fw-bold" id="detailOwnerPriceInput" min="1" step="1" placeholder="Price">
+                                        <span class="input-group-text bg-light fw-extrabold text-dark fs-8 border-end-0">₱</span>
+                                        <input type="number" class="form-control rounded-end-3 fs-8 fw-extrabold border-start-0" id="detailOwnerPriceInput" min="1" step="1" placeholder="Price">
                                     </div>
+                                    <span class="text-muted fs-11 mt-0.5 d-block">Charged per day</span>
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label fs-9 fw-bold text-dark mb-1">Units</label>
+                                    <label class="form-label fs-9 fw-bold text-dark mb-1">Available Units</label>
                                     <div class="input-group input-group-sm">
-                                        <input type="number" class="form-control rounded-start-3 fs-8 fw-bold" id="detailOwnerStockInput" min="0" step="1" placeholder="Stock">
-                                        <span class="input-group-text bg-white fs-9 text-muted">pcs</span>
+                                        <input type="number" class="form-control rounded-start-3 fs-8 fw-extrabold border-end-0" id="detailOwnerStockInput" min="0" step="1" placeholder="Stock">
+                                        <span class="input-group-text bg-light fs-9 text-muted border-start-0">pcs</span>
                                     </div>
+                                    <span class="text-muted fs-11 mt-0.5 d-block">Current stock</span>
                                 </div>
                             </div>
 
-                            <button type="button" class="btn btn-sm w-100 rounded-4 py-2 fw-extrabold fs-8 shadow-xs d-flex align-items-center justify-content-center gap-1.5"
+                            <button type="button" class="btn btn-sm w-100 rounded-4 py-2.5 fw-extrabold fs-8 shadow-sm d-flex align-items-center justify-content-center gap-2"
                                     style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none; color:#fff;" id="btnSaveOwnerDetailChanges" onclick="saveOwnerStockPriceFromDetail()">
-                                <i class="fa-solid fa-floppy-disk"></i> Save changes
+                                <i class="fa-solid fa-floppy-disk"></i> Save Stock &amp; Price Changes
                             </button>
-                            <p class="fs-9 text-muted mb-0 mt-2 lh-sm">
-                                <i class="fa-regular fa-circle-info me-1"></i>
-                                Taking this down removes it from search. Your posting fee is refundable if there are no active bookings.
-                            </p>
+                            
+                            <div class="p-2.5 rounded-3 bg-light border mt-2.5 d-flex align-items-start gap-1.5">
+                                <i class="fa-solid fa-circle-info text-primary fs-8 mt-0.5" style="color:#5B3FA8 !important;"></i>
+                                <p class="fs-10 text-secondary mb-0 lh-sm">
+                                    Taking this listing down removes it from campus search. Listing fees are refundable if no active unfulfilled bookings remain.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1982,13 +2081,38 @@
                     <div class="modal-dialog modal-dialog-centered" style="max-width: 410px;">
                         <div class="modal-content rounded-4 border-0 p-3 shadow-lg bg-white">
                             <div class="modal-header border-0 pb-2">
-                                <div class="d-flex align-items-center gap-2"><div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width:42px;height:42px;"><i class="fa-solid fa-rotate-left fs-5"></i></div><div><h6 class="fw-extrabold text-dark mb-0 fs-7">Request Early Return?</h6><span class="fs-9 text-muted">Order <strong id="earlyReturnRequestOrderCode">#RE-00000</strong></span></div></div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width:42px;height:42px;">
+                                        <i class="fa-solid fa-rotate-left fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-extrabold text-dark mb-0 fs-7">Request Early Return?</h6>
+                                        <span class="fs-9 text-muted">Order <strong id="earlyReturnRequestOrderCode">#RE-00000</strong></span>
+                                    </div>
+                                </div>
                                 <button type="button" class="btn-close fs-9" data-bs-dismiss="modal"></button>
                             </div>
-                            <div class="modal-body p-2"><div class="p-3 rounded-3 mb-3" style="background:#EFF6FF;border:1.5px solid #BFDBFE;"><div class="d-flex align-items-start gap-2"><i class="fa-solid fa-shield-halved text-primary mt-1"></i><div class="fs-8 text-secondary" style="line-height:1.5;">The renter must verify the return before this item can be marked returned or restocked.</div></div></div><p class="text-dark fw-semibold fs-8 mb-3">Send an early-return request to the renter?</p><div class="d-flex gap-2"><button type="button" class="btn btn-light border rounded-pill w-50 fw-bold py-2 fs-8" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary rounded-pill w-50 fw-bold py-2 fs-8" id="earlyReturnRequestConfirm"><i class="fa-solid fa-paper-plane me-1"></i> Send Request</button></div></div>
+                            <div class="modal-body p-2">
+                                <div class="p-3 rounded-3 mb-3" style="background:#EFF6FF;border:1.5px solid #BFDBFE;">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="fa-solid fa-shield-halved text-primary mt-1"></i>
+                                        <div class="fs-8 text-secondary" style="line-height:1.5;">
+                                            The renter must verify the return before this item can be marked returned or restocked.
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-dark fw-semibold fs-8 mb-3">Send an early-return request to the renter?</p>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-light border rounded-pill w-50 fw-bold py-2 fs-8" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-primary rounded-pill w-50 fw-bold py-2 fs-8" id="earlyReturnRequestConfirm">
+                                        <i class="fa-solid fa-paper-plane me-1"></i> Send Request
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
                 <div class="p-2.5 rounded-3 bg-light border mb-2.5 fs-8 text-secondary" style="line-height:1.45;">
                     <div class="fw-bold text-dark mb-1.5"><i class="fa-solid fa-info-circle text-primary me-1"></i>If you confirm receipt:</div>
                     <ul class="mb-0 ps-3 fs-9">
@@ -2073,3 +2197,4 @@
         </div>
     </div>
 </div>
+

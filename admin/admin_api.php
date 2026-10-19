@@ -512,6 +512,39 @@ if ($action === 'get_dashboard') {
     $outOfStock = (int)$db->query("SELECT COUNT(*) FROM `rental_inventory` WHERE `qty_available` = 0")->fetchColumn();
     $stockValue = (float)$db->query("SELECT COALESCE(SUM(price_per_day * qty_total), 0) FROM `rental_inventory`")->fetchColumn();
 
+    // Auto-detect if renter returned overdue equipment and auto-resolve moot tickets
+    try {
+        $pendingIssues = $db->query("SELECT id, ticket_number, order_code, issue_title, description, status, stage FROM `rental_issues` WHERE `status` != 'RESOLVED'")->fetchAll();
+        foreach ($pendingIssues as $pi) {
+            $ordCode = trim((string)($pi['order_code'] ?? ''));
+            if (empty($ordCode) && preg_match('/(#RE-\d+)/i', ($pi['issue_title'] ?? '') . ' ' . ($pi['description'] ?? ''), $m)) {
+                $ordCode = $m[1];
+            }
+            if (!empty($ordCode)) {
+                $chkOrd = $db->prepare("SELECT order_status, timer_status, has_rated, return_date, stock_returned_status, return_confirmed FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+                $chkOrd->execute([$ordCode]);
+                $ordRow = $chkOrd->fetch();
+                if ($ordRow) {
+                    $isReturned = in_array(strtoupper((string)$ordRow['order_status']), ['RETURNED', 'COMPLETED'])
+                        || strtoupper((string)($ordRow['timer_status'] ?? '')) === 'COMPLETED'
+                        || (int)($ordRow['return_confirmed'] ?? 0) === 1
+                        || (int)($ordRow['has_rated'] ?? 0) === 1
+                        || (!empty($ordRow['stock_returned_status']) && stripos($ordRow['stock_returned_status'], 'Returned') !== false);
+                    if ($isReturned) {
+                        $db->prepare("UPDATE `rental_issues` SET `status` = 'RESOLVED', `status_display` = 'Resolved (Item Returned)', `priority` = 'LOW', `resolution_notes` = 'Auto-resolved: Equipment returned by renter and restocked into inventory. Overdue report is obsolete/void.' WHERE `id` = ?")
+                           ->execute([$pi['id']]);
+                        $db->prepare("UPDATE `rental_unreturned_reports` SET `status` = 'RESOLVED_RETURNED', `admin_notes` = 'Equipment returned by renter late and restocked. Dispute void.' WHERE `order_code` = ? AND `status` = 'PENDING'")
+                           ->execute([$ordCode]);
+                        try {
+                            $db->prepare("UPDATE `admin_tickets` SET `status` = 'Resolved', `priority` = 'LOW', `resolution_notes` = 'Auto-resolved: Equipment returned by renter and restocked.' WHERE `ticket_number` = ? OR `order_number` = ?")
+                               ->execute([$pi['ticket_number'], $ordCode]);
+                        } catch (Exception $eAt) {}
+                    }
+                }
+            }
+        }
+    } catch (Exception $eSync) {}
+
     $activeTickets = (int)$db->query("SELECT COUNT(*) FROM `rental_issues` WHERE `status` != 'RESOLVED'")->fetchColumn();
 
     try {
@@ -549,6 +582,28 @@ if ($action === 'get_dashboard') {
     }
     unset($ro);
     $recentTickets = $db->query("SELECT * FROM `rental_issues` ORDER BY `id` DESC LIMIT 6")->fetchAll();
+    foreach ($recentTickets as &$rt) {
+        $isRet = false;
+        $ordCode = trim((string)($rt['order_code'] ?? ''));
+        if (empty($ordCode) && preg_match('/(#RE-\d+)/i', ($rt['issue_title'] ?? '') . ' ' . ($rt['description'] ?? ''), $m)) {
+            $ordCode = $m[1];
+        }
+        if (!empty($ordCode)) {
+            $chkOrd = $db->prepare("SELECT order_status, timer_status, has_rated, return_date, stock_returned_status, return_confirmed FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+            $chkOrd->execute([$ordCode]);
+            $ordRow = $chkOrd->fetch();
+            if ($ordRow) {
+                $isRet = in_array(strtoupper((string)$ordRow['order_status']), ['RETURNED', 'COMPLETED'])
+                    || strtoupper((string)($ordRow['timer_status'] ?? '')) === 'COMPLETED'
+                    || (int)($ordRow['return_confirmed'] ?? 0) === 1
+                    || (int)($ordRow['has_rated'] ?? 0) === 1
+                    || (!empty($ordRow['stock_returned_status']) && stripos($ordRow['stock_returned_status'], 'Returned') !== false);
+            }
+        }
+        $rt['is_item_returned'] = $isRet || (stripos((string)($rt['status_display'] ?? ''), 'Returned') !== false) || (stripos((string)($rt['resolution_notes'] ?? ''), 'returned') !== false);
+        $rt['is_useless'] = $rt['is_item_returned'];
+    }
+    unset($rt);
 
     echo json_encode([
         'success' => true,
@@ -1486,6 +1541,29 @@ if ($action === 'get_tickets') {
     $stmt->execute($params);
     $tickets = $stmt->fetchAll();
 
+    foreach ($tickets as &$t) {
+        $isRet = false;
+        $ordCode = trim((string)($t['order_code'] ?? ''));
+        if (empty($ordCode) && preg_match('/(#RE-\d+)/i', ($t['issue_title'] ?? '') . ' ' . ($t['description'] ?? ''), $m)) {
+            $ordCode = $m[1];
+        }
+        if (!empty($ordCode)) {
+            $chkOrd = $db->prepare("SELECT order_status, timer_status, has_rated, return_date, stock_returned_status, return_confirmed FROM `rental_orders` WHERE `order_code` = ? LIMIT 1");
+            $chkOrd->execute([$ordCode]);
+            $ordRow = $chkOrd->fetch();
+            if ($ordRow) {
+                $isRet = in_array(strtoupper((string)$ordRow['order_status']), ['RETURNED', 'COMPLETED'])
+                    || strtoupper((string)($ordRow['timer_status'] ?? '')) === 'COMPLETED'
+                    || (int)($ordRow['return_confirmed'] ?? 0) === 1
+                    || (int)($ordRow['has_rated'] ?? 0) === 1
+                    || (!empty($ordRow['stock_returned_status']) && stripos($ordRow['stock_returned_status'], 'Returned') !== false);
+            }
+        }
+        $t['is_item_returned'] = $isRet || (stripos((string)($t['status_display'] ?? ''), 'Returned') !== false) || (stripos((string)($t['resolution_notes'] ?? ''), 'returned') !== false);
+        $t['is_useless'] = $t['is_item_returned'];
+    }
+    unset($t);
+
     $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_issues` WHERE `status` != 'RESOLVED'")->fetchColumn();
 
     echo json_encode([
@@ -1938,7 +2016,9 @@ if ($action === 'get_unreturned_reports') {
     $status = trim((string)($req['status'] ?? 'All'));
     $sql = "SELECT r.*, u.rental_suspended_until, u.Status as renter_account_status,
                    ri.image_url AS item_image,
-                   ro.rental_start_date, ro.rental_end_date, ro.rental_days, ro.total_amount
+                   ro.rental_start_date, ro.rental_end_date, ro.rental_days, ro.total_amount,
+                   ro.order_status, ro.timer_status, ro.has_rated, ro.return_date, ro.updated_at as order_updated_at,
+                   ro.stock_returned_status, ro.return_confirmed
             FROM `rental_unreturned_reports` r 
             LEFT JOIN `Users` u ON r.renter_id = u.Id 
             LEFT JOIN `rental_inventory` ri ON r.item_id = ri.id
@@ -1959,7 +2039,27 @@ if ($action === 'get_unreturned_reports') {
     $stmt->execute($params);
     $reports = $stmt->fetchAll();
 
-    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'PENDING'")->fetchColumn();
+    foreach ($reports as &$rep) {
+        $st = strtoupper((string)($rep['order_status'] ?? ''));
+        $timerSt = strtoupper((string)($rep['timer_status'] ?? ''));
+        $isRet = in_array($st, ['RETURNED', 'COMPLETED'])
+            || $timerSt === 'COMPLETED'
+            || (int)($rep['has_rated'] ?? 0) === 1
+            || (int)($rep['return_confirmed'] ?? 0) === 1
+            || (!empty($rep['stock_returned_status']) && stripos($rep['stock_returned_status'], 'Returned') !== false);
+        $rep['is_item_returned'] = $isRet;
+        $rep['is_useless'] = $isRet;
+        if ($isRet && $rep['status'] === 'PENDING') {
+            $rep['status'] = 'RESOLVED_RETURNED';
+            $rep['status_label'] = 'Returned Late (Case Void)';
+            try {
+                $db->prepare("UPDATE `rental_unreturned_reports` SET `status` = 'RESOLVED_RETURNED', `admin_notes` = 'Equipment returned by renter and restocked. Dispute void.' WHERE `id` = ?")->execute([$rep['id']]);
+            } catch (Exception $e) {}
+        }
+    }
+    unset($rep);
+
+    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` r LEFT JOIN `rental_orders` ro ON r.order_code = ro.order_code WHERE r.`status` = 'PENDING' AND NOT (UPPER(COALESCE(ro.order_status, '')) IN ('RETURNED', 'COMPLETED') OR UPPER(COALESCE(ro.timer_status, '')) = 'COMPLETED' OR COALESCE(ro.has_rated, 0) = 1 OR COALESCE(ro.return_confirmed, 0) = 1)")->fetchColumn();
     $approvedCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'APPROVED'")->fetchColumn();
     $dismissedCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` = 'DISMISSED'")->fetchColumn();
     $returnedCount = (int)$db->query("SELECT COUNT(*) FROM `rental_unreturned_reports` WHERE `status` IN ('RESOLVED_RETURNED', 'RETURNED') OR `solution` LIKE '%Return%'")->fetchColumn();

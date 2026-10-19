@@ -201,6 +201,121 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
 
         .admin-section.active {
             display: block;
+        }
+
+        /* Loading States */
+        .admin-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .admin-loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(91, 63, 168, 0.2);
+            border-radius: 50%;
+            border-top-color: #5B3FA8;
+            animation: adminSpin 0.8s linear infinite;
+        }
+
+        @keyframes adminSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notifications */
+        .admin-toast-container {
+            position: fixed;
+            top: 80px;
+            right: 28px;
+            z-index: 10000;
+            max-width: 380px;
+        }
+
+        .admin-toast {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: adminSlideIn 0.3s ease;
+            border-left: 4px solid #5B3FA8;
+        }
+
+        .admin-toast.success {
+            border-left-color: #10AC84;
+        }
+
+        .admin-toast.error {
+            border-left-color: #FF3B30;
+        }
+
+        @keyframes adminSlideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Sidebar */
+        @media (max-width: 992px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .admin-sidebar.open {
+                transform: translateX(0);
+            }
+
+            .admin-main-wrapper {
+                margin-left: 0;
+            }
+
+            .admin-top-header {
+                padding: 0 16px;
+            }
+
+            .admin-content-container {
+                padding: 16px;
+            }
+        }
+
+        /* Mobile Sidebar Toggle */
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: #5B3FA8;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar-toggle {
+                display: block;
+            }
+        }
+        }
+
+        .admin-section.active {
+            display: block;
             animation: fadeIn 0.25s ease-in-out;
         }
 
@@ -579,7 +694,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         <!-- Top Header Bar -->
         <header class="admin-top-header">
             <div class="d-flex align-items-center gap-3">
-                <button type="button" class="btn btn-sm btn-light d-md-none" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+                <button type="button" class="sidebar-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
                 <div class="admin-search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" class="form-control" id="adminGlobalSearch" placeholder="Search products, orders, customers..." oninput="handleGlobalSearch(this.value)">
@@ -2068,6 +2183,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-3">
+                    <div id="adminTktReturnNotice" style="display:none;" class="mb-3"></div>
                     <div class="p-2.5 rounded-3 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0;">
                         <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
                             <span class="text-muted">Order Code:</span>
@@ -2451,6 +2567,103 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         let categoryChartInstance = null;
         let selectedOrderIdForModal = null;
 
+        // Loading and Toast Notification Helpers
+        window.showAdminLoading = function(text = 'Loading...') {
+            let overlay = document.getElementById('adminLoadingOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'adminLoadingOverlay';
+                overlay.className = 'admin-loading-overlay';
+                overlay.innerHTML = `
+                    <div class="admin-loading-spinner"></div>
+                    <p style="color: #5B3FA8; font-weight: 600; margin: 0;">${text}</p>
+                `;
+                document.body.appendChild(overlay);
+            } else {
+                overlay.querySelector('p').textContent = text;
+            }
+            overlay.style.display = 'flex';
+        };
+
+        window.hideAdminLoading = function() {
+            const overlay = document.getElementById('adminLoadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+
+        window.showAdminToast = function(message, type = 'info', duration = 3000) {
+            let container = document.getElementById('adminToastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'adminToastContainer';
+                container.className = 'admin-toast-container';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `admin-toast ${type}`;
+
+            const iconMap = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                info: 'fa-info-circle'
+            };
+
+            const icon = iconMap[type] || iconMap.info;
+
+            toast.innerHTML = `
+                <i class="fa-solid ${icon}" style="font-size: 20px; color: ${type === 'success' ? '#10AC84' : type === 'error' ? '#FF3B30' : '#5B3FA8'};"></i>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.9rem; color: #1E293B;">${message}</div>
+                </div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 16px;">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'adminSlideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        };
+
+        window.setAdminButtonLoading = function(buttonId, isLoading, originalText = '') {
+            const btn = document.getElementById(buttonId);
+            if (!btn) return;
+
+            if (isLoading) {
+                btn.dataset.originalText = btn.textContent;
+                btn.classList.add('btn-loading');
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+                if (originalText) {
+                    btn.textContent = originalText;
+                } else if (btn.dataset.originalText) {
+                    btn.textContent = btn.dataset.originalText;
+                }
+            }
+        };
+
+        // Sidebar Toggle for Mobile
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('adminSidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('open');
+            }
+        };
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('adminSidebar');
+            const toggleBtn = document.querySelector('.sidebar-toggle');
+            if (window.innerWidth <= 992 && sidebar && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+
         // Auto clock & live real-time sync
         setInterval(() => {
             const now = new Date();
@@ -2826,14 +3039,26 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     const tbodyT = document.getElementById('dashTicketsTableBody');
                     if (data.recent_tickets && data.recent_tickets.length > 0) {
                         allLoadedTickets = [...allLoadedTickets, ...data.recent_tickets.filter(ticket => !allLoadedTickets.some(existing => parseInt(existing.id) === parseInt(ticket.id)))];
-                        tbodyT.innerHTML = data.recent_tickets.map(t => `
+                        tbodyT.innerHTML = data.recent_tickets.map(t => {
+                            const isReturned = (t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned') || String(t.resolution_notes || '').includes('returned') || String(t.status || '').toUpperCase() === 'RESOLVED');
+                            const priorityHtml = isReturned 
+                                ? `<span class="badge bg-light text-muted border text-decoration-line-through">CRITICAL</span> <span class="badge bg-secondary-subtle text-secondary fs-10">VOID</span>`
+                                : `<span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span>`;
+                            const statusHtml = isReturned
+                                ? `<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold fs-9" title="Item was returned by renter; ticket is void"><i class="fa-solid fa-check-double me-1"></i>Returned (Void)</span>`
+                                : `<span class="badge bg-light text-dark border">${t.status_display || t.status}</span>`;
+                            return `
                             <tr role="button" tabindex="0" style="cursor:pointer;" onclick="openSupportTicketTab('${String(t.ticket_number || '').replace(/'/g, "\\'")}')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSupportTicketTab('${String(t.ticket_number || '').replace(/'/g, "\\'")}'); }" title="Open the related support tab">
-                                <td class="fw-bold text-muted">${t.ticket_number}</td>
-                                <td class="text-truncate" style="max-width:140px;" title="${t.issue_title}">${t.issue_title}</td>
-                                <td><span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span></td>
-                                <td><span class="badge bg-light text-dark border">${t.status_display || t.status}</span></td>
+                                <td class="fw-bold text-muted">${t.ticket_number} ${isReturned ? '<span class="badge bg-light text-muted border fs-10">Closed</span>' : ''}</td>
+                                <td class="text-truncate" style="max-width:140px;" title="${t.issue_title}">
+                                    <div class="text-truncate">${t.issue_title}</div>
+                                    ${isReturned ? '<span class="text-success fs-10 fw-bold d-block"><i class="fa-solid fa-box-open me-0.5"></i>Item Restocked · Late Return</span>' : ''}
+                                </td>
+                                <td>${priorityHtml}</td>
+                                <td>${statusHtml}</td>
                             </tr>
-                        `).join('');
+                            `;
+                        }).join('');
                     } else {
                         tbodyT.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No open inquiries.</td></tr>';
                     }
@@ -3115,7 +3340,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         stageBadge.className = 'badge fs-9 fw-bold text-white shadow-2xs';
                         stageBadge.style.background = 'linear-gradient(135deg, #10B981, #059669)';
                         stageBadge.innerHTML = '<i class="fa-solid fa-stopwatch fa-spin-pulse me-1"></i> IN RENTER HANDS (TIMER RUNNING)';
-                    } else if (!isReturned && (o.timer_status === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue)) {
+                    } else if (o.timer_status === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue) {
                         stageBadge.className = 'badge fs-9 fw-bold bg-danger text-white';
                         stageBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> OVERDUE (EXPIRED)';
                     } else if (st === 'HANDOVER_READY') {
@@ -3364,7 +3589,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 `}
                             </div>
                         </div>
-
                     </div>
 
                     <!-- 3. RENTER & STOCK OWNER DIRECT CONTACT (2 COLUMNS) -->
@@ -4418,10 +4642,19 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <td>
                                 <div class="fw-semibold text-dark fs-8">${t.issue_title}</div>
                                 <div class="fs-9 text-muted text-truncate" style="max-width:240px;">${t.description || ''}</div>
+                                ${(t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned')) ? `<span class="badge bg-success-subtle text-success border border-success-subtle fs-10 mt-1 d-inline-block"><i class="fa-solid fa-box-open me-1"></i>Item Restocked · Late Return (Void)</span>` : ''}
                                 ${t.evidence_photo ? `<span class="badge bg-danger-subtle text-danger fs-9 mt-1"><i class="fa-solid fa-camera me-1"></i> Evidence Attached</span>` : ''}
                             </td>
-                            <td><span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span></td>
-                            <td><span class="badge ${t.status === 'RESOLVED' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">${t.status_display || t.status}</span></td>
+                            <td>
+                                ${(t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned')) 
+                                    ? `<span class="badge bg-light text-muted border text-decoration-line-through">CRITICAL</span> <span class="badge bg-secondary-subtle text-secondary fs-10">VOID</span>` 
+                                    : `<span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span>`}
+                            </td>
+                            <td>
+                                ${(t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned') || t.status === 'RESOLVED') 
+                                    ? `<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold"><i class="fa-solid fa-check-double me-1"></i>${(t.is_item_returned || String(t.status_display || '').includes('Returned')) ? 'Returned (Void)' : (t.status_display || 'Resolved')}</span>` 
+                                    : `<span class="badge bg-warning-subtle text-warning">${t.status_display || t.status}</span>`}
+                            </td>
                             <td>
                                 <div class="d-flex gap-1">
                                     <button class="btn btn-sm btn-light border py-1 px-2 fs-9 text-primary" onclick="openAdminTicketModal(${t.id})" title="Inspect Incident Report">
@@ -4467,6 +4700,32 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             }
 
             document.getElementById('adminTktActionSelect').value = t.status || 'RESOLVED';
+
+            const noticeEl = document.getElementById('adminTktReturnNotice');
+            const isReturned = (t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned') || String(t.resolution_notes || '').includes('returned') || String(t.status || '').toUpperCase() === 'RESOLVED');
+            if (noticeEl) {
+                if (isReturned) {
+                    noticeEl.style.display = 'block';
+                    noticeEl.innerHTML = `
+                        <div class="alert alert-success border-success-subtle rounded-3 p-2.5 mb-0 d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-circle-check fs-4 text-success flex-shrink-0"></i>
+                            <div>
+                                <strong class="d-block text-dark fs-8">Equipment Has Been Returned by Renter</strong>
+                                <span class="fs-9 text-secondary">
+                                    Order <strong>${t.order_code || '#RE-95777'}</strong> is confirmed <strong>RETURNED &amp; Restocked</strong>. 
+                                    Because the equipment was returned, this ticket is now <strong>void &amp; resolved</strong>. No disciplinary suspension is required.
+                                </span>
+                            </div>
+                        </div>`;
+                    document.getElementById('adminTktStatus').className = 'badge bg-success-subtle text-success border border-success-subtle';
+                    document.getElementById('adminTktStatus').innerText = 'Resolved (Item Returned)';
+                } else {
+                    noticeEl.style.display = 'none';
+                    noticeEl.innerHTML = '';
+                    document.getElementById('adminTktStatus').className = 'badge bg-danger-subtle text-danger';
+                }
+            }
+
             new bootstrap.Modal(document.getElementById('adminViewTicketDetailModal')).show();
         }
 
@@ -4675,7 +4934,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <td>
                                     <div class="fw-bold text-danger fs-8">${r.reason}</div>
                                     <div class="fs-9 text-dark" style="max-width:240px; word-break:break-word;">${r.details}</div>
-                                    ${r.evidence_photo ? `<button type="button" class="btn btn-sm badge bg-danger-subtle text-danger fs-9 mt-1 border-0" onclick="openAdminEvidence(${r.id})"><i class="fa-solid fa-camera me-1"></i>View Evidence Photo</button>` : '<div class="fs-9 text-muted mt-1"><i class="fa-solid fa-image me-1"></i>No evidence photo</div>'}
+                                        ${r.evidence_photo ? `<button type="button" class="btn btn-sm badge bg-danger-subtle text-danger fs-9 mt-1 border-0" onclick="openAdminEvidence(${r.id})"><i class="fa-solid fa-camera me-1"></i>View Evidence Photo</button>` : '<div class="fs-9 text-muted mt-1"><i class="fa-solid fa-image me-1"></i>No evidence photo</div>'}
                                 </td>
                                 <td>
                                     ${isTerminated 
@@ -5688,6 +5947,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
         function renderOrderStatusBadgeWithTimer(o) {
             const st = (o.order_status || 'CONFIRMED').toUpperCase();
             const timerSt = (o.timer_status || 'NOT_STARTED').toUpperCase();
+            const earlyReturnStatus = (o.early_return_status || '').toUpperCase();
             const isReturned = (st === 'RETURNED' || st === 'RETURN_DELIVERY' || st === 'COMPLETED' || timerSt === 'COMPLETED' || parseInt(o.has_rated) === 1 || parseInt(o.rating) > 0);
             const isTimerRunning = (!isReturned && (timerSt === 'RUNNING' || o.is_timer_running || (st === 'IN_PROGRESS' && o.rental_timer_start)));
             const isOverdue = (!isReturned && (timerSt === 'EXPIRED' || st === 'OVERDUE' || o.is_overdue));
@@ -5695,6 +5955,47 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             const isRequested = (st === 'REQUESTED');
             const isPreparing = (st === 'PREPARING' || st === 'PROCESSING');
             const isMeetup = (st === 'MEETUP' || st === 'PICKUP' || st === 'ON_THE_WAY' || st === 'LOOKING_FOR_RIDER');
+
+            // Show early return status if present
+            if (earlyReturnStatus === 'PENDING_RENTER') {
+                return `
+                    <div>
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i> Early Return Pending
+                        </span>
+                        <div class="fs-11 text-warning fw-bold mt-0.5">Awaiting Renter Confirmation</div>
+                    </div>`;
+            }
+
+            if (earlyReturnStatus === 'COMPLETED') {
+                return `
+                    <div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-check-double me-1 text-success"></i> Early Return Verified
+                        </span>
+                        <div class="fs-11 text-success fw-bold mt-0.5">Restocked Early</div>
+                    </div>`;
+            }
+
+            if (earlyReturnStatus === 'DECLINED') {
+                return `
+                    <div>
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-xmark me-1"></i> Early Return Declined
+                        </span>
+                        <div class="fs-11 text-muted mt-0.5">Renter Not Returned Yet</div>
+                    </div>`;
+            }
+
+            if (isReturned) {
+                return `
+                    <div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-2 py-0.5">
+                            <i class="fa-solid fa-check-double me-1 text-success"></i> Returned
+                        </span>
+                        <div class="fs-11 text-muted mt-0.5">Restocked</div>
+                    </div>`;
+            }
 
             if (isOverdue) {
                 return `
@@ -5719,15 +6020,6 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     </div>`;
             }
 
-            if (isReturned) {
-                return `
-                    <div>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-2 py-0.5">
-                            <i class="fa-solid fa-check-double me-1 text-success"></i> Returned
-                        </span>
-                        <div class="fs-11 text-muted mt-0.5">Restocked</div>
-                    </div>`;
-            }
 
             if (isHandoverReady) {
                 return `

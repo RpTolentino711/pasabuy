@@ -34,9 +34,13 @@ window.enableChatRentalStepSwipe = function () {
     if (!banner || banner.dataset.swipeReady === 'true') return;
     banner.dataset.swipeReady = 'true';
     let startX = 0;
-    banner.addEventListener('touchstart', event => { startX = event.touches[0].clientX; }, { passive: true });
+    banner.addEventListener('touchstart', event => {
+        startX = event.touches[0].clientX;
+    }, { passive: true });
     banner.addEventListener('touchend', event => {
-        if (startX - event.changedTouches[0].clientX > 50 && !banner.classList.contains('is-collapsed')) window.toggleChatRentalSteps();
+        if (startX - event.changedTouches[0].clientX > 50 && !banner.classList.contains('is-collapsed')) {
+            window.toggleChatRentalSteps();
+        }
     }, { passive: true });
 };
 
@@ -215,50 +219,118 @@ function renderFeaturedRentals() {
 
     let html = '';
     featured.forEach(item => {
+        const isOwner = isCurrentUserOwnerOfItem(item);
+        const avail = parseInt(item.qty_available ?? item.qty_total ?? 1);
+        const isOutOfStock = avail <= 0;
+        const inCart = rentEaseCart.some(c => c.id == item.id);
+        const safeName = (item.name || 'Equipment').replace(/"/g, '&quot;');
+        const itemImg = getRentEaseItemImage(item);
+        const catName = item.category || 'Rental Gear';
+
         html += `
-        <div class="col-6 mb-2">
-            <div class="card border-0 rounded-4 shadow-sm h-100 bg-white position-relative d-flex flex-column justify-content-between overflow-hidden" 
-                 style="padding: 8px; cursor:pointer;" onclick="openEquipmentDetail(${item.id})">
-                <div>
-                    <div class="position-relative mb-1.5">
-                        <img src="${getRentEaseItemImage(item)}" class="rounded-3 w-100" style="height: 98px; object-fit: cover;" alt="${item.name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
-                        <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-xs" 
-                                style="width:24px; height:24px; background:rgba(255,255,255,0.9);" 
-                                onclick="event.stopPropagation(); toggleWishlist(this, ${item.id})">
-                            <i class="fa-regular fa-heart text-dark" style="font-size: 0.7rem;"></i>
-                        </button>
-                    </div>
-                    <h6 class="fw-bold mb-0.5 text-dark fs-8 text-truncate" title="${item.name}" style="font-size: 0.8rem;">${item.name}</h6>
-                    <div class="d-flex align-items-baseline gap-1 mb-1">
-                        <span class="fw-extrabold text-dark fs-8">₱${parseFloat(item.price_per_day).toFixed(0)}</span>
-                        <span class="text-muted" style="font-size: 0.68rem;">/ day</span>
+        <div class="col-6 mb-2.5">
+            <div class="card border-0 rounded-4 h-100 bg-white position-relative d-flex flex-column justify-content-between overflow-hidden rentease-product-card ${isOwner ? 'is-owner-card' : ''}" 
+                 style="box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06); border: ${isOwner ? '1.5px solid #E0E7FF' : '1px solid rgba(226, 232, 240, 0.8)'} !important; transition: all 0.25s ease; cursor:pointer;" 
+                 onclick="openEquipmentDetail(${item.id})">
+                
+                <!-- Card Media & Floating Badges -->
+                <div class="position-relative p-2 pb-0">
+                    <div class="rounded-3 overflow-hidden position-relative bg-light" style="height: 110px;">
+                        <img src="${itemImg}" class="w-100 h-100 object-fit-cover rentease-card-img" alt="${safeName}" 
+                             style="transition: transform 0.35s ease;"
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
+                        
+                        <!-- Gradient overlay on image bottom -->
+                        <div class="position-absolute bottom-0 start-0 end-0 p-1.5" style="background: linear-gradient(180deg, transparent 0%, rgba(15,23,42,0.45) 100%);"></div>
+
+                        <!-- Category Pill (Top-Left) -->
+                        <span class="badge rounded-pill position-absolute top-0 start-0 m-1.5 px-2 py-0.5 fw-bold" 
+                              style="background: rgba(255,255,255,0.92); backdrop-filter: blur(6px); color: #5B3FA8; font-size: 0.6rem; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+                            <i class="fa-solid fa-layer-group me-0.5" style="font-size:0.55rem;"></i>${catName}
+                        </span>
+
+                        <!-- Perspective Badge (Top-Right): Owner Crown vs Renter Wishlist -->
+                        ${isOwner ? `
+                            <span class="badge rounded-pill position-absolute top-0 end-0 m-1.5 px-2 py-0.5 fw-extrabold shadow-xs" 
+                                  style="background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E; font-size: 0.6rem; border: 1px solid #FCD34D;">
+                                <i class="fa-solid fa-crown text-warning me-0.5"></i>Mine
+                            </span>
+                        ` : `
+                            <button type="button" class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" 
+                                    style="width:26px; height:26px; background:rgba(255,255,255,0.92); backdrop-filter:blur(6px); border:none;" 
+                                    onclick="event.stopPropagation(); toggleWishlist(this, ${item.id})" title="Add to Wishlist">
+                                <i class="fa-regular fa-heart text-dark" style="font-size: 0.72rem;"></i>
+                            </button>
+                        `}
                     </div>
                 </div>
-                <div class="d-flex align-items-center justify-content-between pt-0.5">
-                    <div class="d-flex align-items-center gap-1">
-                        <i class="fa-solid fa-star text-warning" style="font-size: 0.68rem;"></i>
-                        <span class="fw-bold text-dark" style="font-size: 0.72rem;">${parseFloat(item.rating).toFixed(1)}</span>
-                        <span class="text-muted" style="font-size: 0.65rem;">(${item.reviews_count})</span>
+
+                <!-- Card Body Content -->
+                <div class="p-2.5 pt-2 flex-grow-1 d-flex flex-column justify-content-between">
+                    <div>
+                        <!-- Title -->
+                        <h6 class="fw-extrabold mb-1 text-dark fs-8 text-truncate" title="${safeName}" style="letter-spacing: -0.2px; font-size: 0.82rem;">
+                            ${item.name}
+                        </h6>
+
+                        <!-- Perspective Context Subtitle -->
+                        ${isOwner ? `
+                            <div class="d-flex align-items-center gap-1 mb-1.5">
+                                <span class="badge bg-success-subtle text-success px-1.5 py-0.5 rounded-pill fw-bold" style="font-size: 0.6rem;">
+                                    <i class="fa-solid fa-boxes-stacked me-0.5"></i>${avail} in stock
+                                </span>
+                                <span class="text-muted" style="font-size: 0.6rem;">• Active Stock</span>
+                            </div>
+                        ` : `
+                            <div class="d-flex align-items-center gap-1 mb-1.5">
+                                <span class="badge bg-light text-secondary border px-1.5 py-0.5 rounded-pill fw-semibold" style="font-size: 0.6rem;">
+                                    <i class="fa-solid fa-shield-halved text-success me-0.5"></i>Verified
+                                </span>
+                                <span class="text-muted text-truncate" style="font-size: 0.6rem;">• ${avail > 0 ? `${avail} ready` : 'Out of stock'}</span>
+                            </div>
+                        `}
+
+                        <!-- Price & Duration -->
+                        <div class="d-flex align-items-baseline gap-1 mb-2">
+                            <span class="fw-extrabold text-dark fs-7" style="color: #1E293B; letter-spacing: -0.3px;">₱${parseFloat(item.price_per_day).toFixed(0)}</span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.68rem;">/ day</span>
+                        </div>
                     </div>
-                    ${isCurrentUserOwnerOfItem(item) 
-                        ? `<button class="btn btn-sm rounded-pill px-2 py-0.5 text-white border-0 fw-bold shadow-xs" 
-                                   style="background: #475569; font-size: 0.65rem;"
-                                   onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Your Equipment">
-                               <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.6rem;"></i> Mine
-                           </button>`
-                        : (rentEaseCart.some(c => c.id == item.id)
-                            ? `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
-                                       style="width:26px; height:26px; background: linear-gradient(135deg, #10B981, #059669); flex-shrink: 0;"
-                                       onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="In Cart">
-                                   <i class="fa-solid fa-check" style="font-size: 0.7rem;"></i>
-                               </button>`
-                            : `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
-                                       style="width:26px; height:26px; background: linear-gradient(135deg, #5B3FA8, #341F97); flex-shrink: 0;"
-                                       onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="Add to Cart">
-                                   <i class="fa-solid fa-cart-plus" style="font-size: 0.7rem;"></i>
-                               </button>`
-                          )
-                    }
+
+                    <!-- Footer: Rating & Action Button -->
+                    <div class="d-flex align-items-center justify-content-between pt-1 border-top" style="border-color: rgba(241, 245, 249, 0.9) !important;">
+                        <div class="d-flex align-items-center gap-1 px-1.5 py-0.5 rounded-pill" style="background: rgba(245, 158, 11, 0.08);">
+                            <i class="fa-solid fa-star text-warning" style="font-size: 0.65rem;"></i>
+                            <span class="fw-extrabold text-dark" style="font-size: 0.7rem;">${parseFloat(item.rating || 5.0).toFixed(1)}</span>
+                            <span class="text-muted" style="font-size: 0.62rem;">(${item.reviews_count || 1})</span>
+                        </div>
+
+                        <!-- Perspective Action Button -->
+                        ${isOwner ? `
+                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-white border-0 fw-bold shadow-xs d-flex align-items-center gap-1" 
+                                    style="background: linear-gradient(135deg, #475569, #334155); font-size: 0.65rem;"
+                                    onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Manage Stock & Pricing">
+                                <i class="fa-solid fa-sliders" style="font-size: 0.6rem;"></i> Manage
+                            </button>
+                        ` : (isOutOfStock ? `
+                            <button type="button" class="btn btn-sm rounded-pill px-2 py-0.5 text-muted border-0 fw-bold bg-light" 
+                                    style="font-size: 0.65rem;" disabled>
+                                Out
+                            </button>
+                        ` : (inCart ? `
+                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-white border-0 fw-bold shadow-xs d-flex align-items-center gap-1" 
+                                    style="background: linear-gradient(135deg, #10B981, #059669); font-size: 0.65rem;"
+                                    onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="In Cart">
+                                <i class="fa-solid fa-check" style="font-size: 0.65rem;"></i> In Cart
+                            </button>
+                        ` : `
+                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-white border-0 fw-bold shadow-xs d-flex align-items-center gap-1" 
+                                    style="background: linear-gradient(135deg, #6C5CE7, #5B3FA8); font-size: 0.65rem;"
+                                    onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="Rent Equipment">
+                                <i class="fa-solid fa-cart-plus" style="font-size: 0.65rem;"></i> Rent
+                            </button>
+                        `))}
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -548,15 +620,6 @@ function renderGridElements(items) {
 // 2. SCREEN 3: PRODUCT DETAIL MODAL & DYNAMIC MEDIA CAROUSEL
 // ----------------------------------------------------------
 window.setupDetailMediaCarousel = function (item) {
-    console.log('setupDetailMediaCarousel called with item:', item);
-    console.log('Item image fields:', {
-        image_url: item.image_url,
-        img: item.img,
-        ImageUrl: item.ImageUrl,
-        image: item.image,
-        photo_url: item.photo_url
-    });
-
     const carouselEl = document.getElementById('detailMediaCarousel');
     const innerEl = document.getElementById('detailCarouselInner');
     const indicatorsEl = document.getElementById('detailCarouselIndicators');
@@ -577,9 +640,8 @@ window.setupDetailMediaCarousel = function (item) {
     const mediaKey = (url) => {
         const normalized = String(url || '').trim();
         if (!normalized) return '';
-        // For base64 strings, use first 100 chars and length as key
-        if (normalized.startsWith('data:')) {
-            return normalized.substring(0, 100) + '_' + normalized.length;
+        if (normalized.startsWith('data:image/')) {
+            return normalized.slice(0, 100) + '_' + normalized.length;
         }
         try {
             const parsed = new URL(normalized, window.location.href);
@@ -633,12 +695,9 @@ window.setupDetailMediaCarousel = function (item) {
 
     // 3. Video demonstration (item.video_url / item.videoUrl / item.VideoUrl)
     const video = item.video_url || item.videoUrl || item.VideoUrl;
-    console.log('Video:', video);
     if (video && typeof video === 'string' && video.trim()) {
         media.push({ type: 'video', url: video.trim() });
     }
-
-    console.log('Total media items:', media.length, media);
 
     // Fallback if no media at all
     if (media.length === 0) {
@@ -801,13 +860,42 @@ function styleProductDetailModal() {
     const style = document.createElement('style');
     style.id = 'product-detail-modal-refresh';
     style.textContent = `
-        #productDetailModal .modal-content { border: 0; border-radius: 24px; overflow: hidden; box-shadow: 0 24px 70px rgba(15, 23, 42, .24); }
-        #productDetailModal .modal-header { padding: 16px 18px; border-bottom: 1px solid #EEF2F7; background: #FFFFFF; }
-        #productDetailModal .modal-body { padding: 16px; background: #F8FAFC; }
-        #productDetailModal .detail-owner-panel, #productDetailModal #detailOwnerControlSection { border: 1px solid #E2E8F0; border-radius: 16px; background: #FFFFFF; box-shadow: 0 8px 24px rgba(15, 23, 42, .06); }
-        #productDetailModal .detail-clean-tested, #productDetailModal [data-detail-assurance="clean-tested"] { display: none !important; }
-        #productDetailModal .modal-footer { gap: 10px; padding: 12px 16px; border-top: 1px solid #EEF2F7; background: #FFFFFF; }
-        #productDetailModal.is-owner-listing #detailHeaderReportBtn, #productDetailModal.is-owner-listing #detailReportItemLink { display: none !important; }
+        #productDetailModal .modal-content {
+            border: 0;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+        }
+        #productDetailModal .modal-header {
+            padding: 16px 18px;
+            border-bottom: 1px solid #EEF2F7;
+            background: #FFFFFF;
+        }
+        #productDetailModal .modal-body {
+            padding: 16px;
+            background: #F8FAFC;
+        }
+        #productDetailModal .detail-owner-panel,
+        #productDetailModal #detailOwnerControlSection {
+            border: 1px solid #E2E8F0;
+            border-radius: 16px;
+            background: #FFFFFF;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+        }
+        #productDetailModal .detail-clean-tested,
+        #productDetailModal [data-detail-assurance="clean-tested"] {
+            display: none !important;
+        }
+        #productDetailModal .modal-footer {
+            gap: 10px;
+            padding: 12px 16px;
+            border-top: 1px solid #EEF2F7;
+            background: #FFFFFF;
+        }
+        #productDetailModal.is-owner-listing #detailHeaderReportBtn,
+        #productDetailModal.is-owner-listing #detailReportItemLink {
+            display: none !important;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -822,7 +910,7 @@ function openEquipmentDetail(id) {
                 id: p.id,
                 name: p.title,
                 price_per_day: parseFloat(String(p.price || 0).replace(/[^\d.]/g, '')) || 0,
-                image_url: p.image_url || p.img || p.imageUrl || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image',
+                image_url: p.img || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image',
                 video_url: p.videoUrl || '',
                 photos: p.photos || p.images || [],
                 description: p.description || '',
@@ -836,16 +924,6 @@ function openEquipmentDetail(id) {
         }
     }
     if (!item) return;
-
-    // Debug: log the item to see what fields it has
-    console.log('Opening item detail:', id, item);
-    console.log('Item image fields:', {
-        image_url: item.image_url,
-        img: item.img,
-        imageUrl: item.imageUrl,
-        image: item.image,
-        photo_url: item.photo_url
-    });
 
     currentDetailProduct = item;
     window.currentDetailProduct = item;
@@ -901,31 +979,19 @@ function openEquipmentDetail(id) {
     const datesContainer = document.getElementById('detailDatesContainer');
     const reportButton = document.getElementById('detailHeaderReportBtn');
     const reportLink = document.getElementById('detailReportItemLink');
-    const buyerHeaderActions = document.getElementById('detailHeaderBuyerActions');
-    const ownerHeaderBadge = document.getElementById('detailHeaderOwnerBadge');
-    const buyerSafetyRow = document.getElementById('detailBuyerSafetyRow');
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
+
+    [reportButton, reportLink].forEach(el => {
+        if (el) el.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    });
+    if (!isOwner) {
+        updateItemReportLimit(item);
+    }
     const modalElForOwner = document.getElementById('productDetailModal');
     if (modalElForOwner) {
-        modalElForOwner.classList.toggle('is-owner-listing', !!isOwner);
+        modalElForOwner.classList.toggle('is-owner-listing', isOwner);
         modalElForOwner.querySelectorAll('.detail-clean-tested, [data-detail-assurance="clean-tested"]').forEach(el => el.remove());
     }
-
-    const hideBuyerChrome = isOwner;
-    [reportButton, reportLink, buyerHeaderActions, buyerSafetyRow].forEach(el => {
-        if (!el) return;
-        el.style.setProperty('display', hideBuyerChrome ? 'none' : (el === reportLink || el === buyerHeaderActions || el === buyerSafetyRow ? 'flex' : 'flex'), 'important');
-    });
-    if (ownerHeaderBadge) {
-        ownerHeaderBadge.style.setProperty('display', isOwner ? 'flex' : 'none', 'important');
-    }
-    document.querySelectorAll('#productDetailModal .detail-buyer-only').forEach(el => {
-        el.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
-    });
-    if (!isOwner && reportButton) {
-        reportButton.style.setProperty('display', 'flex', 'important');
-    }
-    if (!isOwner) updateItemReportLimit(item);
 
     // Initialize rental schedule dates (today to tomorrow)
     const todayStr = new Date().toISOString().split('T')[0];
@@ -941,11 +1007,33 @@ function openEquipmentDetail(id) {
         eDateInput.value = tomorrowStr;
     }
 
+    const ownerBadge = document.getElementById('detailHeaderOwnerBadge');
+    const buyerActions = document.getElementById('detailHeaderBuyerActions');
+    const ownerOverview = document.getElementById('detailOwnerOverviewBanner');
+    const lenderCard = document.getElementById('detailLenderInfoCard');
+    const renterSafety = document.getElementById('detailRenterSafetyNotice');
+    const buyerSafetyRow = document.getElementById('detailBuyerSafetyRow');
+
+    if (ownerBadge) ownerBadge.style.setProperty('display', isOwner ? 'flex' : 'none', 'important');
+    if (buyerActions) buyerActions.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+
     if (isOwner) {
+        if (ownerOverview) ownerOverview.style.setProperty('display', 'block', 'important');
+        if (lenderCard) lenderCard.style.setProperty('display', 'none', 'important');
+        if (renterSafety) renterSafety.style.setProperty('display', 'none', 'important');
+        if (buyerSafetyRow) buyerSafetyRow.style.setProperty('display', 'none', 'important');
         if (qtyContainer) qtyContainer.style.setProperty('display', 'none', 'important');
         if (datesContainer) datesContainer.style.setProperty('display', 'none', 'important');
         if (ownerNotice) ownerNotice.style.setProperty('display', 'none', 'important');
         if (ownerSection) ownerSection.style.setProperty('display', 'block', 'important');
+
+        const mPrice = document.getElementById('ownerMetricPrice');
+        if (mPrice) mPrice.innerText = '₱' + parseFloat(item.price_per_day || 0).toFixed(0);
+        const mStock = document.getElementById('ownerMetricStock');
+        if (mStock) mStock.innerText = avail + ' pcs';
+        const mStrikes = document.getElementById('ownerMetricStrikes');
+        const strikesCount = parseInt(item.approved_reports_count || 0);
+        if (mStrikes) mStrikes.innerText = strikesCount > 0 ? `${strikesCount}/3 Strikes` : '0 Strikes (Clean)';
 
         const pInput = document.getElementById('detailOwnerPriceInput');
         if (pInput) pInput.value = parseFloat(item.price_per_day || 0).toFixed(0);
@@ -954,14 +1042,13 @@ function openEquipmentDetail(id) {
 
         const strikesBanner = document.getElementById('detailOwnerStrikesBanner');
         const strikesText = document.getElementById('detailOwnerStrikesText');
-        const strikesCount = parseInt(item.approved_reports_count || 0);
         if (strikesBanner) {
             if (item.status === 'TERMINATED') {
                 strikesBanner.style.setProperty('display', 'block', 'important');
-                if (strikesText) strikesText.innerHTML = '⛔ TERMINATED (3 Strikes Policy Violation)';
+                if (strikesText) strikesText.innerHTML = '<i class="fa-solid fa-ban text-danger me-1"></i> TERMINATED (3 Strikes Policy Violation)';
             } else if (strikesCount > 0) {
                 strikesBanner.style.setProperty('display', 'block', 'important');
-                if (strikesText) strikesText.innerHTML = `⚠️ Listing Warning: ${strikesCount}/3 Violation Strikes`;
+                if (strikesText) strikesText.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> Listing Warning: ${strikesCount}/3 Violation Strikes`;
             } else {
                 strikesBanner.style.setProperty('display', 'none', 'important');
             }
@@ -969,21 +1056,36 @@ function openEquipmentDetail(id) {
 
         if (footerActions) {
             footerActions.innerHTML = `
-                <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 border text-secondary flex-grow-1"
-                        data-bs-dismiss="modal" style="height:46px;">
-                    Done
+                <button type="button" class="btn btn-outline-danger rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 flex-grow-1" 
+                        onclick="promptTakeDownOwnerItem(${item.id}, '${safeTitle}')">
+                    <i class="fa-solid fa-trash-can me-1"></i> Take Down Listing
                 </button>
-                <button type="button" class="btn btn-outline-danger rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center"
-                        onclick="promptTakeDownOwnerItem(${item.id}, '${safeTitle}')" style="height:46px;">
-                    <i class="fa-solid fa-trash-can me-1"></i> Take down
+                <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 border text-secondary" 
+                        data-bs-dismiss="modal">
+                    Close
                 </button>
             `;
         }
     } else {
+        if (ownerOverview) ownerOverview.style.setProperty('display', 'none', 'important');
+        if (ownerSection) ownerSection.style.setProperty('display', 'none', 'important');
+        if (ownerNotice) ownerNotice.style.setProperty('display', 'none', 'important');
+        if (lenderCard) {
+            lenderCard.style.setProperty('display', 'flex', 'important');
+            const ownerNameEl = document.getElementById('detailLenderName');
+            const ownerAvatarEl = document.getElementById('detailLenderAvatar');
+            const oName = item.owner_name || 'Romeo Paolo Tolentino';
+            if (ownerNameEl) ownerNameEl.innerText = oName;
+            if (ownerAvatarEl) {
+                const words = oName.trim().split(/\s+/);
+                const initials = words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : oName.slice(0, 2).toUpperCase();
+                ownerAvatarEl.innerText = initials || 'SL';
+            }
+        }
+        if (renterSafety) renterSafety.style.setProperty('display', 'flex', 'important');
+        if (buyerSafetyRow) buyerSafetyRow.style.setProperty('display', 'flex', 'important');
         if (qtyContainer) qtyContainer.style.removeProperty('display');
         if (datesContainer) datesContainer.style.removeProperty('display');
-        if (ownerNotice) ownerNotice.style.setProperty('display', 'none', 'important');
-        if (ownerSection) ownerSection.style.setProperty('display', 'none', 'important');
 
         // Update real-time total computation
         window.onDetailDatesChanged();
@@ -1223,6 +1325,10 @@ window.saveOwnerStockPriceFromDetail = async function () {
             currentDetailProduct.qty_available = avail;
             const priceEl = document.getElementById('detailPrice');
             if (priceEl) priceEl.innerText = '₱' + price.toFixed(0);
+            const mPrice = document.getElementById('ownerMetricPrice');
+            if (mPrice) mPrice.innerText = '₱' + price.toFixed(0);
+            const mStock = document.getElementById('ownerMetricStock');
+            if (mStock) mStock.innerText = avail + ' pcs';
             const stockEl = document.getElementById('detailStockBadge');
             if (stockEl) {
                 stockEl.innerHTML = avail > 0 
@@ -2063,10 +2169,24 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                                     onclick="openEditStockPriceModal(${item.id}, '${safeName}', ${parseFloat(item.price_per_day || 0)}, ${avail}, ${total})">
                                 <i class="fa-solid fa-pen-to-square me-1"></i> Edit Stock
                             </button>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1.5 fs-9 fw-bold" 
-                                    onclick="deleteUserRentalItem(${item.id}, '${safeName}')" title="Take Down Listing">
-                                <i class="fa-solid fa-ban me-1"></i> Take Down
-                            </button>
+                            ${(rented > 0 || (data.incoming_requests && data.incoming_requests.some(req => {
+                                const st = (req.order_status || '').toUpperCase();
+                                const isDone = (st === 'RETURNED' || st === 'COMPLETED' || req.timer_status === 'COMPLETED' || req.has_rated == 1 || st === 'CANCELLED' || st === 'REJECTED');
+                                const match = (req.item_id && parseInt(req.item_id) === parseInt(item.id)) || 
+                                              (req.item_name && req.item_name.toLowerCase() === (item.name || '').toLowerCase());
+                                return match && !isDone;
+                            }))) ? `
+                                <button class="btn btn-sm btn-light text-muted border rounded-pill px-2.5 py-1.5 fs-9 fw-bold" 
+                                        onclick="alert('⚠️ Action Blocked: You cannot delete or take down &quot;${safeName}&quot; because it is currently under an active rental transaction. Once the rental is returned and completed, you can take down this item.');" 
+                                        title="Cannot delete: Equipment is currently in active rental transaction">
+                                    <i class="fa-solid fa-lock me-1 text-warning"></i> In Booking
+                                </button>
+                            ` : `
+                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1.5 fs-9 fw-bold" 
+                                        onclick="deleteUserRentalItem(${item.id}, '${safeName}')" title="Take Down Listing">
+                                    <i class="fa-solid fa-ban me-1"></i> Take Down
+                                </button>
+                            `}
                         </div>
                     </div>
                     `;
@@ -2199,7 +2319,10 @@ window.checkOwnerRentalNotifications = async function () {
 window.confirmRestockOrder = async function (orderId, orderCode) {
     const confirmed = await new Promise(resolve => {
         const modalEl = document.getElementById('earlyReturnRequestModal');
-        if (!modalEl || typeof bootstrap === 'undefined') { resolve(window.confirm(`Request early return for order #${orderCode}?\n\nThe renter must verify the return before this item is marked returned or restocked.`)); return; }
+        if (!modalEl || typeof bootstrap === 'undefined') {
+            resolve(window.confirm(`Request early return for order #${orderCode}?\n\nThe renter must verify the return before this item is marked returned or restocked.`));
+            return;
+        }
         const codeEl = document.getElementById('earlyReturnRequestOrderCode');
         const confirmBtn = document.getElementById('earlyReturnRequestConfirm');
         if (codeEl) codeEl.textContent = `#${String(orderCode).replace(/^#/, '')}`;
@@ -2260,7 +2383,7 @@ window.updateOwnerOrderStatus = async function (orderId, orderCode, newStatus) {
             if (typeof loadOwnerRentalDashboard === 'function') loadOwnerRentalDashboard(true);
             if (typeof loadRentEaseCatalog === 'function') loadRentEaseCatalog();
             if (typeof checkAndRenderChatRentalTimer === 'function') checkAndRenderChatRentalTimer();
-            if (typeof window.loadChatConversationsList === 'function') window.loadChatConversationsList();
+            if (typeof loadChatConversationsList === 'function') loadChatConversationsList();
             if (currentTrackingOrderCode === orderCode && typeof openTrackScreen === 'function') {
                 openTrackScreen(orderCode);
             }
@@ -4476,7 +4599,7 @@ window.switchTab = function (tabName) {
         const tabBadge = document.getElementById('tabMessagesBadge');
         if (tabBadge) tabBadge.style.display = 'none';
         if (typeof markMessagesAsRead === 'function') markMessagesAsRead();
-        if (typeof window.loadChatConversationsList === 'function') window.loadChatConversationsList();
+        if (typeof loadChatConversationsList === 'function') loadChatConversationsList();
     } else if (tabName === 'home') {
         if (typeof updateUnreadBadges === 'function') updateUnreadBadges();
         if (typeof pollRentEaseUnreadMessages === 'function') pollRentEaseUnreadMessages();
@@ -5151,11 +5274,6 @@ window.openReportItemModal = function () {
         window.currentDetailProduct = p;
     }
 
-    if (isCurrentUserOwnerOfItem(p)) {
-        alert("You cannot report your own equipment listing.");
-        return;
-    }
-
     const idEl = document.getElementById('reportItemId');
     const nameEl = document.getElementById('reportItemName');
     const ownerEl = document.getElementById('reportItemOwner');
@@ -5195,28 +5313,32 @@ window.openReportItemModal = function () {
 async function updateItemReportLimit(item) {
     const reportButton = document.getElementById('detailHeaderReportBtn');
     const reportLink = document.getElementById('detailReportItemLink');
-    const reporterId = parseInt(getRentEaseCurrentUser().id || 0);
-    if (!item || !reporterId) return;
+    if (!item || (!reportButton && !reportLink)) return;
+    const currentUser = getRentEaseCurrentUser();
+    const reporterId = parseInt(currentUser.id || 0);
+    if (!reporterId) return;
     try {
-        const res = await fetch(getRentEaseApiUrl('get_item_report_limit', { item_id: item.id, reporter_id: reporterId }));
+        const res = await fetch(getRentEaseApiUrl('get_item_report_limit', {
+            item_id: parseInt(item.id || 0),
+            reporter_id: reporterId
+        }));
         const data = await res.json();
         const reached = data.success && data.pending_count >= data.limit;
         [reportButton, reportLink].forEach(el => {
             if (!el) return;
             el.disabled = reached;
+            el.classList.toggle('disabled', reached);
             el.style.pointerEvents = reached ? 'none' : '';
             el.style.opacity = reached ? '0.45' : '';
             el.title = reached ? 'Reporting is paused until Admin reviews existing reports.' : 'Report Listing to Admin';
         });
-    } catch (e) { console.error('Report limit check failed:', e); }
+    } catch (e) {
+        console.error('Report limit check failed:', e);
+    }
 }
 
 window.submitItemReport = async function () {
     const p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
-    if (p && isCurrentUserOwnerOfItem(p)) {
-        alert("You cannot report your own equipment listing.");
-        return;
-    }
     const itemId = p ? parseInt(p.id) : (parseInt(document.getElementById('reportItemId')?.innerText || '0') || 1);
     const reason = document.getElementById('reportReasonSelect')?.value || '';
     const details = (document.getElementById('reportDetailsText')?.value || '').trim();
@@ -5235,11 +5357,20 @@ window.submitItemReport = async function () {
     }
 
     const currentUser = getRentEaseCurrentUser();
-    const limitRes = await fetch(getRentEaseApiUrl('get_item_report_limit', { item_id: itemId, reporter_id: parseInt(currentUser.id || 0) }));
-    const limitData = await limitRes.json();
-    if (limitData.success && limitData.pending_count >= limitData.limit) {
-        alert('This person already has 5 pending reports. Reporting is temporarily disabled until Admin reviews the existing reports.');
-        await updateItemReportLimit(p);
+    try {
+        const limitRes = await fetch(getRentEaseApiUrl('get_item_report_limit', {
+            item_id: itemId,
+            reporter_id: parseInt(currentUser.id || 0)
+        }));
+        const limitData = await limitRes.json();
+        if (limitData.success && limitData.pending_count >= limitData.limit) {
+            alert('This person already has 5 pending reports. Reporting is temporarily disabled until Admin reviews the existing reports.');
+            await updateItemReportLimit(p || { id: itemId });
+            return;
+        }
+    } catch (e) {
+        console.error('Report limit validation failed:', e);
+        alert('Unable to verify the report limit. Please try again.');
         return;
     }
     const btn = document.getElementById('btnSubmitItemReport');

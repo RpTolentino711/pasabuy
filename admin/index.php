@@ -2183,6 +2183,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-3">
+                    <div id="adminTktReturnNotice" style="display:none;" class="mb-3"></div>
                     <div class="p-2.5 rounded-3 mb-3" style="background:#F8FAFC; border:1px solid #E2E8F0;">
                         <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
                             <span class="text-muted">Order Code:</span>
@@ -3038,14 +3039,26 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     const tbodyT = document.getElementById('dashTicketsTableBody');
                     if (data.recent_tickets && data.recent_tickets.length > 0) {
                         allLoadedTickets = [...allLoadedTickets, ...data.recent_tickets.filter(ticket => !allLoadedTickets.some(existing => parseInt(existing.id) === parseInt(ticket.id)))];
-                        tbodyT.innerHTML = data.recent_tickets.map(t => `
+                        tbodyT.innerHTML = data.recent_tickets.map(t => {
+                            const isReturned = (t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned') || String(t.resolution_notes || '').includes('returned') || String(t.status || '').toUpperCase() === 'RESOLVED');
+                            const priorityHtml = isReturned 
+                                ? `<span class="badge bg-light text-muted border text-decoration-line-through">CRITICAL</span> <span class="badge bg-secondary-subtle text-secondary fs-10">VOID</span>`
+                                : `<span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span>`;
+                            const statusHtml = isReturned
+                                ? `<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold fs-9" title="Item was returned by renter; ticket is void"><i class="fa-solid fa-check-double me-1"></i>Returned (Void)</span>`
+                                : `<span class="badge bg-light text-dark border">${t.status_display || t.status}</span>`;
+                            return `
                             <tr role="button" tabindex="0" style="cursor:pointer;" onclick="openSupportTicketTab('${String(t.ticket_number || '').replace(/'/g, "\\'")}')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSupportTicketTab('${String(t.ticket_number || '').replace(/'/g, "\\'")}'); }" title="Open the related support tab">
-                                <td class="fw-bold text-muted">${t.ticket_number}</td>
-                                <td class="text-truncate" style="max-width:140px;" title="${t.issue_title}">${t.issue_title}</td>
-                                <td><span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span></td>
-                                <td><span class="badge bg-light text-dark border">${t.status_display || t.status}</span></td>
+                                <td class="fw-bold text-muted">${t.ticket_number} ${isReturned ? '<span class="badge bg-light text-muted border fs-10">Closed</span>' : ''}</td>
+                                <td class="text-truncate" style="max-width:140px;" title="${t.issue_title}">
+                                    <div class="text-truncate">${t.issue_title}</div>
+                                    ${isReturned ? '<span class="text-success fs-10 fw-bold d-block"><i class="fa-solid fa-box-open me-0.5"></i>Item Restocked · Late Return</span>' : ''}
+                                </td>
+                                <td>${priorityHtml}</td>
+                                <td>${statusHtml}</td>
                             </tr>
-                        `).join('');
+                            `;
+                        }).join('');
                     } else {
                         tbodyT.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No open inquiries.</td></tr>';
                     }
@@ -4629,10 +4642,19 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <td>
                                 <div class="fw-semibold text-dark fs-8">${t.issue_title}</div>
                                 <div class="fs-9 text-muted text-truncate" style="max-width:240px;">${t.description || ''}</div>
+                                ${(t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned')) ? `<span class="badge bg-success-subtle text-success border border-success-subtle fs-10 mt-1 d-inline-block"><i class="fa-solid fa-box-open me-1"></i>Item Restocked · Late Return (Void)</span>` : ''}
                                 ${t.evidence_photo ? `<span class="badge bg-danger-subtle text-danger fs-9 mt-1"><i class="fa-solid fa-camera me-1"></i> Evidence Attached</span>` : ''}
                             </td>
-                            <td><span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span></td>
-                            <td><span class="badge ${t.status === 'RESOLVED' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">${t.status_display || t.status}</span></td>
+                            <td>
+                                ${(t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned')) 
+                                    ? `<span class="badge bg-light text-muted border text-decoration-line-through">CRITICAL</span> <span class="badge bg-secondary-subtle text-secondary fs-10">VOID</span>` 
+                                    : `<span class="badge ${getPriorityBadge(t.priority)}">${t.priority}</span>`}
+                            </td>
+                            <td>
+                                ${(t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned') || t.status === 'RESOLVED') 
+                                    ? `<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold"><i class="fa-solid fa-check-double me-1"></i>${(t.is_item_returned || String(t.status_display || '').includes('Returned')) ? 'Returned (Void)' : (t.status_display || 'Resolved')}</span>` 
+                                    : `<span class="badge bg-warning-subtle text-warning">${t.status_display || t.status}</span>`}
+                            </td>
                             <td>
                                 <div class="d-flex gap-1">
                                     <button class="btn btn-sm btn-light border py-1 px-2 fs-9 text-primary" onclick="openAdminTicketModal(${t.id})" title="Inspect Incident Report">
@@ -4678,6 +4700,32 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             }
 
             document.getElementById('adminTktActionSelect').value = t.status || 'RESOLVED';
+
+            const noticeEl = document.getElementById('adminTktReturnNotice');
+            const isReturned = (t.is_item_returned || t.is_useless || String(t.status_display || '').includes('Returned') || String(t.resolution_notes || '').includes('returned') || String(t.status || '').toUpperCase() === 'RESOLVED');
+            if (noticeEl) {
+                if (isReturned) {
+                    noticeEl.style.display = 'block';
+                    noticeEl.innerHTML = `
+                        <div class="alert alert-success border-success-subtle rounded-3 p-2.5 mb-0 d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-circle-check fs-4 text-success flex-shrink-0"></i>
+                            <div>
+                                <strong class="d-block text-dark fs-8">Equipment Has Been Returned by Renter</strong>
+                                <span class="fs-9 text-secondary">
+                                    Order <strong>${t.order_code || '#RE-95777'}</strong> is confirmed <strong>RETURNED &amp; Restocked</strong>. 
+                                    Because the equipment was returned, this ticket is now <strong>void &amp; resolved</strong>. No disciplinary suspension is required.
+                                </span>
+                            </div>
+                        </div>`;
+                    document.getElementById('adminTktStatus').className = 'badge bg-success-subtle text-success border border-success-subtle';
+                    document.getElementById('adminTktStatus').innerText = 'Resolved (Item Returned)';
+                } else {
+                    noticeEl.style.display = 'none';
+                    noticeEl.innerHTML = '';
+                    document.getElementById('adminTktStatus').className = 'badge bg-danger-subtle text-danger';
+                }
+            }
+
             new bootstrap.Modal(document.getElementById('adminViewTicketDetailModal')).show();
         }
 
