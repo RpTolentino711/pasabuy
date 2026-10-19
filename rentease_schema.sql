@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `rental_inventory` (
   `qty_maintenance` INT NOT NULL DEFAULT 5,
   `image_url` LONGTEXT DEFAULT NULL,
   `rating` DECIMAL(2,1) DEFAULT 4.8,
-  `reviews_count` INT DEFAULT 120,
+  `reviews_count` INT DEFAULT 0,
   `description` TEXT DEFAULT NULL,
   `min_rental_days` INT DEFAULT 1,
   `is_featured` TINYINT DEFAULT 0,

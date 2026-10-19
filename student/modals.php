@@ -1080,7 +1080,7 @@
                         <i class="fa-solid fa-star text-warning fs-9"></i>
                         <span class="fw-extrabold text-dark fs-8" id="detailRatingVal">5.0</span>
                     </div>
-                    <span class="text-muted fs-8">(<span id="detailReviewCount">1</span> reviews)</span>
+                    <span class="text-muted fs-8">(<span id="detailReviewCount">0</span> <span id="detailReviewLabel">reviews</span>)</span>
                     <span class="text-secondary opacity-50">•</span>
                     <span class="text-muted fs-8"><i class="fa-solid fa-location-dot text-danger fs-9 me-0.5"></i> Campus Meetup</span>
                 </div>
@@ -1096,23 +1096,29 @@
                                 <i class="fa-solid fa-circle-dot me-1"></i>Live on Campus
                             </span>
                         </div>
-                        <div class="row g-2 text-center">
-                            <div class="col-4">
-                                <div class="bg-white rounded-3 p-2 border shadow-2xs h-100 d-flex flex-column justify-content-center">
-                                    <span class="text-muted fw-bold text-uppercase" style="font-size:0.6rem;">Daily Rate</span>
-                                    <strong class="fs-6 mt-0.5" style="color:#5B3FA8;" id="ownerMetricPrice">₱2</strong>
+                        <div class="row g-1.5 text-center">
+                            <div class="col-3">
+                                <div class="bg-white rounded-3 p-1.5 border shadow-2xs h-100 d-flex flex-column justify-content-center">
+                                    <span class="text-muted fw-bold text-uppercase" style="font-size:0.58rem;">Daily Rate</span>
+                                    <strong class="fs-7 mt-0.5" style="color:#5B3FA8;" id="ownerMetricPrice">₱2</strong>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="bg-white rounded-3 p-2 border shadow-2xs h-100 d-flex flex-column justify-content-center">
-                                    <span class="text-muted fw-bold text-uppercase" style="font-size:0.6rem;">Available Stock</span>
-                                    <strong class="fs-6 text-success mt-0.5" id="ownerMetricStock">11 pcs</strong>
+                            <div class="col-3">
+                                <div class="bg-white rounded-3 p-1.5 border shadow-2xs h-100 d-flex flex-column justify-content-center">
+                                    <span class="text-muted fw-bold text-uppercase" style="font-size:0.58rem;">Stock</span>
+                                    <strong class="fs-7 text-success mt-0.5" id="ownerMetricStock">11 pcs</strong>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="bg-white rounded-3 p-2 border shadow-2xs h-100 d-flex flex-column justify-content-center">
-                                    <span class="text-muted fw-bold text-uppercase" style="font-size:0.6rem;">Account Health</span>
-                                    <strong class="fs-6 text-dark mt-0.5" id="ownerMetricStrikes">0 Strikes</strong>
+                            <div class="col-3">
+                                <div class="bg-white rounded-3 p-1.5 border shadow-2xs h-100 d-flex flex-column justify-content-center" style="border-color:#FFE4E6 !important; background:#FFF1F2 !important;">
+                                    <span class="text-danger fw-bold text-uppercase" style="font-size:0.58rem;"><i class="fa-solid fa-heart me-0.5"></i>Hearts</span>
+                                    <strong class="fs-7 text-danger mt-0.5" id="ownerMetricHearts">0</strong>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="bg-white rounded-3 p-1.5 border shadow-2xs h-100 d-flex flex-column justify-content-center">
+                                    <span class="text-muted fw-bold text-uppercase" style="font-size:0.58rem;">Health</span>
+                                    <strong class="fs-7 text-dark mt-0.5" id="ownerMetricStrikes">0 Strikes</strong>
                                 </div>
                             </div>
                         </div>

@@ -112,6 +112,15 @@ if ($db) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $e) {}
 
+    // Auto-migrate column defaults and sync true counts from relational tables
+    try {
+        $db->exec("ALTER TABLE `rental_inventory` MODIFY COLUMN `reviews_count` INT NOT NULL DEFAULT 0");
+        $db->exec("ALTER TABLE `rental_inventory` MODIFY COLUMN `hearts_count` INT NOT NULL DEFAULT 0");
+        $db->exec("UPDATE `rental_inventory` ri 
+                   SET ri.hearts_count = COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0),
+                       ri.reviews_count = COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0)");
+    } catch (Exception $eSyncCounts) {}
+
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_item_reports` (
             `id` INT PRIMARY KEY AUTO_INCREMENT,
@@ -617,10 +626,13 @@ if ($action === 'get_dashboard') {
     // Fetch top most-popular / most-hearted equipment across the platform
     $popularItems = [];
     try {
-        $popularItems = $db->query("SELECT id, name, category, price_per_day, image_url, photos, qty_total, qty_available, rating, reviews_count, owner_name, COALESCE(hearts_count, 0) as hearts_count 
-                                    FROM `rental_inventory` 
-                                    WHERE (`status` != 'TERMINATED' OR `status` IS NULL)
-                                    ORDER BY COALESCE(hearts_count, 0) DESC, rating DESC, id DESC 
+        $popularItems = $db->query("SELECT ri.id, ri.name, ri.category, ri.price_per_day, ri.image_url, ri.photos, ri.qty_total, ri.qty_available, ri.rating, 
+                                           COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) as reviews_count, 
+                                           ri.owner_name, 
+                                           COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) as hearts_count 
+                                    FROM `rental_inventory` ri 
+                                    WHERE (`ri`.`status` != 'TERMINATED' OR `ri`.`status` IS NULL)
+                                    ORDER BY hearts_count DESC, ri.rating DESC, ri.id DESC 
                                     LIMIT 6")->fetchAll();
         foreach ($popularItems as &$pi) {
             $pi['hearts_count'] = (int)($pi['hearts_count'] ?? 0);
@@ -672,7 +684,10 @@ if ($action === 'get_products' || $action === 'get_inventory') {
     $search = trim((string)($req['search'] ?? ''));
     $sort = trim((string)($req['sort'] ?? 'popular'));
 
-    $sql = "SELECT * FROM `rental_inventory` WHERE 1=1";
+    $sql = "SELECT ri.*,
+                   COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) as hearts_count,
+                   COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) as reviews_count
+            FROM `rental_inventory` ri WHERE 1=1";
     $params = [];
 
     if ($category !== 'All' && $category !== '') {
@@ -694,7 +709,7 @@ if ($action === 'get_products' || $action === 'get_inventory') {
     }
 
     if ($sort === 'hearts' || $sort === 'popular') {
-        $sql .= " ORDER BY COALESCE(`hearts_count`, 0) DESC, `rating` DESC, `id` DESC";
+        $sql .= " ORDER BY `hearts_count` DESC, `rating` DESC, `id` DESC";
     } else {
         $sql .= " ORDER BY `id` DESC";
     }
@@ -704,6 +719,7 @@ if ($action === 'get_products' || $action === 'get_inventory') {
 
     foreach ($products as &$p) {
         $p['hearts_count'] = (int)($p['hearts_count'] ?? 0);
+        $p['reviews_count'] = (int)($p['reviews_count'] ?? 0);
     }
     unset($p);
 

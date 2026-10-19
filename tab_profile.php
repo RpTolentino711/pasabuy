@@ -330,22 +330,28 @@
                 </button>
             </div>
             <div class="row g-1.5 text-center">
-                <div class="col-4">
-                    <div class="profile-kpi-card bg-light border">
-                        <span class="text-muted d-block" style="font-size:0.68rem;">Total Owned</span>
-                        <span class="fw-extrabold text-dark fs-7" id="kpiTotalStockOwned">0</span>
+                <div class="col-3">
+                    <div class="profile-kpi-card bg-light border p-1.5 rounded-3">
+                        <span class="text-muted d-block" style="font-size:0.62rem;">Total Owned</span>
+                        <span class="fw-extrabold text-dark fs-8" id="kpiTotalStockOwned">0</span>
                     </div>
                 </div>
-                <div class="col-4">
-                    <div class="profile-kpi-card bg-warning-subtle border border-warning-subtle">
-                        <span class="text-dark d-block" style="font-size:0.68rem;">Rented Out</span>
-                        <span class="fw-extrabold text-warning-emphasis fs-7" id="kpiTotalStockRented">0</span>
+                <div class="col-3">
+                    <div class="profile-kpi-card bg-warning-subtle border border-warning-subtle p-1.5 rounded-3">
+                        <span class="text-dark d-block" style="font-size:0.62rem;">Rented Out</span>
+                        <span class="fw-extrabold text-warning-emphasis fs-8" id="kpiTotalStockRented">0</span>
                     </div>
                 </div>
-                <div class="col-4">
-                    <div class="profile-kpi-card bg-success-subtle border border-success-subtle">
-                        <span class="text-dark d-block" style="font-size:0.68rem;">Ready to Rent</span>
-                        <span class="fw-extrabold text-success fs-7" id="kpiTotalStockAvailable">0</span>
+                <div class="col-3">
+                    <div class="profile-kpi-card bg-success-subtle border border-success-subtle p-1.5 rounded-3">
+                        <span class="text-dark d-block" style="font-size:0.62rem;">Ready</span>
+                        <span class="fw-extrabold text-success fs-8" id="kpiTotalStockAvailable">0</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="profile-kpi-card border p-1.5 rounded-3" style="background:#FFF1F2; border-color:#FFE4E6 !important;">
+                        <span class="text-danger d-block fw-bold" style="font-size:0.62rem;"><i class="fa-solid fa-heart me-0.5"></i>Hearts</span>
+                        <span class="fw-extrabold text-danger fs-8" id="kpiTotalHeartsReceived">0</span>
                     </div>
                 </div>
             </div>

@@ -93,33 +93,48 @@
         </button>
     </div>
 
-    <!-- Discovery Sorting Bar (Most Popular, Recent/Newest, In Stock, All) -->
-    <div class="d-flex align-items-center mb-2.5 px-0.5 overflow-x-auto no-scrollbar" style="scrollbar-width:none; -webkit-overflow-scrolling:touch;">
-        <div class="d-flex align-items-center gap-1.5 flex-nowrap" id="exploreSortFilterChips">
-            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip active" 
-                    id="sortChipPopular"
-                    onclick="setRentEaseCatalogSort('popular', this)" 
-                    style="background:#FFF1F2; color:#E11D48; border:1px solid #FECDD3; font-size:0.7rem; white-space:nowrap; transition:all 0.15s ease;">
-                <i class="fa-solid fa-heart me-1 text-danger"></i>Most Popular
+    <!-- Discovery Filter Button with Popup Dropdown Menu -->
+    <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+        <span class="fs-9 text-muted fw-bold" id="exploreCatalogItemCount">
+            <i class="fa-solid fa-boxes-stacked me-1 text-primary"></i>Equipment Listings
+        </span>
+        <div class="dropdown">
+            <button class="btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold d-inline-flex align-items-center gap-1.5 shadow-2xs border bg-white text-dark"
+                    type="button" id="catalogFilterDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false"
+                    style="border-color:#E2E8F0 !important;">
+                <i class="fa-solid fa-sliders text-primary fs-9" id="filterBtnIcon"></i>
+                <span id="currentFilterLabel">Most Popular</span>
+                <i class="fa-solid fa-chevron-down fs-9 text-muted ms-0.5"></i>
             </button>
-            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip bg-white text-secondary border" 
-                    id="sortChipRecent"
-                    onclick="setRentEaseCatalogSort('recent', this)" 
-                    style="font-size:0.7rem; white-space:nowrap; border-color:#E2E8F0 !important; transition:all 0.15s ease;">
-                <i class="fa-solid fa-clock-rotate-left me-1 text-primary"></i>Recent &amp; Newest
-            </button>
-            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip bg-white text-secondary border" 
-                    id="sortChipInStock"
-                    onclick="setRentEaseCatalogSort('instock', this)" 
-                    style="font-size:0.7rem; white-space:nowrap; border-color:#E2E8F0 !important; transition:all 0.15s ease;">
-                <i class="fa-solid fa-box-check me-1 text-success"></i>Available Now
-            </button>
-            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip bg-white text-secondary border" 
-                    id="sortChipAll"
-                    onclick="setRentEaseCatalogSort('all', this)" 
-                    style="font-size:0.7rem; white-space:nowrap; border-color:#E2E8F0 !important; transition:all 0.15s ease;">
-                <i class="fa-solid fa-layer-group me-1 text-muted"></i>All Gear
-            </button>
+            <ul class="dropdown-menu dropdown-menu-end rounded-4 shadow-lg border-0 p-1.5 mt-1" aria-labelledby="catalogFilterDropdownBtn" style="min-width: 190px; z-index: 1050;">
+                <li>
+                    <button type="button" class="dropdown-item rounded-3 py-2 px-2.5 fs-8 fw-bold d-flex align-items-center justify-content-between active"
+                            id="filterItemPopular" onclick="selectCatalogFilter('popular', 'Most Popular', 'fa-solid fa-heart text-danger')">
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-heart text-danger"></i> Most Popular
+                        </span>
+                        <i class="fa-solid fa-check text-primary filter-check-icon" id="checkIconPopular"></i>
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="dropdown-item rounded-3 py-2 px-2.5 fs-8 fw-bold d-flex align-items-center justify-content-between"
+                            id="filterItemRecent" onclick="selectCatalogFilter('recent', 'Recent &amp; Newest', 'fa-solid fa-clock-rotate-left text-primary')">
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-primary"></i> Recent &amp; Newest
+                        </span>
+                        <i class="fa-solid fa-check text-primary filter-check-icon" id="checkIconRecent" style="display:none;"></i>
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="dropdown-item rounded-3 py-2 px-2.5 fs-8 fw-bold d-flex align-items-center justify-content-between"
+                            id="filterItemInStock" onclick="selectCatalogFilter('instock', 'Available Now', 'fa-solid fa-box-check text-success')">
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-boxes-stacked text-success"></i> Available Now
+                        </span>
+                        <i class="fa-solid fa-check text-primary filter-check-icon" id="checkIconInStock" style="display:none;"></i>
+                    </button>
+                </li>
+            </ul>
         </div>
     </div>
 

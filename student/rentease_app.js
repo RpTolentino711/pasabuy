@@ -321,7 +321,7 @@ function renderFeaturedRentals() {
                         <div class="d-flex align-items-center gap-1 px-1.5 py-0.5 rounded-pill" style="background: rgba(245, 158, 11, 0.08);">
                             <i class="fa-solid fa-star text-warning" style="font-size: 0.65rem;"></i>
                             <span class="fw-extrabold text-dark" style="font-size: 0.7rem;">${parseFloat(item.rating || 5.0).toFixed(1)}</span>
-                            <span class="text-muted" style="font-size: 0.62rem;">(${item.reviews_count || 1})</span>
+                            <span class="text-muted" style="font-size: 0.62rem;">(${parseInt(item.reviews_count || 0)})</span>
                         </div>
 
                         <!-- Perspective Action Button -->
@@ -520,40 +520,39 @@ function clearExploreSearch() {
 
 let currentExploreSort = 'popular';
 
-window.setRentEaseCatalogSort = function (sortType, btnEl) {
+window.selectCatalogFilter = function (sortType, labelText, iconClass) {
     currentExploreSort = sortType || 'popular';
 
-    const chips = document.querySelectorAll('.explore-sort-chip');
-    chips.forEach(chip => {
-        chip.className = 'btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip bg-white text-secondary border';
-        chip.style.background = '#fff';
-        chip.style.color = '';
-        chip.style.borderColor = '#E2E8F0';
-    });
+    const labelEl = document.getElementById('currentFilterLabel');
+    if (labelEl) labelEl.innerText = labelText;
 
-    if (btnEl) {
-        btnEl.className = 'btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold explore-sort-chip active';
-        if (sortType === 'popular') {
-            btnEl.style.background = '#FFF1F2';
-            btnEl.style.color = '#E11D48';
-            btnEl.style.borderColor = '#FECDD3';
-        } else if (sortType === 'recent') {
-            btnEl.style.background = '#EFF6FF';
-            btnEl.style.color = '#2563EB';
-            btnEl.style.borderColor = '#BFDBFE';
-        } else if (sortType === 'instock') {
-            btnEl.style.background = '#F0FDF4';
-            btnEl.style.color = '#16A34A';
-            btnEl.style.borderColor = '#BBF7D0';
-        } else {
-            btnEl.style.background = '#5B3FA8';
-            btnEl.style.color = '#fff';
-            btnEl.style.borderColor = '#5B3FA8';
-        }
+    const btnIcon = document.getElementById('filterBtnIcon');
+    if (btnIcon && iconClass) {
+        btnIcon.className = iconClass + ' fs-9';
     }
+
+    // Toggle checkmarks and active state in dropdown
+    const icons = {
+        'popular': 'checkIconPopular',
+        'recent': 'checkIconRecent',
+        'instock': 'checkIconInStock'
+    };
+    Object.keys(icons).forEach(k => {
+        const checkEl = document.getElementById(icons[k]);
+        if (checkEl) checkEl.style.display = (k === sortType) ? 'inline-block' : 'none';
+        const itemEl = document.getElementById('filterItem' + k.charAt(0).toUpperCase() + k.slice(1));
+        if (itemEl) {
+            if (k === sortType) {
+                itemEl.classList.add('active');
+            } else {
+                itemEl.classList.remove('active');
+            }
+        }
+    });
 
     renderExploreCatalog();
 };
+window.setRentEaseCatalogSort = window.selectCatalogFilter;
 
 function renderExploreCatalog() {
     let filtered = rentEaseInventory || [];
@@ -587,7 +586,7 @@ function renderExploreCatalog() {
         );
     }
 
-    // Apply active discovery sort (Most Popular, Recent/Newest, In Stock, All)
+    // Apply active discovery sort (Most Popular, Recent/Newest, In Stock)
     if (currentExploreSort === 'instock') {
         filtered = filtered.filter(i => parseInt(i.qty_available ?? i.qty_total ?? 1) > 0);
     }
@@ -614,13 +613,17 @@ function renderExploreCatalog() {
             if (hB !== hA) return hB - hA;
             return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
         } else {
-            // All: featured first, then newest
             const fA = parseInt(a.is_featured || 0);
             const fB = parseInt(b.is_featured || 0);
             if (fB !== fA) return fB - fA;
             return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
         }
     });
+
+    const countEl = document.getElementById('exploreCatalogItemCount');
+    if (countEl) {
+        countEl.innerHTML = `<i class="fa-solid fa-boxes-stacked me-1 text-primary"></i>${filtered.length} Equipment Listing${filtered.length === 1 ? '' : 's'}`;
+    }
 
     renderGridElements(filtered);
 }
@@ -702,7 +705,7 @@ function renderGridElements(items) {
                     <div class="d-flex align-items-center gap-1 mb-2">
                         <i class="fa-solid fa-star text-warning" style="font-size:0.68rem;"></i>
                         <span class="fw-bold text-dark" style="font-size:0.72rem;">${parseFloat(p.rating).toFixed(1)}</span>
-                        <span class="text-muted" style="font-size:0.65rem;">(${p.reviews_count})</span>
+                        <span class="text-muted" style="font-size:0.65rem;">(${parseInt(p.reviews_count || 0)})</span>
                     </div>
                 </div>
                 <button class="btn btn-sm rounded-pill w-100 fw-bold fs-9 py-1 shadow-2xs ${cartBtnClass}" 
@@ -1018,7 +1021,7 @@ function openEquipmentDetail(id) {
                 qty_available: p.stockQuantity ?? 1,
                 qty_total: p.stockQuantity ?? 1,
                 rating: 5.0,
-                reviews_count: 1,
+                reviews_count: 0,
                 owner_id: p.sellerId || 104,
                 owner_name: p.seller || 'Student'
             };
@@ -1040,10 +1043,15 @@ function openEquipmentDetail(id) {
 
     const ratingValEl = document.getElementById('detailRatingVal');
     if (ratingValEl) ratingValEl.innerText = parseFloat(item.rating || 5.0).toFixed(1);
+    const realReviews = parseInt(item.reviews_count || 0);
     const reviewCountEl = document.getElementById('detailReviewCount');
-    if (reviewCountEl) reviewCountEl.innerText = item.reviews_count || 1;
+    if (reviewCountEl) reviewCountEl.innerText = realReviews;
+    const reviewLabelEl = document.getElementById('detailReviewLabel');
+    if (reviewLabelEl) reviewLabelEl.innerText = (realReviews === 1) ? 'review' : 'reviews';
     const heartsCountEl = document.getElementById('detailHeartsCount');
     if (heartsCountEl) heartsCountEl.innerText = parseInt(item.hearts_count || 0);
+    const ownerMetricHearts = document.getElementById('ownerMetricHearts');
+    if (ownerMetricHearts) ownerMetricHearts.innerText = parseInt(item.hearts_count || 0);
     const priceEl = document.getElementById('detailPrice');
     if (priceEl) priceEl.innerText = '₱' + parseFloat(item.price_per_day || 0).toFixed(0);
     const descEl = document.getElementById('detailDescription');
@@ -1914,10 +1922,15 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
         const kpiTotal = document.getElementById('kpiTotalStockOwned');
         const kpiRented = document.getElementById('kpiTotalStockRented');
         const kpiAvail = document.getElementById('kpiTotalStockAvailable');
+        const kpiHearts = document.getElementById('kpiTotalHeartsReceived');
         const invBadge = document.getElementById('myRentalCountBadge');
         if (kpiTotal) kpiTotal.innerText = data.total_stock_owned ?? 0;
         if (kpiRented) kpiRented.innerText = data.total_rented_out ?? 0;
         if (kpiAvail) kpiAvail.innerText = data.total_available ?? 0;
+        if (kpiHearts) {
+            const sumH = (data.inventory || []).reduce((acc, i) => acc + parseInt(i.hearts_count || 0), 0);
+            kpiHearts.innerText = (data.total_hearts_received !== undefined) ? data.total_hearts_received : sumH;
+        }
         if (invBadge) invBadge.innerText = (data.inventory || []).length;
 
         // 2. Notification Badges
@@ -2211,6 +2224,7 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                     const percentRented = Math.min(100, Math.round((rented / Math.max(1, total)) * 100));
                     const safeName = (item.name || 'Equipment').replace(/'/g, "\\'");
                     const priceFormatted = parseFloat(item.price_per_day || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                    const heartsCount = parseInt(item.hearts_count || 0);
 
                     html += `
                     <div class="card border-0 rounded-4 shadow-sm p-3 bg-white mb-3 position-relative overflow-hidden" id="ownerInventoryCard_${item.id}" style="border: 1px solid #E2E8F0 !important;">
@@ -2221,10 +2235,20 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                                      class="rounded-3 border object-fit-cover shadow-2xs" 
                                      style="width:68px; height:68px;" 
                                      onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
+                                <div class="position-absolute top-0 end-0 m-0.5 z-2">
+                                    <span class="badge rounded-pill shadow-xs border fw-extrabold" style="background:rgba(255,255,255,0.95); backdrop-filter:blur(4px); color:#E11D48; border-color:#FFE4E6 !important; font-size:0.58rem; padding:1px 4px;">
+                                        <i class="fa-solid fa-heart text-danger" style="font-size:0.55rem;"></i> ${heartsCount}
+                                    </span>
+                                </div>
                             </div>
                             <div class="flex-grow-1 min-w-0">
                                 <div class="d-flex align-items-center justify-content-between mb-1">
-                                    <span class="badge bg-light text-secondary border fs-10 fw-semibold px-2 py-0.5">${item.category || 'Equipment'}</span>
+                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                        <span class="badge bg-light text-secondary border fs-10 fw-semibold px-2 py-0.5">${item.category || 'Equipment'}</span>
+                                        <span class="badge rounded-pill border fw-bold d-inline-flex align-items-center gap-1" style="background:#FFF1F2; color:#E11D48; border-color:#FFE4E6 !important; font-size:0.62rem; padding: 2px 6px;">
+                                            <i class="fa-solid fa-heart text-danger" style="font-size:0.6rem;"></i><strong>${heartsCount}</strong>
+                                        </span>
+                                    </div>
                                     <div class="d-flex align-items-baseline gap-0.5">
                                         <span class="fw-extrabold fs-7" style="color:#5B3FA8;">₱${priceFormatted}</span>
                                         <span class="text-muted fs-10">/ day</span>
@@ -2250,6 +2274,9 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
                                 </span>
                                 <span class="badge bg-light text-secondary border fs-10 px-2 py-1">
                                     <strong>${total}</strong> Total
+                                </span>
+                                <span class="badge border fs-10 fw-bold px-2 py-1" style="background:#FFF1F2; color:#E11D48; border-color:#FFE4E6 !important;">
+                                    <i class="fa-solid fa-heart text-danger me-1"></i><strong>${heartsCount}</strong> Hearts
                                 </span>
                             </div>
 
@@ -5011,9 +5038,11 @@ window.loadUserRentedOutItems = async function () {
     const kpiTotal = document.getElementById('kpiTotalStockOwned');
     const kpiRented = document.getElementById('kpiTotalStockRented');
     const kpiAvail = document.getElementById('kpiTotalStockAvailable');
+    const kpiHearts = document.getElementById('kpiTotalHeartsReceived');
     if (kpiTotal) kpiTotal.innerText = myItems.reduce((acc, i) => acc + parseInt(i.qty_total || 1), 0);
     if (kpiRented) kpiRented.innerText = myItems.reduce((acc, i) => acc + parseInt(i.qty_rented || 0), 0);
     if (kpiAvail) kpiAvail.innerText = myItems.reduce((acc, i) => acc + parseInt(i.qty_available ?? i.qty_total ?? 1), 0);
+    if (kpiHearts) kpiHearts.innerText = myItems.reduce((acc, i) => acc + parseInt(i.hearts_count || 0), 0);
 
     const headerBtn = document.getElementById('headerPostEquipmentBtn');
     if (headerBtn) {
@@ -5063,6 +5092,7 @@ window.loadUserRentedOutItems = async function () {
                         <div class="d-flex align-items-center gap-1.5 mb-1.5 flex-wrap">
                             <span class="badge bg-light text-secondary border fs-9">${item.category || 'General'}</span>
                             <span class="badge bg-light text-secondary border fs-9">${item.material_tag || 'Standard'}</span>
+                            <span class="badge border fs-9 fw-bold" style="background:#FFF1F2; color:#E11D48; border-color:#FFE4E6 !important;"><i class="fa-solid fa-heart text-danger me-1"></i>${parseInt(item.hearts_count || 0)} Hearts</span>
                         </div>
                         <div class="d-flex align-items-center justify-content-between mt-2">
                             <div>

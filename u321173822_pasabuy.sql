@@ -326,7 +326,7 @@ CREATE TABLE `rental_inventory` (
   `qty_maintenance` int(11) NOT NULL DEFAULT 5,
   `image_url` longtext DEFAULT NULL,
   `rating` decimal(2,1) DEFAULT 4.8,
-  `reviews_count` int(11) DEFAULT 120,
+  `reviews_count` int(11) DEFAULT 0,
   `description` text DEFAULT NULL,
   `min_rental_days` int(11) DEFAULT 1,
   `is_featured` tinyint(4) DEFAULT 0,

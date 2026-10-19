@@ -244,6 +244,15 @@ if ($db) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $e) {}
 
+    // Auto-migrate column defaults and sync true counts from relational tables
+    try {
+        $db->exec("ALTER TABLE `rental_inventory` MODIFY COLUMN `reviews_count` INT NOT NULL DEFAULT 0");
+        $db->exec("ALTER TABLE `rental_inventory` MODIFY COLUMN `hearts_count` INT NOT NULL DEFAULT 0");
+        $db->exec("UPDATE `rental_inventory` ri 
+                   SET ri.hearts_count = COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0),
+                       ri.reviews_count = COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0)");
+    } catch (Exception $eSyncCounts) {}
+
     // Auto-heal any orders that have already been rated so they are marked as RETURNED / COMPLETED and NOT overdue
     try {
         $db->exec("UPDATE `rental_orders` 
@@ -744,8 +753,8 @@ if ($action === 'get_inventory') {
                                     GROUP BY ro.item_id")->fetchAll();
         foreach ($missingItems as $mi) {
             if (!empty($mi['item_id']) && !empty($mi['item_name'])) {
-                $db->prepare("INSERT INTO `rental_inventory` (`id`, `name`, `category`, `price_per_day`, `qty_total`, `qty_available`, `image_url`, `rating`, `owner_name`, `owner_email`, `owner_id`, `hearts_count`, `status`)
-                              VALUES (?, ?, 'Others', 1.00, 10, 10, ?, ?, ?, ?, ?, 1, 'ACTIVE')
+                $db->prepare("INSERT INTO `rental_inventory` (`id`, `name`, `category`, `price_per_day`, `qty_total`, `qty_available`, `image_url`, `rating`, `owner_name`, `owner_email`, `owner_id`, `hearts_count`, `reviews_count`, `status`)
+                              VALUES (?, ?, 'Others', 1.00, 10, 10, ?, ?, ?, ?, ?, 0, 0, 'ACTIVE')
                               ON DUPLICATE KEY UPDATE `name` = VALUES(`name`)")
                    ->execute([
                        $mi['item_id'], 
@@ -760,8 +769,19 @@ if ($action === 'get_inventory') {
         }
     } catch (Exception $eAutoRestore) {}
 
+    // Auto-sync accurate hearts count and reviews count from relational tables
+    try {
+        $db->exec("UPDATE `rental_inventory` ri 
+                   SET ri.hearts_count = COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0),
+                       ri.reviews_count = COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0)");
+    } catch (Exception $eSync) {}
+
     $sort = trim((string)($data['sort'] ?? $_GET['sort'] ?? 'popular'));
-    $sql = "SELECT * FROM `rental_inventory` WHERE (`status` != 'TERMINATED' OR `status` IS NULL)";
+    $sql = "SELECT ri.*,
+                   COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) as real_hearts_count,
+                   COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) as real_reviews_count
+            FROM `rental_inventory` ri 
+            WHERE (`ri`.`status` != 'TERMINATED' OR `ri`.`status` IS NULL)";
     $params = [];
 
     if ($category !== '' && $category !== 'All') {
@@ -781,11 +801,11 @@ if ($action === 'get_inventory') {
     }
 
     if ($sort === 'recent') {
-        $sql .= " ORDER BY `id` DESC, `created_at` DESC";
+        $sql .= " ORDER BY `ri`.`id` DESC, `ri`.`created_at` DESC";
     } else if ($sort === 'instock') {
-        $sql .= " ORDER BY (`qty_available` > 0) DESC, COALESCE(`hearts_count`, 0) DESC, `id` DESC";
+        $sql .= " ORDER BY (`ri`.`qty_available` > 0) DESC, `real_hearts_count` DESC, `ri`.`id` DESC";
     } else {
-        $sql .= " ORDER BY `is_featured` DESC, COALESCE(`hearts_count`, 0) DESC, `rating` DESC, `id` DESC";
+        $sql .= " ORDER BY `ri`.`is_featured` DESC, `real_hearts_count` DESC, `ri`.`rating` DESC, `ri`.`id` DESC";
     }
 
     $stmt = $db->prepare($sql);
@@ -793,7 +813,8 @@ if ($action === 'get_inventory') {
     $items = $stmt->fetchAll();
 
     foreach ($items as &$it) {
-        $it['hearts_count'] = (int)($it['hearts_count'] ?? 0);
+        $it['hearts_count'] = (int)($it['real_hearts_count'] ?? $it['hearts_count'] ?? 0);
+        $it['reviews_count'] = (int)($it['real_reviews_count'] ?? 0);
         if (!empty($it['photos'])) {
             $pArr = is_string($it['photos']) ? json_decode($it['photos'], true) : $it['photos'];
             if (is_array($pArr) && !empty($pArr[0])) {
@@ -821,15 +842,22 @@ if ($action === 'get_product_detail') {
     $id = (int)($data['id'] ?? 0);
     $item = null;
     if ($db) {
-        $stmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE `id` = ?");
+        $stmt = $db->prepare("SELECT ri.*,
+                                     COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) as real_hearts_count,
+                                     COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) as real_reviews_count
+                              FROM `rental_inventory` ri WHERE ri.`id` = ?");
         $stmt->execute([$id]);
         $item = $stmt->fetch();
-        if ($item && !empty($item['photos'])) {
-            $pArr = is_string($item['photos']) ? json_decode($item['photos'], true) : $item['photos'];
-            if (is_array($pArr) && !empty($pArr[0])) {
-                $cur = trim((string)($item['image_url'] ?? ''));
-                if (empty($cur) || (strpos($cur, 'data:image/') === 0 && strlen($cur) <= 500)) {
-                    $item['image_url'] = $pArr[0];
+        if ($item) {
+            $item['hearts_count'] = (int)($item['real_hearts_count'] ?? $item['hearts_count'] ?? 0);
+            $item['reviews_count'] = (int)($item['real_reviews_count'] ?? 0);
+            if (!empty($item['photos'])) {
+                $pArr = is_string($item['photos']) ? json_decode($item['photos'], true) : $item['photos'];
+                if (is_array($pArr) && !empty($pArr[0])) {
+                    $cur = trim((string)($item['image_url'] ?? ''));
+                    if (empty($cur) || (strpos($cur, 'data:image/') === 0 && strlen($cur) <= 500)) {
+                        $item['image_url'] = $pArr[0];
+                    }
                 }
             }
         }
@@ -1840,10 +1868,18 @@ if ($action === 'get_owner_rental_data') {
 
         $ownerInventory = [];
         if (!empty($invConditions)) {
-            $invSql = "SELECT * FROM `rental_inventory` WHERE (" . implode(' OR ', $invConditions) . ") ORDER BY `id` DESC";
+            $invSql = "SELECT ri.*,
+                              COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) AS real_hearts_count,
+                              COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) AS real_reviews_count
+                       FROM `rental_inventory` ri WHERE (" . implode(' OR ', $invConditions) . ") ORDER BY ri.`id` DESC";
             $invStmt = $db->prepare($invSql);
             $invStmt->execute($invParams);
             $ownerInventory = $invStmt->fetchAll();
+            foreach ($ownerInventory as &$it) {
+                $it['hearts_count'] = (int)($it['real_hearts_count'] ?? $it['hearts_count'] ?? 0);
+                $it['reviews_count'] = (int)($it['real_reviews_count'] ?? 0);
+            }
+            unset($it);
         }
 
         if (empty($ownerInventory)) {
@@ -1923,7 +1959,8 @@ if ($action === 'get_owner_rental_data') {
             'pending_count' => count($incoming),
             'total_stock_owned' => empty($ownerInventory) ? 0 : array_sum(array_column($ownerInventory, 'qty_total')),
             'total_rented_out' => empty($ownerInventory) ? 0 : array_sum(array_column($ownerInventory, 'qty_rented')),
-            'total_available' => empty($ownerInventory) ? 0 : array_sum(array_column($ownerInventory, 'qty_available'))
+            'total_available' => empty($ownerInventory) ? 0 : array_sum(array_column($ownerInventory, 'qty_available')),
+            'total_hearts_received' => empty($ownerInventory) ? 0 : array_sum(array_column($ownerInventory, 'hearts_count'))
         ]);
         exit;
     } catch (Exception $e) {
@@ -2477,7 +2514,6 @@ if ($action === 'submit_item_heart') {
         $cntStmt = $db->prepare("SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE `item_id` = ?");
         $cntStmt->execute([$itemId]);
         $heartsCount = (int)$cntStmt->fetchColumn();
-        if ($heartsCount < 1) $heartsCount = 1;
 
         // If this item exists in rental_inventory, update it. If missing, auto-create/restore it from order!
         $checkInv = $db->prepare("SELECT id FROM `rental_inventory` WHERE `id` = ? LIMIT 1");

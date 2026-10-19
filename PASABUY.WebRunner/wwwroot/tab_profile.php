@@ -31,27 +31,104 @@
             padding: 8px 6px;
             transition: all 0.2s ease;
         }
-        #tabProfile { color:#1E293B; }
-        #tabProfile > .card:first-of-type { border:1px solid #E2E8F0 !important; border-radius:16px !important; box-shadow:0 3px 12px rgba(15,23,42,.05) !important; padding:9px 11px !important; }
-        #tabProfile .profile-nav-pills { padding:3px !important; gap:2px !important; background:#F8FAFC !important; border:1px solid #E2E8F0 !important; box-shadow:none !important; }
-        #tabProfile .profile-subtab-btn { min-height:34px; padding:5px 6px !important; font-size:.68rem !important; letter-spacing:-.1px; }
-        #tabProfile .profile-subtab-btn i { font-size:.68rem; }
-        #tabProfile > div[id^="profileSection"] { gap:8px !important; }
-        #tabProfile .profile-kpi-card { min-height:54px; padding:7px 4px !important; border-radius:10px !important; }
-        #tabProfile #profileSectionInventory > .card:first-child { padding:10px !important; border:1px solid #E2E8F0 !important; box-shadow:0 2px 8px rgba(15,23,42,.04) !important; }
-        #tabProfile #profileSectionInventory > .card:first-child > .d-flex { margin-bottom:7px !important; }
-        #tabProfile #myRentalListingsContainer,#tabProfile #ownerRequestsListContainer,#tabProfile #ownerRentalHistoryContainer { gap:8px !important; }
-        #tabProfile #myRentalListingsContainer > .card,#tabProfile #ownerRequestsListContainer > .card,#tabProfile #ownerRentalHistoryContainer > .card { margin-bottom:0 !important; padding:10px !important; border:1px solid #E2E8F0 !important; border-radius:14px !important; box-shadow:0 2px 8px rgba(15,23,42,.045) !important; }
-        #tabProfile #myRentalListingsContainer > .card > .d-flex:first-child { gap:9px !important; margin-bottom:8px !important; }
-        #tabProfile #myRentalListingsContainer img { width:54px !important; height:54px !important; border-radius:11px !important; }
-        #tabProfile #myRentalListingsContainer .p-2\.5 { padding:7px !important; margin-bottom:8px !important; border-radius:9px !important; }
-        #tabProfile #myRentalListingsContainer .progress { height:4px !important; }
-        #tabProfile #myRentalListingsContainer button,#tabProfile #ownerRequestsListContainer button { min-height:30px; padding:5px 8px !important; font-size:.68rem !important; }
-        #tabProfile #profileSectionHistory > .d-flex { padding:0 2px !important; margin-bottom:0 !important; }
-        #tabProfile #ownerRentalHistoryContainer .card .badge { font-size:.6rem !important; padding:3px 6px !important; }
-        #tabProfile #ownerRentalHistoryContainer .card .d-flex { gap:6px !important; }
-        #tabProfile #profileRequestsAlertBanner { padding:8px 10px !important; border-radius:12px !important; box-shadow:none !important; }
-        #tabProfile #profileRequestsAlertBanner .rounded-circle { width:22px !important; height:22px !important; }
+        #tabProfile {
+            color: #1E293B;
+        }
+        #tabProfile > .card:first-of-type {
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 16px !important;
+            box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05) !important;
+            padding: 9px 11px !important;
+        }
+        #tabProfile .profile-nav-pills {
+            padding: 3px !important;
+            gap: 2px !important;
+            background: #F8FAFC !important;
+            border: 1px solid #E2E8F0 !important;
+            box-shadow: none !important;
+        }
+        #tabProfile .profile-subtab-btn {
+            min-height: 34px;
+            padding: 5px 6px !important;
+            font-size: 0.68rem !important;
+            letter-spacing: -0.1px;
+        }
+        #tabProfile .profile-subtab-btn i {
+            font-size: 0.68rem;
+        }
+        #tabProfile > div[id^="profileSection"] {
+            gap: 8px !important;
+        }
+        #tabProfile .profile-kpi-card {
+            min-height: 54px;
+            padding: 7px 4px !important;
+            border-radius: 10px !important;
+        }
+        #tabProfile #profileSectionInventory > .card:first-child {
+            padding: 10px !important;
+            border: 1px solid #E2E8F0 !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+        }
+        #tabProfile #profileSectionInventory > .card:first-child > .d-flex {
+            margin-bottom: 7px !important;
+        }
+        #tabProfile #myRentalListingsContainer,
+        #tabProfile #ownerRequestsListContainer,
+        #tabProfile #ownerRentalHistoryContainer {
+            gap: 8px !important;
+        }
+        #tabProfile #myRentalListingsContainer > .card,
+        #tabProfile #ownerRequestsListContainer > .card,
+        #tabProfile #ownerRentalHistoryContainer > .card {
+            margin-bottom: 0 !important;
+            padding: 10px !important;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.045) !important;
+        }
+        #tabProfile #myRentalListingsContainer > .card > .d-flex:first-child {
+            gap: 9px !important;
+            margin-bottom: 8px !important;
+        }
+        #tabProfile #myRentalListingsContainer img {
+            width: 54px !important;
+            height: 54px !important;
+            border-radius: 11px !important;
+        }
+        #tabProfile #myRentalListingsContainer .p-2\.5 {
+            padding: 7px !important;
+            margin-bottom: 8px !important;
+            border-radius: 9px !important;
+        }
+        #tabProfile #myRentalListingsContainer .progress {
+            height: 4px !important;
+        }
+        #tabProfile #myRentalListingsContainer button,
+        #tabProfile #ownerRequestsListContainer button {
+            min-height: 30px;
+            padding: 5px 8px !important;
+            font-size: 0.68rem !important;
+        }
+        #tabProfile #profileSectionHistory > .d-flex {
+            padding: 0 2px !important;
+            margin-bottom: 0 !important;
+        }
+        #tabProfile #ownerRentalHistoryContainer .card .badge {
+            font-size: 0.6rem !important;
+            padding: 3px 6px !important;
+        }
+        #tabProfile #ownerRentalHistoryContainer .card .d-flex {
+            gap: 6px !important;
+        }
+        #tabProfile #profileRequestsAlertBanner {
+            padding: 8px 10px !important;
+            border-radius: 12px !important;
+            box-shadow: none !important;
+        }
+        #tabProfile #profileRequestsAlertBanner .rounded-circle {
+            width: 22px !important;
+            height: 22px !important;
+        }
     </style>
 
     <!-- User Profile Card (Compact & Minimized) -->
@@ -253,22 +330,28 @@
                 </button>
             </div>
             <div class="row g-1.5 text-center">
-                <div class="col-4">
-                    <div class="profile-kpi-card bg-light border">
-                        <span class="text-muted d-block" style="font-size:0.68rem;">Total Owned</span>
-                        <span class="fw-extrabold text-dark fs-7" id="kpiTotalStockOwned">0</span>
+                <div class="col-3">
+                    <div class="profile-kpi-card bg-light border p-1.5 rounded-3">
+                        <span class="text-muted d-block" style="font-size:0.62rem;">Total Owned</span>
+                        <span class="fw-extrabold text-dark fs-8" id="kpiTotalStockOwned">0</span>
                     </div>
                 </div>
-                <div class="col-4">
-                    <div class="profile-kpi-card bg-warning-subtle border border-warning-subtle">
-                        <span class="text-dark d-block" style="font-size:0.68rem;">Rented Out</span>
-                        <span class="fw-extrabold text-warning-emphasis fs-7" id="kpiTotalStockRented">0</span>
+                <div class="col-3">
+                    <div class="profile-kpi-card bg-warning-subtle border border-warning-subtle p-1.5 rounded-3">
+                        <span class="text-dark d-block" style="font-size:0.62rem;">Rented Out</span>
+                        <span class="fw-extrabold text-warning-emphasis fs-8" id="kpiTotalStockRented">0</span>
                     </div>
                 </div>
-                <div class="col-4">
-                    <div class="profile-kpi-card bg-success-subtle border border-success-subtle">
-                        <span class="text-dark d-block" style="font-size:0.68rem;">Ready to Rent</span>
-                        <span class="fw-extrabold text-success fs-7" id="kpiTotalStockAvailable">0</span>
+                <div class="col-3">
+                    <div class="profile-kpi-card bg-success-subtle border border-success-subtle p-1.5 rounded-3">
+                        <span class="text-dark d-block" style="font-size:0.62rem;">Ready</span>
+                        <span class="fw-extrabold text-success fs-8" id="kpiTotalStockAvailable">0</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="profile-kpi-card border p-1.5 rounded-3" style="background:#FFF1F2; border-color:#FFE4E6 !important;">
+                        <span class="text-danger d-block fw-bold" style="font-size:0.62rem;"><i class="fa-solid fa-heart me-0.5"></i>Hearts</span>
+                        <span class="fw-extrabold text-danger fs-8" id="kpiTotalHeartsReceived">0</span>
                     </div>
                 </div>
             </div>
