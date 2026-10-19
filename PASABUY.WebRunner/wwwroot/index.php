@@ -395,11 +395,6 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2" id="headerUserActions" style="display: none !important;">
-                <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                    onclick="switchTab('cart')" title="RentEase Cart" id="headerCartBtn" style="width:36px; height:36px; background: #F1F5F9; transition: transform 0.2s ease;">
-                    <i class="fa-solid fa-cart-shopping text-secondary fs-7"></i>
-                    <span class="badge-cart-counter position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCountBadge" style="display:none;">0</span>
-                </button>
                 <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="switchTab('profile')" id="headerProfileBtn">
                     <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80"
                         class="rounded-circle border border-2 border-white shadow-sm" width="36" height="36" style="object-fit:cover;" id="homeAvatar" alt="User Profile">
@@ -1869,10 +1864,6 @@
                                 return;
                             }
                             document.querySelector('.app-tabbar').style.display = 'flex';
-
-                            // Header cart button is always visible floating in header
-                            const headerCartBtn = document.getElementById('headerCartBtn');
-                            if (headerCartBtn) headerCartBtn.style.setProperty('display', 'inline-flex', 'important');
 
                             // Header profile button: hide when on profile tab to avoid duplicate avatar
                             const headerProfileBtn = document.getElementById('headerProfileBtn') || document.getElementById('homeAvatar')?.parentElement;
