@@ -2267,6 +2267,17 @@
                                 return bTime - aTime;
                             });
 
+                            // DEDUPLICATE: Group by partnerId, keep only most recent conversation per partner
+                            const convsByPartner = new Map();
+                            convs.forEach(c => {
+                                const partnerId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
+                                const time = new Date(c.CreatedAt || c.Timestamp || 0).getTime() || 0;
+                                if (!convsByPartner.has(partnerId) || time > convsByPartner.get(partnerId).time) {
+                                    convsByPartner.set(partnerId, { conversation: c, time: time });
+                                }
+                            });
+                            convs = Array.from(convsByPartner.values()).map(v => v.conversation);
+
                             window._chatConversationsMap = window._chatConversationsMap || {};
                             let html = '';
                             convs.forEach((c, idx) => {

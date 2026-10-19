@@ -1969,6 +1969,37 @@ if ($action === 'get_owner_rental_data') {
     }
 }
 
+if ($action === 'fix_stock_counts') {
+    if (!$db) {
+        echo json_encode(['success' => false, 'message' => 'Database not available']);
+        exit;
+    }
+    try {
+        // Fix stock counts by recalculating from orders
+        $db->exec("UPDATE `rental_inventory` ri SET 
+            ri.qty_available = ri.qty_total - COALESCE((
+                SELECT SUM(roi.quantity) 
+                FROM `rental_order_items` roi 
+                INNER JOIN `rental_orders` ro ON roi.order_id = ro.id 
+                WHERE roi.product_id = ri.id 
+                AND ro.order_status NOT IN ('RETURNED', 'COMPLETED', 'CANCELLED')
+            ), 0),
+            ri.qty_rented = COALESCE((
+                SELECT SUM(roi.quantity) 
+                FROM `rental_order_items` roi 
+                INNER JOIN `rental_orders` ro ON roi.order_id = ro.id 
+                WHERE roi.product_id = ri.id 
+                AND ro.order_status NOT IN ('RETURNED', 'COMPLETED', 'CANCELLED')
+            ), 0)
+        ");
+        echo json_encode(['success' => true, 'message' => 'Stock counts recalculated from active orders']);
+        exit;
+    } catch (Exception $eFix) {
+        echo json_encode(['success' => false, 'message' => $eFix->getMessage()]);
+        exit;
+    }
+}
+
 if ($action === 'delete_all_inventory' || $action === 'clear_all_stock') {
     if (!$db) {
         saveRentEaseItemsFallback([]);
