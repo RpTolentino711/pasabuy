@@ -346,8 +346,8 @@
         <!-- App Body (Dynamic Tab Views) -->
         <div class="app-body" id="appBody">
 
-            <!-- 1. 5-SECOND SPLASH SCREEN (MATCHING REFERENCE DESIGN SCREEN 1) -->
-            <div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #6C5CE7 0%, #5F27CD 50%, #341F97 100%); color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden;" onclick="hideSplashScreen()">
+            <!-- 1. SPLASH / LOADING SCREEN -->
+            <div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #6C5CE7 0%, #5F27CD 50%, #341F97 100%); color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden; cursor:default !important; user-select:none; -webkit-user-select:none; pointer-events:all;" onclick="event.stopPropagation(); return false;">
                 <!-- Main Branding Logo -->
                 <div class="my-auto d-flex flex-column align-items-center">
                     <div class="bg-white rounded-4 p-3 shadow-lg d-inline-flex align-items-center justify-content-center mb-3" style="width:84px; height:84px;">
@@ -369,11 +369,10 @@
                     <h5 class="fw-extrabold text-white mb-1">Buy. Sell. Connect.</h5>
                     <p class="text-white-50 fs-7 mb-3">All in One Place.</p>
                     
-                    <!-- 5-Second Progress Bar -->
+                    <!-- Progress Bar -->
                     <div class="progress bg-white bg-opacity-25 rounded-pill overflow-hidden mx-auto" style="height: 4px; max-width: 140px;">
                         <div class="progress-bar bg-white" id="splashProgressBar" style="width: 0%; transition: width 0.1s linear;"></div>
                     </div>
-                    <span class="fs-9 text-white-50 mt-2 d-block" style="font-size:0.68rem;">Tap anywhere to skip...</span>
                 </div>
             </div>
 
@@ -1624,7 +1623,7 @@
                         <i class="fa-solid fa-right-from-bracket fs-2"></i>
                     </div>
                 </div>
-                <h5 class="fw-bold text-dark mb-2">Log Out of RentEase?</h5>
+                <h5 class="fw-bold text-dark mb-2">Log Out of PasaBuy?</h5>
                 <p class="fs-8 text-muted mb-4">Are you sure you want to log out of your account?</p>
 
                 <div class="d-flex gap-2">
@@ -2956,15 +2955,15 @@
                                 const msg = (c.MessageText || '').toLowerCase();
                                 const sId = parseInt(c.SenderId) || 0;
                                 const rId = parseInt(c.ReceiverId) || 0;
-                                const isRentalConversation = !!c.HasTransaction || !!c.TransactionOrderCode;
 
                                 if (sId === rId && sId > 0) return false;
                                 if (pId === currentUserId) return false;
-
-                                // Only filter out system/dispatch conversations for non-rental chats
-                                if (!isRentalConversation) {
-                                    if (pName.includes('dispatch') || pName.includes('rider') || item.includes('dispatch') || item.includes('rider')) return false;
-                                }
+                                if (currentUserId === 104 && (pId === 1 || pId === 104)) return false;
+                                if (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) return false;
+                                if (isPogilameg && pName.includes('pogilameg')) return false;
+                                if (myFullName && pName === myFullName) return false;
+                                if (item === 'roem' || msg.includes('hi romeo')) return false;
+                                if (pName.includes('dispatch') || pName.includes('rider') || item.includes('dispatch') || item.includes('rider')) return false;
 
                                 return true;
                             });

@@ -23,8 +23,8 @@ if (!defined('PASABUY_INCLUDED')) {
 }
 </style>
 
-<!-- 1. 5-SECOND SPLASH SCREEN (PHP COMPONENT) -->
-<div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #5B3FA8 0%, #341F97 45%, #1E1B4B 100%) !important; color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden; cursor:pointer;" onclick="hideSplashScreen()">
+<!-- 1. SPLASH / LOADING SCREEN (RENTEASE) -->
+<div id="splashScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, #5B3FA8 0%, #341F97 45%, #1E1B4B 100%) !important; color:#fff; z-index:9999; padding: 40px 24px; text-align:center; overflow:hidden; cursor:default !important; user-select:none; -webkit-user-select:none; pointer-events:all;" onclick="event.stopPropagation(); return false;" onmousedown="event.stopPropagation();" ontouchstart="event.stopPropagation();">
     <!-- Top Spacer to achieve true vertical centering -->
     <div style="height: 30px; width: 100%;"></div>
 
@@ -44,7 +44,7 @@ if (!defined('PASABUY_INCLUDED')) {
             <div class="rounded-circle bg-white d-flex align-items-center justify-content-center shadow-lg" 
                  style="width: 116px; height: 116px; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4); z-index: 2; animation: splashPulseGlow 2.5s ease-in-out infinite;">
                 <img src="LOGO.png" alt="RentEase Logo" 
-                     style="width: 80px; height: 80px; object-fit: contain;" 
+                     style="width: 80px; height: 80px; object-fit: contain; pointer-events: none;" 
                      onerror="if (this.src.indexOf('../LOGO.png') === -1) { this.src='../LOGO.png'; } else { this.onerror=null; this.parentNode.innerHTML='<i class=\'fa-solid fa-chair display-5\' style=\'color:#5B3FA8;\'></i>'; }">
             </div>
         </div>
@@ -79,7 +79,7 @@ if (!defined('PASABUY_INCLUDED')) {
 
         if (splash) {
             splash.style.opacity = '0';
-            splash.style.transition = 'opacity 0.3s ease';
+            splash.style.transition = 'opacity 0.4s ease';
             setTimeout(function() {
                 splash.style.setProperty('display', 'none', 'important');
                 if (typeof window.checkStudentSessionOnLoad === 'function') {
@@ -90,7 +90,7 @@ if (!defined('PASABUY_INCLUDED')) {
                 if (typeof switchTab === 'function') {
                     switchTab('home');
                 }
-            }, 300);
+            }, 400);
         } else {
             if (typeof window.checkStudentSessionOnLoad === 'function') {
                 window.checkStudentSessionOnLoad();
@@ -108,10 +108,19 @@ if (!defined('PASABUY_INCLUDED')) {
         splash.style.display = 'flex';
         splash.style.opacity = '1';
 
+        // Disallow click or tap dismissal - protect against accidental skipping
+        splash.onclick = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            return false;
+        };
+
         if (splashTimeout) clearTimeout(splashTimeout);
         splashTimeout = setTimeout(function() {
             hideSplashScreen();
-        }, 1800);
+        }, 2800);
     };
 
     if (document.readyState === 'loading') {

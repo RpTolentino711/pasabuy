@@ -6679,12 +6679,21 @@
                             if (reg) reg.style.display = 'none';
                             if (userActions) userActions.style.setProperty('display', 'none', 'important');
 
+                            // Ensure loading screen cannot be clicked or skipped prematurely
+                            splash.onclick = function (e) {
+                                if (e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                }
+                                return false;
+                            };
+
                             let progress = 0;
                             if (progressBar) progressBar.style.width = '0%';
 
                             if (splashProgressInterval) clearInterval(splashProgressInterval);
                             splashProgressInterval = setInterval(() => {
-                                progress += 2;
+                                progress += 4;
                                 if (progressBar) progressBar.style.width = `${progress}%`;
                                 if (progress >= 100) {
                                     clearInterval(splashProgressInterval);
@@ -6694,7 +6703,7 @@
                             if (splashTimer) clearTimeout(splashTimer);
                             splashTimer = setTimeout(() => {
                                 hideSplashScreen();
-                            }, 5000);
+                            }, 2800);
                         };
 
                         window.hideSplashScreen = function () {

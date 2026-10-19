@@ -156,140 +156,6 @@
             z-index: 10 !important;
         }
 
-        /* Loading Spinner */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(95, 39, 205, 0.2);
-            border-radius: 50%;
-            border-top-color: #5F27CD;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .loading-overlay .spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid rgba(95, 39, 205, 0.2);
-            border-radius: 50%;
-            border-top-color: #5F27CD;
-            animation: spin 0.8s linear infinite;
-        }
-
-        .loading-overlay p {
-            color: #5F27CD;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        /* Toast Notifications */
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-            max-width: 320px;
-        }
-
-        .toast {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideIn 0.3s ease;
-        }
-
-        .toast.success {
-            border-left: 4px solid #10AC84;
-        }
-
-        .toast.error {
-            border-left: 4px solid #FF3B30;
-        }
-
-        .toast.info {
-            border-left: 4px solid #5F27CD;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        /* Button Loading State */
-        .btn-loading {
-            position: relative;
-            pointer-events: none;
-            opacity: 0.7;
-        }
-
-        .btn-loading::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            top: 50%;
-            left: 50%;
-            margin-left: -8px;
-            margin-top: -8px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 0.8s linear infinite;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #94A3B8;
-        }
-
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 16px;
-            color: #CBD5E1;
-        }
-
-        .empty-state h5 {
-            color: #64748B;
-            font-weight: 600;
-        }
-
-        .empty-state p {
-            font-size: 0.85rem;
-            margin-bottom: 16px;
-        }
-
         /* Main Body Scrollable Area */
         .app-body {
             flex: 1;
@@ -515,15 +381,6 @@
 
 <body>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
-        <div class="spinner"></div>
-        <p id="loadingText">Loading...</p>
-    </div>
-
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
-
     <div class="app-container">
         <!-- App Header (Matching Reference Design) -->
         <div class="app-header bg-white border-bottom px-3 py-2.5 shadow-sm d-flex align-items-center justify-content-between" style="background:#fff; color:#1E293B;">
@@ -603,73 +460,6 @@
 
                     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                     <script>
-                        // Loading and Toast Notification Helpers
-                        window.showLoading = function(text = 'Loading...') {
-                            const overlay = document.getElementById('loadingOverlay');
-                            const textEl = document.getElementById('loadingText');
-                            if (overlay) {
-                                if (textEl) textEl.textContent = text;
-                                overlay.style.display = 'flex';
-                            }
-                        };
-
-                        window.hideLoading = function() {
-                            const overlay = document.getElementById('loadingOverlay');
-                            if (overlay) overlay.style.display = 'none';
-                        };
-
-                        window.showToast = function(message, type = 'info', duration = 3000) {
-                            const container = document.getElementById('toastContainer');
-                            if (!container) return;
-
-                            const toast = document.createElement('div');
-                            toast.className = `toast ${type}`;
-
-                            const iconMap = {
-                                success: 'fa-check-circle',
-                                error: 'fa-exclamation-circle',
-                                info: 'fa-info-circle'
-                            };
-
-                            const icon = iconMap[type] || iconMap.info;
-
-                            toast.innerHTML = `
-                                <i class="fa-solid ${icon}" style="font-size: 20px; color: ${type === 'success' ? '#10AC84' : type === 'error' ? '#FF3B30' : '#5F27CD'};"></i>
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 600; font-size: 0.9rem; color: #1E293B;">${message}</div>
-                                </div>
-                                <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 16px;">
-                                    <i class="fa-solid fa-times"></i>
-                                </button>
-                            `;
-
-                            container.appendChild(toast);
-
-                            setTimeout(() => {
-                                toast.style.animation = 'slideIn 0.3s ease reverse';
-                                setTimeout(() => toast.remove(), 300);
-                            }, duration);
-                        };
-
-                        window.setButtonLoading = function(buttonId, isLoading, originalText = '') {
-                            const btn = document.getElementById(buttonId);
-                            if (!btn) return;
-
-                            if (isLoading) {
-                                btn.dataset.originalText = btn.textContent;
-                                btn.classList.add('btn-loading');
-                                btn.disabled = true;
-                            } else {
-                                btn.classList.remove('btn-loading');
-                                btn.disabled = false;
-                                if (originalText) {
-                                    btn.textContent = originalText;
-                                } else if (btn.dataset.originalText) {
-                                    btn.textContent = btn.dataset.originalText;
-                                }
-                            }
-                        };
-
                         let notificationsModalInstance = null;
 
                         window.openNotificationsModal = async function () {
@@ -6889,12 +6679,21 @@
                             if (reg) reg.style.display = 'none';
                             if (userActions) userActions.style.setProperty('display', 'none', 'important');
 
+                            // Ensure loading screen cannot be clicked or skipped prematurely
+                            splash.onclick = function (e) {
+                                if (e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                }
+                                return false;
+                            };
+
                             let progress = 0;
                             if (progressBar) progressBar.style.width = '0%';
 
                             if (splashProgressInterval) clearInterval(splashProgressInterval);
                             splashProgressInterval = setInterval(() => {
-                                progress += 2;
+                                progress += 4;
                                 if (progressBar) progressBar.style.width = `${progress}%`;
                                 if (progress >= 100) {
                                     clearInterval(splashProgressInterval);
@@ -6904,7 +6703,7 @@
                             if (splashTimer) clearTimeout(splashTimer);
                             splashTimer = setTimeout(() => {
                                 hideSplashScreen();
-                            }, 5000);
+                            }, 2800);
                         };
 
                         window.hideSplashScreen = function () {
@@ -7091,27 +6890,59 @@
                     const response = await fetch(`/pasabuy_api.php?action=chat_conversations&user_id=${encodeURIComponent(userId)}&_t=${Date.now()}`, { cache: 'no-store' });
                     const conversations = await response.json();
                     if (!Array.isArray(conversations) || !conversations.length) return;
-                    container.innerHTML = conversations.map(c => `<button type="button" class="conversation-card w-100 text-start border rounded-4 bg-white p-3 d-flex align-items-center gap-3 shadow-2xs" onclick='window.openConversationCard(${JSON.stringify(c).replace(/</g, "\\u003c")})'><img src="${c.PartnerAvatar || 'https://ui-avatars.com/api/?name=Chat&background=5B3FA8&color=fff'}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" alt=""><span class="min-w-0"><strong class="d-block text-dark text-truncate">${c.PartnerName || 'Campus Student'}</strong><small class="text-muted text-truncate d-block">${c.ItemTitle || 'Rental conversation'}</small><small class="text-secondary text-truncate d-block">${c.MessageText || ''}</small></span></button>`).join('');
-                } catch (e) { console.error('Messages fallback loader failed:', e); }
+                    container.innerHTML = conversations.map(c => `
+                        <button type="button" class="w-100 text-start border rounded-4 bg-white p-3 d-flex align-items-center gap-3 shadow-2xs" onclick='window.openConversationCard(${JSON.stringify(c).replace(/</g, "\\u003c")} )'>
+                            <img src="${c.PartnerAvatar || 'https://ui-avatars.com/api/?name=Chat&background=5B3FA8&color=fff'}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" alt="">
+                            <span class="min-w-0"><strong class="d-block text-dark text-truncate">${c.PartnerName || 'Campus Student'}</strong><small class="text-muted text-truncate d-block">${c.ItemTitle || 'Rental conversation'}</small><small class="text-secondary text-truncate d-block">${c.MessageText || ''}</small></span>
+                        </button>
+                    `).join('');
+                } catch (e) {
+                    console.error('Messages fallback loader failed:', e);
+                }
             };
         }
         window.openConversationCard = async function (conversation) {
+            const partnerId = Number(conversation.PartnerId || conversation.SenderId || 0);
+            const partnerName = conversation.PartnerName || 'Campus Student';
+            const itemTitle = conversation.ItemTitle || 'Campus Item';
+            const orderCode = conversation.OrderCode || conversation.RentalOrderCode || '';
             if (typeof window.checkAndOpenChat === 'function') {
-                return window.checkAndOpenChat(Number(conversation.PartnerId || conversation.SenderId || 0), conversation.PartnerName || 'Campus Student', conversation.ItemTitle || 'Campus Item', conversation.ItemPrice || '₱0.00', conversation.PartnerAvatar || '', conversation.ItemImage || '', false, conversation.OwnerName || '', false, conversation.OrderCode || conversation.RentalOrderCode || '');
+                return window.checkAndOpenChat(
+                    partnerId,
+                    partnerName,
+                    itemTitle,
+                    conversation.ItemPrice || '₱0.00',
+                    conversation.PartnerAvatar || '',
+                    conversation.ItemImage || '',
+                    false,
+                    conversation.OwnerName || '',
+                    false,
+                    orderCode
+                );
             }
-            window.currentActiveChatSellerId = Number(conversation.PartnerId || conversation.SenderId || 0);
-            window.currentActiveChatOrderCode = conversation.OrderCode || conversation.RentalOrderCode || null;
-            document.getElementById('tabMessages')?.style.setProperty('display', 'none', 'important');
-            document.getElementById('chatView')?.style.setProperty('display', 'flex', 'important');
-            const partner = document.getElementById('chatPartnerName') || document.getElementById('chatRecipientName');
-            const title = document.getElementById('chatItemTitle');
-            if (partner) partner.textContent = conversation.PartnerName || 'Campus Student';
-            if (title) title.textContent = conversation.ItemTitle || 'Campus Item';
+
+            window.currentActiveChatSellerId = partnerId;
+            window.currentActiveChatOrderCode = orderCode || null;
+            const messagesTab = document.getElementById('tabMessages');
+            const chatView = document.getElementById('chatView');
+            if (messagesTab) messagesTab.style.setProperty('display', 'none', 'important');
+            if (chatView) chatView.style.setProperty('display', 'flex', 'important');
+            const partnerNameEl = document.getElementById('chatPartnerName') || document.getElementById('chatRecipientName');
+            const itemTitleEl = document.getElementById('chatItemTitle');
+            if (partnerNameEl) partnerNameEl.textContent = partnerName;
+            if (itemTitleEl) itemTitleEl.textContent = itemTitle;
+            const stream = document.getElementById('chatStream') || document.getElementById('chatMessageContainer');
+            if (stream) stream.innerHTML = '<div class="text-center my-4 text-muted">Loading conversation...</div>';
+            if (typeof window.refreshActiveChatStream === 'function') {
+                await window.refreshActiveChatStream();
+            }
         };
         if (typeof window.closeChat !== 'function') {
             window.closeChat = function () {
-                document.getElementById('chatView')?.style.setProperty('display', 'none', 'important');
-                document.getElementById('tabMessages')?.style.setProperty('display', 'block', 'important');
+                const chatView = document.getElementById('chatView');
+                const messagesTab = document.getElementById('tabMessages');
+                if (chatView) chatView.style.setProperty('display', 'none', 'important');
+                if (messagesTab) messagesTab.style.setProperty('display', 'block', 'important');
                 if (typeof window.loadChatConversationsList === 'function') window.loadChatConversationsList();
             };
         }
