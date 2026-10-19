@@ -220,7 +220,7 @@ function renderFeaturedRentals() {
                         ? `<button class="btn btn-sm rounded-pill px-2 py-0.5 text-white border-0 fw-bold shadow-xs" 
                                    style="background: #475569; font-size: 0.65rem;"
                                    onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Your Equipment">
-                               <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.6rem;"></i> Yours
+                               <i class="fa-solid fa-crown me-0.5 text-warning" style="font-size:0.6rem;"></i> Mine
                            </button>`
                         : (rentEaseCart.some(c => c.id == item.id)
                             ? `<button class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white shadow-xs" 
@@ -500,7 +500,7 @@ function renderGridElements(items) {
                         <span class="badge ${p.qty_available > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-bold" style="font-size: 0.6rem; padding: 2px 5px;">
                             <i class="fa-solid fa-boxes-stacked me-0.5"></i>Stock: ${p.qty_available ?? p.qty_total}
                         </span>
-                        ${isMine ? `<span class="badge bg-primary-subtle text-primary" style="font-size:0.58rem; padding: 2px 4px;"><i class="fa-solid fa-crown me-0.5"></i>Yours</span>` : (p.owner_name ? `<span class="text-muted" style="font-size:0.6rem;"><i class="fa-regular fa-user me-0.5"></i>${p.owner_name.split(' ')[0]}</span>` : '')}
+                        ${isMine ? `<span class="badge bg-primary-subtle text-primary" style="font-size:0.58rem; padding: 2px 4px;"><i class="fa-solid fa-crown me-0.5"></i>Mine</span>` : (p.owner_name ? `<span class="text-muted" style="font-size:0.6rem;"><i class="fa-regular fa-user me-0.5"></i>${p.owner_name.split(' ')[0]}</span>` : '')}
                     </div>
                     <div class="d-flex align-items-center gap-1 mb-2">
                         <i class="fa-solid fa-star text-warning" style="font-size:0.68rem;"></i>

@@ -982,7 +982,7 @@
                 <div class="fw-extrabold text-dark fs-7 text-truncate px-2" id="detailHeaderTitle" style="letter-spacing: -0.2px;">Equipment Details</div>
                 <div id="detailHeaderOwnerBadge" class="d-flex align-items-center" style="display:none;">
                     <span class="badge rounded-pill fw-bold px-2.5 py-2" style="background:#EEF2FF; color:#5B3FA8; font-size:0.72rem;">
-                        <i class="fa-solid fa-crown text-warning me-1"></i> Yours
+                        <i class="fa-solid fa-crown text-warning me-1"></i> Mine
                     </span>
                 </div>
                 <div class="d-flex align-items-center gap-2" id="detailHeaderBuyerActions">

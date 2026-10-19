@@ -3206,7 +3206,7 @@
                                             </span>
                                            </div>`;
 
-                                    homeActionButtonHtml = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-9 fw-semibold px-2 py-1"><i class="fa-solid fa-user-check me-1"></i> Yours</span>`;
+                                    homeActionButtonHtml = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-9 fw-semibold px-2 py-1"><i class="fa-solid fa-user-check me-1"></i> Mine</span>`;
                                 } else {
                                     homeMediaHtml = p.videoUrl
                                         ? `<div class="position-relative" style="cursor:pointer;" onclick="openProductDetailModal(${p.id})">
