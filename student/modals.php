@@ -288,7 +288,7 @@
                 <button type="button" class="btn btn-light rounded-pill px-4 fs-8"
                     data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary rounded-pill px-4 fs-8 fw-bold"
-                    onclick="saveProfileSettings()"><i class="fa-solid fa-floppy-disk me-1"></i> Save & Update
+                    onclick="window.saveProfileSettings()"><i class="fa-solid fa-floppy-disk me-1"></i> Save & Update
                     Profile</button>
             </div>
         </div>
