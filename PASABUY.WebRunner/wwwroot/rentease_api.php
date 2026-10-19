@@ -687,27 +687,9 @@ $action = trim((string)($data['action'] ?? $_GET['action'] ?? 'get_inventory'));
 // Fix POSPT duplicate photo
 if ($action === 'fix_pospt_photos') {
     try {
-        $stmt = $db->prepare("SELECT id, image_url, photos FROM rental_inventory WHERE name = 'POSPT'");
+        $stmt = $db->prepare("UPDATE rental_inventory SET photos = '[]' WHERE name = 'POSPT'");
         $stmt->execute();
-        $item = $stmt->fetch();
-        if ($item && $item['photos']) {
-            $photos = json_decode($item['photos'], true);
-            if (is_array($photos)) {
-                $image_url = $item['image_url'];
-                $photos = array_filter($photos, function($photo) use ($image_url) {
-                    return trim($photo) !== trim($image_url);
-                });
-                $photos = array_values($photos);
-                $photosJson = json_encode($photos);
-                $updateStmt = $db->prepare("UPDATE rental_inventory SET photos = ? WHERE id = ?");
-                $updateStmt->execute([$photosJson, $item['id']]);
-                echo json_encode(['success' => true, 'message' => 'POSPT photos fixed', 'photos' => $photos]);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Photos not an array']);
-            }
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Item not found']);
-        }
+        echo json_encode(['success' => true, 'message' => 'POSPT photos cleared - image is in image_url']);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
