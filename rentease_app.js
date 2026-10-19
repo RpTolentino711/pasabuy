@@ -338,19 +338,13 @@ function renderFeaturedRentals() {
                                     style="font-size: 0.65rem;" disabled>
                                 Out
                             </button>
-                        ` : (inCart ? `
-                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-white border-0 fw-bold shadow-xs d-flex align-items-center gap-1" 
-                                    style="background: linear-gradient(135deg, #10B981, #059669); font-size: 0.65rem;"
-                                    onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="In Cart">
-                                <i class="fa-solid fa-check" style="font-size: 0.65rem;"></i> In Cart
-                            </button>
                         ` : `
                             <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 text-white border-0 fw-bold shadow-xs d-flex align-items-center gap-1" 
                                     style="background: linear-gradient(135deg, #6C5CE7, #5B3FA8); font-size: 0.65rem;"
-                                    onclick="event.stopPropagation(); quickAddRentEaseItem(${item.id}, this)" title="Rent Equipment">
-                                <i class="fa-solid fa-cart-plus" style="font-size: 0.65rem;"></i> Rent
+                                    onclick="event.stopPropagation(); openEquipmentDetail(${item.id})" title="Rent Equipment">
+                                <i class="fa-solid fa-bolt" style="font-size: 0.65rem;"></i> Rent
                             </button>
-                        `))}
+                        `)}
                     </div>
                 </div>
             </div>
@@ -656,18 +650,14 @@ function renderGridElements(items) {
 
         let cartBtnClass = 'text-white';
         let cartBtnStyle = 'background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;';
-        let cartBtnText = '<i class="fa-solid fa-cart-plus me-1"></i> Add to Cart';
-        let cartOnClick = `event.stopPropagation(); quickAddRentEaseItem(${p.id}, this)`;
+        let cartBtnText = '<i class="fa-solid fa-bolt me-1"></i> Rent';
+        let cartOnClick = `event.stopPropagation(); openEquipmentDetail(${p.id})`;
 
         if (isMine) {
             cartBtnClass = 'text-white';
             cartBtnStyle = 'background: #475569; border:none;';
             cartBtnText = '<i class="fa-solid fa-crown text-warning me-1"></i> Your Equipment';
             cartOnClick = `event.stopPropagation(); openEquipmentDetail(${p.id})`;
-        } else if (inCart) {
-            cartBtnClass = 'btn-success text-white';
-            cartBtnStyle = 'background: linear-gradient(135deg, #10B981, #059669); border:none;';
-            cartBtnText = '<i class="fa-solid fa-check me-1"></i> Added';
         }
 
         html += `
@@ -1206,20 +1196,11 @@ function openEquipmentDetail(id) {
         window.onDetailDatesChanged();
 
         if (footerActions) {
-            const inCart = rentEaseCart.some(i => (i.id && i.id == item.id) || (i.listingId && i.listingId == item.id) || (item.name && (i.title === item.name || i.name === item.name)));
             footerActions.innerHTML = `
                 <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 text-nowrap" 
                         style="background:#F8FAFC; border: 1.5px solid #E2E8F0; color:#5B3FA8; height:46px;" onclick="chatWithOwnerFromDetail()" title="Chat with Owner">
                     <i class="fa-regular fa-comment-dots fs-6"></i>
                     <span>Chat</span>
-                </button>
-                <button type="button" class="btn rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-2 shadow-2xs text-nowrap" 
-                        style="${inCart 
-                            ? 'background: #10B981; border: 2px solid #10B981; color: #FFFFFF;' 
-                            : 'border: 2px solid #5B3FA8; color: #5B3FA8; background: #FAF5FF;'} height:46px; transition: all 0.2s ease;" 
-                        id="detailAddToCartBtn" onclick="confirmAddDetailToCart(this)" title="${inCart ? 'Click to Remove from Cart' : 'Add to Cart'}">
-                    <i class="fa-solid ${inCart ? 'fa-check' : 'fa-cart-plus'} fs-6"></i>
-                    <span>${inCart ? 'In Cart (Click to Remove)' : 'Add to Cart'}</span>
                 </button>
                 <button type="button" class="btn btn-primary rounded-4 py-2.5 px-3 fw-extrabold fs-7 flex-grow-1 d-flex align-items-center justify-content-center gap-2 shadow-sm text-nowrap" 
                         style="background: linear-gradient(135deg, #6C5CE7, #5B3FA8); border: none; color: #fff; height:46px; box-shadow: 0 4px 14px rgba(91, 63, 168, 0.35);" id="detailRentNowBtn" onclick="confirmRentNowDetail()">
