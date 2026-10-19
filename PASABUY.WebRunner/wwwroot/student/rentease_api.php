@@ -2050,6 +2050,11 @@ if (in_array($action, ['request_early_return', 'respond_early_return'], true)) {
             echo json_encode(['success' => false, 'message' => 'There is no pending early-return request for this rental.']);
             exit;
         }
+        // Prevent double-return: if already RETURNED, don't restock again
+        if (($order['order_status'] ?? '') === 'RETURNED') {
+            echo json_encode(['success' => false, 'message' => 'This rental has already been returned and restocked.']);
+            exit;
+        }
         if ($response === 'no') {
             $db->prepare("UPDATE `rental_orders` SET `early_return_status` = 'DECLINED' WHERE `id` = ?")->execute([(int)$order['id']]);
             echo json_encode(['success' => true, 'status' => 'DECLINED', 'message' => 'The stock owner has been told that the item has not been returned yet.']);
@@ -2071,12 +2076,11 @@ if (in_array($action, ['request_early_return', 'respond_early_return'], true)) {
             $productId = (int)($item['product_id'] ?? 0);
             if ($productId > 0) $updStock->execute([$qty, $qty, $productId]);
         }
-        $message = "✅ Your item for Order {$order['order_code']} has been verified and restocked. The rental is now complete.";
+        $message = "✅ Order {$order['order_code']} is verified by the renter and the item is now back in stock. The rental is complete.";
         try {
+            // Send ONE message to both participants to avoid duplicate conversations
             $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (0, ?, 'RentEase System', ?, ?, NOW())")
-                ->execute([(int)($order['renter_id'] ?? 0), $message, $order['item_name'] ?? 'Rental Return Complete']);
-            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (0, ?, 'RentEase System', ?, ?, NOW())")
-                ->execute([(int)($order['owner_id'] ?? 0), "✅ Order {$order['order_code']} is verified by the renter and the item is now back in stock.", $order['item_name'] ?? 'Rental Return Complete']);
+                ->execute([(int)($order['owner_id'] ?? 0), $message, $order['item_name'] ?? 'Rental Return Complete']);
         } catch (Exception $eNotification) {}
         $db->commit();
         echo json_encode(['success' => true, 'status' => 'COMPLETED', 'message' => $message]);

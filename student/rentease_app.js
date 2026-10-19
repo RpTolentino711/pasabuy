@@ -273,13 +273,15 @@ function renderFeaturedRentals() {
                             ` : ''}
 
                             <!-- Verified Renter Heart Badge (Campus Recommendations) -->
+                            ${!isOwner ? `
                             <div class="badge rounded-pill px-2 py-0.5 fw-extrabold shadow-xs d-flex align-items-center gap-1 rentease-heart-pill"
                                  style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid rgba(244, 63, 94, 0.25); color: #E11D48; font-size: 0.62rem; cursor: pointer; transition: transform 0.15s ease;"
                                  onclick="event.stopPropagation(); handleHeartClickOnCard(${item.id}, ${isOwner})"
-                                 title="${isOwner ? 'Hearts received from verified renters' : 'Hearts given by renters who returned and rated this equipment'}">
+                                 title="Hearts given by renters who returned and rated this equipment">
                                 <i class="fa-solid fa-heart text-danger" style="font-size: 0.65rem;"></i>
                                 <span class="text-dark fw-extrabold">${parseInt(item.hearts_count || 0)}</span>
                             </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -682,13 +684,15 @@ function renderGridElements(items) {
                                     <i class="fa-solid fa-crown text-warning"></i> Mine
                                 </span>
                             ` : ''}
+                            ${!isMine ? `
                             <div class="badge rounded-pill px-1.5 py-0.5 fw-extrabold shadow-2xs d-flex align-items-center gap-0.5" 
                                  style="background:rgba(255,255,255,0.95); backdrop-filter:blur(6px); border:1px solid rgba(244,63,94,0.25); color:#E11D48; font-size:0.6rem; cursor:pointer;"
                                  onclick="event.stopPropagation(); handleHeartClickOnCard(${p.id}, ${isMine})"
-                                 title="${isMine ? 'Hearts received from verified renters' : 'Hearts given by verified renters'}">
+                                 title="Hearts given by verified renters">
                                 <i class="fa-solid fa-heart text-danger" style="font-size:0.6rem;"></i>
                                 <span class="text-dark fw-extrabold">${parseInt(p.hearts_count || 0)}</span>
                             </div>
+                            ` : ''}
                         </div>
                     </div>
                     <h6 class="fw-bold mb-0.5 text-dark fs-8 text-truncate" title="${p.name}" style="font-size:0.8rem;">${p.name}</h6>
