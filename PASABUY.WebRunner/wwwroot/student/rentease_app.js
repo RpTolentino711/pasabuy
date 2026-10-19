@@ -570,12 +570,14 @@ window.setupDetailMediaCarousel = function (item) {
 
     // 1. Primary photo
     const mainPhoto = item.image_url || item.img || item.ImageUrl || item.image;
+    console.log('Main photo:', mainPhoto);
     if (mainPhoto && typeof mainPhoto === 'string' && mainPhoto.trim()) {
         addImageMedia(mainPhoto);
     }
 
     // 2. Additional photos (arrays, JSON string, or comma-separated list)
     let extraPhotos = item.photos || item.images || item.image_urls || item.gallery;
+    console.log('Extra photos (raw):', extraPhotos);
     if (typeof extraPhotos === 'string') {
         try {
             extraPhotos = JSON.parse(extraPhotos);
@@ -583,6 +585,7 @@ window.setupDetailMediaCarousel = function (item) {
             extraPhotos = extraPhotos.split(',').map(s => s.trim()).filter(Boolean);
         }
     }
+    console.log('Extra photos (parsed):', extraPhotos);
     if (Array.isArray(extraPhotos)) {
         extraPhotos.forEach(u => {
             addImageMedia(u);
@@ -591,9 +594,12 @@ window.setupDetailMediaCarousel = function (item) {
 
     // 3. Video demonstration (item.video_url / item.videoUrl / item.VideoUrl)
     const video = item.video_url || item.videoUrl || item.VideoUrl;
+    console.log('Video:', video);
     if (video && typeof video === 'string' && video.trim()) {
         media.push({ type: 'video', url: video.trim() });
     }
+
+    console.log('Total media items:', media.length, media);
 
     // Fallback if no media at all
     if (media.length === 0) {
