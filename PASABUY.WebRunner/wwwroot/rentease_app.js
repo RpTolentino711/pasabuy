@@ -2211,14 +2211,6 @@ window.ownerPrepareEquipment = async function(orderCode) {
     await updateOwnerOrderStatus(0, orderCode, 'PREPARING');
 };
 
-window.ownerConfirmHandover = async function(orderCode) {
-    if (!orderCode) orderCode = currentTrackingOrderCode || '#RE-10245';
-    if (!confirm(`Confirm face-to-face equipment handover for order ${orderCode}? This will mark the rental as actively received.`)) {
-        return;
-    }
-    await updateOwnerOrderStatus(0, orderCode, 'DELIVERED');
-};
-
 window.openChatWithRenter = function (customerName, customerPhone, orderCode) {
     switchTab('messages');
     setTimeout(() => {
