@@ -853,6 +853,46 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
                     </div>
                 </div>
+
+                <!-- Most Popular Equipment in the System (TikTok-Style Top Hearted) -->
+                <div class="row g-4 mt-1">
+                    <div class="col-12">
+                        <div class="admin-table-card p-3">
+                            <div class="d-flex align-items-center justify-content-between mb-3 px-2 flex-wrap gap-2">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-danger-subtle text-danger px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-heart me-1"></i>Most Popular Equipment</span>
+                                        <h6 class="fw-extrabold text-dark fs-7 mb-0">Platform Favorites &amp; Top-Hearted Equipment</h6>
+                                    </div>
+                                    <small class="text-muted fs-9">Ranked dynamically by verified renter hearts and completed rentals across the campus.</small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fs-9 fw-bold" onclick="switchAdminTab('products')">
+                                    View All Equipment <i class="fa-solid fa-arrow-right ms-1"></i>
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-custom mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th width="70" class="text-center">Rank</th>
+                                            <th width="60">Image</th>
+                                            <th>Equipment Name</th>
+                                            <th>Category</th>
+                                            <th>Stock Owner</th>
+                                            <th>Price / Day</th>
+                                            <th>Rating</th>
+                                            <th>Popularity (❤️ Hearts)</th>
+                                            <th>Stock Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashPopularItemsTableBody">
+                                        <tr><td colspan="9" class="text-center py-4 text-muted">Loading most popular equipment...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- ==========================================================
@@ -899,6 +939,12 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <option value="Out of Stock">Out of Stock</option>
                             </select>
                         </div>
+                        <div class="col-12 col-md-2">
+                            <select class="form-select form-select-sm" id="productSortFilter" onchange="loadProducts()">
+                                <option value="popular">Most Popular (❤️)</option>
+                                <option value="newest">Newest First</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Products Table -->
@@ -912,13 +958,14 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     <th>Category</th>
                                     <th>Price</th>
                                     <th>Stock</th>
+                                    <th class="text-nowrap">Popularity (❤️)</th>
                                     <th>Status</th>
                                     <th>Qty(Total)</th>
                                     <th width="120">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="productsTableBody">
-                                <tr><td colspan="9" class="text-center py-4 text-muted">Loading live products...</td></tr>
+                                <tr><td colspan="10" class="text-center py-4 text-muted">Loading live products...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -3062,6 +3109,53 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     } else {
                         tbodyT.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No open inquiries.</td></tr>';
                     }
+
+                    // Render most popular equipment table
+                    const popTbody = document.getElementById('dashPopularItemsTableBody');
+                    if (popTbody) {
+                        if (data.popular_items && data.popular_items.length > 0) {
+                            popTbody.innerHTML = data.popular_items.map((pi, idx) => {
+                                const rank = idx + 1;
+                                let rankBadge = `<span class="badge rounded-circle bg-secondary text-white" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">${rank}</span>`;
+                                if (rank === 1) rankBadge = `<span class="badge rounded-circle bg-warning text-dark fw-extrabold shadow-xs" style="width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; font-size:0.85rem;" title="1st Place - Campus Favorite">🥇</span>`;
+                                else if (rank === 2) rankBadge = `<span class="badge rounded-circle bg-light border text-dark fw-extrabold" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:0.8rem;" title="2nd Place">🥈</span>`;
+                                else if (rank === 3) rankBadge = `<span class="badge rounded-circle bg-light border text-dark fw-extrabold" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:0.8rem;" title="3rd Place">🥉</span>`;
+
+                                const img = pi.image_url || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&q=80';
+                                return `
+                                <tr>
+                                    <td class="text-center">${rankBadge}</td>
+                                    <td><img src="${img}" class="rounded-2 border object-fit-cover shadow-2xs" style="width:40px; height:40px;" onerror="this.src='https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&q=80'"></td>
+                                    <td>
+                                        <div class="fw-bold text-dark fs-8">${pi.name}</div>
+                                        <div class="fs-9 text-muted">${pi.category}</div>
+                                    </td>
+                                    <td><span class="badge bg-light text-secondary border fs-9">${pi.category}</span></td>
+                                    <td><span class="fs-8 fw-semibold text-dark">${pi.owner_name || 'Romeo Paolo Tolentino'}</span></td>
+                                    <td class="fw-bold fs-8">₱${Number(pi.price_per_day).toLocaleString()}/day</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-1 text-warning fs-9 fw-bold">
+                                            <i class="fa-solid fa-star"></i>
+                                            <span class="text-dark">${parseFloat(pi.rating || 5.0).toFixed(1)}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 fw-extrabold fs-8 d-inline-flex align-items-center gap-1.5 shadow-2xs">
+                                            <i class="fa-solid fa-heart text-danger"></i> ${pi.hearts_count || 0} hearts
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${pi.qty_available > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-bold fs-9">
+                                            ${pi.qty_available > 0 ? `${pi.qty_available} in stock` : 'Out of stock'}
+                                        </span>
+                                    </td>
+                                </tr>
+                                `;
+                            }).join('');
+                        } else {
+                            popTbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No equipment listings yet.</td></tr>';
+                        }
+                    }
                 }
             } catch (e) {
                 console.error("Error loading dashboard stats:", e);
@@ -3075,9 +3169,10 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             const search = document.getElementById('productSearchInput')?.value || '';
             const category = document.getElementById('productCategoryFilter')?.value || 'All';
             const availability = document.getElementById('productAvailabilityFilter')?.value || 'All';
+            const sort = document.getElementById('productSortFilter')?.value || 'popular';
 
             try {
-                const res = await fetch(`${API_URL}?action=get_products&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&availability=${encodeURIComponent(availability)}`);
+                const res = await fetch(`${API_URL}?action=get_products&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&availability=${encodeURIComponent(availability)}&sort=${encodeURIComponent(sort)}`);
                 const data = await res.json();
                 const tbody = document.getElementById('productsTableBody');
                 const listingCountEl = document.getElementById('productsListingCount');
@@ -3111,6 +3206,11 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <td><span class="badge bg-light text-secondary border">${p.category}</span></td>
                             <td class="fw-bold">₱${Number(p.price_per_day).toLocaleString()}</td>
                             <td class="fw-bold ${p.qty_available <= 5 ? 'text-warning' : 'text-success'}">${p.qty_available}</td>
+                            <td>
+                                <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-2 py-0.5 fw-bold fs-9 d-inline-flex align-items-center gap-1">
+                                    <i class="fa-solid fa-heart text-danger"></i> ${p.hearts_count || 0}
+                                </span>
+                            </td>
                             <td><span class="badge ${p.badge_class}">${p.stock_status}</span></td>
                             <td>${p.qty_total}</td>
                             <td>
@@ -3121,7 +3221,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </tr>
                     `;}).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No matching products found.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No matching products found.</td></tr>';
                 }
             } catch (e) {
                 console.error("Products error:", e);

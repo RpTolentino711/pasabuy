@@ -20,15 +20,19 @@
          style="background: linear-gradient(135deg, #5B3FA8 0%, #341F97 100%); min-height: 96px;">
         <div class="row g-0 h-100 align-items-center">
             <div class="col-7 p-2.5 ps-3 z-2">
+                <div class="d-inline-flex align-items-center gap-1 badge rounded-pill px-2 py-0.5 mb-1 text-white shadow-2xs" 
+                     style="background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); font-size: 0.62rem; border: 1px solid rgba(255, 255, 255, 0.25);">
+                    <i class="fa-solid fa-heart text-danger"></i> Campus Top Hearted Gear
+                </div>
                 <h5 class="fw-extrabold mb-0.5 text-white" style="font-size: 0.92rem; letter-spacing: -0.2px; line-height: 1.2;">
                     Make Your Event Special
                 </h5>
                 <p class="text-white-50 mb-1.5" style="font-size: 0.72rem; line-height: 1.2;">
-                    Quality equipment for every occasion.
+                    Top-rated equipment loved by student renters.
                 </p>
-                <button class="btn btn-warning btn-sm rounded-pill fw-bold text-dark shadow-sm" 
-                        style="background: #F4B942; border: none; font-size: 0.72rem; padding: 2px 10px;" onclick="openCategoryTab('All')">
-                    Rent Now
+                <button class="btn btn-warning btn-sm rounded-pill fw-bold text-dark shadow-sm d-inline-flex align-items-center gap-1" 
+                        style="background: #F4B942; border: none; font-size: 0.72rem; padding: 2px 10px;" onclick="scrollToTopHeartedRentals()">
+                    <i class="fa-solid fa-heart text-danger" style="font-size:0.65rem;"></i> Explore Most Loved
                 </button>
             </div>
             <div class="col-5 h-100 position-relative">

@@ -98,6 +98,19 @@ if ($db) {
     try {
         $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `terminated_at` DATETIME DEFAULT NULL");
     } catch (Exception $e) {}
+    try {
+        $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `hearts_count` INT NOT NULL DEFAULT 0");
+    } catch (Exception $e) {}
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_item_hearts` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `item_id` INT NOT NULL,
+            `renter_id` INT NOT NULL,
+            `order_code` VARCHAR(50) DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY `unique_renter_item_heart` (`renter_id`, `item_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
 
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_item_reports` (
@@ -601,6 +614,24 @@ if ($action === 'get_dashboard') {
     }
     unset($rt);
 
+    // Fetch top most-popular / most-hearted equipment across the platform
+    $popularItems = [];
+    try {
+        $popularItems = $db->query("SELECT id, name, category, price_per_day, image_url, photos, qty_total, qty_available, rating, reviews_count, owner_name, COALESCE(hearts_count, 0) as hearts_count 
+                                    FROM `rental_inventory` 
+                                    WHERE (`status` != 'TERMINATED' OR `status` IS NULL)
+                                    ORDER BY COALESCE(hearts_count, 0) DESC, rating DESC, id DESC 
+                                    LIMIT 6")->fetchAll();
+        foreach ($popularItems as &$pi) {
+            $pi['hearts_count'] = (int)($pi['hearts_count'] ?? 0);
+            if (empty($pi['image_url']) && !empty($pi['photos'])) {
+                $pArr = json_decode($pi['photos'], true);
+                if (is_array($pArr) && !empty($pArr[0])) $pi['image_url'] = $pArr[0];
+            }
+        }
+        unset($pi);
+    } catch (Exception $ePop) {}
+
     echo json_encode([
         'success' => true,
         'stats' => [
@@ -621,7 +652,8 @@ if ($action === 'get_dashboard') {
             'new_customers_count' => $newCustomersCount
         ],
         'recent_orders' => $recentOrders,
-        'recent_tickets' => $recentTickets
+        'recent_tickets' => $recentTickets,
+        'popular_items' => $popularItems
     ]);
     exit;
 }
@@ -638,6 +670,7 @@ if ($action === 'get_products' || $action === 'get_inventory') {
     $category = trim((string)($req['category'] ?? 'All'));
     $availability = trim((string)($req['availability'] ?? 'All'));
     $search = trim((string)($req['search'] ?? ''));
+    $sort = trim((string)($req['sort'] ?? 'popular'));
 
     $sql = "SELECT * FROM `rental_inventory` WHERE 1=1";
     $params = [];
@@ -660,10 +693,19 @@ if ($action === 'get_products' || $action === 'get_inventory') {
         $params[] = "%{$search}%";
     }
 
-    $sql .= " ORDER BY `id` DESC";
+    if ($sort === 'hearts' || $sort === 'popular') {
+        $sql .= " ORDER BY COALESCE(`hearts_count`, 0) DESC, `rating` DESC, `id` DESC";
+    } else {
+        $sql .= " ORDER BY `id` DESC";
+    }
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $products = $stmt->fetchAll();
+
+    foreach ($products as &$p) {
+        $p['hearts_count'] = (int)($p['hearts_count'] ?? 0);
+    }
+    unset($p);
 
     // Calculate status for each product
     foreach ($products as &$p) {

@@ -1004,9 +1004,11 @@
                     <button type="button" id="detailHeaderReportBtn" class="btn btn-light rounded-circle p-0 align-items-center justify-content-center shadow-2xs detail-buyer-only" style="display:none; width:36px; height:36px; background:#fef2f2; border:1.5px solid #fee2e2; color:#ef4444; transition: transform 0.15s ease;" onclick="openReportItemModal()" title="Report Listing to Admin">
                         <i class="fa-solid fa-flag fs-7 text-danger"></i>
                     </button>
-                    <button type="button" id="detailHeaderWishlistBtn" class="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center shadow-2xs detail-buyer-only" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="toggleWishlist(this, currentDetailProductId)" title="Wishlist">
-                        <i class="fa-regular fa-heart text-dark fs-7" id="detailWishlistIcon"></i>
-                    </button>
+                    <!-- TikTok-Style Hearts Count Badge on Detail Modal -->
+                    <div class="d-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill shadow-2xs detail-buyer-only" id="detailHeartsBadge" style="background:#FFF1F2; border:1px solid #FFE4E6; cursor:pointer;" onclick="handleDetailHeartClick()" title="Verified Renter Recommendations">
+                        <i class="fa-solid fa-heart text-danger fs-8"></i>
+                        <span class="fw-extrabold text-danger fs-8" id="detailHeartsCount">0</span>
+                    </div>
                     <button type="button" class="btn btn-light rounded-circle position-relative p-0 d-flex align-items-center justify-content-center shadow-2xs detail-buyer-only" style="width:36px; height:36px; background:#f1f5f9; transition: transform 0.15s ease;" onclick="openCartFromDetailModal()" title="View Cart" id="modalHeaderCartBtn">
                         <i class="fa-solid fa-cart-shopping text-dark fs-7"></i>
                         <span class="badge-cart-counter position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="modalCartCountBadge" style="display:none;">0</span>
@@ -2193,6 +2195,84 @@
                         <i class="fa-solid fa-paper-plane me-1"></i> Submit Appeal to Admin
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================
+     TIKTOK-STYLE VERIFIED RENTER HEART PROMPT MODAL
+     Triggered when renter returns item, rates it, and visits Home tab
+     ========================================================== -->
+<div class="modal fade" id="renterHeartPromptModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden bg-white text-center position-relative">
+            
+            <style>
+                @keyframes tiktokHeartPulse {
+                    0% { transform: scale(1); opacity: 0.8; }
+                    50% { transform: scale(1.35); opacity: 0.2; }
+                    100% { transform: scale(1); opacity: 0.8; }
+                }
+                @keyframes tiktokHeartBeat {
+                    0%, 100% { transform: scale(1); }
+                    14% { transform: scale(1.22); }
+                    28% { transform: scale(1); }
+                    42% { transform: scale(1.15); }
+                    70% { transform: scale(1); }
+                }
+                .tiktok-heart-glow {
+                    box-shadow: 0 0 25px rgba(244, 63, 94, 0.45), 0 8px 20px rgba(225, 29, 72, 0.3);
+                }
+            </style>
+
+            <div class="p-4 pb-3" style="background: radial-gradient(circle at 50% 25%, #FFE4E6 0%, #FFF1F2 40%, #FFFFFF 85%);">
+                <!-- Close Button in Corner -->
+                <button type="button" class="btn-close position-absolute top-0 end-0 m-3 fs-9" onclick="dismissRenterHeartPrompt()" title="Dismiss"></button>
+
+                <!-- Animated TikTok Heart Icon -->
+                <div class="mx-auto mb-2.5 position-relative d-inline-flex align-items-center justify-content-center" style="width: 76px; height: 76px;">
+                    <div class="position-absolute w-100 h-100 rounded-circle" style="background: rgba(244, 63, 94, 0.2); animation: tiktokHeartPulse 1.8s infinite;"></div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white position-relative tiktok-heart-glow" 
+                         style="width: 60px; height: 60px; background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);">
+                        <i class="fa-solid fa-heart fs-3" style="animation: tiktokHeartBeat 1.4s infinite ease-in-out;"></i>
+                    </div>
+                </div>
+
+                <h5 class="fw-extrabold text-dark mb-1" style="letter-spacing: -0.3px;">Did you like the product?</h5>
+                <p class="text-muted fs-8 mb-3" style="line-height: 1.35;">
+                    You returned &amp; rated this gear! Give it a <strong>Heart</strong> like in TikTok to push it to the top of Featured Rentals! ❤️
+                </p>
+
+                <!-- Product Summary Card -->
+                <div class="p-2.5 rounded-3 bg-light border d-flex align-items-center gap-2.5 text-start mb-3" style="border-color: #E2E8F0 !important;">
+                    <img id="heartPromptItemImg" src="https://via.placeholder.com/80x80/5B3FA8/FFFFFF?text=Item" class="rounded-2 border" style="width:52px; height:52px; object-fit:cover;">
+                    <div class="min-w-0 flex-grow-1">
+                        <span class="badge rounded-pill bg-success-subtle text-success px-2 py-0.5 fw-bold" style="font-size: 0.62rem;">
+                            <i class="fa-solid fa-check-circle me-0.5"></i>Verified Return &amp; Rated
+                        </span>
+                        <div class="fw-extrabold text-dark fs-8 text-truncate mt-0.5" id="heartPromptItemName">Equipment Name</div>
+                        <div class="fs-9 text-muted d-flex align-items-center gap-1.5 mt-0.5">
+                            <span class="text-warning"><i class="fa-solid fa-star fs-9"></i> <strong id="heartPromptRating" class="text-dark">5.0</strong></span>
+                            <span>&bull;</span>
+                            <span id="heartPromptOwner" class="text-truncate">Owner</span>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="heartPromptOrderCode" value="">
+                <input type="hidden" id="heartPromptItemId" value="">
+
+                <!-- Actions -->
+                <button type="button" class="btn btn-danger w-100 rounded-pill py-2.5 fw-extrabold shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2"
+                        style="background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%); border:none; font-size: 0.88rem; transition: transform 0.15s ease;"
+                        id="btnConfirmHeartItem" onclick="confirmRenterHeartItem()">
+                    <i class="fa-solid fa-heart fs-6"></i> Yes, Heart It! ❤️
+                </button>
+
+                <button type="button" class="btn btn-link text-muted fs-8 text-decoration-none py-1 fw-semibold w-100" onclick="dismissRenterHeartPrompt()">
+                    Maybe Later
+                </button>
             </div>
         </div>
     </div>

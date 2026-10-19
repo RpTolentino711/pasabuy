@@ -230,6 +230,19 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rated_at` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `is_overdue` TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `is_hearted` TINYINT(1) NOT NULL DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `heart_prompted` TINYINT(1) NOT NULL DEFAULT 0"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `hearts_count` INT NOT NULL DEFAULT 0"); } catch (Exception $e) {}
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS `rental_item_hearts` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `item_id` INT NOT NULL,
+            `renter_id` INT NOT NULL,
+            `order_code` VARCHAR(50) DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY `unique_renter_item_heart` (`renter_id`, `item_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Exception $e) {}
 
     // Auto-heal any orders that have already been rated so they are marked as RETURNED / COMPLETED and NOT overdue
     try {
@@ -741,12 +754,13 @@ if ($action === 'get_inventory') {
         $params[] = "%{$search}%";
     }
 
-    $sql .= " ORDER BY `is_featured` DESC, `id` DESC";
+    $sql .= " ORDER BY `is_featured` DESC, COALESCE(`hearts_count`, 0) DESC, `rating` DESC, `id` DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $items = $stmt->fetchAll();
 
     foreach ($items as &$it) {
+        $it['hearts_count'] = (int)($it['hearts_count'] ?? 0);
         if (!empty($it['photos'])) {
             $pArr = is_string($it['photos']) ? json_decode($it['photos'], true) : $it['photos'];
             if (is_array($pArr) && !empty($pArr[0])) {
@@ -2271,6 +2285,136 @@ if ($action === 'submit_rental_rating') {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         exit;
     }
+}
+
+// ----------------------------------------------------------
+// CHECK PENDING HEART PROMPT (Verified renter returns & rates item)
+// ----------------------------------------------------------
+if ($action === 'check_pending_heart_prompt') {
+    if (!$db) { echo json_encode(['success' => false, 'has_pending' => false]); exit; }
+
+    $renterId = (int)($data['renter_id'] ?? $data['user_id'] ?? $_GET['renter_id'] ?? 0);
+    $renterEmail = trim((string)($data['email'] ?? $data['renter_email'] ?? $_GET['email'] ?? ''));
+
+    if ($renterId <= 0 && empty($renterEmail)) {
+        echo json_encode(['success' => true, 'has_pending' => false]);
+        exit;
+    }
+
+    try {
+        // Find recent orders where order is returned AND has rated, but NOT yet prompted or hearted
+        $sql = "SELECT ro.id, ro.order_code, ro.item_id, ro.item_name, ro.rating, ro.renter_id, ro.owner_name,
+                       ri.name as inv_name, ri.image_url, ri.photos, ri.price_per_day, ri.category, ri.hearts_count
+                FROM `rental_orders` ro
+                LEFT JOIN `rental_inventory` ri ON ro.item_id = ri.id
+                WHERE (ro.renter_id = ? OR LOWER(ro.customer_email) = ?)
+                  AND (UPPER(ro.order_status) IN ('RETURNED', 'COMPLETED') OR UPPER(COALESCE(ro.timer_status, '')) = 'COMPLETED')
+                  AND (COALESCE(ro.has_rated, 0) = 1 OR COALESCE(ro.rating, 0) > 0)
+                  AND COALESCE(ro.is_hearted, 0) = 0
+                  AND COALESCE(ro.heart_prompted, 0) = 0
+                  AND ro.item_id IS NOT NULL
+                  AND ro.item_id NOT IN (
+                      SELECT item_id FROM `rental_item_hearts` WHERE renter_id = ? OR renter_id = ro.renter_id
+                  )
+                ORDER BY ro.id DESC
+                LIMIT 1";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$renterId, strtolower($renterEmail), $renterId]);
+        $row = $stmt->fetch();
+
+        if ($row && !empty($row['item_id'])) {
+            $itemId = (int)$row['item_id'];
+            $img = $row['image_url'] ?: '';
+            if (empty($img) && !empty($row['photos'])) {
+                $p = json_decode($row['photos'], true);
+                if (is_array($p) && !empty($p[0])) $img = $p[0];
+            }
+
+            echo json_encode([
+                'success' => true,
+                'has_pending' => true,
+                'order_code' => $row['order_code'],
+                'order_id' => (int)$row['id'],
+                'item_id' => $itemId,
+                'item_name' => $row['inv_name'] ?: $row['item_name'],
+                'item_image' => $img ?: 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=Rental+Gear',
+                'owner_name' => $row['owner_name'] ?: 'Verified Owner',
+                'rating' => (float)($row['rating'] ?: 5.0),
+                'current_hearts' => (int)($row['hearts_count'] ?? 0)
+            ]);
+            exit;
+        }
+
+        echo json_encode(['success' => true, 'has_pending' => false]);
+        exit;
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'has_pending' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------
+// SUBMIT ITEM HEART (Verified recommendation from returned renter)
+// ----------------------------------------------------------
+if ($action === 'submit_item_heart') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'Database connection failed.']); exit; }
+
+    $itemId = (int)($data['item_id'] ?? 0);
+    $renterId = (int)($data['renter_id'] ?? $data['user_id'] ?? 0);
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+
+    if ($itemId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid equipment ID.']);
+        exit;
+    }
+
+    try {
+        // Record heart in rental_item_hearts
+        $ins = $db->prepare("INSERT IGNORE INTO `rental_item_hearts` (`item_id`, `renter_id`, `order_code`, `created_at`) VALUES (?, ?, ?, NOW())");
+        $ins->execute([$itemId, $renterId, $orderCode]);
+
+        // Mark order as hearted and prompted
+        if (!empty($orderCode)) {
+            $db->prepare("UPDATE `rental_orders` SET `is_hearted` = 1, `heart_prompted` = 1 WHERE `order_code` = ?")->execute([$orderCode]);
+        } else if ($renterId > 0) {
+            $db->prepare("UPDATE `rental_orders` SET `is_hearted` = 1, `heart_prompted` = 1 WHERE `renter_id` = ? AND `item_id` = ?")->execute([$renterId, $itemId]);
+        }
+
+        // Recompute distinct renter hearts for this equipment
+        $cntStmt = $db->prepare("SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE `item_id` = ?");
+        $cntStmt->execute([$itemId]);
+        $heartsCount = (int)$cntStmt->fetchColumn();
+        if ($heartsCount < 1) $heartsCount = 1;
+
+        $db->prepare("UPDATE `rental_inventory` SET `hearts_count` = ? WHERE `id` = ?")->execute([$heartsCount, $itemId]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Thank you! You gave this product a Heart ❤️. It now ranks higher in Featured Rentals!',
+            'item_id' => $itemId,
+            'hearts_count' => $heartsCount
+        ]);
+        exit;
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------
+// DISMISS HEART PROMPT (Don't prompt again for this order)
+// ----------------------------------------------------------
+if ($action === 'dismiss_heart_prompt') {
+    if (!$db) { echo json_encode(['success' => true]); exit; }
+    $orderCode = trim((string)($data['order_code'] ?? ''));
+    if (!empty($orderCode)) {
+        try {
+            $db->prepare("UPDATE `rental_orders` SET `heart_prompted` = 1 WHERE `order_code` = ?")->execute([$orderCode]);
+        } catch (Exception $e) {}
+    }
+    echo json_encode(['success' => true]);
+    exit;
 }
 
 if ($action === 'post_item' || $action === 'user_post_equipment') {

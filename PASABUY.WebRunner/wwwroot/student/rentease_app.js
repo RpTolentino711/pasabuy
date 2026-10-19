@@ -183,6 +183,11 @@ async function loadRentEaseCatalog() {
             loadUserRentedOutItems();
         }
     } catch (e) {}
+    try {
+        if (typeof checkPendingHeartPrompt === 'function') {
+            checkPendingHeartPrompt();
+        }
+    } catch (e) {}
 }
 window.loadRentEaseCatalog = loadRentEaseCatalog;
 
@@ -190,11 +195,20 @@ function renderFeaturedRentals() {
     const container = document.getElementById('homeFeaturedContainer');
     if (!container) return;
 
-    // Prioritize featured items and newest posted equipment (by id descending)
+    // Prioritize verified renter most-hearted equipment (TikTok-style), featured, then rating and newest
     const sorted = [...(rentEaseInventory || [])].sort((a, b) => {
+        const heartsA = parseInt(a.hearts_count || 0);
+        const heartsB = parseInt(b.hearts_count || 0);
+        if (heartsB !== heartsA) return heartsB - heartsA; // The most hearted item will ALWAYS be in the top!
+
         const featA = parseInt(a.is_featured) === 1 ? 1 : 0;
         const featB = parseInt(b.is_featured) === 1 ? 1 : 0;
         if (featB !== featA) return featB - featA;
+
+        const rateA = parseFloat(a.rating || 0);
+        const rateB = parseFloat(b.rating || 0);
+        if (rateB !== rateA) return rateB - rateA;
+
         return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
     });
 
@@ -249,19 +263,24 @@ function renderFeaturedRentals() {
                             <i class="fa-solid fa-layer-group me-0.5" style="font-size:0.55rem;"></i>${catName}
                         </span>
 
-                        <!-- Perspective Badge (Top-Right): Owner Crown vs Renter Wishlist -->
-                        ${isOwner ? `
-                            <span class="badge rounded-pill position-absolute top-0 end-0 m-1.5 px-2 py-0.5 fw-extrabold shadow-xs" 
-                                  style="background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E; font-size: 0.6rem; border: 1px solid #FCD34D;">
-                                <i class="fa-solid fa-crown text-warning me-0.5"></i>Mine
-                            </span>
-                        ` : `
-                            <button type="button" class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1.5 p-0 d-flex align-items-center justify-content-center shadow-xs" 
-                                    style="width:26px; height:26px; background:rgba(255,255,255,0.92); backdrop-filter:blur(6px); border:none;" 
-                                    onclick="event.stopPropagation(); toggleWishlist(this, ${item.id})" title="Add to Wishlist">
-                                <i class="fa-regular fa-heart text-dark" style="font-size: 0.72rem;"></i>
-                            </button>
-                        `}
+                        <!-- Top-Right Badges: Owner Crown vs TikTok-Style Verified Hearts Pill -->
+                        <div class="position-absolute top-0 end-0 m-1.5 d-flex align-items-center gap-1 z-2">
+                            ${isOwner ? `
+                                <span class="badge rounded-pill px-2 py-0.5 fw-extrabold shadow-xs" 
+                                      style="background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E; font-size: 0.6rem; border: 1px solid #FCD34D;">
+                                    <i class="fa-solid fa-crown text-warning me-0.5"></i>Mine
+                                </span>
+                            ` : ''}
+
+                            <!-- TikTok-Style Heart Badge (Verified Renter Recommendations) -->
+                            <div class="badge rounded-pill px-2 py-0.5 fw-extrabold shadow-xs d-flex align-items-center gap-1 rentease-heart-pill"
+                                 style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid rgba(244, 63, 94, 0.25); color: #E11D48; font-size: 0.62rem; cursor: pointer; transition: transform 0.15s ease;"
+                                 onclick="event.stopPropagation(); handleHeartClickOnCard(${item.id}, ${isOwner})"
+                                 title="${isOwner ? 'Hearts received from verified renters' : 'Hearts given by renters who returned and rated this equipment'}">
+                                <i class="fa-solid fa-heart text-danger" style="font-size: 0.65rem;"></i>
+                                <span class="text-dark fw-extrabold">${parseInt(item.hearts_count || 0)}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -581,11 +600,21 @@ function renderGridElements(items) {
                 <div>
                     <div class="position-relative mb-1.5">
                         <img src="${getRentEaseItemImage(p)}" class="rounded-3 w-100" style="height: 100px; object-fit: cover;" alt="${p.name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';">
-                        <button class="btn btn-sm btn-light rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-xs" 
-                                style="width:24px; height:24px; background:rgba(255,255,255,0.9);" 
-                                onclick="event.stopPropagation(); toggleWishlist(this, ${p.id})">
-                            <i class="fa-regular fa-heart text-dark" style="font-size:0.7rem;"></i>
-                        </button>
+                        <div class="position-absolute top-0 end-0 m-1 d-flex align-items-center gap-1 z-2">
+                            ${isMine ? `
+                                <span class="badge rounded-pill px-1.5 py-0.5 fw-extrabold shadow-2xs" 
+                                      style="background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E; font-size: 0.55rem; border: 1px solid #FCD34D;">
+                                    <i class="fa-solid fa-crown text-warning"></i> Mine
+                                </span>
+                            ` : ''}
+                            <div class="badge rounded-pill px-1.5 py-0.5 fw-extrabold shadow-2xs d-flex align-items-center gap-0.5" 
+                                 style="background:rgba(255,255,255,0.95); backdrop-filter:blur(6px); border:1px solid rgba(244,63,94,0.25); color:#E11D48; font-size:0.6rem; cursor:pointer;"
+                                 onclick="event.stopPropagation(); handleHeartClickOnCard(${p.id}, ${isMine})"
+                                 title="${isMine ? 'Hearts received from verified renters' : 'Hearts given by verified renters'}">
+                                <i class="fa-solid fa-heart text-danger" style="font-size:0.6rem;"></i>
+                                <span class="text-dark fw-extrabold">${parseInt(p.hearts_count || 0)}</span>
+                            </div>
+                        </div>
                     </div>
                     <h6 class="fw-bold mb-0.5 text-dark fs-8 text-truncate" title="${p.name}" style="font-size:0.8rem;">${p.name}</h6>
                     <div class="d-flex align-items-baseline gap-1 mb-1">
@@ -941,6 +970,8 @@ function openEquipmentDetail(id) {
     if (ratingValEl) ratingValEl.innerText = parseFloat(item.rating || 5.0).toFixed(1);
     const reviewCountEl = document.getElementById('detailReviewCount');
     if (reviewCountEl) reviewCountEl.innerText = item.reviews_count || 1;
+    const heartsCountEl = document.getElementById('detailHeartsCount');
+    if (heartsCountEl) heartsCountEl.innerText = parseInt(item.hearts_count || 0);
     const priceEl = document.getElementById('detailPrice');
     if (priceEl) priceEl.innerText = '₱' + parseFloat(item.price_per_day || 0).toFixed(0);
     const descEl = document.getElementById('detailDescription');
@@ -4604,6 +4635,7 @@ window.switchTab = function (tabName) {
         if (typeof updateUnreadBadges === 'function') updateUnreadBadges();
         if (typeof pollRentEaseUnreadMessages === 'function') pollRentEaseUnreadMessages();
         if (typeof renderFeaturedRentals === 'function') renderFeaturedRentals();
+        if (typeof checkPendingHeartPrompt === 'function') checkPendingHeartPrompt();
     } else if (tabName === 'explore') {
         if (!window._isExplicitCategory) {
             currentCategory = 'All';
@@ -5748,4 +5780,225 @@ window.acceptOrderAndGoToMessages = function (orderId, orderCode, customerName, 
     };
 
     openChatWhenReady();
+};
+
+// ==========================================================
+// TIKTOK-STYLE VERIFIED RENTER HEART SYSTEM & POPULARITY
+// ==========================================================
+
+window.triggerTikTokHeartAnimation = function () {
+    const colors = ['#F43F5E', '#EC4899', '#FB7185', '#E11D48', '#FDA4AF', '#BE185D'];
+    const startX = window.innerWidth / 2;
+    for (let i = 0; i < 18; i++) {
+        const heart = document.createElement('div');
+        heart.innerHTML = '<i class="fa-solid fa-heart"></i>';
+        heart.style.position = 'fixed';
+        heart.style.bottom = '90px';
+        const offsetX = Math.random() * 140 - 70;
+        heart.style.left = (startX + offsetX) + 'px';
+        heart.style.color = colors[Math.floor(Math.random() * colors.length)];
+        heart.style.fontSize = (Math.random() * 20 + 20) + 'px';
+        heart.style.zIndex = '99999';
+        heart.style.pointerEvents = 'none';
+        heart.style.transition = 'all 1.35s cubic-bezier(0.22, 1, 0.36, 1)';
+        heart.style.opacity = '1';
+        heart.style.transform = `translateY(0) scale(0.6) rotate(${Math.random() * 20 - 10}deg)`;
+        heart.style.filter = 'drop-shadow(0 4px 10px rgba(244,63,94,0.4))';
+        document.body.appendChild(heart);
+
+        const deltaY = Math.random() * 280 + 220;
+        const driftX = (Math.random() * 100 - 50);
+        const rotate = (Math.random() * 70 - 35);
+        const scale = (Math.random() * 0.6 + 1.2);
+
+        setTimeout(() => {
+            heart.style.opacity = '0';
+            heart.style.transform = `translate(${driftX}px, -${deltaY}px) scale(${scale}) rotate(${rotate}deg)`;
+        }, 30);
+
+        setTimeout(() => {
+            heart.remove();
+        }, 1400);
+    }
+};
+
+window.scrollToTopHeartedRentals = function () {
+    const container = document.getElementById('homeFeaturedContainer');
+    if (container) {
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const firstCard = container.querySelector('.rentease-product-card');
+        if (firstCard) {
+            firstCard.style.transition = 'all 0.4s ease';
+            firstCard.style.boxShadow = '0 0 0 3px #F43F5E, 0 12px 28px rgba(244, 63, 94, 0.35)';
+            firstCard.style.transform = 'scale(1.03)';
+            setTimeout(() => {
+                firstCard.style.transform = '';
+                firstCard.style.boxShadow = '';
+            }, 1800);
+        }
+    }
+};
+
+let _lastHeartPromptCheckTime = 0;
+window.checkPendingHeartPrompt = async function () {
+    const now = Date.now();
+    if (now - _lastHeartPromptCheckTime < 4000) return;
+    _lastHeartPromptCheckTime = now;
+
+    const user = getRentEaseCurrentUser();
+    const currentId = parseInt(user.id || 0);
+    const email = user.email || '';
+
+    if (currentId <= 0 && !email) return;
+
+    try {
+        const url = getRentEaseApiUrl('check_pending_heart_prompt', {
+            renter_id: currentId,
+            email: email
+        });
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (data && data.success && data.has_pending) {
+            const modalEl = document.getElementById('renterHeartPromptModal');
+            if (!modalEl) return;
+
+            const nameEl = document.getElementById('heartPromptItemName');
+            const imgEl = document.getElementById('heartPromptItemImg');
+            const ratingEl = document.getElementById('heartPromptRating');
+            const ownerEl = document.getElementById('heartPromptOwner');
+            const orderCodeInput = document.getElementById('heartPromptOrderCode');
+            const itemIdInput = document.getElementById('heartPromptItemId');
+
+            if (nameEl) nameEl.innerText = data.item_name || 'Equipment';
+            if (imgEl) imgEl.src = data.item_image || 'https://via.placeholder.com/80x80/5B3FA8/FFFFFF?text=Item';
+            if (ratingEl) ratingEl.innerText = parseFloat(data.rating || 5.0).toFixed(1);
+            if (ownerEl) ownerEl.innerText = data.owner_name || 'Verified Owner';
+            if (orderCodeInput) orderCodeInput.value = data.order_code || '';
+            if (itemIdInput) itemIdInput.value = data.item_id || '';
+
+            if (modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    } catch (e) {
+        console.warn("Heart prompt check error:", e);
+    }
+};
+
+window.confirmRenterHeartItem = async function () {
+    const btn = document.getElementById('btnConfirmHeartItem');
+    const orderCode = document.getElementById('heartPromptOrderCode')?.value || '';
+    const itemId = parseInt(document.getElementById('heartPromptItemId')?.value || '0');
+    const user = getRentEaseCurrentUser();
+    const renterId = parseInt(user.id || 0);
+
+    if (itemId <= 0) return;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Hearting...';
+    }
+
+    try {
+        const res = await fetch(getRentEaseApiUrl('submit_item_heart'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'submit_item_heart',
+                item_id: itemId,
+                order_code: orderCode,
+                renter_id: renterId
+            })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+            const modalEl = document.getElementById('renterHeartPromptModal');
+            if (modalEl) {
+                const inst = bootstrap.Modal.getInstance(modalEl);
+                if (inst) inst.hide();
+            }
+
+            // Trigger floating heart celebration animation!
+            window.triggerTikTokHeartAnimation();
+
+            // Update item in local inventory cache
+            if (Array.isArray(rentEaseInventory)) {
+                const it = rentEaseInventory.find(x => parseInt(x.id) === itemId);
+                if (it) {
+                    it.hearts_count = data.hearts_count || (parseInt(it.hearts_count || 0) + 1);
+                }
+            }
+
+            // Re-render home featured rentals so it updates and sorts immediately
+            renderFeaturedRentals();
+
+            showToastNotification("❤️ You gave a heart to this rental! It now ranks higher in Featured Rentals.", "success");
+        } else {
+            alert(data?.message || 'Could not record heart.');
+        }
+    } catch (e) {
+        console.error("Heart error:", e);
+        alert('Server error recording heart.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-heart fs-6"></i> Yes, Heart It! ❤️';
+        }
+    }
+};
+
+window.dismissRenterHeartPrompt = async function () {
+    const orderCode = document.getElementById('heartPromptOrderCode')?.value || '';
+    const modalEl = document.getElementById('renterHeartPromptModal');
+    if (modalEl) {
+        const inst = bootstrap.Modal.getInstance(modalEl);
+        if (inst) inst.hide();
+    }
+    if (orderCode) {
+        try {
+            fetch(getRentEaseApiUrl('dismiss_heart_prompt', { order_code: orderCode }));
+        } catch (e) {}
+    }
+};
+
+window.handleHeartClickOnCard = function (itemId, isOwner) {
+    if (isOwner) {
+        showToastNotification("👑 You own this equipment! Popularity is determined by verified renter recommendations.", "info");
+        return;
+    }
+    const user = getRentEaseCurrentUser();
+    const currentId = parseInt(user.id || 0);
+    checkAndPromptHeartForItem(itemId, currentId);
+};
+
+window.handleDetailHeartClick = function () {
+    if (!currentDetailProduct) return;
+    const isOwner = isCurrentUserOwnerOfItem(currentDetailProduct);
+    if (isOwner) {
+        showToastNotification("👑 You own this equipment! Verified renter hearts drive its top ranking.", "info");
+        return;
+    }
+    const user = getRentEaseCurrentUser();
+    const currentId = parseInt(user.id || 0);
+    checkAndPromptHeartForItem(currentDetailProduct.id, currentId);
+};
+
+window.checkAndPromptHeartForItem = async function (itemId, renterId) {
+    try {
+        const res = await fetch(getRentEaseApiUrl('check_pending_heart_prompt', {
+            renter_id: renterId,
+            item_id: itemId
+        }));
+        const data = await res.json();
+        if (data && data.success && data.has_pending) {
+            window.checkPendingHeartPrompt();
+        } else {
+            showToastNotification("❤️ Verified Renters Only: Rent, return, and rate this equipment to give it a Heart!", "info");
+        }
+    } catch (e) {
+        showToastNotification("❤️ Verified Renters Only: Rent, return, and rate this equipment to give it a Heart!", "info");
+    }
 };
