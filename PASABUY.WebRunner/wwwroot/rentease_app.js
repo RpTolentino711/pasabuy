@@ -2206,11 +2206,6 @@ window.updateOwnerOrderStatus = async function (orderId, orderCode, newStatus) {
     }
 };
 
-window.ownerPrepareEquipment = async function(orderCode) {
-    if (!orderCode) orderCode = currentTrackingOrderCode || '#RE-10245';
-    await updateOwnerOrderStatus(0, orderCode, 'PREPARING');
-};
-
 window.openChatWithRenter = function (customerName, customerPhone, orderCode) {
     switchTab('messages');
     setTimeout(() => {
