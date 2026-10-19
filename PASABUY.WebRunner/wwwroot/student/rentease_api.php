@@ -93,6 +93,37 @@ if ($db) {
     } catch (Exception $e) {}
     try { $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100"); } catch (Exception $e) {}
     try { $db->exec("UPDATE `rental_inventory` SET `owner_id` = 104, `owner_name` = 'Romeo Paolo Tolentino', `owner_email` = 'romeopaolotolentino@gmail.com', `owner_contact` = '09668257301', `is_featured` = 1 WHERE `name` LIKE '%POSPT%' OR `name` = 'POSPT'"); } catch (Exception $e) {}
+}
+
+// Fix POSPT duplicate photo
+if ($action === 'fix_pospt_photos') {
+    try {
+        $stmt = $db->prepare("SELECT id, image_url, photos FROM rental_inventory WHERE name = 'POSPT'");
+        $stmt->execute();
+        $item = $stmt->fetch();
+        if ($item && $item['photos']) {
+            $photos = json_decode($item['photos'], true);
+            if (is_array($photos)) {
+                $image_url = $item['image_url'];
+                $photos = array_filter($photos, function($photo) use ($image_url) {
+                    return trim($photo) !== trim($image_url);
+                });
+                $photos = array_values($photos);
+                $photosJson = json_encode($photos);
+                $updateStmt = $db->prepare("UPDATE rental_inventory SET photos = ? WHERE id = ?");
+                $updateStmt->execute([$photosJson, $item['id']]);
+                echo json_encode(['success' => true, 'message' => 'POSPT photos fixed', 'photos' => $photos]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Photos not an array']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Item not found']);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+    exit;
+}
 
     // Auto-migrate rental_orders fields for duration, COD downpayment, owner and return status
     try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}
