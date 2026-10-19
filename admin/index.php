@@ -3134,10 +3134,12 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     <td><span class="fs-8 fw-semibold text-dark">${pi.owner_name || 'Romeo Paolo Tolentino'}</span></td>
                                     <td class="fw-bold fs-8">₱${Number(pi.price_per_day).toLocaleString()}/day</td>
                                     <td>
+                                        ${parseInt(pi.reviews_count || 0) > 0 ? `
                                         <div class="d-flex align-items-center gap-1 text-warning fs-9 fw-bold">
                                             <i class="fa-solid fa-star"></i>
                                             <span class="text-dark">${parseFloat(pi.rating || 5.0).toFixed(1)}</span>
                                         </div>
+                                        ` : '<span class="text-muted fs-9">No reviews</span>'}
                                     </td>
                                     <td>
                                         <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 fw-extrabold fs-8 d-inline-flex align-items-center gap-1.5 shadow-2xs">

@@ -626,13 +626,14 @@ if ($action === 'get_dashboard') {
     // Fetch top most-popular / most-hearted equipment across the platform
     $popularItems = [];
     try {
-        $popularItems = $db->query("SELECT ri.id, ri.name, ri.category, ri.price_per_day, ri.image_url, ri.photos, ri.qty_total, ri.qty_available, ri.rating, 
-                                           COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) as reviews_count, 
-                                           ri.owner_name, 
-                                           COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) as hearts_count 
-                                    FROM `rental_inventory` ri 
+        $popularItems = $db->query("SELECT ri.id, ri.name, ri.category, ri.price_per_day, ri.image_url, ri.photos, ri.qty_total, ri.qty_available,
+                                           CASE WHEN COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) > 0 THEN ri.rating ELSE NULL END as rating,
+                                           COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) as reviews_count,
+                                           ri.owner_name,
+                                           COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) as hearts_count
+                                    FROM `rental_inventory` ri
                                     WHERE (`ri`.`status` != 'TERMINATED' OR `ri`.`status` IS NULL)
-                                    ORDER BY hearts_count DESC, ri.rating DESC, ri.id DESC 
+                                    ORDER BY hearts_count DESC, COALESCE(ri.rating, 0) DESC, ri.id DESC
                                     LIMIT 6")->fetchAll();
         foreach ($popularItems as &$pi) {
             $pi['hearts_count'] = (int)($pi['hearts_count'] ?? 0);
@@ -686,7 +687,8 @@ if ($action === 'get_products' || $action === 'get_inventory') {
 
     $sql = "SELECT ri.*,
                    COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) as hearts_count,
-                   COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) as reviews_count
+                   COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) as reviews_count,
+                   CASE WHEN COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) > 0 THEN ri.rating ELSE NULL END as real_rating
             FROM `rental_inventory` ri WHERE 1=1";
     $params = [];
 
@@ -720,6 +722,12 @@ if ($action === 'get_products' || $action === 'get_inventory') {
     foreach ($products as &$p) {
         $p['hearts_count'] = (int)($p['hearts_count'] ?? 0);
         $p['reviews_count'] = (int)($p['reviews_count'] ?? 0);
+        // Use real_rating if available, otherwise null
+        if (isset($p['real_rating'])) {
+            $p['rating'] = $p['real_rating'];
+        } elseif ((int)($p['reviews_count'] ?? 0) === 0) {
+            $p['rating'] = null;
+        }
     }
     unset($p);
 

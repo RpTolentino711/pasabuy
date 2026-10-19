@@ -5340,7 +5340,7 @@ window.openMakeEventSpecialModal = function () {
                          style="background: linear-gradient(to top, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.45) 60%, transparent 100%);">
                         <div class="d-flex align-items-center gap-1.5 mb-0.5">
                             <span class="badge bg-light text-dark fw-bold border-0" style="font-size:0.62rem;">${item.category || 'Event Gear'}</span>
-                            <span class="text-warning fs-9 fw-bold"><i class="fa-solid fa-star me-0.5"></i>${parseFloat(item.rating || 5.0).toFixed(1)}</span>
+                            ${parseInt(item.reviews_count || 0) > 0 ? `<span class="text-warning fs-9 fw-bold"><i class="fa-solid fa-star me-0.5"></i>${parseFloat(item.rating || 5.0).toFixed(1)}</span>` : ''}
                         </div>
                         <h6 class="fw-extrabold text-white mb-0 text-truncate fs-7" title="${item.name}">${item.name}</h6>
                     </div>
