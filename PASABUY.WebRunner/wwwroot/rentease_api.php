@@ -71,6 +71,26 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT '09668257301'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
+    
+    // Fix POSPT duplicate photo in photos array
+    try {
+        $stmt = $db->prepare("SELECT id, image_url, photos FROM rental_inventory WHERE name = 'POSPT'");
+        $stmt->execute();
+        $item = $stmt->fetch();
+        if ($item && $item['photos']) {
+            $photos = json_decode($item['photos'], true);
+            if (is_array($photos)) {
+                $image_url = $item['image_url'];
+                $photos = array_filter($photos, function($photo) use ($image_url) {
+                    return trim($photo) !== trim($image_url);
+                });
+                $photos = array_values($photos);
+                $photosJson = json_encode($photos);
+                $updateStmt = $db->prepare("UPDATE rental_inventory SET photos = ? WHERE id = ?");
+                $updateStmt->execute([$photosJson, $item['id']]);
+            }
+        }
+    } catch (Exception $e) {}
     try { $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100"); } catch (Exception $e) {}
     try { $db->exec("UPDATE `rental_inventory` SET `owner_id` = 104, `owner_name` = 'Romeo Paolo Tolentino', `owner_email` = 'romeopaolotolentino@gmail.com', `owner_contact` = '09668257301', `is_featured` = 1 WHERE `name` LIKE '%POSPT%' OR `name` = 'POSPT'"); } catch (Exception $e) {}
 
@@ -2225,6 +2245,15 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
     $qtyTotal = (int)($data['qty_total'] ?? $data['quantity'] ?? 1);
     $imgUrl = trim((string)($data['image_url'] ?? $data['photo_url'] ?? ''));
     $photosInput = $data['photos'] ?? null;
+    
+    // Remove imgUrl from photos array to avoid duplication
+    if (is_array($photosInput) && $imgUrl) {
+        $photosInput = array_filter($photosInput, function($photo) use ($imgUrl) {
+            return trim($photo) !== trim($imgUrl);
+        });
+        $photosInput = array_values($photosInput); // Re-index array
+    }
+    
     $photosJson = is_array($photosInput) ? json_encode($photosInput) : (is_string($photosInput) ? $photosInput : null);
     $videoUrl = trim((string)($data['video_url'] ?? ''));
     $desc = trim((string)($data['description'] ?? 'Event equipment available for rent on RentEase.'));
