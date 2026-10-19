@@ -768,7 +768,7 @@ function openEquipmentDetail(id) {
                 id: p.id,
                 name: p.title,
                 price_per_day: parseFloat(String(p.price || 0).replace(/[^\d.]/g, '')) || 0,
-                image_url: p.img || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
+                image_url: p.image_url || p.img || p.imageUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
                 video_url: p.videoUrl || '',
                 photos: p.photos || p.images || [],
                 description: p.description || '',
