@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `rental_inventory` (
   `qty_available` INT NOT NULL DEFAULT 80,
   `qty_rented` INT NOT NULL DEFAULT 15,
   `qty_maintenance` INT NOT NULL DEFAULT 5,
-  `image_url` VARCHAR(500) DEFAULT NULL,
+  `image_url` LONGTEXT DEFAULT NULL,
   `rating` DECIMAL(2,1) DEFAULT 4.8,
   `reviews_count` INT DEFAULT 120,
   `description` TEXT DEFAULT NULL,

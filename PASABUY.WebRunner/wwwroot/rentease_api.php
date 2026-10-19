@@ -64,6 +64,7 @@ if ($db) {
     }
 
     // Auto-migrate new fields for user item postings (Video, Photos, Owner, Condition, Location)
+    try { $db->exec("ALTER TABLE `rental_inventory` MODIFY COLUMN `image_url` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `video_url` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `photos` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT 'Romeo Paolo Tolentino'"); } catch (Exception $e) {}
@@ -72,22 +73,24 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
     
-    // Fix POSPT duplicate photo in photos array
+    // Auto-heal any existing records where image_url is truncated or corrupted but photos has valid data
     try {
-        $stmt = $db->prepare("SELECT id, image_url, photos FROM rental_inventory WHERE name = 'POSPT'");
-        $stmt->execute();
-        $item = $stmt->fetch();
-        if ($item && $item['photos']) {
-            $photos = json_decode($item['photos'], true);
-            if (is_array($photos)) {
-                $image_url = $item['image_url'];
-                $photos = array_filter($photos, function($photo) use ($image_url) {
-                    return trim($photo) !== trim($image_url);
-                });
-                $photos = array_values($photos);
-                $photosJson = json_encode($photos);
-                $updateStmt = $db->prepare("UPDATE rental_inventory SET photos = ? WHERE id = ?");
-                $updateStmt->execute([$photosJson, $item['id']]);
+        $stmtFix = $db->query("SELECT id, name, image_url, photos FROM `rental_inventory` WHERE `photos` IS NOT NULL");
+        if ($stmtFix) {
+            $rowsFix = $stmtFix->fetchAll();
+            foreach ($rowsFix as $rf) {
+                if (!empty($rf['photos'])) {
+                    $pArr = is_string($rf['photos']) ? json_decode($rf['photos'], true) : $rf['photos'];
+                    if (is_array($pArr) && !empty($pArr[0])) {
+                        $fullPhoto = $pArr[0];
+                        $curImg = trim((string)($rf['image_url'] ?? ''));
+                        // If current image is missing or is truncated base64 (<= 500 chars)
+                        if (empty($curImg) || (strpos($curImg, 'data:image/') === 0 && strlen($curImg) <= 500)) {
+                            $upFix = $db->prepare("UPDATE `rental_inventory` SET `image_url` = ? WHERE `id` = ?");
+                            $upFix->execute([$fullPhoto, $rf['id']]);
+                        }
+                    }
+                }
             }
         }
     } catch (Exception $e) {}
@@ -743,6 +746,18 @@ if ($action === 'get_inventory') {
     $stmt->execute($params);
     $items = $stmt->fetchAll();
 
+    foreach ($items as &$it) {
+        if (!empty($it['photos'])) {
+            $pArr = is_string($it['photos']) ? json_decode($it['photos'], true) : $it['photos'];
+            if (is_array($pArr) && !empty($pArr[0])) {
+                $cur = trim((string)($it['image_url'] ?? ''));
+                if (empty($cur) || (strpos($cur, 'data:image/') === 0 && strlen($cur) <= 500)) {
+                    $it['image_url'] = $pArr[0];
+                }
+            }
+        }
+    }
+    unset($it);
 
     echo json_encode([
         'success' => true,
@@ -762,6 +777,15 @@ if ($action === 'get_product_detail') {
         $stmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE `id` = ?");
         $stmt->execute([$id]);
         $item = $stmt->fetch();
+        if ($item && !empty($item['photos'])) {
+            $pArr = is_string($item['photos']) ? json_decode($item['photos'], true) : $item['photos'];
+            if (is_array($pArr) && !empty($pArr[0])) {
+                $cur = trim((string)($item['image_url'] ?? ''));
+                if (empty($cur) || (strpos($cur, 'data:image/') === 0 && strlen($cur) <= 500)) {
+                    $item['image_url'] = $pArr[0];
+                }
+            }
+        }
     }
 
     if (!$item) {
@@ -2257,16 +2281,46 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
     $qtyTotal = (int)($data['qty_total'] ?? $data['quantity'] ?? 1);
     $imgUrl = trim((string)($data['image_url'] ?? $data['photo_url'] ?? ''));
     $photosInput = $data['photos'] ?? null;
-    
-    // Remove imgUrl from photos array to avoid duplication
-    if (is_array($photosInput) && $imgUrl) {
-        $photosInput = array_filter($photosInput, function($photo) use ($imgUrl) {
-            return trim($photo) !== trim($imgUrl);
-        });
-        $photosInput = array_values($photosInput); // Re-index array
+    if (is_string($photosInput)) {
+        $decoded = json_decode($photosInput, true);
+        if (is_array($decoded)) $photosInput = $decoded;
     }
     
-    $photosJson = is_array($photosInput) ? json_encode($photosInput) : (is_string($photosInput) ? $photosInput : null);
+    // Normalize photos array
+    if (is_array($photosInput)) {
+        $photosInput = array_values(array_filter($photosInput, function($p) {
+            return !empty(trim((string)$p));
+        }));
+    }
+    
+    // If imgUrl is empty or corrupted, but photos has items, take first photo
+    if ((!$imgUrl || (strpos($imgUrl, 'data:image/') === 0 && strlen($imgUrl) <= 500)) && is_array($photosInput) && count($photosInput) > 0) {
+        $imgUrl = $photosInput[0];
+    }
+    
+    // If photos is empty or not provided, but imgUrl is valid, make photos array [imgUrl]
+    if ((!is_array($photosInput) || count($photosInput) === 0) && $imgUrl) {
+        $photosInput = [$imgUrl];
+    }
+    
+    // Ensure imgUrl is at the beginning of photos without duplicating
+    if (is_array($photosInput) && $imgUrl) {
+        $cleanPhotos = [$imgUrl];
+        foreach ($photosInput as $ph) {
+            $phTrim = trim((string)$ph);
+            if ($phTrim && $phTrim !== $imgUrl) {
+                if (strpos($phTrim, 'data:image/') === 0 && strpos($imgUrl, 'data:image/') === 0) {
+                    if (substr($phTrim, 0, 100) === substr($imgUrl, 0, 100) && strlen($phTrim) === strlen($imgUrl)) {
+                        continue;
+                    }
+                }
+                $cleanPhotos[] = $phTrim;
+            }
+        }
+        $photosInput = $cleanPhotos;
+    }
+    
+    $photosJson = is_array($photosInput) ? json_encode($photosInput) : null;
     $videoUrl = trim((string)($data['video_url'] ?? ''));
     $desc = trim((string)($data['description'] ?? 'Event equipment available for rent on RentEase.'));
     $condition = trim((string)($data['item_condition'] ?? $data['condition'] ?? 'Good'));
@@ -2308,14 +2362,14 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
         $categoryDefaults = [
             'Chairs' => 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=500&q=80',
             'Tables' => 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=500&q=80',
-            'Tents' => 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
+            'Tents' => 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=Tents',
             'Sound System' => 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80',
             'Lights' => 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=500&q=80',
             'Decorations' => 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=500&q=80',
             'Stages' => 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=500&q=80',
             'Others' => 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=500&q=80'
         ];
-        $imgUrl = $categoryDefaults[$category] ?? 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+        $imgUrl = $categoryDefaults[$category] ?? 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
     }
 
     if (!$db) {

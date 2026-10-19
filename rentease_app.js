@@ -46,7 +46,35 @@ window.enableChatRentalStepSwipe = function () {
 
 function getRentEaseItemImage(item) {
     if (!item) return 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
+
+    // 1. Resolve photo from photos array first if available
+    let photoFromList = '';
+    let photos = item.photos || item.images || item.image_urls;
+    if (typeof photos === 'string') {
+        try {
+            photos = JSON.parse(photos);
+        } catch (e) {
+            photos = photos.split(',').map(s => s.trim()).filter(Boolean);
+        }
+    }
+    if (Array.isArray(photos) && photos.length > 0) {
+        const validPhoto = photos.find(p => p && typeof p === 'string' && (!p.startsWith('data:image/') || p.length > 500));
+        if (validPhoto) {
+            photoFromList = validPhoto;
+        } else if (photos[0] && typeof photos[0] === 'string') {
+            photoFromList = photos[0];
+        }
+    }
+
     let image = item.image_url || item.image || item.img || item.ImageUrl || item.imageUrl || item.photo_url || '';
+
+    // If image is a truncated base64 data URI (<= 500 chars), it is broken; use photoFromList if available
+    if (image && typeof image === 'string' && image.startsWith('data:image/') && image.length <= 500 && photoFromList) {
+        image = photoFromList;
+    } else if (!image && photoFromList) {
+        image = photoFromList;
+    }
+
     const listings = typeof allProductsCache !== 'undefined' && Array.isArray(allProductsCache)
         ? allProductsCache
         : (Array.isArray(window.allProductsCache) ? window.allProductsCache : []);
@@ -54,7 +82,7 @@ function getRentEaseItemImage(item) {
         String(listing.id || '') === String(item.id || '') ||
         String(listing.title || '').trim().toLowerCase() === String(item.name || '').trim().toLowerCase()
     );
-    if (matchingListing) {
+    if (matchingListing && (!image || (image.startsWith('data:image/') && image.length <= 500))) {
         image = matchingListing.img || matchingListing.image_url || matchingListing.image || image;
     }
     return image || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
@@ -544,6 +572,9 @@ window.setupDetailMediaCarousel = function (item) {
     const mediaKey = (url) => {
         const normalized = String(url || '').trim();
         if (!normalized) return '';
+        if (normalized.startsWith('data:image/')) {
+            return normalized.slice(0, 100) + '_' + normalized.length;
+        }
         try {
             const parsed = new URL(normalized, window.location.href);
             parsed.hash = '';
@@ -556,8 +587,11 @@ window.setupDetailMediaCarousel = function (item) {
     const mediaKeys = new Set();
     const addImageMedia = (url) => {
         const trimmedUrl = String(url || '').trim();
+        if (!trimmedUrl) return;
+        // Skip truncated/corrupted base64 data URIs
+        if (trimmedUrl.startsWith('data:image/') && trimmedUrl.length <= 500) return;
         const key = mediaKey(trimmedUrl);
-        if (trimmedUrl && key && !mediaKeys.has(key)) {
+        if (key && !mediaKeys.has(key)) {
             media.push({ type: 'image', url: trimmedUrl });
             mediaKeys.add(key);
         }
@@ -566,7 +600,9 @@ window.setupDetailMediaCarousel = function (item) {
     // 1. Primary photo
     const mainPhoto = item.image_url || item.img || item.ImageUrl || item.image;
     if (mainPhoto && typeof mainPhoto === 'string' && mainPhoto.trim()) {
-        addImageMedia(mainPhoto);
+        if (!mainPhoto.startsWith('data:image/') || mainPhoto.length > 500) {
+            addImageMedia(mainPhoto);
+        }
     }
 
     // 2. Additional photos (arrays, JSON string, or comma-separated list)
@@ -582,6 +618,11 @@ window.setupDetailMediaCarousel = function (item) {
         extraPhotos.forEach(u => {
             addImageMedia(u);
         });
+    }
+
+    // Fallback if media is still empty but mainPhoto exists
+    if (media.length === 0 && mainPhoto && typeof mainPhoto === 'string' && mainPhoto.trim()) {
+        addImageMedia(mainPhoto);
     }
 
     // 3. Video demonstration (item.video_url / item.videoUrl / item.VideoUrl)
@@ -4781,7 +4822,7 @@ window.loadUserRentedOutItems = async function () {
     }
 
     container.innerHTML = myItems.map(item => {
-        const img = item.image_url || 'https://via.placeholder.com/300x300/5B3FA8/FFFFFF?text=No+Image';
+        const img = getRentEaseItemImage(item);
         const price = parseFloat(item.price_per_day || item.price || 0).toLocaleString();
         const rawPrice = parseFloat(item.price_per_day || item.price || 100);
         const availStock = item.qty_available ?? item.qty_total ?? 1;

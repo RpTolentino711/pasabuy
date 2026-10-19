@@ -34,15 +34,47 @@ window.enableChatRentalStepSwipe = function () {
     if (!banner || banner.dataset.swipeReady === 'true') return;
     banner.dataset.swipeReady = 'true';
     let startX = 0;
-    banner.addEventListener('touchstart', event => { startX = event.touches[0].clientX; }, { passive: true });
+    banner.addEventListener('touchstart', event => {
+        startX = event.touches[0].clientX;
+    }, { passive: true });
     banner.addEventListener('touchend', event => {
-        if (startX - event.changedTouches[0].clientX > 50 && !banner.classList.contains('is-collapsed')) window.toggleChatRentalSteps();
+        if (startX - event.changedTouches[0].clientX > 50 && !banner.classList.contains('is-collapsed')) {
+            window.toggleChatRentalSteps();
+        }
     }, { passive: true });
 };
 
 function getRentEaseItemImage(item) {
     if (!item) return 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
+
+    // 1. Resolve photo from photos array first if available
+    let photoFromList = '';
+    let photos = item.photos || item.images || item.image_urls;
+    if (typeof photos === 'string') {
+        try {
+            photos = JSON.parse(photos);
+        } catch (e) {
+            photos = photos.split(',').map(s => s.trim()).filter(Boolean);
+        }
+    }
+    if (Array.isArray(photos) && photos.length > 0) {
+        const validPhoto = photos.find(p => p && typeof p === 'string' && (!p.startsWith('data:image/') || p.length > 500));
+        if (validPhoto) {
+            photoFromList = validPhoto;
+        } else if (photos[0] && typeof photos[0] === 'string') {
+            photoFromList = photos[0];
+        }
+    }
+
     let image = item.image_url || item.image || item.img || item.ImageUrl || item.imageUrl || item.photo_url || '';
+
+    // If image is a truncated base64 data URI (<= 500 chars), it is broken; use photoFromList if available
+    if (image && typeof image === 'string' && image.startsWith('data:image/') && image.length <= 500 && photoFromList) {
+        image = photoFromList;
+    } else if (!image && photoFromList) {
+        image = photoFromList;
+    }
+
     const listings = typeof allProductsCache !== 'undefined' && Array.isArray(allProductsCache)
         ? allProductsCache
         : (Array.isArray(window.allProductsCache) ? window.allProductsCache : []);
@@ -50,7 +82,7 @@ function getRentEaseItemImage(item) {
         String(listing.id || '') === String(item.id || '') ||
         String(listing.title || '').trim().toLowerCase() === String(item.name || '').trim().toLowerCase()
     );
-    if (matchingListing) {
+    if (matchingListing && (!image || (image.startsWith('data:image/') && image.length <= 500))) {
         image = matchingListing.img || matchingListing.image_url || matchingListing.image || image;
     }
     return image || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
@@ -540,6 +572,9 @@ window.setupDetailMediaCarousel = function (item) {
     const mediaKey = (url) => {
         const normalized = String(url || '').trim();
         if (!normalized) return '';
+        if (normalized.startsWith('data:image/')) {
+            return normalized.slice(0, 100) + '_' + normalized.length;
+        }
         try {
             const parsed = new URL(normalized, window.location.href);
             parsed.hash = '';
@@ -552,8 +587,11 @@ window.setupDetailMediaCarousel = function (item) {
     const mediaKeys = new Set();
     const addImageMedia = (url) => {
         const trimmedUrl = String(url || '').trim();
+        if (!trimmedUrl) return;
+        // Skip truncated/corrupted base64 data URIs
+        if (trimmedUrl.startsWith('data:image/') && trimmedUrl.length <= 500) return;
         const key = mediaKey(trimmedUrl);
-        if (trimmedUrl && key && !mediaKeys.has(key)) {
+        if (key && !mediaKeys.has(key)) {
             media.push({ type: 'image', url: trimmedUrl });
             mediaKeys.add(key);
         }
@@ -562,7 +600,9 @@ window.setupDetailMediaCarousel = function (item) {
     // 1. Primary photo
     const mainPhoto = item.image_url || item.img || item.ImageUrl || item.image;
     if (mainPhoto && typeof mainPhoto === 'string' && mainPhoto.trim()) {
-        addImageMedia(mainPhoto);
+        if (!mainPhoto.startsWith('data:image/') || mainPhoto.length > 500) {
+            addImageMedia(mainPhoto);
+        }
     }
 
     // 2. Additional photos (arrays, JSON string, or comma-separated list)
@@ -578,6 +618,11 @@ window.setupDetailMediaCarousel = function (item) {
         extraPhotos.forEach(u => {
             addImageMedia(u);
         });
+    }
+
+    // Fallback if media is still empty but mainPhoto exists
+    if (media.length === 0 && mainPhoto && typeof mainPhoto === 'string' && mainPhoto.trim()) {
+        addImageMedia(mainPhoto);
     }
 
     // 3. Video demonstration (item.video_url / item.videoUrl / item.VideoUrl)
@@ -747,13 +792,42 @@ function styleProductDetailModal() {
     const style = document.createElement('style');
     style.id = 'product-detail-modal-refresh';
     style.textContent = `
-        #productDetailModal .modal-content { border: 0; border-radius: 24px; overflow: hidden; box-shadow: 0 24px 70px rgba(15, 23, 42, .24); }
-        #productDetailModal .modal-header { padding: 16px 18px; border-bottom: 1px solid #EEF2F7; background: #FFFFFF; }
-        #productDetailModal .modal-body { padding: 16px; background: #F8FAFC; }
-        #productDetailModal .detail-owner-panel, #productDetailModal #detailOwnerControlSection { border: 1px solid #E2E8F0; border-radius: 16px; background: #FFFFFF; box-shadow: 0 8px 24px rgba(15, 23, 42, .06); }
-        #productDetailModal .detail-clean-tested, #productDetailModal [data-detail-assurance="clean-tested"] { display: none !important; }
-        #productDetailModal .modal-footer { gap: 10px; padding: 12px 16px; border-top: 1px solid #EEF2F7; background: #FFFFFF; }
-        #productDetailModal.is-owner-listing #detailHeaderReportBtn, #productDetailModal.is-owner-listing #detailReportItemLink { display: none !important; }
+        #productDetailModal .modal-content {
+            border: 0;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+        }
+        #productDetailModal .modal-header {
+            padding: 16px 18px;
+            border-bottom: 1px solid #EEF2F7;
+            background: #FFFFFF;
+        }
+        #productDetailModal .modal-body {
+            padding: 16px;
+            background: #F8FAFC;
+        }
+        #productDetailModal .detail-owner-panel,
+        #productDetailModal #detailOwnerControlSection {
+            border: 1px solid #E2E8F0;
+            border-radius: 16px;
+            background: #FFFFFF;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+        }
+        #productDetailModal .detail-clean-tested,
+        #productDetailModal [data-detail-assurance="clean-tested"] {
+            display: none !important;
+        }
+        #productDetailModal .modal-footer {
+            gap: 10px;
+            padding: 12px 16px;
+            border-top: 1px solid #EEF2F7;
+            background: #FFFFFF;
+        }
+        #productDetailModal.is-owner-listing #detailHeaderReportBtn,
+        #productDetailModal.is-owner-listing #detailReportItemLink {
+            display: none !important;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -839,11 +913,16 @@ function openEquipmentDetail(id) {
     const reportLink = document.getElementById('detailReportItemLink');
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
 
-    if (reportButton) {
-        reportButton.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    [reportButton, reportLink].forEach(el => {
+        if (el) el.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    });
+    if (!isOwner) {
+        updateItemReportLimit(item);
     }
-    if (reportLink) {
-        reportLink.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    const modalElForOwner = document.getElementById('productDetailModal');
+    if (modalElForOwner) {
+        modalElForOwner.classList.toggle('is-owner-listing', isOwner);
+        modalElForOwner.querySelectorAll('.detail-clean-tested, [data-detail-assurance="clean-tested"]').forEach(el => el.remove());
     }
 
     // Initialize rental schedule dates (today to tomorrow)
@@ -2132,7 +2211,10 @@ window.checkOwnerRentalNotifications = async function () {
 window.confirmRestockOrder = async function (orderId, orderCode) {
     const confirmed = await new Promise(resolve => {
         const modalEl = document.getElementById('earlyReturnRequestModal');
-        if (!modalEl || typeof bootstrap === 'undefined') { resolve(window.confirm(`Request early return for order #${orderCode}?\n\nThe renter must verify the return before this item is marked returned or restocked.`)); return; }
+        if (!modalEl || typeof bootstrap === 'undefined') {
+            resolve(window.confirm(`Request early return for order #${orderCode}?\n\nThe renter must verify the return before this item is marked returned or restocked.`));
+            return;
+        }
         const codeEl = document.getElementById('earlyReturnRequestOrderCode');
         const confirmBtn = document.getElementById('earlyReturnRequestConfirm');
         if (codeEl) codeEl.textContent = `#${String(orderCode).replace(/^#/, '')}`;
@@ -4740,7 +4822,7 @@ window.loadUserRentedOutItems = async function () {
     }
 
     container.innerHTML = myItems.map(item => {
-        const img = item.image_url || 'https://via.placeholder.com/300x300/5B3FA8/FFFFFF?text=No+Image';
+        const img = getRentEaseItemImage(item);
         const price = parseFloat(item.price_per_day || item.price || 0).toLocaleString();
         const rawPrice = parseFloat(item.price_per_day || item.price || 100);
         const availStock = item.qty_available ?? item.qty_total ?? 1;
@@ -5084,11 +5166,6 @@ window.openReportItemModal = function () {
         window.currentDetailProduct = p;
     }
 
-    if (isCurrentUserOwnerOfItem(p)) {
-        alert("You cannot report your own equipment listing.");
-        return;
-    }
-
     const idEl = document.getElementById('reportItemId');
     const nameEl = document.getElementById('reportItemName');
     const ownerEl = document.getElementById('reportItemOwner');
@@ -5125,12 +5202,35 @@ window.openReportItemModal = function () {
     }, 150);
 };
 
+async function updateItemReportLimit(item) {
+    const reportButton = document.getElementById('detailHeaderReportBtn');
+    const reportLink = document.getElementById('detailReportItemLink');
+    if (!item || (!reportButton && !reportLink)) return;
+    const currentUser = getRentEaseCurrentUser();
+    const reporterId = parseInt(currentUser.id || 0);
+    if (!reporterId) return;
+    try {
+        const res = await fetch(getRentEaseApiUrl('get_item_report_limit', {
+            item_id: parseInt(item.id || 0),
+            reporter_id: reporterId
+        }));
+        const data = await res.json();
+        const reached = data.success && data.pending_count >= data.limit;
+        [reportButton, reportLink].forEach(el => {
+            if (!el) return;
+            el.disabled = reached;
+            el.classList.toggle('disabled', reached);
+            el.style.pointerEvents = reached ? 'none' : '';
+            el.style.opacity = reached ? '0.45' : '';
+            el.title = reached ? 'Reporting is paused until Admin reviews existing reports.' : 'Report Listing to Admin';
+        });
+    } catch (e) {
+        console.error('Report limit check failed:', e);
+    }
+}
+
 window.submitItemReport = async function () {
     const p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
-    if (p && isCurrentUserOwnerOfItem(p)) {
-        alert("You cannot report your own equipment listing.");
-        return;
-    }
     const itemId = p ? parseInt(p.id) : (parseInt(document.getElementById('reportItemId')?.innerText || '0') || 1);
     const reason = document.getElementById('reportReasonSelect')?.value || '';
     const details = (document.getElementById('reportDetailsText')?.value || '').trim();
@@ -5149,6 +5249,22 @@ window.submitItemReport = async function () {
     }
 
     const currentUser = getRentEaseCurrentUser();
+    try {
+        const limitRes = await fetch(getRentEaseApiUrl('get_item_report_limit', {
+            item_id: itemId,
+            reporter_id: parseInt(currentUser.id || 0)
+        }));
+        const limitData = await limitRes.json();
+        if (limitData.success && limitData.pending_count >= limitData.limit) {
+            alert('This person already has 5 pending reports. Reporting is temporarily disabled until Admin reviews the existing reports.');
+            await updateItemReportLimit(p || { id: itemId });
+            return;
+        }
+    } catch (e) {
+        console.error('Report limit validation failed:', e);
+        alert('Unable to verify the report limit. Please try again.');
+        return;
+    }
     const btn = document.getElementById('btnSubmitItemReport');
     if (btn) {
         btn.disabled = true;

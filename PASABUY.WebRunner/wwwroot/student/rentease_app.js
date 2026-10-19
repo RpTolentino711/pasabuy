@@ -42,7 +42,35 @@ window.enableChatRentalStepSwipe = function () {
 
 function getRentEaseItemImage(item) {
     if (!item) return 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
+
+    // 1. Resolve photo from photos array first if available
+    let photoFromList = '';
+    let photos = item.photos || item.images || item.image_urls;
+    if (typeof photos === 'string') {
+        try {
+            photos = JSON.parse(photos);
+        } catch (e) {
+            photos = photos.split(',').map(s => s.trim()).filter(Boolean);
+        }
+    }
+    if (Array.isArray(photos) && photos.length > 0) {
+        const validPhoto = photos.find(p => p && typeof p === 'string' && (!p.startsWith('data:image/') || p.length > 500));
+        if (validPhoto) {
+            photoFromList = validPhoto;
+        } else if (photos[0] && typeof photos[0] === 'string') {
+            photoFromList = photos[0];
+        }
+    }
+
     let image = item.image_url || item.image || item.img || item.ImageUrl || item.imageUrl || item.photo_url || '';
+
+    // If image is a truncated base64 data URI (<= 500 chars), it is broken; use photoFromList if available
+    if (image && typeof image === 'string' && image.startsWith('data:image/') && image.length <= 500 && photoFromList) {
+        image = photoFromList;
+    } else if (!image && photoFromList) {
+        image = photoFromList;
+    }
+
     const listings = typeof allProductsCache !== 'undefined' && Array.isArray(allProductsCache)
         ? allProductsCache
         : (Array.isArray(window.allProductsCache) ? window.allProductsCache : []);
@@ -50,7 +78,7 @@ function getRentEaseItemImage(item) {
         String(listing.id || '') === String(item.id || '') ||
         String(listing.title || '').trim().toLowerCase() === String(item.name || '').trim().toLowerCase()
     );
-    if (matchingListing) {
+    if (matchingListing && (!image || (image.startsWith('data:image/') && image.length <= 500))) {
         image = matchingListing.img || matchingListing.image_url || matchingListing.image || image;
     }
     return image || 'https://via.placeholder.com/500x500/5B3FA8/FFFFFF?text=No+Image';
@@ -531,7 +559,7 @@ window.setupDetailMediaCarousel = function (item) {
 
     const carouselEl = document.getElementById('detailMediaCarousel');
     const innerEl = document.getElementById('detailCarouselInner');
-    const indicatorsEl = document.getElementById('detailIndicators');
+    const indicatorsEl = document.getElementById('detailCarouselIndicators');
     const prevBtn = document.getElementById('detailCarouselPrevBtn');
     const nextBtn = document.getElementById('detailCarouselNextBtn');
     const badgeEl = document.getElementById('detailMediaBadge');
@@ -549,6 +577,10 @@ window.setupDetailMediaCarousel = function (item) {
     const mediaKey = (url) => {
         const normalized = String(url || '').trim();
         if (!normalized) return '';
+        // For base64 strings, use first 100 chars and length as key
+        if (normalized.startsWith('data:')) {
+            return normalized.substring(0, 100) + '_' + normalized.length;
+        }
         try {
             const parsed = new URL(normalized, window.location.href);
             parsed.hash = '';
@@ -561,8 +593,11 @@ window.setupDetailMediaCarousel = function (item) {
     const mediaKeys = new Set();
     const addImageMedia = (url) => {
         const trimmedUrl = String(url || '').trim();
+        if (!trimmedUrl) return;
+        // Skip truncated/corrupted base64 data URIs
+        if (trimmedUrl.startsWith('data:image/') && trimmedUrl.length <= 500) return;
         const key = mediaKey(trimmedUrl);
-        if (trimmedUrl && key && !mediaKeys.has(key)) {
+        if (key && !mediaKeys.has(key)) {
             media.push({ type: 'image', url: trimmedUrl });
             mediaKeys.add(key);
         }
@@ -570,14 +605,14 @@ window.setupDetailMediaCarousel = function (item) {
 
     // 1. Primary photo
     const mainPhoto = item.image_url || item.img || item.ImageUrl || item.image;
-    console.log('Main photo:', mainPhoto);
     if (mainPhoto && typeof mainPhoto === 'string' && mainPhoto.trim()) {
-        addImageMedia(mainPhoto);
+        if (!mainPhoto.startsWith('data:image/') || mainPhoto.length > 500) {
+            addImageMedia(mainPhoto);
+        }
     }
 
     // 2. Additional photos (arrays, JSON string, or comma-separated list)
     let extraPhotos = item.photos || item.images || item.image_urls || item.gallery;
-    console.log('Extra photos (raw):', extraPhotos);
     if (typeof extraPhotos === 'string') {
         try {
             extraPhotos = JSON.parse(extraPhotos);
@@ -585,11 +620,15 @@ window.setupDetailMediaCarousel = function (item) {
             extraPhotos = extraPhotos.split(',').map(s => s.trim()).filter(Boolean);
         }
     }
-    console.log('Extra photos (parsed):', extraPhotos);
     if (Array.isArray(extraPhotos)) {
         extraPhotos.forEach(u => {
             addImageMedia(u);
         });
+    }
+
+    // Fallback if media is still empty but mainPhoto exists
+    if (media.length === 0 && mainPhoto && typeof mainPhoto === 'string' && mainPhoto.trim()) {
+        addImageMedia(mainPhoto);
     }
 
     // 3. Video demonstration (item.video_url / item.videoUrl / item.VideoUrl)
@@ -862,14 +901,31 @@ function openEquipmentDetail(id) {
     const datesContainer = document.getElementById('detailDatesContainer');
     const reportButton = document.getElementById('detailHeaderReportBtn');
     const reportLink = document.getElementById('detailReportItemLink');
+    const buyerHeaderActions = document.getElementById('detailHeaderBuyerActions');
+    const ownerHeaderBadge = document.getElementById('detailHeaderOwnerBadge');
+    const buyerSafetyRow = document.getElementById('detailBuyerSafetyRow');
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
+    const modalElForOwner = document.getElementById('productDetailModal');
+    if (modalElForOwner) {
+        modalElForOwner.classList.toggle('is-owner-listing', !!isOwner);
+        modalElForOwner.querySelectorAll('.detail-clean-tested, [data-detail-assurance="clean-tested"]').forEach(el => el.remove());
+    }
 
-    if (reportButton) {
-        reportButton.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    const hideBuyerChrome = isOwner;
+    [reportButton, reportLink, buyerHeaderActions, buyerSafetyRow].forEach(el => {
+        if (!el) return;
+        el.style.setProperty('display', hideBuyerChrome ? 'none' : (el === reportLink || el === buyerHeaderActions || el === buyerSafetyRow ? 'flex' : 'flex'), 'important');
+    });
+    if (ownerHeaderBadge) {
+        ownerHeaderBadge.style.setProperty('display', isOwner ? 'flex' : 'none', 'important');
     }
-    if (reportLink) {
-        reportLink.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    document.querySelectorAll('#productDetailModal .detail-buyer-only').forEach(el => {
+        el.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    });
+    if (!isOwner && reportButton) {
+        reportButton.style.setProperty('display', 'flex', 'important');
     }
+    if (!isOwner) updateItemReportLimit(item);
 
     // Initialize rental schedule dates (today to tomorrow)
     const todayStr = new Date().toISOString().split('T')[0];
@@ -913,13 +969,13 @@ function openEquipmentDetail(id) {
 
         if (footerActions) {
             footerActions.innerHTML = `
-                <button type="button" class="btn btn-outline-danger rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center gap-1.5 flex-grow-1" 
-                        onclick="promptTakeDownOwnerItem(${item.id}, '${safeTitle}')">
-                    <i class="fa-solid fa-trash-can me-1"></i> Take Down Listing
+                <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 border text-secondary flex-grow-1"
+                        data-bs-dismiss="modal" style="height:46px;">
+                    Done
                 </button>
-                <button type="button" class="btn btn-light rounded-4 py-2.5 px-3 fw-bold fs-7 border text-secondary" 
-                        data-bs-dismiss="modal">
-                    Close
+                <button type="button" class="btn btn-outline-danger rounded-4 py-2.5 px-3 fw-bold fs-7 d-flex align-items-center justify-content-center"
+                        onclick="promptTakeDownOwnerItem(${item.id}, '${safeTitle}')" style="height:46px;">
+                    <i class="fa-solid fa-trash-can me-1"></i> Take down
                 </button>
             `;
         }
@@ -4751,7 +4807,7 @@ window.loadUserRentedOutItems = async function () {
     }
 
     container.innerHTML = myItems.map(item => {
-        const img = item.image_url || 'https://via.placeholder.com/300x300/5B3FA8/FFFFFF?text=No+Image';
+        const img = getRentEaseItemImage(item);
         const price = parseFloat(item.price_per_day || item.price || 0).toLocaleString();
         const rawPrice = parseFloat(item.price_per_day || item.price || 100);
         const availStock = item.qty_available ?? item.qty_total ?? 1;
@@ -5136,6 +5192,25 @@ window.openReportItemModal = function () {
     }, 150);
 };
 
+async function updateItemReportLimit(item) {
+    const reportButton = document.getElementById('detailHeaderReportBtn');
+    const reportLink = document.getElementById('detailReportItemLink');
+    const reporterId = parseInt(getRentEaseCurrentUser().id || 0);
+    if (!item || !reporterId) return;
+    try {
+        const res = await fetch(getRentEaseApiUrl('get_item_report_limit', { item_id: item.id, reporter_id: reporterId }));
+        const data = await res.json();
+        const reached = data.success && data.pending_count >= data.limit;
+        [reportButton, reportLink].forEach(el => {
+            if (!el) return;
+            el.disabled = reached;
+            el.style.pointerEvents = reached ? 'none' : '';
+            el.style.opacity = reached ? '0.45' : '';
+            el.title = reached ? 'Reporting is paused until Admin reviews existing reports.' : 'Report Listing to Admin';
+        });
+    } catch (e) { console.error('Report limit check failed:', e); }
+}
+
 window.submitItemReport = async function () {
     const p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
     if (p && isCurrentUserOwnerOfItem(p)) {
@@ -5160,6 +5235,13 @@ window.submitItemReport = async function () {
     }
 
     const currentUser = getRentEaseCurrentUser();
+    const limitRes = await fetch(getRentEaseApiUrl('get_item_report_limit', { item_id: itemId, reporter_id: parseInt(currentUser.id || 0) }));
+    const limitData = await limitRes.json();
+    if (limitData.success && limitData.pending_count >= limitData.limit) {
+        alert('This person already has 5 pending reports. Reporting is temporarily disabled until Admin reviews the existing reports.');
+        await updateItemReportLimit(p);
+        return;
+    }
     const btn = document.getElementById('btnSubmitItemReport');
     if (btn) {
         btn.disabled = true;
