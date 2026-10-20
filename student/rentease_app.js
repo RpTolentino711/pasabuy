@@ -350,16 +350,39 @@ function initHeroBannerCarousel() {
 }
 
 function heroBannerGoTo(idx) {
-    const slides = document.querySelectorAll('.hero-slide');
-    const dots   = document.querySelectorAll('.hero-dot');
-    if (!slides.length) return;
-    idx = ((idx % slides.length) + slides.length) % slides.length;
-    slides.forEach((s, i) => s.classList.toggle('active-slide', i === idx));
-    dots.forEach((d, i)   => d.classList.toggle('active', i === idx));
-    _heroBannerIdx = idx;
+    const carousel  = document.getElementById('heroBannerCarousel');
+    if (!carousel) return;
+    const allSlides = carousel.querySelectorAll('.hero-slide');
+    const allDots   = carousel.querySelectorAll('.hero-dot');
+    if (!allSlides.length) return;
+
+    const total   = allSlides.length;
+    const safeIdx = ((idx % total) + total) % total;
+    if (safeIdx === _heroBannerIdx && allSlides[safeIdx].classList.contains('active-slide')) return;
+
+    const prevSlide = allSlides[_heroBannerIdx];
+    const nextSlide = allSlides[safeIdx];
+
+    // Kick outgoing slide to the left
+    if (prevSlide && prevSlide !== nextSlide) {
+        prevSlide.classList.add('slide-exit');
+        prevSlide.classList.remove('active-slide');
+        // Clean up exit class after transition finishes
+        setTimeout(() => prevSlide.classList.remove('slide-exit'), 600);
+    }
+
+    // Force browser to paint the next slide at translateX(100%) before transitioning
+    nextSlide.classList.remove('slide-exit', 'active-slide');
+    void nextSlide.offsetWidth; // reflow trigger
+    nextSlide.classList.add('active-slide');
+
+    // Update dots
+    allDots.forEach((d, i) => d.classList.toggle('active', i === safeIdx));
+    _heroBannerIdx = safeIdx;
 }
-window.heroBannerGoTo      = heroBannerGoTo;
+window.heroBannerGoTo         = heroBannerGoTo;
 window.initHeroBannerCarousel = initHeroBannerCarousel;
+
 
 function renderFeaturedRentals() {
     const container = document.getElementById('homeFeaturedContainer');

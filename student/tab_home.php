@@ -22,37 +22,52 @@
             overflow: hidden;
             position: relative;
             margin-bottom: 10px;
-            min-height: 100px;
+            height: 110px;
             cursor: pointer;
         }
+        /* All slides stacked absolutely — only active-slide is visible */
         .hero-slide {
-            display: none;
+            position: absolute;
+            top: 0; left: 0;
             width: 100%;
-            min-height: 100px;
-            position: relative;
-            overflow: hidden;
-            border-radius: 16px;
-        }
-        .hero-slide.active-slide {
+            height: 100%;
             display: flex;
             align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.45s ease;
+            will-change: transform, opacity;
+            z-index: 1;
+        }
+        /* Incoming slide slides in from the right */
+        .hero-slide.active-slide {
+            opacity: 1;
+            transform: translateX(0%);
+            z-index: 3;
+        }
+        /* Outgoing slide exits to the left */
+        .hero-slide.slide-exit {
+            opacity: 0;
+            transform: translateX(-100%);
+            z-index: 2;
         }
         .hero-slide-inner {
             display: flex;
             align-items: center;
             width: 100%;
-            min-height: 100px;
+            height: 100%;
             position: relative;
             z-index: 2;
         }
         .hero-slide-text {
-            padding: 14px 14px 14px 16px;
+            padding: 14px 10px 14px 16px;
             flex: 1;
             z-index: 3;
         }
         .hero-slide-media {
             flex: 0 0 38%;
-            height: 100px;
+            height: 110px;
             position: relative;
             overflow: hidden;
         }
@@ -64,7 +79,7 @@
             mask-image: linear-gradient(to left, black 55%, transparent 100%);
             -webkit-mask-image: linear-gradient(to left, black 55%, transparent 100%);
         }
-        /* Carousel Dots */
+        /* Dots indicator */
         #heroBannerDots {
             display: flex;
             justify-content: center;
@@ -74,45 +89,35 @@
             bottom: 8px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10;
+            z-index: 20;
         }
         .hero-dot {
             width: 5px;
             height: 5px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.45);
-            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.40);
+            transition: all 0.35s ease;
             cursor: pointer;
         }
         .hero-dot.active {
-            width: 16px;
+            width: 18px;
             border-radius: 3px;
             background: rgba(255,255,255,0.95);
         }
-        /* Slide enter animation */
-        @keyframes heroSlideIn {
-            from { opacity: 0; transform: translateX(18px); }
-            to   { opacity: 1; transform: translateX(0); }
-        }
-        .hero-slide.active-slide { animation: heroSlideIn 0.4s ease; }
     </style>
 
-    <div id="heroBannerCarousel" style="box-shadow: 0 4px 18px rgba(91,63,168,0.18);">
+    <div id="heroBannerCarousel" style="box-shadow: 0 6px 22px rgba(91,63,168,0.22);">
         <!-- Slides injected by initHeroBannerCarousel() in rentease_app.js -->
-        <!-- Fallback skeleton while JS loads -->
+        <!-- Fallback skeleton while JS initialises -->
         <div class="hero-slide active-slide" style="background: linear-gradient(135deg, #5B3FA8 0%, #341F97 100%);">
             <div class="hero-slide-inner">
                 <div class="hero-slide-text">
                     <div class="d-inline-flex align-items-center gap-1 badge rounded-pill px-2 py-0.5 mb-1 text-white"
-                         style="background: rgba(255,255,255,0.15); backdrop-filter:blur(8px); font-size:0.6rem; border:1px solid rgba(255,255,255,0.22);">
+                         style="background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);font-size:0.6rem;border:1px solid rgba(255,255,255,0.22);">
                         <i class="fa-solid fa-spinner fa-spin" style="font-size:0.55rem;"></i> Loading...
                     </div>
-                    <h5 class="fw-extrabold mb-1 text-white" style="font-size:0.9rem; letter-spacing:-0.2px; line-height:1.2;">
-                        RentEase Campus
-                    </h5>
-                    <p class="text-white-50 mb-0" style="font-size:0.7rem; line-height:1.3;">
-                        Seamless equipment rentals for your events.
-                    </p>
+                    <h5 class="fw-extrabold mb-1 text-white" style="font-size:0.9rem;letter-spacing:-0.2px;line-height:1.2;">RentEase Campus</h5>
+                    <p class="text-white-50 mb-0" style="font-size:0.7rem;line-height:1.3;">Seamless equipment rentals for your events.</p>
                 </div>
             </div>
         </div>
