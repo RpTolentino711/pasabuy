@@ -342,10 +342,10 @@ function sendPasaBuyOtpEmail($toEmail, $toName, $otp) {
     $mail->Username = 'PASABUY@pasabuy.site';
     $mail->Password = 'Vanossgaming@10';
 
-    $mail->setFrom('PASABUY@pasabuy.site', 'PasaBuy Campus Marketplace');
+    $mail->setFrom('PASABUY@pasabuy.site', 'RentEase Student Platform');
     $mail->addAddress($toEmail, $toName ?: 'Student User');
     $mail->isHTML(true);
-    $mail->Subject = "🔑 PasaBuy Verification OTP: {$otp}";
+    $mail->Subject = "🔑 RentEase Verification OTP: {$otp}";
 
     $safeName = htmlspecialchars($toName ?: 'Student User', ENT_QUOTES, 'UTF-8');
     $safeOtp  = htmlspecialchars($otp, ENT_QUOTES, 'UTF-8');
@@ -353,21 +353,21 @@ function sendPasaBuyOtpEmail($toEmail, $toName, $otp) {
     $mail->Body = "
     <div style='font-family: Arial, sans-serif; background-color: #f4f6f9; padding: 30px; color: #333;'>
         <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; text-align: center;'>
-            <h2 style='color: #5F27CD; margin-top: 0; font-size: 24px;'>🛍️ PasaBuy Campus Marketplace</h2>
+            <h2 style='color: #5B3FA8; margin-top: 0; font-size: 24px;'>🚚 RentEase Campus Logistics</h2>
             <p style='font-size: 14px; color: #64748b;'>Student Account Verification</p>
             <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
             
             <p style='font-size: 15px; color: #334155;'>Hi <strong>{$safeName}</strong>,</p>
             <p style='font-size: 14px; color: #64748b; line-height: 1.5;'>Here is your One-Time Password (OTP) verification code:</p>
             
-            <div style='background: #5F27CD; color: #ffffff; border-radius: 14px; padding: 18px 24px; display: inline-block; margin: 20px 0;'>
+            <div style='background: linear-gradient(135deg, #5B3FA8, #341F97); color: #ffffff; border-radius: 14px; padding: 18px 24px; display: inline-block; margin: 20px 0;'>
                 <span style='font-size: 34px; font-weight: 900; letter-spacing: 8px;'>{$safeOtp}</span>
             </div>
 
             <p style='font-size: 13px; color: #94a3b8; line-height: 1.5;'>This OTP code will expire in 10 minutes. Do not share this code with anyone.</p>
             
             <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0;'>
-            <p style='font-size: 12px; color: #94a3b8; text-align: center;'>&copy; " . date('Y') . " PasaBuy Campus Marketplace. All rights reserved.</p>
+            <p style='font-size: 12px; color: #94a3b8; text-align: center;'>&copy; " . date('Y') . " RentEase Campus Logistics. Easy Rentals. Seamless Events.</p>
         </div>
     </div>
     ";
@@ -382,8 +382,8 @@ function sendPasaBuyOtpEmail($toEmail, $toName, $otp) {
         } catch (Exception $e2) {
             $headers  = "MIME-Version: 1.0\r\n";
             $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-            $headers .= "From: PasaBuy Campus Marketplace <PASABUY@pasabuy.site>\r\n";
-            return @mail($toEmail, "🔑 PasaBuy Verification OTP: {$otp}", $mail->Body, $headers);
+            $headers .= "From: RentEase Campus Logistics <PASABUY@pasabuy.site>\r\n";
+            return @mail($toEmail, "🔑 RentEase Verification OTP: {$otp}", $mail->Body, $headers);
         }
     }
 }

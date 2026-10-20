@@ -1889,32 +1889,33 @@
                                 const data = await res.json();
                                 if (res.ok && data.success) {
                                     if (otpVerifyModalInstance) otpVerifyModalInstance.hide();
-                                    alert('🎉 Registration successful! Welcome to PasaBuy Campus Marketplace.');
 
-                                    const uObj = data.user || {};
-                                    const uId = uObj.id || uObj.userId || data.userId || data.id || Date.now();
-                                    const nameShow = uObj.firstName || pendingRegistrationEmail.split('@')[0];
+                                    if (pendingRegistrationEmail) {
+                                        localStorage.setItem('rentease_registered_email', pendingRegistrationEmail);
+                                    }
 
-                                    const studentUser = {
-                                        id: uId,
-                                        userId: uId,
-                                        firstName: nameShow,
-                                        lastName: uObj.lastName || '',
-                                        email: pendingRegistrationEmail,
-                                        verificationStatus: 'UNVERIFIED',
-                                        is_verified: 0
-                                    };
-                                    localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser));
-                                    localStorage.setItem('pasabuy_student_logged_in', 'true');
+                                    const successModalEl = document.getElementById('otpSuccessModal');
+                                    if (successModalEl && successModalEl.parentElement !== document.body) {
+                                        document.body.appendChild(successModalEl);
+                                    }
+                                    if (!window.otpSuccessModalInstance && successModalEl) {
+                                        window.otpSuccessModalInstance = new bootstrap.Modal(successModalEl);
+                                    }
+                                    if (window.otpSuccessModalInstance) window.otpSuccessModalInstance.show();
 
-                                    document.getElementById('profileName').innerText = `${studentUser.firstName} ${studentUser.lastName}`.trim();
-                                    document.getElementById('homeWelcomeName').innerText = `Good day, ${studentUser.firstName}!`;
-                                    document.getElementById('profileSub').innerText = `${pendingRegistrationEmail} • Unverified`;
+                                    let secondsLeft = 2;
+                                    const countdownEl = document.getElementById('otpSuccessCountdown');
+                                    if (countdownEl) countdownEl.innerText = secondsLeft;
 
-                                    document.getElementById('authScreen').style.display = 'none';
-                                    document.querySelector('.app-tabbar').style.display = 'flex';
-                                    document.getElementById('headerBadge').style.display = 'inline-flex';
-                                    switchTab('home');
+                                    if (window.otpRedirectTimer) clearInterval(window.otpRedirectTimer);
+                                    window.otpRedirectTimer = setInterval(() => {
+                                        secondsLeft--;
+                                        if (countdownEl) countdownEl.innerText = secondsLeft;
+                                        if (secondsLeft <= 0) {
+                                            clearInterval(window.otpRedirectTimer);
+                                            proceedToLoginAfterOtpSuccess();
+                                        }
+                                    }, 1000);
                                 } else {
                                     alert(data.message || '❌ Invalid or expired OTP verification code.');
                                 }
@@ -1922,6 +1923,35 @@
                                 alert('Connection error verifying OTP.');
                             }
                         }
+
+                        window.proceedToLoginAfterOtpSuccess = function () {
+                            if (window.otpRedirectTimer) clearInterval(window.otpRedirectTimer);
+                            if (window.otpSuccessModalInstance) window.otpSuccessModalInstance.hide();
+
+                            const email = pendingRegistrationEmail || localStorage.getItem('rentease_registered_email') || '';
+
+                            const regScreen = document.getElementById('registerScreen');
+                            const authScreen = document.getElementById('authScreen');
+                            if (regScreen) regScreen.style.display = 'none';
+                            if (authScreen) authScreen.style.display = 'block';
+
+                            const emailField = document.getElementById('loginEmailInput') || document.getElementById('loginEmail');
+                            if (emailField && email) {
+                                emailField.value = email;
+                                emailField.style.borderColor = '#10B981';
+                                emailField.style.backgroundColor = '#F0FDF4';
+                                setTimeout(() => {
+                                    emailField.style.borderColor = '#E2E8F0';
+                                    emailField.style.backgroundColor = '#F8FAFC';
+                                }, 3000);
+                            }
+
+                            const successBanner = document.getElementById('regSuccessBanner');
+                            if (successBanner) successBanner.style.display = 'block';
+
+                            const passField = document.getElementById('loginPasswordInput') || document.getElementById('loginPassword');
+                            if (passField) passField.focus();
+                        };
 
                         function openForgotPasswordModal() {
                             const modalEl = document.getElementById('forgotPasswordModal');
@@ -7109,7 +7139,7 @@
                                         otpVerifyModalInstance = new bootstrap.Modal(otpModalEl);
                                     }
                                     otpVerifyModalInstance.show();
-                                    alert(`📧 Verification OTP code sent to ${email} from PASABUY@pasabuy.site!`);
+                                    // Modal is already shown to user
                                 } else {
                                     alert(data.message || '❌ Could not send OTP code to this email address.');
                                 }

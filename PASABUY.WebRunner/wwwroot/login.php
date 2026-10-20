@@ -25,6 +25,13 @@ if (!defined('PASABUY_INCLUDED')) {
         <p class="text-muted fs-8 mb-0" style="color: #64748B !important;">Sign in to continue</p>
     </div>
 
+    <!-- Registration Success Banner (shown when auto-directed from OTP verification) -->
+    <div id="regSuccessBanner"
+        class="p-3 bg-success bg-opacity-10 text-success border border-success-subtle rounded-3 fs-8 mb-3 text-start"
+        style="display:none;">
+        <i class="fa-solid fa-circle-check me-1"></i> <strong id="regSuccessMsg">Account verified successfully! Please enter your password to sign in.</strong>
+    </div>
+
     <!-- Failed Attempt Banner -->
     <div id="failedAttemptBanner"
         class="p-3 bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-3 fs-8 mb-3 text-start"
@@ -221,6 +228,40 @@ if (typeof window.openForgotPasswordModal !== 'function') {
         window.location.href = 'forgot_password.php';
     };
 }
+
+// Auto-populate login email field when redirected after successful OTP registration
+window.addEventListener('DOMContentLoaded', function () {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const regEmail = urlParams.get('email') || localStorage.getItem('rentease_registered_email') || '';
+        if (regEmail) {
+            const emailField = document.getElementById('loginEmailInput') || document.getElementById('loginEmail');
+            if (emailField) {
+                emailField.value = regEmail;
+                emailField.style.borderColor = '#10B981';
+                emailField.style.backgroundColor = '#F0FDF4';
+                setTimeout(() => {
+                    emailField.style.borderColor = '#E2E8F0';
+                    emailField.style.backgroundColor = '#F8FAFC';
+                }, 3000);
+            }
+
+            const successBanner = document.getElementById('regSuccessBanner');
+            if (successBanner) {
+                successBanner.style.display = 'block';
+            }
+
+            const passField = document.getElementById('loginPasswordInput') || document.getElementById('loginPassword');
+            if (passField) {
+                passField.focus();
+            }
+
+            localStorage.removeItem('rentease_registered_email');
+        }
+    } catch (e) {
+        console.error("Auto-fill email error:", e);
+    }
+});
 </script>
 
 <?php

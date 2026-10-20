@@ -448,7 +448,9 @@
                 <div id="otpVerifyErrorAlert" class="alert alert-danger rounded-3 fs-8 p-2 mb-3"
                     style="display:none;"></div>
 
-                <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2.5 fs-7 shadow-sm mb-2"
+                <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2.5 fs-7 shadow-sm mb-2 text-white"
+                    style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;"
+                    id="btnVerifyOtpSubmit"
                     onclick="verifyOtpAndCompleteRegistration()"><i class="fa-solid fa-shield-check me-1"></i>
                     Verify OTP & Complete Registration</button>
                 <button type="button" class="btn btn-light w-100 rounded-pill text-muted fs-8 fw-semibold"
@@ -457,6 +459,38 @@
         </div>
     </div>
 </div>
+
+<!-- OTP SUCCESS / VERIFIED MODAL -->
+<div class="modal fade" id="otpSuccessModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-4 shadow-lg text-center position-relative overflow-hidden">
+            <div style="height:6px; background: linear-gradient(90deg, #10B981, #059669, #34D399); position:absolute; top:0; left:0; right:0;"></div>
+            <div class="modal-body py-3">
+                <div class="mb-3 position-relative d-inline-block">
+                    <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width:76px; height:76px;">
+                        <i class="fa-solid fa-circle-check fs-1 text-success"></i>
+                    </div>
+                </div>
+                <h4 class="fw-extrabold text-dark mb-1">OTP Verified Successfully!</h4>
+                <p class="fs-7 text-muted mb-3">Your RentEase student account has been created successfully.</p>
+                
+                <div class="p-3 bg-light rounded-4 border mb-3">
+                    <div class="d-flex align-items-center justify-content-center gap-2 text-primary fw-semibold fs-8">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <span>Auto-directing to login field in <strong id="otpSuccessCountdown">2</strong> seconds...</span>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2.5 fs-7 shadow-sm text-white" 
+                    style="background: linear-gradient(135deg, #5B3FA8, #341F97); border:none;" 
+                    onclick="proceedToLoginAfterOtpSuccess()">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Proceed to Login Now
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- FORGOT PASSWORD MODAL -->
 <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
