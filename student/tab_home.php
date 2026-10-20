@@ -15,33 +15,108 @@
         </div>
     </div>
 
-    <!-- Hero Promotional Banner: "Make Your Event Special" (Interactive Modal Trigger) -->
-    <div class="card border-0 rounded-4 shadow-sm mb-2.5 text-white overflow-hidden position-relative" 
-         style="background: linear-gradient(135deg, #5B3FA8 0%, #341F97 100%); min-height: 96px; cursor: pointer;"
-         onclick="openMakeEventSpecialModal()" title="View Top 3 Most-Loved Campus Equipment">
-        <div class="row g-0 h-100 align-items-center">
-            <div class="col-7 p-2.5 ps-3 z-2">
-                <div class="d-inline-flex align-items-center gap-1 badge rounded-pill px-2 py-0.5 mb-1 text-white shadow-2xs" 
-                     style="background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); font-size: 0.62rem; border: 1px solid rgba(255, 255, 255, 0.25);">
-                    <i class="fa-solid fa-heart text-danger"></i> Campus Top Hearted Gear
+    <!-- Hero Banner Carousel (Dynamic: Most Loved · Get Verified · Rent Now) -->
+    <style>
+        #heroBannerCarousel {
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 10px;
+            min-height: 100px;
+            cursor: pointer;
+        }
+        .hero-slide {
+            display: none;
+            width: 100%;
+            min-height: 100px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+        }
+        .hero-slide.active-slide {
+            display: flex;
+            align-items: center;
+        }
+        .hero-slide-inner {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            min-height: 100px;
+            position: relative;
+            z-index: 2;
+        }
+        .hero-slide-text {
+            padding: 14px 14px 14px 16px;
+            flex: 1;
+            z-index: 3;
+        }
+        .hero-slide-media {
+            flex: 0 0 38%;
+            height: 100px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-slide-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.9;
+            mask-image: linear-gradient(to left, black 55%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to left, black 55%, transparent 100%);
+        }
+        /* Carousel Dots */
+        #heroBannerDots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+        .hero-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.45);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .hero-dot.active {
+            width: 16px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.95);
+        }
+        /* Slide enter animation */
+        @keyframes heroSlideIn {
+            from { opacity: 0; transform: translateX(18px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        .hero-slide.active-slide { animation: heroSlideIn 0.4s ease; }
+    </style>
+
+    <div id="heroBannerCarousel" style="box-shadow: 0 4px 18px rgba(91,63,168,0.18);">
+        <!-- Slides injected by initHeroBannerCarousel() in rentease_app.js -->
+        <!-- Fallback skeleton while JS loads -->
+        <div class="hero-slide active-slide" style="background: linear-gradient(135deg, #5B3FA8 0%, #341F97 100%);">
+            <div class="hero-slide-inner">
+                <div class="hero-slide-text">
+                    <div class="d-inline-flex align-items-center gap-1 badge rounded-pill px-2 py-0.5 mb-1 text-white"
+                         style="background: rgba(255,255,255,0.15); backdrop-filter:blur(8px); font-size:0.6rem; border:1px solid rgba(255,255,255,0.22);">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size:0.55rem;"></i> Loading...
+                    </div>
+                    <h5 class="fw-extrabold mb-1 text-white" style="font-size:0.9rem; letter-spacing:-0.2px; line-height:1.2;">
+                        RentEase Campus
+                    </h5>
+                    <p class="text-white-50 mb-0" style="font-size:0.7rem; line-height:1.3;">
+                        Seamless equipment rentals for your events.
+                    </p>
                 </div>
-                <h5 class="fw-extrabold mb-0.5 text-white" style="font-size: 0.92rem; letter-spacing: -0.2px; line-height: 1.2;">
-                    Make Your Event Special
-                </h5>
-                <p class="text-white-50 mb-1.5" style="font-size: 0.72rem; line-height: 1.2;">
-                    Top-rated equipment loved by student renters.
-                </p>
-                <button type="button" class="btn btn-warning btn-sm rounded-pill fw-bold text-dark shadow-sm d-inline-flex align-items-center gap-1" 
-                        style="background: #F4B942; border: none; font-size: 0.72rem; padding: 2px 10px;" onclick="event.stopPropagation(); openMakeEventSpecialModal()">
-                    <i class="fa-solid fa-heart text-danger" style="font-size:0.65rem;"></i> Explore Most Loved
-                </button>
-            </div>
-            <div class="col-5 h-100 position-relative">
-                <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=400&q=80" 
-                     alt="Event Tent" class="w-100 h-100 position-absolute top-0 end-0" 
-                     style="object-fit: cover; opacity: 0.88; mask-image: linear-gradient(to left, black 65%, transparent 100%); -webkit-mask-image: linear-gradient(to left, black 65%, transparent 100%);">
             </div>
         </div>
+        <div id="heroBannerDots"></div>
     </div>
 
     <!-- Categories Horizontal Scroll Wheel (Compact) -->
