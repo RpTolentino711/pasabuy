@@ -1166,7 +1166,6 @@ function styleProductDetailModal() {
             border-top: 1px solid #EEF2F7;
             background: #FFFFFF;
         }
-        #productDetailModal.is-owner-listing #detailHeaderReportBtn,
         #productDetailModal.is-owner-listing #detailReportItemLink {
             display: none !important;
         }
@@ -1258,13 +1257,12 @@ function openEquipmentDetail(id) {
     const ownerNotice = document.getElementById('detailOwnerNoticeContainer');
     const footerActions = document.getElementById('detailFooterActions');
     const datesContainer = document.getElementById('detailDatesContainer');
-    const reportButton = document.getElementById('detailHeaderReportBtn');
     const reportLink = document.getElementById('detailReportItemLink');
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
 
-    [reportButton, reportLink].forEach(el => {
-        if (el) el.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
-    });
+    if (reportLink) {
+        reportLink.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    }
     if (!isOwner) {
         updateItemReportLimit(item);
     }
@@ -6007,9 +6005,8 @@ window.openReportItemModal = function () {
 };
 
 async function updateItemReportLimit(item) {
-    const reportButton = document.getElementById('detailHeaderReportBtn');
     const reportLink = document.getElementById('detailReportItemLink');
-    if (!item || (!reportButton && !reportLink)) return;
+    if (!item || !reportLink) return;
     const currentUser = getRentEaseCurrentUser();
     const reporterId = parseInt(currentUser.id || 0);
     if (!reporterId) return;
@@ -6020,14 +6017,11 @@ async function updateItemReportLimit(item) {
         }));
         const data = await res.json();
         const reached = data.success && data.pending_count >= data.limit;
-        [reportButton, reportLink].forEach(el => {
-            if (!el) return;
-            el.disabled = reached;
-            el.classList.toggle('disabled', reached);
-            el.style.pointerEvents = reached ? 'none' : '';
-            el.style.opacity = reached ? '0.45' : '';
-            el.title = reached ? 'Reporting is paused until Admin reviews existing reports.' : 'Report Listing to Admin';
-        });
+        reportLink.disabled = reached;
+        reportLink.classList.toggle('disabled', reached);
+        reportLink.style.pointerEvents = reached ? 'none' : '';
+        reportLink.style.opacity = reached ? '0.45' : '';
+        reportLink.title = reached ? 'Reporting is paused until Admin reviews existing reports.' : 'Report Listing to Admin';
     } catch (e) {
         console.error('Report limit check failed:', e);
     }

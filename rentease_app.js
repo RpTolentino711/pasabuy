@@ -1166,7 +1166,6 @@ function styleProductDetailModal() {
             border-top: 1px solid #EEF2F7;
             background: #FFFFFF;
         }
-        #productDetailModal.is-owner-listing #detailHeaderReportBtn,
         #productDetailModal.is-owner-listing #detailReportItemLink {
             display: none !important;
         }
@@ -1258,13 +1257,12 @@ function openEquipmentDetail(id) {
     const ownerNotice = document.getElementById('detailOwnerNoticeContainer');
     const footerActions = document.getElementById('detailFooterActions');
     const datesContainer = document.getElementById('detailDatesContainer');
-    const reportButton = document.getElementById('detailHeaderReportBtn');
     const reportLink = document.getElementById('detailReportItemLink');
     const safeTitle = (item.name || 'Equipment').replace(/'/g, "\\'");
 
-    [reportButton, reportLink].forEach(el => {
-        if (el) el.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
-    });
+    if (reportLink) {
+        reportLink.style.setProperty('display', isOwner ? 'none' : 'flex', 'important');
+    }
     if (!isOwner) {
         updateItemReportLimit(item);
     }
@@ -4041,8 +4039,35 @@ window.syncRentEaseProfileUI = function syncRentEaseProfileUI() {
                 const st = (data.VerificationStatus || data.Status || '').toUpperCase();
                 const liveVer = (st === 'VERIFIED' || st === 'APPROVED' || isVer);
                 renderVerificationBadges(liveVer);
+
+                // ── Show Congratulations Modal on First Verification ──
+                // Only trigger when student is now VERIFIED but wasn't before (per localStorage flag)
+                if (liveVer) {
+                    const seenKey = `rentease_verified_popup_shown_${user.id}`;
+                    const alreadySeen = localStorage.getItem(seenKey);
+                    if (!alreadySeen) {
+                        // Mark as seen immediately so it won't show again
+                        localStorage.setItem(seenKey, '1');
+                        // Show congratulations modal with a small delay for smooth UX
+                        setTimeout(function () {
+                            try {
+                                const modalEl = document.getElementById('verifiedCongratulationsModal');
+                                if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                                    modal.show();
+                                }
+                            } catch (e) {}
+                        }, 800);
+                    }
+                } else {
+                    // If user is not verified (e.g. unverified by admin), reset the flag
+                    // so they get the popup again next time they're verified
+                    const seenKey = `rentease_verified_popup_shown_${user.id}`;
+                    localStorage.removeItem(seenKey);
+                }
             }).catch(() => {});
     }
+
 
     // Immediately calculate and update user's rental inventory count and items
     try {
@@ -5980,9 +6005,8 @@ window.openReportItemModal = function () {
 };
 
 async function updateItemReportLimit(item) {
-    const reportButton = document.getElementById('detailHeaderReportBtn');
     const reportLink = document.getElementById('detailReportItemLink');
-    if (!item || (!reportButton && !reportLink)) return;
+    if (!item || !reportLink) return;
     const currentUser = getRentEaseCurrentUser();
     const reporterId = parseInt(currentUser.id || 0);
     if (!reporterId) return;
@@ -5993,14 +6017,11 @@ async function updateItemReportLimit(item) {
         }));
         const data = await res.json();
         const reached = data.success && data.pending_count >= data.limit;
-        [reportButton, reportLink].forEach(el => {
-            if (!el) return;
-            el.disabled = reached;
-            el.classList.toggle('disabled', reached);
-            el.style.pointerEvents = reached ? 'none' : '';
-            el.style.opacity = reached ? '0.45' : '';
-            el.title = reached ? 'Reporting is paused until Admin reviews existing reports.' : 'Report Listing to Admin';
-        });
+        reportLink.disabled = reached;
+        reportLink.classList.toggle('disabled', reached);
+        reportLink.style.pointerEvents = reached ? 'none' : '';
+        reportLink.style.opacity = reached ? '0.45' : '';
+        reportLink.title = reached ? 'Reporting is paused until Admin reviews existing reports.' : 'Report Listing to Admin';
     } catch (e) {
         console.error('Report limit check failed:', e);
     }

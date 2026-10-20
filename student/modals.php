@@ -982,8 +982,6 @@
     #productDetailModal.is-owner-listing .detail-buyer-only,
     #productDetailModal.is-owner-listing #detailHeaderBuyerActions,
     #productDetailModal.is-owner-listing #detailBuyerSafetyRow,
-    #productDetailModal.is-owner-listing #detailHeaderReportBtn,
-    #productDetailModal.is-owner-listing #detailHeaderBuyerActions,
     #productDetailModal.is-owner-listing #detailReportItemLink {
         display: none !important;
     }
@@ -1035,9 +1033,6 @@
                     </span>
                 </div>
                 <div class="d-flex align-items-center gap-2" id="detailHeaderBuyerActions">
-                    <button type="button" id="detailHeaderReportBtn" class="btn btn-light rounded-circle p-0 align-items-center justify-content-center shadow-2xs detail-buyer-only" style="display:none; width:36px; height:36px; background:#fef2f2; border:1.5px solid #fee2e2; color:#ef4444; transition: transform 0.15s ease;" onclick="openReportItemModal()" title="Report Listing to Admin">
-                        <i class="fa-solid fa-flag fs-7 text-danger"></i>
-                    </button>
                     <!-- Verified Hearts Count Badge on Detail Modal -->
                     <div class="d-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill shadow-2xs detail-buyer-only" id="detailHeartsBadge" style="background:#FFF1F2; border:1px solid #FFE4E6; cursor:pointer;" onclick="handleDetailHeartClick()" title="Verified Renter Recommendations">
                         <i class="fa-solid fa-heart text-danger fs-8"></i>
