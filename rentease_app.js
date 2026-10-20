@@ -505,11 +505,17 @@ function renderFeaturedRentals() {
 
                     <!-- Footer: Rating & Action Button -->
                     <div class="d-flex align-items-center justify-content-between pt-1 border-top" style="border-color: rgba(241, 245, 249, 0.9) !important;">
-                        <div class="d-flex align-items-center gap-1 px-1.5 py-0.5 rounded-pill" style="background: rgba(245, 158, 11, 0.08);">
-                            <i class="fa-solid fa-star text-warning" style="font-size: 0.65rem;"></i>
-                            <span class="fw-extrabold text-dark" style="font-size: 0.7rem;">${parseFloat(item.rating || 5.0).toFixed(1)}</span>
-                            <span class="text-muted" style="font-size: 0.62rem;">(${parseInt(item.reviews_count || 0)})</span>
-                        </div>
+                        ${parseInt(item.reviews_count || 0) > 0 ? `
+                            <div class="d-flex align-items-center gap-1 px-1.5 py-0.5 rounded-pill" style="background: rgba(245, 158, 11, 0.08);">
+                                <i class="fa-solid fa-star text-warning" style="font-size: 0.65rem;"></i>
+                                <span class="fw-extrabold text-dark" style="font-size: 0.7rem;">${parseFloat(item.rating || 0).toFixed(1)}</span>
+                                <span class="text-muted" style="font-size: 0.62rem;">(${parseInt(item.reviews_count || 0)})</span>
+                            </div>
+                        ` : `
+                            <span class="badge rounded-pill fw-bold" style="background: #EEF2FF; color: #5B3FA8; font-size: 0.62rem; padding: 2.5px 7px;">
+                                <i class="fa-solid fa-sparkles text-warning me-0.5" style="font-size:0.58rem;"></i> New
+                            </span>
+                        `}
 
                         <!-- Perspective Action Button -->
                         ${isOwner ? `
@@ -872,11 +878,19 @@ function renderGridElements(items) {
                         </span>
                         ${isMine ? `<span class="badge bg-primary-subtle text-primary" style="font-size:0.58rem; padding: 2px 4px;"><i class="fa-solid fa-crown me-0.5"></i>Mine</span>` : (p.owner_name ? `<span class="text-muted" style="font-size:0.6rem;"><i class="fa-regular fa-user me-0.5"></i>${p.owner_name.split(' ')[0]}</span>` : '')}
                     </div>
-                    <div class="d-flex align-items-center gap-1 mb-2">
-                        <i class="fa-solid fa-star text-warning" style="font-size:0.68rem;"></i>
-                        <span class="fw-bold text-dark" style="font-size:0.72rem;">${parseFloat(p.rating).toFixed(1)}</span>
-                        <span class="text-muted" style="font-size:0.65rem;">(${parseInt(p.reviews_count || 0)})</span>
-                    </div>
+                    ${parseInt(p.reviews_count || 0) > 0 ? `
+                        <div class="d-flex align-items-center gap-1 mb-2">
+                            <i class="fa-solid fa-star text-warning" style="font-size:0.68rem;"></i>
+                            <span class="fw-bold text-dark" style="font-size:0.72rem;">${parseFloat(p.rating || 0).toFixed(1)}</span>
+                            <span class="text-muted" style="font-size:0.65rem;">(${parseInt(p.reviews_count || 0)})</span>
+                        </div>
+                    ` : `
+                        <div class="d-flex align-items-center gap-1 mb-2">
+                            <span class="badge rounded-pill fw-bold" style="background: #EEF2FF; color: #5B3FA8; font-size: 0.62rem; padding: 2px 6px;">
+                                <i class="fa-solid fa-sparkles text-warning me-0.5" style="font-size:0.58rem;"></i> New
+                            </span>
+                        </div>
+                    `}
                 </div>
                 <button class="btn btn-sm rounded-pill w-100 fw-bold fs-9 py-1 shadow-2xs ${cartBtnClass}" 
                         style="${cartBtnStyle}; font-size:0.72rem;" onclick="${cartOnClick}">
@@ -1211,12 +1225,22 @@ function openEquipmentDetail(id) {
     window.setupDetailMediaCarousel(item);
 
     const ratingValEl = document.getElementById('detailRatingVal');
-    if (ratingValEl) ratingValEl.innerText = parseFloat(item.rating || 5.0).toFixed(1);
+    const ratingBadgeEl = document.getElementById('detailRatingBadge');
+    const newListingBadgeEl = document.getElementById('detailNewListingBadge');
     const realReviews = parseInt(item.reviews_count || 0);
     const reviewCountEl = document.getElementById('detailReviewCount');
-    if (reviewCountEl) reviewCountEl.innerText = realReviews;
     const reviewLabelEl = document.getElementById('detailReviewLabel');
+    if (reviewCountEl) reviewCountEl.innerText = realReviews;
     if (reviewLabelEl) reviewLabelEl.innerText = (realReviews === 1) ? 'review' : 'reviews';
+
+    if (realReviews > 0) {
+        if (ratingValEl) ratingValEl.innerText = parseFloat(item.rating || 0).toFixed(1);
+        if (ratingBadgeEl) ratingBadgeEl.style.display = 'flex';
+        if (newListingBadgeEl) newListingBadgeEl.style.display = 'none';
+    } else {
+        if (ratingBadgeEl) ratingBadgeEl.style.display = 'none';
+        if (newListingBadgeEl) newListingBadgeEl.style.display = 'inline-flex';
+    }
     const heartsCountEl = document.getElementById('detailHeartsCount');
     if (heartsCountEl) heartsCountEl.innerText = parseInt(item.hearts_count || 0);
     const ownerMetricHearts = document.getElementById('ownerMetricHearts');

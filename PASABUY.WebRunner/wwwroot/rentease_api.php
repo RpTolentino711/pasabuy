@@ -73,6 +73,7 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
     try { $db->exec("UPDATE `rental_inventory` SET `qty_available` = LEAST(`qty_total`, GREATEST(0, `qty_available`)) WHERE `qty_available` > `qty_total` OR `qty_available` < 0"); } catch (Exception $eCapStock) {}
+    try { $db->exec("UPDATE `rental_inventory` SET `rating` = 0.0 WHERE (`reviews_count` = 0 OR `reviews_count` IS NULL) AND `rating` = 5.0"); } catch (Exception $eCleanRatings) {}
     try {
         // Auto-deduplicate duplicate return chat messages for the same order code
         $dupMsgs = $db->query("SELECT Id, MessageText FROM `ChatMessages` WHERE `MessageText` LIKE '%verified and restocked%' OR `MessageText` LIKE '%is verified by the renter%' ORDER BY Id ASC")->fetchAll();
@@ -2701,8 +2702,8 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
             'owner_name' => $ownerName,
             'owner_email' => $ownerEmail,
             'owner_contact' => $ownerContact,
-            'rating' => 5.0,
-            'reviews_count' => 1,
+            'rating' => 0.0,
+            'reviews_count' => 0,
             'min_rental_days' => 1,
             'is_featured' => 1
         ];
@@ -4706,7 +4707,7 @@ if ($action === 'post_item' || $action === 'add_item' || $action === 'create_lis
                      `item_condition`, `location`, `description`, `posting_fee`,
                      `owner_id`, `owner_name`, `owner_email`, `owner_contact`,
                      `is_featured`, `rating`, `reviews_count`, `hearts_count`, `status`, `created_at`)
-                VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 5.0, 0, 0, 'ACTIVE', NOW())
+                VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0.0, 0, 0, 'ACTIVE', NOW())
             ");
             $stmt->execute([
                 $name, $category, $materialTag, $pricePerDay, $qtyTotal, $qtyAvailable,
@@ -4765,7 +4766,7 @@ if ($action === 'post_item' || $action === 'add_item' || $action === 'create_lis
         'owner_email'    => $ownerEmail,
         'owner_contact'  => $ownerContact,
         'is_featured'    => 0,
-        'rating'         => 5.0,
+        'rating'         => 0.0,
         'reviews_count'  => 0,
         'hearts_count'   => 0,
         'status'         => 'ACTIVE',

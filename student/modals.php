@@ -1105,10 +1105,13 @@
                 <h4 class="fw-extrabold text-dark fs-5 mb-1" id="detailTitle" style="letter-spacing:-0.2px;">Equipment Details</h4>
                 
                 <div class="d-flex align-items-center gap-1.5 mb-3 flex-wrap">
-                    <div class="d-flex align-items-center gap-1 bg-warning bg-opacity-10 px-2 py-0.5 rounded-pill">
+                    <div class="d-flex align-items-center gap-1 bg-warning bg-opacity-10 px-2 py-0.5 rounded-pill" id="detailRatingBadge">
                         <i class="fa-solid fa-star text-warning fs-9"></i>
                         <span class="fw-extrabold text-dark fs-8" id="detailRatingVal">5.0</span>
                     </div>
+                    <span class="badge rounded-pill fw-bold" id="detailNewListingBadge" style="display:none; background: #EEF2FF; color: #5B3FA8; font-size: 0.72rem; padding: 4px 10px;">
+                        <i class="fa-solid fa-sparkles me-1 text-warning"></i> New Listing
+                    </span>
                     <span class="text-muted fs-8">(<span id="detailReviewCount">0</span> <span id="detailReviewLabel">reviews</span>)</span>
                     <span class="text-secondary opacity-50">•</span>
                     <span class="text-muted fs-8"><i class="fa-solid fa-location-dot text-danger fs-9 me-0.5"></i> Campus Meetup</span>
