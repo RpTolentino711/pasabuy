@@ -1132,7 +1132,7 @@
                             RP
                         </div>
                         <div>
-                            <div class="fw-extrabold text-dark fs-7" id="detailLenderName">Romeo Paolo Tolentino</div>
+                            <div class="fw-extrabold text-dark fs-7" id="detailLenderName">Equipment Owner</div>
                             <div class="d-flex align-items-center gap-1.5 flex-wrap">
                                 <span class="badge bg-primary-subtle text-primary fw-bold" style="font-size: 0.62rem;"><i class="fa-solid fa-graduation-cap me-0.5"></i>Verified Student Lender</span>
                                 <span class="text-muted" style="font-size: 0.62rem;">• Fast Responder</span>
@@ -1361,8 +1361,8 @@
                 <div class="p-2.5 rounded-3 bg-light border mb-3 d-flex align-items-center gap-2.5">
                     <img id="reportItemThumb" src="https://via.placeholder.com/100x100/5B3FA8/FFFFFF?text=No+Image" class="rounded-2 border" style="width:44px; height:44px; object-fit:cover;">
                     <div class="min-w-0 flex-grow-1">
-                        <div class="fw-bold text-dark fs-8 text-truncate" id="reportItemName">POSPT</div>
-                        <div class="fs-9 text-muted">Owner: <span class="fw-semibold text-secondary" id="reportItemOwner">Romeo Paolo Tolentino</span></div>
+                        <div class="fw-bold text-dark fs-8 text-truncate" id="reportItemName">Equipment Item</div>
+                        <div class="fs-9 text-muted">Owner: <span class="fw-semibold text-secondary" id="reportItemOwner">Item Owner</span></div>
                     </div>
                     <span class="badge bg-danger-subtle text-danger fs-9 fw-bold">Item #<span id="reportItemId">0</span></span>
                 </div>
@@ -1441,7 +1441,7 @@
                 <!-- Item Summary -->
                 <div class="p-2.5 rounded-3 bg-light border mb-3">
                     <div class="d-flex align-items-center justify-content-between mb-1">
-                        <span class="fw-extrabold text-dark fs-8" id="appealItemTitle">POSPT</span>
+                        <span class="fw-extrabold text-dark fs-8" id="appealItemTitle">Equipment Item</span>
                         <span class="badge bg-danger text-white fs-9" id="appealItemStatusBadge">Strike Status</span>
                     </div>
                     <div class="fs-9 text-secondary" id="appealViolationReason">Reason: Violation report approved by moderation.</div>
@@ -1910,8 +1910,8 @@
                     <div class="d-flex align-items-center gap-2.5">
                         <img id="vStudentAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle border" style="width:42px; height:42px; object-fit:cover;">
                         <div>
-                            <div class="fw-bold text-dark fs-7" id="vStudentName">Romeo Paolo Tolentino</div>
-                            <div class="fs-9 text-muted" id="vStudentCourseYear">BSIT • 4th Yr • Student ID: 20261048</div>
+                            <div class="fw-bold text-dark fs-7" id="vStudentName">Student</div>
+                            <div class="fs-9 text-muted" id="vStudentCourseYear">BSIT • Student • Student ID: —</div>
                         </div>
                     </div>
                     <span id="vStudentStatusBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fs-9 fw-bold">
@@ -2014,11 +2014,11 @@
                     </div>
                     <div class="d-flex justify-content-between text-muted fs-9 mb-1">
                         <span>Equipment:</span>
-                        <strong class="text-dark" id="unretModalItemName">POSPT</strong>
+                        <strong class="text-dark" id="unretModalItemName">Equipment</strong>
                     </div>
                     <div class="d-flex justify-content-between text-muted fs-9">
                         <span>Renter:</span>
-                        <strong class="text-danger" id="unretModalRenterName">Pogilameg Tester</strong>
+                        <strong class="text-danger" id="unretModalRenterName">Student Renter</strong>
                     </div>
                 </div>
 

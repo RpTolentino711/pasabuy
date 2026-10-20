@@ -67,11 +67,27 @@ if ($db) {
     try { $db->exec("ALTER TABLE `rental_inventory` MODIFY COLUMN `image_url` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `video_url` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `photos` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT 'Romeo Paolo Tolentino'"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_email` VARCHAR(150) DEFAULT 'romeopaolotolentino@gmail.com'"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT '09668257301'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_email` VARCHAR(150) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `owner_contact` VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `item_condition` VARCHAR(50) DEFAULT 'Good'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `location` VARCHAR(255) DEFAULT 'San Pablo, Laguna'"); } catch (Exception $e) {}
+    try { $db->exec("UPDATE `rental_inventory` SET `qty_available` = LEAST(`qty_total`, GREATEST(0, `qty_available`)) WHERE `qty_available` > `qty_total` OR `qty_available` < 0"); } catch (Exception $eCapStock) {}
+    try {
+        // Auto-deduplicate duplicate return chat messages for the same order code
+        $dupMsgs = $db->query("SELECT Id, MessageText FROM `ChatMessages` WHERE `MessageText` LIKE '%verified and restocked%' OR `MessageText` LIKE '%is verified by the renter%' ORDER BY Id ASC")->fetchAll();
+        $seenOrders = [];
+        foreach ($dupMsgs as $dm) {
+            if (preg_match('/#RE-[A-Za-z0-9-]+/', $dm['MessageText'], $m)) {
+                $code = $m[0];
+                if (isset($seenOrders[$code])) {
+                    $db->prepare("DELETE FROM `ChatMessages` WHERE `Id` = ?")->execute([$dm['Id']]);
+                } else {
+                    $seenOrders[$code] = $dm['Id'];
+                }
+            }
+        }
+    } catch (Exception $eFixSysChat) {}
     
     // Auto-heal any existing records where image_url is truncated or corrupted but photos has valid data
     try {
@@ -95,12 +111,11 @@ if ($db) {
         }
     } catch (Exception $e) {}
     try { $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100"); } catch (Exception $e) {}
-    try { $db->exec("UPDATE `rental_inventory` SET `owner_id` = 104, `owner_name` = 'Romeo Paolo Tolentino', `owner_email` = 'romeopaolotolentino@gmail.com', `owner_contact` = '09668257301', `is_featured` = 1 WHERE `name` LIKE '%POSPT%' OR `name` = 'POSPT'"); } catch (Exception $e) {}
-
+ 
     // Auto-migrate rental_orders fields for duration, COD downpayment, owner and return status
     try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT 'Romeo Paolo Tolentino'"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_email` VARCHAR(150) DEFAULT 'romeopaolotolentino@gmail.com'"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_name` VARCHAR(150) DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_email` VARCHAR(150) DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rental_days` INT DEFAULT 1"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rental_end_date` DATE DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `payment_type` VARCHAR(50) DEFAULT 'FULL'"); } catch (Exception $e) {}
@@ -473,9 +488,9 @@ function send_rental_step_emails($order, $stepName, $extraData = []) {
 
     $orderCode = $order['order_code'];
     $renterName = $order['customer_name'] ?: 'Valued Student';
-    $renterEmail = $order['customer_email'] ?: 'pogilameg@gmail.com';
-    $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
-    $ownerEmail = $order['owner_email'] ?: 'romeopaolotolentino@gmail.com';
+    $renterEmail = $order['customer_email'] ?: '';
+    $ownerName = $order['owner_name'] ?: 'Equipment Owner';
+    $ownerEmail = $order['owner_email'] ?: '';
     $deliveryAddress = $order['delivery_address'] ?: 'San Pablo City, Laguna';
     $riderName = $extraData['rider_name'] ?? ($order['assigned_rider_name'] ?: ($order['rider_name'] ?: ''));
     $riderPhone = $extraData['rider_phone'] ?? ($order['assigned_rider_phone'] ?: ($order['rider_phone'] ?: ''));
@@ -744,30 +759,7 @@ if ($action === 'get_inventory') {
         exit;
     }
 
-    // Auto-heal: If an order exists for an item that is missing from rental_inventory, restore it so it shows in the catalog!
-    try {
-        $missingItems = $db->query("SELECT ro.item_id, ro.item_name, ro.owner_name, ro.owner_email, ro.owner_id, ro.prep_photo_url, ro.rating 
-                                    FROM `rental_orders` ro 
-                                    LEFT JOIN `rental_inventory` ri ON ro.item_id = ri.id 
-                                    WHERE ri.id IS NULL AND ro.item_id IS NOT NULL 
-                                    GROUP BY ro.item_id")->fetchAll();
-        foreach ($missingItems as $mi) {
-            if (!empty($mi['item_id']) && !empty($mi['item_name'])) {
-                $db->prepare("INSERT INTO `rental_inventory` (`id`, `name`, `category`, `price_per_day`, `qty_total`, `qty_available`, `image_url`, `rating`, `owner_name`, `owner_email`, `owner_id`, `hearts_count`, `reviews_count`, `status`)
-                              VALUES (?, ?, 'Others', 1.00, 10, 10, ?, ?, ?, ?, ?, 0, 0, 'ACTIVE')
-                              ON DUPLICATE KEY UPDATE `name` = VALUES(`name`)")
-                   ->execute([
-                       $mi['item_id'], 
-                       $mi['item_name'], 
-                       $mi['prep_photo_url'] ?: '', 
-                       (float)($mi['rating'] ?: 5.0), 
-                       $mi['owner_name'] ?: 'Romeo Paolo Tolentino', 
-                       $mi['owner_email'] ?: 'romeopaolotolentino@gmail.com', 
-                       (int)($mi['owner_id'] ?: 104)
-                   ]);
-            }
-        }
-    } catch (Exception $eAutoRestore) {}
+
 
     // Auto-sync accurate hearts count and reviews count from relational tables
     try {
@@ -966,8 +958,8 @@ if ($action === 'calculate_charges') {
 // 5. CREATE ORDER & CHECKOUT (Screen 5 & Screen 6)
 // ----------------------------------------------------------
 if ($action === 'create_order') {
-    $customerName = trim((string)($data['customer_name'] ?? 'Pogilameg Tester'));
-    $customerEmail = trim((string)($data['customer_email'] ?? 'pogilameg@gmail.com'));
+    $customerName = trim((string)($data['customer_name'] ?? 'Student Renter'));
+    $customerEmail = trim((string)($data['customer_email'] ?? ''));
     $customerId = (int)($data['customer_id'] ?? 0);
 
     // Check if customer is suspended from renting
@@ -1025,10 +1017,9 @@ if ($action === 'create_order') {
     $balance = round($total - $downpayment, 2);
 
     // Identify Equipment Owner
-    // Identify Equipment Owner & Stock Location
-    $ownerName = 'Romeo Paolo Tolentino';
-    $ownerEmail = 'romeopaolotolentino@gmail.com';
-    $ownerLocation = 'Pasabuy Hub, Lipa City';
+    $ownerName = '';
+    $ownerEmail = '';
+    $ownerLocation = 'Campus Hub';
     $firstProductId = (int)($items[0]['id'] ?? 0);
     $firstItemName = (string)($items[0]['name'] ?? $items[0]['title'] ?? 'Event Equipment');
     if ($firstProductId > 0 && $db) {
@@ -1178,8 +1169,8 @@ if ($action === 'get_order_tracking') {
             'estimated_arrival' => 'Pending Dispatch',
             'rental_days' => 2,
             'rental_end_date' => date('Y-m-d', strtotime('+2 days')),
-            'owner_name' => 'Romeo Paolo Tolentino',
-            'owner_email' => 'romeopaolotolentino@gmail.com',
+            'owner_name' => 'Equipment Owner',
+            'owner_email' => '',
             'rider_name' => null,
             'rider_phone' => null,
             'rider_rating' => null,
@@ -1241,10 +1232,10 @@ if ($action === 'get_order_tracking') {
                 'is_picked_up' => $isPickedUp,
                 'rental_days' => $order['rental_days'] ?? 1,
                 'rental_end_date' => $order['rental_end_date'] ?? date('Y-m-d'),
-                'owner_name' => $order['owner_name'] ?? 'Romeo Paolo Tolentino',
-                'owner_email' => $order['owner_email'] ?? 'romeopaolotolentino@gmail.com',
-                'customer_name' => $order['customer_name'] ?? 'Pogilameg Tester',
-                'customer_email' => $order['customer_email'] ?? 'pogilameg@gmail.com',
+                'owner_name' => $order['owner_name'] ?? 'Equipment Owner',
+                'owner_email' => $order['owner_email'] ?? '',
+                'customer_name' => $order['customer_name'] ?? 'Student Renter',
+                'customer_email' => $order['customer_email'] ?? '',
                 'payment_type' => $order['payment_type'] ?? 'FULL',
                 'downpayment_amount' => (float)($order['downpayment_amount'] ?? 0),
                 'balance_amount' => (float)($order['balance_amount'] ?? 0),
@@ -1338,7 +1329,7 @@ if ($action === 'return_equipment' || $action === 'complete_return') {
         $items = $itemsStmt->fetchAll();
 
         $restockedItems = [];
-        $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + ?, `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
+        $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = LEAST(`qty_total`, `qty_available` + ?), `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
 
         foreach ($items as $it) {
             $pId = (int)$it['product_id'];
@@ -1351,11 +1342,15 @@ if ($action === 'return_equipment' || $action === 'complete_return') {
 
         // Send return notification chat to owner and renter
         try {
-            $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
-            $custName = $order['customer_name'] ?: 'Pogilameg Tester';
+            $ownerName = $order['owner_name'] ?: 'Equipment Owner';
+            $custName = $order['customer_name'] ?: 'Student Renter';
+            $oOwnerId = (int)($order['owner_id'] ?? 0);
+            $oRenterId = (int)($order['renter_id'] ?? 0);
             $returnMsg = "✅ Rental Returned & Restocked: Order {$order['order_code']} has completed its rental period. All equipment has been safely delivered back to {$ownerName}'s inventory stock!";
-            $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'RentEase System', ?, 'Rental Return Complete', NOW())");
-            $chatStmt->execute([$returnMsg]);
+            if ($oOwnerId > 0 && $oRenterId > 0) {
+                $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'RentEase System', ?, 'Rental Return Complete', NOW())");
+                $chatStmt->execute([$oOwnerId, $oRenterId, $returnMsg]);
+            }
         } catch (Exception $eChat) {}
 
         $db->commit();
@@ -1406,8 +1401,9 @@ if ($action === 'create_issue') {
 
     // Send instant admin notification via ChatMessages
     try {
-        $chatMsg = "🚨 [ADMIN STEP REPORT] {$ticketNumber} filed for Order {$orderCode} during stage [{$stage}] by {$reportedByRole} ({$customerName}): {$issueTitle}. Note: {$description}";
-        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (105, 100, 'Incident System', ?, 'Step Dispute Report', NOW())")->execute([$chatMsg]);
+        $reporterId = (int)($data['user_id'] ?? $data['reporter_id'] ?? 0);
+        if ($reporterId <= 0) $reporterId = 1;
+        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, 100, 'Incident System', ?, 'Step Dispute Report', NOW())")->execute([$reporterId, $chatMsg]);
     } catch(Exception $eChat) {}
 
     echo json_encode([
@@ -1729,8 +1725,11 @@ if ($action === 'delete_item' || $action === 'take_down_item' || $action === 'ow
 
             try {
                 $refMsg = "ℹ️ Listing #{$id} taken down by owner. Eligible posting fee refund logged.";
-                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, 104, 'RentEase System', ?, 'Posting Fee Refund', NOW())")
-                   ->execute([$refMsg]);
+                $invOwnerId = (int)($item['owner_id'] ?? 0);
+                if ($invOwnerId > 0) {
+                    $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, ?, 'RentEase System', ?, 'Posting Fee Refund', NOW())")
+                       ->execute([$invOwnerId, $refMsg]);
+                }
             } catch (Exception $eRef) {}
         } catch (Exception $e) {
             http_response_code(500);
@@ -1802,13 +1801,10 @@ if ($action === 'get_owner_rental_data') {
     $ownerEmail = strtolower(trim((string)($data['owner_email'] ?? $_GET['owner_email'] ?? '')));
     $ownerName = trim((string)($data['owner_name'] ?? $_GET['owner_name'] ?? ''));
     $ownerId = (int)($data['owner_id'] ?? $_GET['owner_id'] ?? 0);
-    $custPhone = trim((string)($data['customer_phone'] ?? $_GET['customer_phone'] ?? ''));
-    $isPogilameg = ($ownerId === 105 || $ownerId === 20261058 || strpos($ownerEmail, 'pogilameg') !== false || stripos($ownerName, 'pogilameg') !== false || $custPhone === '20261058');
-    $isRomeo = ($ownerId === 104 || strpos($ownerEmail, 'romeo') !== false || stripos($ownerName, 'romeo') !== false);
 
     if (!$db) {
         $fallback = getRentEaseItemsFallback();
-        $ownerInventory = array_values(array_filter($fallback, function($it) use ($ownerId, $ownerEmail, $ownerName, $isPogilameg, $isRomeo) {
+        $ownerInventory = array_values(array_filter($fallback, function($it) use ($ownerId, $ownerEmail, $ownerName) {
             $itOwnerId = (int)($it['owner_id'] ?? 0);
             $itEmail = strtolower(trim((string)($it['owner_email'] ?? '')));
             $itName = trim((string)($it['owner_name'] ?? ''));
@@ -1816,8 +1812,6 @@ if ($action === 'get_owner_rental_data') {
             if ($ownerId > 0 && $itOwnerId === $ownerId) return true;
             if (!empty($ownerEmail) && !empty($itEmail) && $ownerEmail === $itEmail) return true;
             if (!empty($ownerName) && !empty($itName) && strcasecmp($ownerName, $itName) === 0) return true;
-            if ($isPogilameg && ($itOwnerId === 105 || strpos($itEmail, 'pogilameg') !== false || stripos($itName, 'pogilameg') !== false)) return true;
-            if ($isRomeo && ($itOwnerId === 104 || strpos($itEmail, 'romeo') !== false || stripos($itName, 'romeo') !== false)) return true;
             return false;
         }));
 
@@ -1854,17 +1848,6 @@ if ($action === 'get_owner_rental_data') {
             $invConditions[] = "`owner_id` = ?";
             $invParams[] = $ownerId;
         }
-        if ($isPogilameg) {
-            $invConditions[] = "`owner_id` = 105";
-            $invConditions[] = "LOWER(`owner_email`) LIKE '%pogilameg%'";
-            $invConditions[] = "`owner_name` LIKE '%Pogilameg%'";
-        }
-        if ($isRomeo) {
-            $invConditions[] = "`owner_id` = 104";
-            $invConditions[] = "LOWER(`owner_email`) LIKE '%romeopaolo%'";
-            $invConditions[] = "`owner_name` LIKE '%Romeo%'";
-            $invConditions[] = "LOWER(`name`) LIKE '%pospt%'";
-        }
 
         $ownerInventory = [];
         if (!empty($invConditions)) {
@@ -1884,17 +1867,14 @@ if ($action === 'get_owner_rental_data') {
 
         if (empty($ownerInventory)) {
             $fb = getRentEaseItemsFallback();
-            $ownerInventory = array_values(array_filter($fb, function($it) use ($ownerId, $ownerEmail, $ownerName, $isPogilameg, $isRomeo) {
+            $ownerInventory = array_values(array_filter($fb, function($it) use ($ownerId, $ownerEmail, $ownerName) {
                 $itOwnerId = (int)($it['owner_id'] ?? 0);
                 $itEmail = strtolower(trim((string)($it['owner_email'] ?? '')));
                 $itName = trim((string)($it['owner_name'] ?? ''));
-                $itProdName = strtoupper(trim((string)($it['name'] ?? '')));
 
                 if ($ownerId > 0 && $itOwnerId === $ownerId) return true;
                 if (!empty($ownerEmail) && !empty($itEmail) && $ownerEmail === $itEmail) return true;
                 if (!empty($ownerName) && !empty($itName) && strcasecmp($ownerName, $itName) === 0) return true;
-                if ($isPogilameg && ($itOwnerId === 105 || strpos($itEmail, 'pogilameg') !== false || stripos($itName, 'pogilameg') !== false)) return true;
-                if ($isRomeo && ($itOwnerId === 104 || strpos($itEmail, 'romeo') !== false || stripos($itName, 'romeo') !== false || strpos($itProdName, 'POSPT') !== false)) return true;
                 return false;
             }));
         }
@@ -2101,7 +2081,7 @@ if (in_array($action, ['request_early_return', 'respond_early_return'], true)) {
         if (!$items && !empty($order['item_id'])) {
             $items = [['product_id' => $order['item_id'], 'product_name' => $order['item_name'] ?? 'Rental item', 'quantity' => $order['qty_total'] ?? 1]];
         }
-        $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + ?, `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
+        $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = LEAST(`qty_total`, `qty_available` + ?), `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
         foreach ($items as $item) {
             $qty = max(1, (int)($item['quantity'] ?? 1));
             $productId = (int)($item['product_id'] ?? 0);
@@ -2109,9 +2089,14 @@ if (in_array($action, ['request_early_return', 'respond_early_return'], true)) {
         }
         $message = "✅ Order {$order['order_code']} is verified by the renter and the item is now back in stock. The rental is complete.";
         try {
-            // Send ONE message to both participants to avoid duplicate conversations
-            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (0, ?, 'RentEase System', ?, ?, NOW())")
-                ->execute([(int)($order['owner_id'] ?? 0), $message, $order['item_name'] ?? 'Rental Return Complete']);
+            $ownerId = (int)($order['owner_id'] ?: 104);
+            $renterId = (int)($order['renter_id'] ?: 105);
+            $checkExisting = $db->prepare("SELECT Id FROM `ChatMessages` WHERE `MessageText` LIKE ? LIMIT 1");
+            $checkExisting->execute(["%Order {$order['order_code']}%verified%"]);
+            if (!$checkExisting->fetchColumn()) {
+                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'RentEase System', ?, ?, NOW())")
+                    ->execute([$ownerId, $renterId, $message, $order['item_name'] ?? 'Rental Return Complete']);
+            }
         } catch (Exception $eNotification) {}
         $db->commit();
         echo json_encode(['success' => true, 'status' => 'COMPLETED', 'message' => $message]);
@@ -2152,13 +2137,18 @@ if ($action === 'update_owner_order_status') {
         $oId = (int)$order['id'];
         $statusDisplay = 'Order in Process';
 
+        $oOwnerId = (int)($order['owner_id'] ?? 0);
+        $oRenterId = (int)($order['renter_id'] ?? 0);
+
         if ($newStatus === 'PREPARING') {
             $statusDisplay = 'Equipment Prepared - Coordinating Campus Meetup';
             // Stock owner accepts and prepares equipment
             try {
                 $acceptMsg = "✅ Equipment Prepared! Stock owner {$order['owner_name']} has inspected and prepared your gear for Order {$order['order_code']}. Please message each other to agree on a campus meetup location and time!";
-                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
-                   ->execute([$acceptMsg, $order['order_code']]);
+                if ($oOwnerId > 0 && $oRenterId > 0) {
+                    $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'Stock Owner', ?, ?, NOW())")
+                       ->execute([$oOwnerId, $oRenterId, $acceptMsg, $order['order_code']]);
+                }
 
                 // Email notification to Renter and Stock Owner (Step 2)
                 send_rental_step_emails($order, 'STEP_2_PREPARING');
@@ -2167,15 +2157,19 @@ if ($action === 'update_owner_order_status') {
             $statusDisplay = 'Campus Meetup in Progress';
             try {
                 $meetMsg = "🤝 Campus Meetup: Owner and Renter are meeting face-to-face for equipment inspection and handover (Order {$order['order_code']}).";
-                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
-                   ->execute([$meetMsg, $order['order_code']]);
+                if ($oOwnerId > 0 && $oRenterId > 0) {
+                    $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'Stock Owner', ?, ?, NOW())")
+                       ->execute([$oOwnerId, $oRenterId, $meetMsg, $order['order_code']]);
+                }
             } catch (Exception $eN2) {}
         } elseif ($newStatus === 'DELIVERED') {
             $statusDisplay = 'Handover Complete - Rental Active';
             try {
                 $deliveredMsg = "🎉 Face-to-Face Handover Complete! Equipment for Order {$order['order_code']} has been verified and handed over. Rental period is now active!";
-                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Stock Owner', ?, ?, NOW())")
-                   ->execute([$deliveredMsg, $order['order_code']]);
+                if ($oOwnerId > 0 && $oRenterId > 0) {
+                    $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'Stock Owner', ?, ?, NOW())")
+                       ->execute([$oOwnerId, $oRenterId, $deliveredMsg, $order['order_code']]);
+                }
             } catch (Exception $eN3) {}
         } elseif ($newStatus === 'RETURNED') {
             $statusDisplay = 'Returned to Owner Stock';
@@ -2227,7 +2221,7 @@ if ($action === 'update_owner_order_status') {
             $itemsStmt->execute([$oId]);
             $items = $itemsStmt->fetchAll();
             $restockedItemIds = [];
-            $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + ?, `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
+            $updStock = $db->prepare("UPDATE `rental_inventory` SET `qty_available` = LEAST(`qty_total`, `qty_available` + ?), `qty_rented` = GREATEST(0, `qty_rented` - ?) WHERE `id` = ?");
             foreach ($items as $it) {
                 if ((int)$it['product_id'] > 0) {
                     $updStock->execute([(int)$it['quantity'], (int)$it['quantity'], (int)$it['product_id']]);
@@ -2236,7 +2230,7 @@ if ($action === 'update_owner_order_status') {
             }
             if (empty($restockedItemIds) && !empty($order['item_id'])) {
                 try {
-                    $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + 1, `qty_rented` = GREATEST(0, `qty_rented` - 1) WHERE `id` = ?")
+                    $db->prepare("UPDATE `rental_inventory` SET `qty_available` = LEAST(`qty_total`, `qty_available` + 1), `qty_rented` = GREATEST(0, `qty_rented` - 1) WHERE `id` = ?")
                        ->execute([(int)$order['item_id']]);
                 } catch (Exception $eDirectStock) {}
             }
@@ -2251,8 +2245,12 @@ if ($action === 'update_owner_order_status') {
                 $oOrderCode = $orderCodeVal;
 
                 $returnMsg = "📦 ITEM RETURNED & RESTOCKED: The item '{$oItemName}' ({$oOrderCode}) has been received back in good condition by {$oOwnerName} and restocked in the catalog. Rental is officially completed!";
-                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
-                   ->execute([$oOwnerId, $oRenterId, $oOwnerName, $returnMsg, $oItemName]);
+                $checkRet = $db->prepare("SELECT Id FROM `ChatMessages` WHERE `MessageText` LIKE ? LIMIT 1");
+                $checkRet->execute(["%{$oOrderCode}%RESTOCKED%"]);
+                if (!$checkRet->fetchColumn()) {
+                    $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, ?, ?, ?, NOW())")
+                       ->execute([$oOwnerId, $oRenterId, $oOwnerName, $returnMsg, $oItemName]);
+                }
 
                 // If this order had an overdue/unreturned ticket, notify in chat that ticket is resolved
                 if (!empty($order['unreturned_reported'])) {
@@ -2262,8 +2260,12 @@ if ($action === 'update_owner_order_status') {
                 }
 
                 $ratePromptMsg = "⭐ RATING REQUIRED: Hello {$oRenterName}, please rate your rental experience with '{$oItemName}' from 1 to 5 stars and provide details so the transaction can be finalized!";
-                $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'RentEase System', ?, ?, NOW())")
-                   ->execute([$oOwnerId, $oRenterId, $ratePromptMsg, $oItemName]);
+                $checkRate = $db->prepare("SELECT Id FROM `ChatMessages` WHERE `MessageText` LIKE ? AND `MessageText` LIKE '%RATING REQUIRED%' LIMIT 1");
+                $checkRate->execute(["%{$oItemName}%"]);
+                if (!$checkRate->fetchColumn()) {
+                    $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'RentEase System', ?, ?, NOW())")
+                       ->execute([$oOwnerId, $oRenterId, $ratePromptMsg, $oItemName]);
+                }
             } catch (Exception $eC) {}
         }
 
@@ -2338,7 +2340,7 @@ if ($action === 'submit_rental_rating') {
         // Restock inventory if not already returned
         if ($itemId > 0 && ($order['order_status'] ?? '') !== 'RETURNED') {
             try {
-                $db->prepare("UPDATE `rental_inventory` SET `qty_available` = `qty_available` + 1, `qty_rented` = GREATEST(0, `qty_rented` - 1) WHERE `id` = ?")->execute([$itemId]);
+                $db->prepare("UPDATE `rental_inventory` SET `qty_available` = LEAST(`qty_total`, `qty_available` + 1), `qty_rented` = GREATEST(0, `qty_rented` - 1) WHERE `id` = ?")->execute([$itemId]);
             } catch (Exception $eDirectStock) {}
         }
 
@@ -2550,30 +2552,11 @@ if ($action === 'submit_item_heart') {
         $cntStmt->execute([$itemId]);
         $heartsCount = (int)$cntStmt->fetchColumn();
 
-        // If this item exists in rental_inventory, update it. If missing, auto-create/restore it from order!
+        // If this item exists in rental_inventory, update it.
         $checkInv = $db->prepare("SELECT id FROM `rental_inventory` WHERE `id` = ? LIMIT 1");
         $checkInv->execute([$itemId]);
         if ($checkInv->fetch()) {
             $db->prepare("UPDATE `rental_inventory` SET `hearts_count` = ? WHERE `id` = ?")->execute([$heartsCount, $itemId]);
-        } else {
-            try {
-                $oStmt = $db->prepare("SELECT item_name, owner_name, owner_email, owner_id, prep_photo_url, rating FROM `rental_orders` WHERE `item_id` = ? OR `order_code` = ? LIMIT 1");
-                $oStmt->execute([$itemId, $orderCode]);
-                $oRow = $oStmt->fetch();
-                if ($oRow) {
-                    $rName = $oRow['item_name'] ?: 'Rental Equipment';
-                    $rOwner = $oRow['owner_name'] ?: 'Romeo Paolo Tolentino';
-                    $rEmail = $oRow['owner_email'] ?: 'romeopaolotolentino@gmail.com';
-                    $rOwnerId = (int)($oRow['owner_id'] ?: 104);
-                    $rPhoto = $oRow['prep_photo_url'] ?: '';
-                    $rRate = (float)($oRow['rating'] ?: 5.0);
-
-                    $db->prepare("INSERT INTO `rental_inventory` (`id`, `name`, `category`, `price_per_day`, `qty_total`, `qty_available`, `image_url`, `rating`, `owner_name`, `owner_email`, `owner_id`, `hearts_count`, `status`) 
-                                  VALUES (?, ?, 'Others', 1.00, 10, 10, ?, ?, ?, ?, ?, ?, 'ACTIVE')
-                                  ON DUPLICATE KEY UPDATE `hearts_count` = VALUES(`hearts_count`)")
-                       ->execute([$itemId, $rName, $rPhoto, $rRate, $rOwner, $rEmail, $rOwnerId, $heartsCount]);
-                }
-            } catch (Exception $eRest) {}
         }
 
         echo json_encode([
@@ -2659,23 +2642,8 @@ if ($action === 'post_item' || $action === 'user_post_equipment') {
     $ownerName = trim((string)($data['owner_name'] ?? 'Verified Renter'));
     $ownerId = (int)($data['owner_id'] ?? $data['user_id'] ?? 0);
     $ownerEmail = trim((string)($data['owner_email'] ?? ''));
-    $ownerName = trim((string)($data['owner_name'] ?? ''));
+    $ownerName = trim((string)($data['owner_name'] ?? 'Verified Student'));
     $ownerContact = trim((string)($data['owner_contact'] ?? ''));
-
-    $isPogilameg = ($ownerId === 105 || strpos(strtolower($ownerEmail), 'pogilameg') !== false || stripos($ownerName, 'pogilameg') !== false);
-    $isRomeo = ($ownerId === 104 || strpos(strtolower($ownerEmail), 'romeo') !== false || stripos($ownerName, 'romeo') !== false);
-
-    if ($isPogilameg) {
-        if (!$ownerId) $ownerId = 105;
-        if (empty($ownerEmail)) $ownerEmail = 'pogilameg@gmail.com';
-        if (empty($ownerName)) $ownerName = 'Pogilameg Tester';
-        if (empty($ownerContact)) $ownerContact = '09171234567';
-    } elseif ($isRomeo || (!$ownerId && empty($ownerEmail))) {
-        if (!$ownerId) $ownerId = 104;
-        if (empty($ownerEmail)) $ownerEmail = 'romeopaolotolentino@gmail.com';
-        if (empty($ownerName)) $ownerName = 'Romeo Paolo Tolentino';
-        if (empty($ownerContact)) $ownerContact = '09668257301';
-    }
 
     if (!$name) {
         http_response_code(400);
@@ -3208,13 +3176,19 @@ if ($action === 'rider_confirm_pickup') {
         ]);
     } catch (Exception $eE5) {}
 
-    // Chat notifications to Renter (105) and Stock Owner (104)
+    // Chat notifications to Renter and Stock Owner
     try {
         $chatMsg = "📦 Package Picked Up: Fleet driver {$rName} has collected the equipment package for Order {$orderCode} from stock owner hub! Email notification sent to {$renterEmail}. Live GPS route tracking is now active for Renter, Stock Owner, and Rider.";
-        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, 105, 'RentEase Fleet Dispatch', ?, ?, NOW())")
-           ->execute([$chatMsg, $orderCode]);
-        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, 104, 'RentEase Fleet Dispatch', ?, ?, NOW())")
-           ->execute([$chatMsg, $orderCode]);
+        $oOwnerId = (int)($order['owner_id'] ?? 0);
+        $oRenterId = (int)($order['renter_id'] ?? 0);
+        if ($oRenterId > 0) {
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, ?, 'RentEase Fleet Dispatch', ?, ?, NOW())")
+               ->execute([$oRenterId, $chatMsg, $orderCode]);
+        }
+        if ($oOwnerId > 0) {
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (100, ?, 'RentEase Fleet Dispatch', ?, ?, NOW())")
+               ->execute([$oOwnerId, $chatMsg, $orderCode]);
+        }
     } catch (Exception $eC) {}
 
     echo json_encode([
@@ -3249,8 +3223,12 @@ if ($action === 'renter_confirm_received') {
 
     try {
         $msg = "🎉 Item Received: Student renter {$order['customer_name']} confirmed that the package for Order {$orderCode} was received safely in good working condition. The active rental course is now underway!";
-        $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (105, 104, 'Student Renter', ?, ?, NOW())")
-           ->execute([$msg, $orderCode]);
+        $oOwnerId = (int)($order['owner_id'] ?? 0);
+        $oRenterId = (int)($order['renter_id'] ?? 0);
+        if ($oRenterId > 0 && $oOwnerId > 0) {
+            $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'Student Renter', ?, ?, NOW())")
+               ->execute([$oRenterId, $oOwnerId, $msg, $orderCode]);
+        }
     } catch (Exception $eChat) {}
 
     echo json_encode([
@@ -3732,9 +3710,9 @@ if ($action === 'create_rental_booking') {
     $startDate = trim((string)($data['start_date'] ?? date('Y-m-d')));
     $endDate = trim((string)($data['end_date'] ?? date('Y-m-d', strtotime('+1 day'))));
     $days = max(1, (int)($data['days'] ?? 1));
-    $renterId = (int)($data['renter_id'] ?? 105);
-    $renterName = trim((string)($data['renter_name'] ?? 'Pogilameg Tester'));
-    $renterEmail = trim((string)($data['renter_email'] ?? 'pogilameg@gmail.com'));
+    $renterId = (int)($data['renter_id'] ?? 0);
+    $renterName = trim((string)($data['renter_name'] ?? 'Student Renter'));
+    $renterEmail = trim((string)($data['renter_email'] ?? ''));
 
     // 1. Guard against suspension
     $suspStmt = $db->prepare("SELECT `rental_suspended_until`, `rental_suspension_reason` FROM `Users` WHERE `Id` = ? OR LOWER(`Email`) = LOWER(?) LIMIT 1");
@@ -3766,9 +3744,9 @@ if ($action === 'create_rental_booking') {
 
     $productName = $product['name'] ?: $product['title'] ?: 'Campus Equipment';
     $dailyRate = (float)($product['price_per_day'] ?: $product['price'] ?: 0);
-    $ownerId = (int)($product['owner_id'] ?: 104);
-    $ownerName = $product['owner_name'] ?: 'Romeo Paolo Tolentino';
-    $ownerEmail = $product['owner_email'] ?: 'romeopaolotolentino@gmail.com';
+    $ownerId = (int)($product['owner_id'] ?: 0);
+    $ownerName = $product['owner_name'] ?: 'Equipment Owner';
+    $ownerEmail = $product['owner_email'] ?: '';
     $location = $product['location'] ?: 'San Pablo, Laguna';
 
     $totalAmount = round($dailyRate * $qty * $days, 2);
@@ -3847,11 +3825,11 @@ if ($action === 'create_rental_booking') {
 if ($action === 'get_active_chat_rental') {
     if (!$db) { echo json_encode(['success' => true, 'has_rental' => false]); exit; }
 
-    $userId = (int)($data['user_id'] ?? $_GET['user_id'] ?? 104);
-    if ($userId <= 1) $userId = 104;
-    $partnerId = (int)($data['partner_id'] ?? $_GET['partner_id'] ?? 105);
-    if ($partnerId <= 1 || $partnerId === $userId) {
-        $partnerId = ($userId === 104) ? 105 : 104;
+    $userId = (int)($data['user_id'] ?? $_GET['user_id'] ?? 0);
+    $partnerId = (int)($data['partner_id'] ?? $_GET['partner_id'] ?? 0);
+    if ($userId <= 0 || $partnerId <= 0 || $partnerId === $userId) {
+        echo json_encode(['success' => true, 'has_rental' => false, 'rental' => null]);
+        exit;
     }
     $itemTitle = trim((string)($data['item_title'] ?? $_GET['item_title'] ?? ''));
     $orderCode = trim((string)($data['order_code'] ?? $_GET['order_code'] ?? ''));
@@ -3865,8 +3843,8 @@ if ($action === 'get_active_chat_rental') {
     foreach ($rows as $r) {
         $emails[(int)$r['Id']] = strtolower(trim($r['Email']));
     }
-    $uEmail = $userEmail ?: ($emails[$userId] ?? ($userId == 104 ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com'));
-    $pEmail = $emails[$partnerId] ?? ($partnerId == 104 ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com');
+    $uEmail = $userEmail ?: ($emails[$userId] ?? '');
+    $pEmail = $emails[$partnerId] ?? '';
 
     $sql = "SELECT ro.*, ri.image_url AS item_image 
             FROM `rental_orders` ro
@@ -4039,13 +4017,9 @@ if ($action === 'get_chat_partner_topics') {
     $partner = $partnerStmt->fetch();
     $pEmail = strtolower(trim($partner['Email'] ?? ''));
 
-    // Fetch equipment posted by partner (or by owner 104 if partner is Romeo)
+    // Fetch equipment posted by partner
     $ownerCond = "(owner_id = ? OR LOWER(owner_email) = ?)";
     $ownerParams = [$partnerId, $pEmail];
-    if ($partnerId === 104 || str_contains($pEmail, 'romeo')) {
-        $ownerCond = "(owner_id IN (1, 104) OR LOWER(owner_email) LIKE '%romeo%')";
-        $ownerParams = [];
-    }
     $itemStmt = $db->prepare("SELECT id, name, category, price_per_day, image_url, location, qty_available, qty_total, status 
                               FROM rental_inventory 
                               WHERE $ownerCond 
@@ -4491,7 +4465,7 @@ if ($action === 'step4_owner_handover_start_timer' || $action === 'agree_and_sta
 
     $days = max(1, (int)$order['rental_days']);
     $itemName = $order['item_name'] ?: 'Equipment';
-    $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
+    $ownerName = $order['owner_name'] ?: 'Equipment Owner';
     $renterId = (int)$order['renter_id'];
     $location = $order['meetup_location'] ?: ($order['delivery_address'] ?: 'Campus Handover Meetup');
 
@@ -4589,11 +4563,11 @@ if ($action === 'report_unreturned_item') {
     }
 
     $itemName = $order['item_name'] ?: 'Equipment';
-    $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
-    $ownerEmail = $order['owner_email'] ?: 'romeopaolotolentino@gmail.com';
-    $renterName = $order['customer_name'] ?: 'Pogilameg Tester';
-    $renterEmail = $order['customer_email'] ?: 'pogilameg@gmail.com';
-    $renterId = (int)$order['renter_id'] ?: 105;
+    $ownerName = $order['owner_name'] ?: 'Equipment Owner';
+    $ownerEmail = $order['owner_email'] ?: '';
+    $renterName = $order['customer_name'] ?: 'Student Renter';
+    $renterEmail = $order['customer_email'] ?: '';
+    $renterId = (int)($order['renter_id'] ?? 0);
 
     // 1. Insert into rental_unreturned_reports
     $rStmt = $db->prepare("INSERT INTO `rental_unreturned_reports` (
@@ -4644,9 +4618,9 @@ if ($action === 'report_unreturned_item') {
 if ($action === 'submit_rental_suspension_appeal') {
     if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
 
-    $userId = (int)($data['user_id'] ?? 105);
-    $userEmail = trim((string)($data['user_email'] ?? 'pogilameg@gmail.com'));
-    $userName = trim((string)($data['user_name'] ?? 'Pogilameg Tester'));
+    $userId = (int)($data['user_id'] ?? 0);
+    $userEmail = trim((string)($data['user_email'] ?? ''));
+    $userName = trim((string)($data['user_name'] ?? 'Student User'));
     $reason = trim((string)($data['appeal_reason'] ?? ''));
     $photoUrl = trim((string)($data['photo_url'] ?? ''));
 

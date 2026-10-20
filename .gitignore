@@ -19,3 +19,6 @@ obj/
 
 # Publish directory
 publish/
+
+# Scratch & temporary scripts
+scratch/

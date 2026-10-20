@@ -125,9 +125,9 @@ if (!function_exists('send_rental_step_emails')) {
 
         $orderCode = $order['order_code'];
         $renterName = $order['customer_name'] ?: 'Valued Student';
-        $renterEmail = $order['customer_email'] ?: 'pogilameg@gmail.com';
-        $ownerName = $order['owner_name'] ?: 'Romeo Paolo Tolentino';
-        $ownerEmail = $order['owner_email'] ?: 'romeopaolotolentino@gmail.com';
+        $renterEmail = $order['customer_email'] ?: '';
+        $ownerName = $order['owner_name'] ?: 'Equipment Owner';
+        $ownerEmail = $order['owner_email'] ?: '';
         $deliveryAddress = $order['delivery_address'] ?: 'San Pablo City, Laguna';
         $riderName = $extraData['rider_name'] ?? ($order['assigned_rider_name'] ?: ($order['rider_name'] ?: ''));
         $riderPhone = $extraData['rider_phone'] ?? ($order['assigned_rider_phone'] ?: ($order['rider_phone'] ?: ''));

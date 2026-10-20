@@ -298,29 +298,108 @@
             margin-bottom: 6px !important;
             border-radius: 12px !important;
         }
-        #chatRentalRequestBanner .rentchat-card-icon-box { width: 26px; height: 26px; border-radius: 8px; }
-        #chatRentalRequestBanner > .d-flex:first-child { margin-bottom: 6px !important; padding-bottom: 6px !important; }
-        #chatRentalRequestBanner .rentchat-specs-grid { padding: 4px 8px !important; margin-bottom: 6px !important; border-radius: 9px !important; }
-        #chatRentalRequestBanner .rentchat-specs-grid > div { padding-top: 3px !important; padding-bottom: 3px !important; }
-        #chatRentalRequestBanner #chatLifecycleProgressIndicator { margin-bottom: 6px !important; padding-bottom: 5px !important; }
+        #chatRentalRequestBanner .rentchat-card-icon-box {
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+        }
+        #chatRentalRequestBanner > .d-flex:first-child {
+            margin-bottom: 6px !important;
+            padding-bottom: 6px !important;
+        }
+        #chatRentalRequestBanner .rentchat-specs-grid {
+            padding: 4px 8px !important;
+            margin-bottom: 6px !important;
+            border-radius: 9px !important;
+        }
+        #chatRentalRequestBanner .rentchat-specs-grid > div {
+            padding-top: 3px !important;
+            padding-bottom: 3px !important;
+        }
+        #chatRentalRequestBanner #chatLifecycleProgressIndicator {
+            margin-bottom: 6px !important;
+            padding-bottom: 5px !important;
+        }
         #chatRentalRequestBanner [id$="RenterBox"],
-        #chatRentalRequestBanner [id$="OwnerBox"] { padding: 8px !important; }
-        #chatRentalRequestBanner [id*="Step4"] { margin-bottom: 0 !important; }
+        #chatRentalRequestBanner [id$="OwnerBox"] {
+            padding: 8px !important;
+        }
+        #chatRentalRequestBanner [id*="Step4"] {
+            margin-bottom: 0 !important;
+        }
         #chatRentalRequestBanner [id*="Step4"] .border,
-        #chatRentalRequestBanner [id*="Step4"] .rounded-3 { padding: 8px !important; }
-        #chatRentalRequestBanner.is-collapsed > :not(:first-child) { display: none !important; }
-        #chatRentalRequestBanner.is-collapsed { padding-bottom: 8px !important; }
-        #chatRentalRequestBanner .rentchat-agree-btn { padding-top: 7px !important; padding-bottom: 7px !important; }
-        #chatView .rentchat-bubble { max-width: 84%; padding: 7px 10px; font-size: 0.76rem; line-height: 1.35; border-radius: 14px; }
-        #chatView .rentchat-input-bar { padding: 6px !important; }
-        #chatView .rentchat-textarea { min-height: 36px; padding: 7px 12px; font-size: 0.78rem; }
-        #chatView .rentchat-send-btn { width: 36px; height: 36px; font-size: 0.78rem; }
-        .rentchat-stepper { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:6px 2px 2px; }
-        .rentchat-step { position:relative; text-align:center; color:#94A3B8; font-size:.58rem; font-weight:700; line-height:1.1; }
-        .rentchat-step::before { content:''; display:block; width:18px; height:18px; margin:0 auto 3px; border:2px solid #CBD5E1; border-radius:50%; background:#FFF; color:#94A3B8; line-height:14px; }
-        .rentchat-step.is-complete,.rentchat-step.is-active { color:#5B3FA8; }
-        .rentchat-step.is-complete::before { content:'✓'; border-color:#8B5CF6; background:#EDE9FE; color:#6D28D9; }
-        .rentchat-step.is-active::before { border-color:#6366F1; background:#6366F1; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
+        #chatRentalRequestBanner [id*="Step4"] .rounded-3 {
+            padding: 8px !important;
+        }
+        #chatRentalRequestBanner.is-collapsed > :not(:first-child) {
+            display: none !important;
+        }
+        #chatRentalRequestBanner.is-collapsed {
+            padding-bottom: 8px !important;
+        }
+        #chatRentalRequestBanner .rentchat-agree-btn {
+            padding-top: 7px !important;
+            padding-bottom: 7px !important;
+        }
+        #chatView .rentchat-bubble {
+            max-width: 84%;
+            padding: 7px 10px;
+            font-size: 0.76rem;
+            line-height: 1.35;
+            border-radius: 14px;
+        }
+        #chatView .rentchat-input-bar {
+            padding: 6px !important;
+        }
+        #chatView .rentchat-textarea {
+            min-height: 36px;
+            padding: 7px 12px;
+            font-size: 0.78rem;
+        }
+        #chatView .rentchat-send-btn {
+            width: 36px;
+            height: 36px;
+            font-size: 0.78rem;
+        }
+        .rentchat-stepper {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            padding: 6px 2px 2px;
+        }
+        .rentchat-step {
+            position: relative;
+            text-align: center;
+            color: #94A3B8;
+            font-size: 0.58rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+        .rentchat-step::before {
+            content: '';
+            display: block;
+            width: 18px;
+            height: 18px;
+            margin: 0 auto 3px;
+            border: 2px solid #CBD5E1;
+            border-radius: 50%;
+            background: #FFFFFF;
+            color: #94A3B8;
+            line-height: 14px;
+        }
+        .rentchat-step.is-complete,
+        .rentchat-step.is-active { color: #5B3FA8; }
+        .rentchat-step.is-complete::before {
+            content: '✓';
+            border-color: #8B5CF6;
+            background: #EDE9FE;
+            color: #6D28D9;
+        }
+        .rentchat-step.is-active::before {
+            border-color: #6366F1;
+            background: #6366F1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+        }
         @media (max-width: 576px) {
             #chatView {
                 max-height: calc(100dvh - 128px);
@@ -712,7 +791,10 @@
             </span>
         </div>
         <div class="rentchat-stepper" id="chatLifecycleStepper" aria-label="Rental progress">
-            <div class="rentchat-step is-active" data-step="1">Request</div><div class="rentchat-step" data-step="2">Prepare</div><div class="rentchat-step" data-step="3">Meetup</div><div class="rentchat-step" data-step="4">Handover</div>
+            <div class="rentchat-step is-active" data-step="1">Request</div>
+            <div class="rentchat-step" data-step="2">Prepare</div>
+            <div class="rentchat-step" data-step="3">Meetup</div>
+            <div class="rentchat-step" data-step="4">Handover</div>
         </div>
 
         <!-- STEP 1: BOOKING CONFIRMATION -->
@@ -932,7 +1014,7 @@
                 </div>
                 <div>
                     <div class="fw-extrabold text-white" style="font-size:0.8rem; letter-spacing:0.2px;">Active Rental Period</div>
-                    <div class="text-white-50 fs-10 font-monospace" id="chatTimerItemTitle">POSPT • #RE-10000</div>
+                    <div class="text-white-50 fs-10 font-monospace" id="chatTimerItemTitle">Equipment • #RE-00000</div>
                 </div>
             </div>
             <span class="badge rounded-pill fw-bold px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1.5" id="chatLiveTimerBadge" 
@@ -1202,7 +1284,7 @@
                     <img id="step1ModalRenterAvatar" src="https://ui-avatars.com/api/?name=Student&background=5B3FA8&color=fff" class="rounded-circle border" width="42" height="42" style="object-fit:cover;">
                     <div class="min-w-0">
                         <div class="text-muted" style="font-size: 0.68rem; font-weight: 600;">BORROWER REQUEST</div>
-                        <div class="fw-bold text-dark fs-8 text-truncate" id="step1ModalRenterName">Pogilameg Tester</div>
+                        <div class="fw-bold text-dark fs-8 text-truncate" id="step1ModalRenterName">Student Renter</div>
                         <span class="badge rounded-pill" style="background:#E0F2FE; color:#0369A1; font-size:0.60rem; padding: 2px 6px;">
                             <i class="fa-solid fa-cart-shopping me-0.5"></i> Student Renter
                         </span>
@@ -1376,7 +1458,7 @@
                 <button type="button" class="btn-close" style="font-size: 0.65rem;" onclick="dismissStep1IncomingToast()"></button>
             </div>
             <div class="fw-extrabold text-dark fs-8 text-truncate" id="step1ToastRenterAndItem">
-                Pogilameg Tester wants to rent your item!
+                A student wants to rent your item!
             </div>
             <div class="text-muted fs-9 text-truncate mb-2" id="step1ToastDetails">
                 Order #RE-00000 • ₱0.00 • Tap to Agree

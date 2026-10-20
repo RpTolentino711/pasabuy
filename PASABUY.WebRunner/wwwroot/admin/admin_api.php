@@ -84,7 +84,6 @@ if ($db) {
         }
     } catch (Exception $e) {}
 
-    // Ensure POSPT is owned by Pogilameg Tester and marked as featured
     // Moderation and 3-strike schema migrations
     try {
         $db->exec("ALTER TABLE `rental_inventory` ADD COLUMN `status` VARCHAR(50) DEFAULT 'ACTIVE'");
@@ -169,8 +168,8 @@ if ($db) {
         $db->exec("UPDATE `Users` SET `moderation_permanent_frozen` = 1, `Status` = 'SUSPENDED' WHERE `moderation_permanent_frozen` = 0 AND `moderation_freeze_until` IS NOT NULL AND `moderation_freeze_until` < NOW()");
     } catch (Exception $e) {}
 
-    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_id` INT DEFAULT 104"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_id` INT DEFAULT 105"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `owner_id` INT DEFAULT NULL"); } catch (Exception $e) {}
+    try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `renter_id` INT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `item_id` INT DEFAULT NULL"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `item_name` VARCHAR(255) DEFAULT 'Campus Equipment'"); } catch (Exception $e) {}
     try { $db->exec("ALTER TABLE `rental_orders` ADD COLUMN `rental_timer_start` DATETIME DEFAULT NULL"); } catch (Exception $e) {}
@@ -296,38 +295,12 @@ if ($db) {
         $db->exec("ALTER TABLE `rental_issues` ADD COLUMN `assigned_to` VARCHAR(150) DEFAULT 'Support Team'");
     } catch (Exception $e) {}
 
-    // 3. Ensure 3 test users exist in Users and StudentProfiles
+    // 3. Ensure Admin user exists
     try {
-        $hashPogilameg = password_hash('Pogilameg@10', PASSWORD_DEFAULT);
-
         // Ensure Admin (100)
         $db->exec("INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`) VALUES 
             (100, 'admin', 'Pogilameg@10', 'ADMIN', 'VERIFIED')
             ON DUPLICATE KEY UPDATE `PasswordHash` = 'Pogilameg@10', `Role` = 'ADMIN', `Status` = 'VERIFIED'");
-
-        // Ensure Romeo (104 - Lender / Poster)
-        $db->exec("INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`) VALUES 
-            (104, 'romeopaolotolentino@gmail.com', '{$hashPogilameg}', 'STUDENT', 'VERIFIED')
-            ON DUPLICATE KEY UPDATE `PasswordHash` = '{$hashPogilameg}', `Role` = 'STUDENT', `Status` = 'VERIFIED'");
-
-        // Ensure Pogilameg (105 - Renter / Customer)
-        $db->exec("INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`) VALUES 
-            (105, 'pogilameg@gmail.com', '{$hashPogilameg}', 'STUDENT', 'VERIFIED')
-            ON DUPLICATE KEY UPDATE `PasswordHash` = '{$hashPogilameg}', `Role` = 'STUDENT', `Status` = 'VERIFIED'");
-
-        // Ensure StudentProfiles with numeric StudentNumber and PhoneNumber
-        $db->exec("INSERT INTO `StudentProfiles` (`UserId`, `FirstName`, `LastName`, `StudentNumber`, `PhoneNumber`, `SchoolEmail`, `Course`, `YearLevel`, `Rating`, `VerificationStatus`) VALUES 
-            (104, 'Romeo Paolo', 'Tolentino', '20261048', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', 5.0, 'VERIFIED')
-            ON DUPLICATE KEY UPDATE `FirstName` = 'Romeo Paolo', `LastName` = 'Tolentino', `StudentNumber` = IF(`StudentNumber` = '09668257301' OR `StudentNumber` LIKE '%@%', '20261048', `StudentNumber`), `PhoneNumber` = COALESCE(NULLIF(`PhoneNumber`, ''), '09668257301')");
-
-        $db->exec("INSERT INTO `StudentProfiles` (`UserId`, `FirstName`, `LastName`, `StudentNumber`, `PhoneNumber`, `SchoolEmail`, `Course`, `YearLevel`, `Rating`, `VerificationStatus`) VALUES 
-            (105, 'Pogilameg', 'Tester', '20261058', '09171234567', 'pogilameg@gmail.com', 'BSIT', '3rd Yr', 5.0, 'VERIFIED')
-            ON DUPLICATE KEY UPDATE `FirstName` = 'Pogilameg', `LastName` = 'Tester', `StudentNumber` = IF(`StudentNumber` = 'pogilameg@10' OR `StudentNumber` LIKE '%@%', '20261058', `StudentNumber`), `PhoneNumber` = COALESCE(NULLIF(`PhoneNumber`, ''), '09171234567')");
-
-        // Clean any existing non-numeric student numbers in DB
-        $db->exec("UPDATE `StudentProfiles` SET `StudentNumber` = '20261058', `PhoneNumber` = '09171234567' WHERE `UserId` = 105 AND (`StudentNumber` = 'pogilameg@10' OR `StudentNumber` LIKE '%@%');");
-        $db->exec("UPDATE `StudentProfiles` SET `StudentNumber` = '20261048', `PhoneNumber` = '09668257301' WHERE `UserId` = 104 AND (`StudentNumber` = '09668257301' OR `StudentNumber` LIKE '%@%');");
-        $db->exec("UPDATE `StudentProfiles` SET `StudentNumber` = '2023183099', `PhoneNumber` = '09171234567' WHERE `UserId` = 113 AND (`StudentNumber` = '2023-183099' OR `StudentNumber` LIKE '%-%');");
     } catch (Exception $e) {}
 
     // Clean slate: do not auto-seed equipment so that when stock is deleted, it remains 0
@@ -341,8 +314,6 @@ if ($db) {
         $db->exec("UPDATE `rental_inventory` SET `qty_rented` = 0, `qty_available` = `qty_total` WHERE `qty_rented` > 0");
         $db->exec("UPDATE `rental_inventory` SET `qty_available` = LEAST(`qty_total`, GREATEST(0, `qty_available`)) WHERE `qty_available` > `qty_total` OR `qty_available` < 0");
         try {
-            $db->exec("UPDATE `ChatMessages` SET `SenderId` = 104 WHERE `SenderId` IN (0, 1) AND `ReceiverId` = 105");
-            $db->exec("UPDATE `ChatMessages` SET `SenderId` = 105 WHERE `SenderId` IN (0, 1) AND `ReceiverId` = 104");
             // Auto-deduplicate duplicate return chat messages for the same order code
             $dupMsgs = $db->query("SELECT Id, MessageText FROM `ChatMessages` WHERE `MessageText` LIKE '%verified and restocked%' OR `MessageText` LIKE '%is verified by the renter%' ORDER BY Id ASC")->fetchAll();
             $seenOrders = [];
@@ -802,10 +773,9 @@ if ($action === 'add_product') {
         exit;
     }
 
-    $isPog = (stripos($owner, 'pogilameg') !== false);
-    $ownerId = $isPog ? 105 : 104;
-    $ownerEmail = $isPog ? 'pogilameg@gmail.com' : 'romeopaolotolentino@gmail.com';
-    $ownerContact = $isPog ? '09171234567' : ($contact ?: '09668257301');
+    $ownerId = intval($req['owner_id'] ?? 100);
+    $ownerEmail = trim((string)($req['owner_email'] ?? 'admin@rentease.ph'));
+    $ownerContact = trim((string)($contact ?: '09171234567'));
 
     $stmt = $db->prepare("INSERT INTO `rental_inventory` 
         (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`, `qty_rented`, `qty_maintenance`, `image_url`, `rating`, `reviews_count`, `description`, `min_rental_days`, `is_featured`, `owner_id`, `owner_name`, `owner_email`, `owner_contact`, `item_condition`, `location`)
@@ -1114,13 +1084,15 @@ if ($action === 'update_order_status') {
             }
 
             // Notification
-            $ordRow = $db->query("SELECT order_code, owner_name, customer_name FROM `rental_orders` WHERE id = {$id}")->fetch();
+            $ordRow = $db->query("SELECT order_code, owner_name, customer_name, owner_id, renter_id FROM `rental_orders` WHERE id = {$id}")->fetch();
             $ordCode = $ordRow['order_code'] ?? "#ORD-{$id}";
+            $chatOwnerId = (int)($ordRow['owner_id'] ?? 100);
+            $chatRenterId = (int)($ordRow['renter_id'] ?? 100);
             $checkAdminChat = $db->prepare("SELECT Id FROM `ChatMessages` WHERE `MessageText` LIKE ? LIMIT 1");
             $checkAdminChat->execute(["%Order {$ordCode}%safely returned%"]);
-            if (!$checkAdminChat->fetchColumn()) {
-                $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Admin Operations', ?, 'Order Returned', NOW())");
-                $chatStmt->execute(["✅ Admin confirmed return for Order {$ordCode}: Equipment has been safely returned to inventory stock!"]);
+            if (!$checkAdminChat->fetchColumn() && $chatOwnerId > 0 && $chatRenterId > 0) {
+                $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (?, ?, 'Admin Operations', ?, 'Order Returned', NOW())");
+                $chatStmt->execute([$chatOwnerId, $chatRenterId, "✅ Admin confirmed return for Order {$ordCode}: Equipment has been safely returned to inventory stock!"]);
             }
         } catch (Exception $eRestock) {}
     }
@@ -1210,23 +1182,11 @@ if ($action === 'get_customers') {
     foreach ($customers as &$c) {
         $rawSn = (string)($c['StudentNumber'] ?? '');
         $cleanSn = preg_replace('/[^0-9]/', '', $rawSn);
-        if ($c['Id'] == 105 && ($cleanSn === '10' || empty($cleanSn) || strpos($rawSn, 'pogilameg') !== false)) {
-            $cleanSn = '20261058';
-        } elseif ($c['Id'] == 104 && ($cleanSn === '09668257301' || empty($cleanSn))) {
-            $cleanSn = '20261048';
-        }
         $c['StudentNumber'] = !empty($cleanSn) ? $cleanSn : 'N/A';
         $c['PhoneOrId'] = $c['StudentNumber'];
 
         $rawPh = (string)($c['PhoneNumber'] ?? '');
         $cleanPh = preg_replace('/[^0-9+]/', '', $rawPh);
-        if ($c['Id'] == 105 && ($cleanPh === 'N/A' || empty($cleanPh) || strpos($rawPh, 'pogilameg') !== false)) {
-            $cleanPh = '09171234567';
-        } elseif ($c['Id'] == 104 && ($cleanPh === 'N/A' || empty($cleanPh))) {
-            $cleanPh = '09668257301';
-        } elseif ($c['Id'] == 113 && ($cleanPh === 'N/A' || empty($cleanPh))) {
-            $cleanPh = '09171234567';
-        }
         $c['PhoneNumber'] = !empty($cleanPh) ? $cleanPh : 'N/A';
     }
     unset($c);
@@ -1290,22 +1250,10 @@ if ($action === 'get_customer_verification_details') {
 
     $rawSn = (string)($details['StudentNumber'] ?? '');
     $cleanSn = preg_replace('/[^0-9]/', '', $rawSn);
-    if ($details['Id'] == 105 && ($cleanSn === '10' || empty($cleanSn) || strpos($rawSn, 'pogilameg') !== false)) {
-        $cleanSn = '20261058';
-    } elseif ($details['Id'] == 104 && ($cleanSn === '09668257301' || empty($cleanSn))) {
-        $cleanSn = '20261048';
-    }
     $details['StudentNumber'] = !empty($cleanSn) ? $cleanSn : 'N/A';
 
     $rawPh = (string)($details['PhoneNumber'] ?? '');
     $cleanPh = preg_replace('/[^0-9+]/', '', $rawPh);
-    if ($details['Id'] == 105 && ($cleanPh === 'N/A' || empty($cleanPh) || strpos($rawPh, 'pogilameg') !== false)) {
-        $cleanPh = '09171234567';
-    } elseif ($details['Id'] == 104 && ($cleanPh === 'N/A' || empty($cleanPh))) {
-        $cleanPh = '09668257301';
-    } elseif ($details['Id'] == 113 && ($cleanPh === 'N/A' || empty($cleanPh))) {
-        $cleanPh = '09171234567';
-    }
     $details['PhoneNumber'] = !empty($cleanPh) ? $cleanPh : 'N/A';
 
     echo json_encode(['success' => true, 'details' => $details]);
@@ -1435,7 +1383,7 @@ if ($action === 'get_deliveries') {
 
     $sql = "SELECT o.*,
                    COALESCE(o.meetup_location, o.delivery_address, 'Campus Meetup Spot') as campus_spot,
-                   COALESCE(o.owner_name, 'Romeo Paolo Tolentino') as lender_name
+                   COALESCE(o.owner_name, 'Verified Lender') as lender_name
             FROM `rental_orders` o WHERE 1=1";
     $params = [];
 
@@ -2362,31 +2310,22 @@ if ($action === 'purge_dummy_data' || $action === 'clean_database') {
         try { $db->exec("DELETE FROM `rental_drivers` WHERE 1=1;"); } catch (Exception $e) {}
         try { $db->exec("DELETE FROM `VerificationRequests` WHERE 1=1;"); } catch (Exception $e) {}
 
-        // 6. Reset Users (Keep ONLY Admin 100, Romeo 104, Pogilameg 105)
-        $db->exec("DELETE FROM `Users` WHERE `Id` NOT IN (100, 104, 105);");
+        // 6. Reset Users (Keep ONLY Admin 100)
+        $db->exec("DELETE FROM `Users` WHERE `Id` != 100 AND `Role` != 'ADMIN';");
         $db->exec("UPDATE `Users` SET 
             `rental_suspended_until` = NULL, 
             `rental_suspension_reason` = NULL, 
             `rental_suspension_report_id` = NULL, 
             `Status` = 'VERIFIED' 
-            WHERE `Id` IN (100, 104, 105);");
+            WHERE `Id` = 100;");
 
-        // Ensure Admin, Romeo & Pogilameg exist with clean credentials
-        $hashPogilameg = password_hash('Pogilameg@10', PASSWORD_DEFAULT);
-        
-        $stmtUser = $db->prepare("INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`, `CreatedAt`, `UpdatedAt`) VALUES 
-            (100, 'admin', 'Pogilameg@10', 'ADMIN', 'VERIFIED', NOW(), NOW()),
-            (104, 'romeopaolotolentino@gmail.com', ?, 'STUDENT', 'VERIFIED', NOW(), NOW()),
-            (105, 'pogilameg@gmail.com', ?, 'STUDENT', 'VERIFIED', NOW(), NOW())
-            ON DUPLICATE KEY UPDATE `PasswordHash` = VALUES(`PasswordHash`), `Role` = VALUES(`Role`), `Status` = 'VERIFIED', `rental_suspended_until` = NULL, `rental_suspension_reason` = NULL, `rental_suspension_report_id` = NULL");
-        $stmtUser->execute([$hashPogilameg, $hashPogilameg]);
+        // Ensure Admin exists
+        $db->exec("INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`, `CreatedAt`, `UpdatedAt`) VALUES 
+            (100, 'admin', 'Pogilameg@10', 'ADMIN', 'VERIFIED', NOW(), NOW())
+            ON DUPLICATE KEY UPDATE `PasswordHash` = VALUES(`PasswordHash`), `Role` = VALUES(`Role`), `Status` = 'VERIFIED'");
 
-        // 7. Clean StudentProfiles (Keep Romeo 104 and Pogilameg 105)
-        $db->exec("DELETE FROM `StudentProfiles` WHERE `UserId` NOT IN (104, 105);");
-        $db->exec("INSERT INTO `StudentProfiles` (`Id`, `UserId`, `FirstName`, `LastName`, `StudentNumber`, `PhoneNumber`, `SchoolEmail`, `Course`, `YearLevel`, `ProfileImage`, `VerificationStatus`, `Rating`, `CompletedTransactions`, `CreatedAt`, `UpdatedAt`) VALUES 
-            (2, 104, 'Romeo Paolo', 'Tolentino', '20261048', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80', 'VERIFIED', 5.0, 12, NOW(), NOW()),
-            (3, 105, 'Pogilameg', 'Tester', '20261058', '09171234567', 'pogilameg@gmail.com', 'BSCS', '3rd Yr', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', 'VERIFIED', 5.0, 8, NOW(), NOW())
-            ON DUPLICATE KEY UPDATE `FirstName` = VALUES(`FirstName`), `LastName` = VALUES(`LastName`), `StudentNumber` = VALUES(`StudentNumber`), `PhoneNumber` = VALUES(`PhoneNumber`), `VerificationStatus` = 'VERIFIED'");
+        // 7. Clean StudentProfiles (Keep only valid registered users)
+        $db->exec("DELETE FROM `StudentProfiles` WHERE `UserId` NOT IN (SELECT `Id` FROM `Users`);");
 
         // Deduplicate StudentProfiles
         try {

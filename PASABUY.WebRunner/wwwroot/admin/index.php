@@ -1980,7 +1980,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
                         <div class="mb-2.5">
                             <label class="form-label fs-9 fw-bold">Owner / Lender Name</label>
-                            <input type="text" class="form-control form-control-sm" id="mProdOwner" value="Pogilameg Tester">
+                            <input type="text" class="form-control form-control-sm" id="mProdOwner" placeholder="Enter owner / lender name...">
                         </div>
                         <div class="mb-2.5">
                             <label class="form-label fs-9 fw-bold">Image URL</label>
@@ -2125,7 +2125,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     <div class="rounded-3 p-2.5 mb-2.5" style="background:#F8FAFC; border:1px solid #E2E8F0;">
                         <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
                             <span class="text-muted"><i class="fa-solid fa-user-tie me-1 text-primary"></i> Stock Owner / Hub:</span>
-                            <strong class="text-dark" id="adminPopOwner">Romeo Paolo Tolentino</strong>
+                            <strong class="text-dark" id="adminPopOwner">Equipment Owner</strong>
                         </div>
                         <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
                             <span class="text-muted"><i class="fa-solid fa-clock me-1 text-info"></i> Pickup Time:</span>
@@ -2181,7 +2181,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     <div class="rounded-3 p-2.5 mb-2.5" style="background:#F8FAFC; border:1px solid #E2E8F0;">
                         <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
                             <span class="text-muted"><i class="fa-solid fa-user me-1 text-primary"></i> Recipient Student:</span>
-                            <strong class="text-dark" id="adminPodRecipient">Pogilameg Tester</strong>
+                            <strong class="text-dark" id="adminPodRecipient">Student Renter</strong>
                         </div>
                         <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
                             <span class="text-muted"><i class="fa-solid fa-clock me-1 text-info"></i> Timestamp:</span>
@@ -2242,7 +2242,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         </div>
                         <div class="d-flex justify-content-between fs-9 mb-1.5 pb-1 border-bottom">
                             <span class="text-muted">Reported By:</span>
-                            <span class="text-dark fw-bold" id="adminTktReporter">Pogilameg Tester (RENTER)</span>
+                            <span class="text-dark fw-bold" id="adminTktReporter">Student Renter</span>
                         </div>
                         <div class="d-flex justify-content-between fs-9">
                             <span class="text-muted">Current Status:</span>
@@ -2298,7 +2298,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 <div class="modal-body">
                     <div class="mb-2.5">
                         <label class="form-label fs-9 fw-bold">Customer Name</label>
-                        <input type="text" class="form-control form-control-sm" id="mTktCustomer" value="Pogilameg Tester">
+                        <input type="text" class="form-control form-control-sm" id="mTktCustomer" placeholder="Enter student / customer name...">
                     </div>
                     <div class="mb-2.5">
                         <label class="form-label fs-9 fw-bold">Subject</label>
@@ -2360,7 +2360,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     <div class="row g-2 mb-2.5">
                         <div class="col-6">
                             <label class="form-label fs-9 fw-bold">Student Number (Numbers Only)</label>
-                            <input type="number" inputmode="numeric" pattern="[0-9]*" class="form-control form-control-sm" id="mCustStudentNum" placeholder="e.g. 20261058" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            <input type="number" inputmode="numeric" pattern="[0-9]*" class="form-control form-control-sm" id="mCustStudentNum" placeholder="e.g. 20260001" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         </div>
                         <div class="col-6">
                             <label class="form-label fs-9 fw-bold">Phone Number</label>
@@ -3131,7 +3131,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                         <div class="fs-9 text-muted">${pi.category}</div>
                                     </td>
                                     <td><span class="badge bg-light text-secondary border fs-9">${pi.category}</span></td>
-                                    <td><span class="fs-8 fw-semibold text-dark">${pi.owner_name || 'Romeo Paolo Tolentino'}</span></td>
+                                    <td><span class="fs-8 fw-semibold text-dark">${pi.owner_name || 'Equipment Owner'}</span></td>
                                     <td class="fw-bold fs-8">₱${Number(pi.price_per_day).toLocaleString()}/day</td>
                                     <td>
                                         ${parseInt(pi.reviews_count || 0) > 0 ? `
@@ -3545,7 +3545,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                         <div>
                                             <strong class="fs-9 text-dark">Step 1: Booking Confirmation &amp; Owner Agreement</strong>
                                             <div class="fs-10 text-muted">
-                                                ${ownerAgreed ? `Confirmed by Stock Owner (${o.owner_name || 'Romeo Paolo Tolentino'})` : 'Awaiting Stock Owner confirmation in chat'}
+                                                ${ownerAgreed ? `Confirmed by Stock Owner (${o.owner_name || 'Stock Owner'})` : 'Awaiting Stock Owner confirmation in chat'}
                                             </div>
                                         </div>
                                     </div>
@@ -3748,9 +3748,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     </div>
                                     <strong class="text-dark fs-8">Stock Owner / Lender</strong>
                                 </div>
-                                <div class="fs-9 text-dark fw-bold mb-0.5">${o.owner_name || 'Romeo Paolo Tolentino'}</div>
-                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-phone me-1"></i> ${o.owner_contact || '09668257301'}</div>
-                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-envelope me-1"></i> ${o.owner_email || 'romeopaolotolentino@gmail.com'}</div>
+                                <div class="fs-9 text-dark fw-bold mb-0.5">${o.owner_name || 'Stock Owner'}</div>
+                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-phone me-1"></i> ${o.owner_contact || 'N/A'}</div>
+                                <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-envelope me-1"></i> ${o.owner_email || 'N/A'}</div>
                                 <div class="fs-9 text-dark fw-semibold mt-1 pt-1 border-top"><i class="fa-solid fa-store text-warning me-1"></i> Hub / Campus: San Pablo, Laguna</div>
                             </div>
                         </div>
@@ -3911,8 +3911,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                         const isSuspended = (c.Status === 'SUSPENDED');
                         const isPending = (c.VerificationRequestStatus === 'PENDING');
 
-                        const cleanStudentId = (c.StudentNumber || '').toString().replace(/[^0-9]/g, '') || (c.Id == 105 ? '20261058' : (c.Id == 104 ? '20261048' : 'N/A'));
-                        const cleanPhone = (c.PhoneNumber || '').toString().replace(/[^0-9+]/g, '') || (c.Id == 105 ? '09171234567' : (c.Id == 104 ? '09668257301' : 'N/A'));
+                        const cleanStudentId = (c.StudentNumber || '').toString().replace(/[^0-9]/g, '') || 'N/A';
+                        const cleanPhone = (c.PhoneNumber || '').toString().replace(/[^0-9+]/g, '') || 'N/A';
 
                         return `
                         <tr>
@@ -4002,8 +4002,8 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                 const isPending = (d.VerificationRequestStatus === 'PENDING');
                 const isRejected = (d.VerificationRequestStatus === 'REJECTED');
 
-                const cleanStudentId = (d.StudentNumber || '').toString().replace(/[^0-9]/g, '') || (d.Id == 105 ? '20261058' : (d.Id == 104 ? '20261048' : 'N/A'));
-                const cleanPhone = (d.PhoneNumber || '').toString().replace(/[^0-9+]/g, '') || (d.Id == 105 ? '09171234567' : (d.Id == 104 ? '09668257301' : 'N/A'));
+                const cleanStudentId = (d.StudentNumber || '').toString().replace(/[^0-9]/g, '') || 'N/A';
+                const cleanPhone = (d.PhoneNumber || '').toString().replace(/[^0-9+]/g, '') || 'N/A';
 
                 let statusBadgeHtml = '';
                 if (isVerified) {
@@ -4389,7 +4389,7 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <div class="fs-9 text-muted">${d.customer_phone || ''}</div>
                             </td>
                             <td>
-                                <div class="fw-bold text-dark">${d.lender_name || d.owner_name || 'Romeo Paolo Tolentino'}</div>
+                                <div class="fw-bold text-dark">${d.lender_name || d.owner_name || 'Equipment Owner'}</div>
                                 <div class="fs-9 text-muted">${d.owner_email || ''}</div>
                             </td>
                             <td class="fs-8 fw-semibold text-dark">

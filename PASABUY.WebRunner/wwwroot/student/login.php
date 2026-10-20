@@ -122,11 +122,9 @@ if (typeof window.loginStudentWithPassword !== 'function') {
             if (res.ok && data.success) {
                 const uObj = data.user || {};
                 const pObj = data.profile || {};
-                const realUserId = uObj.id || uObj.userId || data.userId || 104;
+                const realUserId = uObj.id || uObj.userId || data.userId || 0;
 
-                const defaultAvatar = (emailInput.toLowerCase().includes('pogilameg') || realUserId === 105)
-                    ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80'
-                    : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80';
+                const defaultAvatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(pObj.firstName || uObj.email || 'Student') + '&background=5B3FA8&color=fff&bold=true';
 
                 const isVerified = (pObj.VerificationStatus === 'VERIFIED' || pObj.verificationStatus === 'VERIFIED' || uObj.Status === 'VERIFIED' || data.VerificationStatus === 'VERIFIED');
                 const studentUser = {
@@ -135,11 +133,11 @@ if (typeof window.loginStudentWithPassword !== 'function') {
                     email: uObj.email || emailInput,
                     firstName: pObj.firstName || uObj.firstName || emailInput.split('@')[0],
                     lastName: pObj.lastName || uObj.lastName || '',
-                    studentNumber: ((pObj.studentNumber || '').toString().replace(/[^0-9]/g, '')) || (realUserId === 105 ? '20261058' : '20261048'),
-                    phoneNumber: pObj.phoneNumber || pObj.phone || (realUserId === 105 ? '09171234567' : '09668257301'),
-                    phone: pObj.phoneNumber || pObj.phone || (realUserId === 105 ? '09171234567' : '09668257301'),
-                    course: pObj.course || (realUserId === 105 ? 'BSCS' : 'BSIT'),
-                    yearLevel: pObj.yearLevel || (realUserId === 105 ? '3rd Yr' : '4th Yr'),
+                    studentNumber: ((pObj.studentNumber || '').toString().replace(/[^0-9]/g, '')),
+                    phoneNumber: pObj.phoneNumber || pObj.phone || '',
+                    phone: pObj.phoneNumber || pObj.phone || '',
+                    course: pObj.course || 'BSIT',
+                    yearLevel: pObj.yearLevel || '1st Yr',
                     profileImage: pObj.profileImage || pObj.ProfileImage || defaultAvatar,
                     avatar: pObj.profileImage || pObj.ProfileImage || defaultAvatar,
                     verificationStatus: isVerified ? 'VERIFIED' : 'UNVERIFIED',

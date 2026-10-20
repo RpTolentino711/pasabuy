@@ -157,17 +157,7 @@ async function loadRentEaseCatalog() {
         localStorage.removeItem('rentease_user_posted_ids');
     } catch (e) {}
 
-    // Ensure POSPT is strictly registered to Romeo Paolo Tolentino
-    if (Array.isArray(rentEaseInventory)) {
-        rentEaseInventory.forEach(it => {
-            if (it && it.name && it.name.toUpperCase().includes('POSPT')) {
-                it.owner_id = 104;
-                it.owner_name = "Romeo Paolo Tolentino";
-                it.owner_email = "romeopaolotolentino@gmail.com";
-                it.owner_contact = "09668257301";
-            }
-        });
-    }
+
 
     if (!rentEaseInventory) {
         rentEaseInventory = [];
@@ -557,16 +547,7 @@ function isCurrentUserOwnerOfItem(item) {
     const itemOwnerEmail = (item.owner_email || '').toLowerCase().trim();
     const itemOwnerName = (item.owner_name || item.seller_name || '').toLowerCase().trim();
 
-    // Check if the current logged-in account is Romeo (104) vs Pogilameg (105)
-    const isRomeo = currentEmail.includes('romeo') || currentId === 104 || currentName.includes('romeo');
-    const isPogilameg = currentEmail.includes('pogilameg') || currentId === 105 || currentName.includes('pogilameg');
 
-    // POSPT is definitively owned by Romeo Paolo Tolentino (104)
-    const isPospt = (item.name && item.name.toUpperCase().includes('POSPT')) || (item.title && item.title.toUpperCase().includes('POSPT'));
-    if (isPospt) {
-        if (isPogilameg) return false; // Pogilameg is customer/renter, NOT owner
-        if (isRomeo) return true;      // Romeo is the actual owner
-    }
 
     // 1. Strict user ID check (highest ground truth)
     if (currentId > 0 && itemOwnerId > 0) {
@@ -1372,7 +1353,7 @@ function openEquipmentDetail(id) {
             lenderCard.style.setProperty('display', 'flex', 'important');
             const ownerNameEl = document.getElementById('detailLenderName');
             const ownerAvatarEl = document.getElementById('detailLenderAvatar');
-            const oName = item.owner_name || 'Romeo Paolo Tolentino';
+            const oName = item.owner_name || 'Equipment Owner';
             if (ownerNameEl) ownerNameEl.innerText = oName;
             if (ownerAvatarEl) {
                 const words = oName.trim().split(/\s+/);
@@ -1471,9 +1452,9 @@ window.confirmRentNowDetail = async function () {
     }
 
     let currentUser = getRentEaseCurrentUser();
-    const renterId = currentUser.id || currentUser.userId || 105;
-    const renterEmail = currentUser.email || 'pogilameg@gmail.com';
-    const renterName = currentUser.name || (currentUser.firstName ? (currentUser.firstName + ' ' + (currentUser.lastName || '')).trim() : 'Pogilameg Tester');
+    const renterId = currentUser.id || currentUser.userId || 0;
+    const renterEmail = currentUser.email || '';
+    const renterName = currentUser.name || (currentUser.firstName ? (currentUser.firstName + ' ' + (currentUser.lastName || '')).trim() : 'Student Renter');
 
     // 1. Guard against 5-Day suspension
     try {
@@ -1531,9 +1512,9 @@ window.confirmRentNowDetail = async function () {
                 if (bs) bs.hide();
             }
 
-            // Auto-redirect directly into 1-on-1 Chat with owner (Romeo Paolo Tolentino - ID 104)
-            const targetOwnerId = data.owner_id || 104;
-            const targetOwnerName = data.owner_name || 'Romeo Paolo Tolentino';
+            // Redirect to chat with the actual item owner
+            const targetOwnerId = data.owner_id || 0;
+            const targetOwnerName = data.owner_name || 'Equipment Owner';
             const itemTitle = currentDetailProduct.name || currentDetailProduct.title || 'Campus Equipment';
             const itemPrice = '₱' + (parseFloat(currentDetailProduct.price_per_day || currentDetailProduct.price || 0)).toFixed(2);
             const itemImg = currentDetailProduct.image_url || currentDetailProduct.image || currentDetailProduct.item_image || '';
@@ -1560,7 +1541,9 @@ window.confirmRentNowDetail = async function () {
         }
         if (typeof checkAndOpenChat === 'function') {
             const itemImg = currentDetailProduct?.image_url || currentDetailProduct?.image || currentDetailProduct?.item_image || '';
-            checkAndOpenChat(104, 'Romeo Paolo Tolentino', currentDetailProduct.name || 'Campus Equipment', '₱' + (currentDetailProduct.price_per_day || 0), '', itemImg);
+            const fallbackOwnerId = currentDetailProduct?.owner_id || 0;
+            const fallbackOwnerName = currentDetailProduct?.owner_name || 'Equipment Owner';
+            checkAndOpenChat(fallbackOwnerId, fallbackOwnerName, currentDetailProduct.name || 'Campus Equipment', '₱' + (currentDetailProduct.price_per_day || 0), '', itemImg);
         }
     } finally {
         if (btn) {
@@ -2032,16 +2015,14 @@ function getLoggedInOwnerInfo() {
     if (!u) {
         try { u = JSON.parse(localStorage.getItem('pasabuy_user')); } catch (e) {}
     }
-    const fullName = u ? (u.name || ((u.firstName || u.FirstName || '') + ' ' + (u.lastName || u.LastName || '')).trim()) : 'Pogilameg Tester';
+    const fullName = u ? (u.name || ((u.firstName || u.FirstName || '') + ' ' + (u.lastName || u.LastName || '')).trim()) : '';
     const email = u ? (u.email || u.SchoolEmail || '').trim().toLowerCase() : '';
     const idNum = u ? parseInt(u.id || u.Id || u.userId || u.UserId || 0) : 0;
-    const isPogilameg = (email.includes('pogilameg') || idNum === 105 || (fullName && fullName.toLowerCase().includes('pogilameg')) || (u && u.studentNumber == '20261058'));
-    const isRomeo = (email.includes('romeo') || idNum === 104 || (fullName && fullName.toLowerCase().includes('romeo')));
     return {
-        email: email || (isPogilameg ? 'pogilameg@gmail.com' : (isRomeo ? 'romeopaolotolentino@gmail.com' : 'pogilameg@gmail.com')),
-        name: fullName || (isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : 'Pogilameg Tester')),
-        id: idNum || (isPogilameg ? 105 : (isRomeo ? 104 : 105)),
-        studentNumber: (u && u.studentNumber) ? u.studentNumber : (isPogilameg ? '20261058' : '20261048')
+        email: email || '',
+        name: fullName || 'Equipment Owner',
+        id: idNum || 0,
+        studentNumber: (u && u.studentNumber) ? u.studentNumber : ''
     };
 }
 
@@ -2072,8 +2053,6 @@ window.loadOwnerRentalDashboard = async function (forceRefresh = false) {
         try {
             const localPostedItems = JSON.parse(localStorage.getItem('rentease_user_posted_items') || '[]');
             const candidateItems = [...(data.inventory || []), ...localPostedItems, ...(rentEaseInventory || [])];
-            const isOwnerPogilameg = (owner.id == 105 || (owner.email && owner.email.includes('pogilameg')) || (owner.name && owner.name.toLowerCase().includes('pogilameg')));
-            const isOwnerRomeo = (owner.id == 104 || (owner.email && owner.email.includes('romeo')) || (owner.name && owner.name.toLowerCase().includes('romeo')));
 
             const myItems = [];
             const seenIds = new Set();
@@ -3438,7 +3417,7 @@ async function openTrackScreen(orderCode) {
                     partnerAvatar.src = t.customer_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(cName)}&background=5B3FA8&color=fff&bold=true&rounded=true`;
                 }
             } else {
-                const oName = t.owner_name || 'Romeo Paolo Tolentino';
+                const oName = t.owner_name || 'Equipment Owner';
                 if (partnerName) partnerName.innerText = oName;
                 if (partnerRole) partnerRole.innerText = 'Equipment Owner • Verified Campus Lender';
                 if (partnerPhone) partnerPhone.href = t.owner_phone ? `tel:${t.owner_phone}` : 'tel:09668257301';
@@ -3898,41 +3877,28 @@ function getRentEaseCurrentUser() {
             const fullName = `${first} ${last}`.trim() || u.name || '';
             const uId = parseInt(u.id || u.Id || u.userId || u.UserId || 0);
             const uEmail = (u.email || u.SchoolEmail || '').trim();
-            const isPogilameg = (uEmail.toLowerCase().includes('pogilameg') || uId === 105 || fullName.toLowerCase().includes('pogilameg') || first.toLowerCase().includes('pogilameg') || u.studentNumber == '20261058');
-            const isRomeo = (uEmail.toLowerCase().includes('romeo') || uId === 104 || fullName.toLowerCase().includes('romeo'));
-            const isVer = (u.is_verified === 1 || u.is_verified === '1' || u.is_verified === true || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || u.VerificationStatus === 'VERIFIED' || isPogilameg || isRomeo) ? 1 : 0;
+            const isVer = (u.is_verified === 1 || u.is_verified === '1' || u.is_verified === true || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || u.VerificationStatus === 'VERIFIED') ? 1 : 0;
             
             if (fullName || uEmail) {
                 const courseInfo = u.course ? `${u.course} • ${u.yearLevel || 'Student'}` : (u.sub || 'Student');
-                const defaultAvatar = isPogilameg 
-                    ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80'
-                    : (isRomeo ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80');
+                const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80';
 
                 return {
-                    id: uId || (isPogilameg ? 105 : (isRomeo ? 104 : 0)),
-                    firstName: first || (isPogilameg ? 'Pogilameg' : (isRomeo ? 'Romeo Paolo' : 'Student')),
-                    lastName: last || (isPogilameg ? 'Tester' : (isRomeo ? 'Tolentino' : '')),
-                    name: fullName || (isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : 'Student')),
+                    id: uId || 0,
+                    firstName: first || 'Student',
+                    lastName: last || '',
+                    name: fullName || 'Student',
                     sub: courseInfo,
-                    email: uEmail || (isPogilameg ? 'pogilameg@gmail.com' : (isRomeo ? 'romeopaolotolentino@gmail.com' : 'user@campus.edu.ph')),
-                    phone: u.phone || u.phoneNumber || u.PhoneNumber || (isPogilameg ? '09171234567' : '09668257301'),
+                    email: uEmail || '',
+                    phone: u.phone || u.phoneNumber || u.PhoneNumber || '',
                     studentNumber: (() => {
                         let sn = (u.studentNumber || '').toString().replace(/[^0-9]/g, '');
-                        if (!sn || sn === '10' || sn.length < 5) {
-                            sn = isPogilameg ? '20261058' : '20261048';
-                        }
-                        try {
-                            if (u.studentNumber !== sn) {
-                                u.studentNumber = sn;
-                                localStorage.setItem('pasabuy_student_user', JSON.stringify(u));
-                            }
-                        } catch(e) {}
-                        return sn;
+                        return sn && sn.length >= 5 ? sn : (u.studentNumber || '');
                     })(),
                     is_verified: isVer,
                     verification_status: isVer ? 'VERIFIED' : (u.verification_status || u.VerificationStatus || 'UNVERIFIED'),
-                    course: u.course || (isPogilameg ? 'BSCS' : 'BSIT'),
-                    yearLevel: u.yearLevel || (isPogilameg ? '3rd Yr' : '4th Yr'),
+                    course: u.course || 'BSIT',
+                    yearLevel: u.yearLevel || 'Student',
                     avatar: u.profileImage || u.avatar || defaultAvatar
                 };
             }
@@ -3946,27 +3912,23 @@ function getRentEaseCurrentUser() {
             const fullName = `${first} ${last}`.trim() || u.name || '';
             const uId = parseInt(u.Id || u.id || u.UserId || u.userId || 0);
             const uEmail = (u.SchoolEmail || u.email || '').trim();
-            const isPogilameg = (uEmail.toLowerCase().includes('pogilameg') || uId === 105);
-            const isRomeo = (uEmail.toLowerCase().includes('romeo') || uId === 104);
-            const isVer = (u.is_verified === 1 || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED' || isRomeo || isPogilameg) ? 1 : 0;
+            const isVer = (u.is_verified === 1 || u.verification_status === 'VERIFIED' || u.Status === 'VERIFIED') ? 1 : 0;
             
             if (fullName || uEmail) {
-                const defaultAvatar = isPogilameg 
-                    ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80'
-                    : (isRomeo ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80');
+                const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80';
                 return {
                     id: uId,
                     firstName: first || 'User',
                     lastName: last || '',
                     name: fullName || 'User',
                     sub: u.Course ? `${u.Course} • ${u.YearLevel || 'Student'}` : 'BSIT • Student',
-                    email: uEmail || 'user@campus.edu.ph',
-                    phone: u.PhoneNumber || u.phone || (isPogilameg ? '09171234567' : '09668257301'),
-                    studentNumber: u.StudentNumber || (isPogilameg ? '09171234567' : '09668257301'),
+                    email: uEmail || '',
+                    phone: u.PhoneNumber || u.phone || '',
+                    studentNumber: u.StudentNumber || '',
                     is_verified: isVer,
                     verification_status: isVer ? 'VERIFIED' : 'PENDING',
-                    course: u.Course || (isPogilameg ? 'BSCS' : 'BSIT'),
-                    yearLevel: u.YearLevel || (isPogilameg ? '3rd Yr' : '4th Yr'),
+                    course: u.Course || 'BSIT',
+                    yearLevel: u.YearLevel || 'Student',
                     avatar: u.avatar || u.profileImage || defaultAvatar
                 };
             }
@@ -3986,9 +3948,9 @@ function getRentEaseCurrentUser() {
         lastName: 'Student',
         name: 'Campus Student',
         sub: 'BSIT • Student',
-        email: 'student@campus.edu.ph',
-        phone: '09123456789',
-        studentNumber: '2024-00001',
+        email: '',
+        phone: '',
+        studentNumber: '',
         course: 'BSIT',
         yearLevel: 'Student',
         avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80'
@@ -4007,10 +3969,7 @@ window.syncRentEaseProfileUI = function syncRentEaseProfileUI() {
     if (nameEl) nameEl.innerText = user.name;
     if (subEl) subEl.innerText = user.sub || `${user.course} • ${user.yearLevel}`;
     let cleanId = (user.studentNumber || '').toString().replace(/[^0-9]/g, '');
-    if (!cleanId || cleanId === '10' || cleanId.length < 5) {
-        cleanId = (user.id == 105 || (user.email && user.email.includes('pogilameg')) || (user.name && user.name.toLowerCase().includes('pogilameg'))) ? '20261058' : '20261048';
-    }
-    if (stuEl) stuEl.innerText = `ID: ${cleanId}`;
+    if (stuEl) stuEl.innerText = cleanId ? `ID: ${cleanId}` : '';
     if (emailEl && emailEl !== subEl) emailEl.innerText = user.sub || user.studentNumber || user.email;
     if (avatarEl && user.avatar) {
         avatarEl.src = user.avatar;
@@ -4032,10 +3991,7 @@ window.syncRentEaseProfileUI = function syncRentEaseProfileUI() {
     const badge = document.getElementById('profileVerificationBadge');
     const hubBadge = document.getElementById('settingsHubVerificationBadge');
     const hubTitle = document.getElementById('settingsHubVerificationTitle');
-    const isRomeo = Boolean((user.name && user.name.toLowerCase().includes('romeo')) || (user.email && user.email.toLowerCase().includes('romeo')) || user.id == 104);
-    const isPogilameg = Boolean((user.name && user.name.toLowerCase().includes('pogilameg')) || (user.email && user.email.toLowerCase().includes('pogilameg')) || user.id == 105);
     const isVer = Boolean(
-        isRomeo || isPogilameg ||
         user.is_verified === 1 || user.is_verified === '1' || user.is_verified === true ||
         user.verification_status === 'VERIFIED' || user.verification_status === 'APPROVED' ||
         user.VerificationStatus === 'VERIFIED' || user.VerificationStatus === 'APPROVED' ||
@@ -4081,7 +4037,7 @@ window.syncRentEaseProfileUI = function syncRentEaseProfileUI() {
             .then(data => {
                 if (!data) return;
                 const st = (data.VerificationStatus || data.Status || '').toUpperCase();
-                const liveVer = (st === 'VERIFIED' || st === 'APPROVED' || isRomeo || isPogilameg || isVer);
+                const liveVer = (st === 'VERIFIED' || st === 'APPROVED' || isVer);
                 renderVerificationBadges(liveVer);
             }).catch(() => {});
     }
@@ -4156,27 +4112,21 @@ function openProfileSettingsModal() {
         const yl = document.getElementById('settingsYearLevel');
         const prev = document.getElementById('settingsAvatarPreview');
 
-        if (fn) fn.value = user.firstName || studentUser.firstName || 'Romeo Paolo';
-        if (ln) ln.value = user.lastName || studentUser.lastName || 'Tolentino';
+        if (fn) fn.value = user.firstName || studentUser.firstName || '';
+        if (ln) ln.value = user.lastName || studentUser.lastName || '';
         
         // Student number must be numeric only
         if (sn) {
             let snVal = (studentUser.studentNumber || user.studentNumber || '').toString().replace(/[^0-9]/g, '');
-            if (!snVal) {
-                snVal = (studentUser.id === 105 || (user.email && user.email.includes('pogilameg'))) ? '20261058' : '20261048';
-            }
             sn.value = snVal;
         }
 
         if (em) {
-            em.value = studentUser.email || studentUser.SchoolEmail || user.email || (studentUser.id === 105 ? 'pogilameg@gmail.com' : 'romeopaolotolentino@gmail.com');
+            em.value = studentUser.email || studentUser.SchoolEmail || user.email || '';
         }
 
         if (ph) {
             let phoneVal = (studentUser.phoneNumber || studentUser.phone || user.phone || '').toString().replace(/[^0-9+]/g, '');
-            if (!phoneVal) {
-                phoneVal = (studentUser.id === 105 || (user.email && user.email.includes('pogilameg'))) ? '09171234567' : '09668257301';
-            }
             ph.value = phoneVal;
         }
 
@@ -4287,7 +4237,7 @@ window.saveProfileSettings = async function () {
             firstName: firstName,
             lastName: lastName,
             sub: `${course} • ${yearLevel}`,
-            email: email || studentUser.email || 'romeopaolotolentino@gmail.com',
+            email: email || studentUser.email || '',
             phone: phone || studentNo,
             studentNumber: studentNo,
             course: course,
@@ -4936,12 +4886,11 @@ window.switchTab = function (tabName) {
         renderExploreCatalog();
     } else if (tabName === 'sell') {
         const currentUser = getRentEaseCurrentUser();
-        const isRomeo = (currentUser.email === 'romeopaolotolentino@gmail.com');
-        let isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.verification_status === 'VERIFIED');
+        let isVerified = (currentUser.is_verified === 1 || currentUser.verification_status === 'VERIFIED');
         updateSellVerificationState(isVerified);
 
-        // Real-time server verification check if user has a registered ID and not yet confirmed verified
-        if (currentUser.id > 0 && !isRomeo) {
+        // Real-time server verification check
+        if (currentUser.id > 0) {
             fetch(`/pasabuy_api.php?action=get_verification_status&userId=${currentUser.id}`)
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
@@ -5035,8 +4984,7 @@ window.postRentalItemLive = async function () {
     // Strict Guard: Only admin-verified student accounts can post equipment for rent
     const currentUser = getRentEaseCurrentUser();
     const email = (currentUser.email || currentUser.SchoolEmail || '').toLowerCase();
-    const isRomeo = (email === 'romeopaolotolentino@gmail.com' || (currentUser.id == 104));
-    const isVerified = isRomeo || (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED');
+    const isVerified = (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED');
 
     if (!isVerified) {
         if (typeof openVerificationModal === 'function') {
@@ -5088,13 +5036,10 @@ window.postRentalItemLive = async function () {
         const currentUser = getRentEaseCurrentUser();
         const currentEmail = (currentUser.email || '').toLowerCase().trim();
         const currentName = (currentUser.name || '').trim();
-        const isPogilameg = currentEmail.includes('pogilameg') || (currentUser.id == 105) || currentName.toLowerCase().includes('pogilameg');
-        const isRomeo = currentEmail.includes('romeo') || (currentUser.id == 104) || currentName.toLowerCase().includes('romeo');
-
-        const resolvedOwnerId = parseInt(currentUser.id || 0) || (isPogilameg ? 105 : (isRomeo ? 104 : 105));
-        const resolvedOwnerName = isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : (currentName || 'Pogilameg Tester'));
-        const resolvedOwnerEmail = isPogilameg ? 'pogilameg@gmail.com' : (isRomeo ? 'romeopaolotolentino@gmail.com' : (currentUser.email || 'pogilameg@gmail.com'));
-        const resolvedOwnerPhone = isPogilameg ? '09171234567' : (isRomeo ? '09668257301' : (currentUser.phone || '09171234567'));
+        const resolvedOwnerId = parseInt(currentUser.id || 0);
+        const resolvedOwnerName = currentName || 'Verified Student';
+        const resolvedOwnerEmail = currentUser.email || '';
+        const resolvedOwnerPhone = currentUser.phone || '';
 
         const itemPayload = {
             name: title,
@@ -5205,8 +5150,6 @@ window.loadUserRentedOutItems = async function () {
     const currentUserId = parseInt(currentUser.id || 0);
     const currentUserEmail = (currentUser.email || '').toLowerCase().trim();
     const currentUserName = (currentUser.name || '').toLowerCase().trim();
-    const isPogilameg = currentUserEmail.includes('pogilameg') || currentUserId === 105 || currentUserName.includes('pogilameg');
-    const isRomeo = currentUserEmail.includes('romeo') || currentUserId === 104 || currentUserName.includes('romeo');
 
     let postedIds = [];
     try {
@@ -5397,9 +5340,7 @@ window.saveRentalStockPriceChanges = async function () {
 function isRentEaseUserVerified(user) {
     const u = user || getRentEaseCurrentUser();
     if (!u) return false;
-    const isRomeo = (u.id === 104 || (u.email && u.email.toLowerCase().includes('romeopaolo')));
-    const isPogilameg = (u.id === 105 || (u.email && u.email.toLowerCase().includes('pogilameg')));
-    return isRomeo || isPogilameg || (u.is_verified === 1 || u.is_verified === '1' || u.is_verified === true || u.verification_status === 'VERIFIED' || u.verification_status === 'APPROVED' || u.Status === 'VERIFIED');
+    return (u.is_verified === 1 || u.is_verified === '1' || u.is_verified === true || u.verification_status === 'VERIFIED' || u.verification_status === 'APPROVED' || u.Status === 'VERIFIED');
 }
 
 window.deleteUserRentalItem = function (id, name) {
@@ -5713,17 +5654,14 @@ window.openVerificationModal = function () {
     const modalEl = document.getElementById('verificationRequestModal');
     let storedUser = null;
     try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-    const userId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+    const userId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 0) : 0;
 
-    const isRomeo = Boolean((storedUser && storedUser.name && storedUser.name.toLowerCase().includes('romeo')) || (storedUser && storedUser.email && storedUser.email.toLowerCase().includes('romeo')) || userId == 104);
-    const isPogilameg = Boolean((storedUser && storedUser.name && storedUser.name.toLowerCase().includes('pogilameg')) || (storedUser && storedUser.email && storedUser.email.toLowerCase().includes('pogilameg')) || userId == 105);
     const isUserVerified = Boolean(
-        isRomeo || isPogilameg ||
-        (storedUser && (
+        storedUser && (
             storedUser.is_verified === 1 || storedUser.is_verified === '1' || storedUser.is_verified === true ||
             storedUser.verification_status === 'VERIFIED' || storedUser.verification_status === 'APPROVED' ||
             storedUser.Status === 'VERIFIED' || storedUser.VerificationStatus === 'VERIFIED'
-        ))
+        )
     );
 
     const banner = document.getElementById('verificationStatusBanner');
@@ -5736,12 +5674,12 @@ window.openVerificationModal = function () {
     const vAvatar = document.getElementById('vStudentAvatar');
     const vStatusBadge = document.getElementById('vStudentStatusBadge');
 
-    const studentFullName = (storedUser && (storedUser.name || storedUser.fullName)) || (isRomeo ? 'Romeo Paolo Tolentino' : (isPogilameg ? 'Pogilameg Tester' : 'Student Member'));
-    const studentCourse = (storedUser && (storedUser.course || storedUser.Course)) || (isPogilameg ? 'BSCS' : 'BSIT');
-    const studentYear = (storedUser && (storedUser.yearLevel || storedUser.YearLevel)) || (isPogilameg ? '3rd Yr' : '4th Yr');
+    const studentFullName = (storedUser && (storedUser.name || storedUser.fullName)) || 'Student Member';
+    const studentCourse = (storedUser && (storedUser.course || storedUser.Course)) || 'BSIT';
+    const studentYear = (storedUser && (storedUser.yearLevel || storedUser.YearLevel)) || 'Student';
     let cleanStudentId = (storedUser && storedUser.studentNumber && storedUser.studentNumber.length <= 10 && storedUser.studentNumber.length >= 5) 
         ? storedUser.studentNumber 
-        : (isPogilameg ? '20261058' : '20261048');
+        : (storedUser && storedUser.studentNumber ? storedUser.studentNumber : '');
 
     if (vName) vName.innerText = studentFullName;
     if (vCourseYear) vCourseYear.innerText = `${studentCourse} • ${studentYear} • Student ID: ${cleanStudentId}`;
@@ -5946,20 +5884,9 @@ window.chatWithOwnerFromDetail = function () {
     document.body.style.removeProperty('padding-right');
 
     const currentUser = getRentEaseCurrentUser();
-    const currentUserId = parseInt(currentUser.id || 104);
-    let ownerName = p?.owner_name || p?.seller_name || 'Romeo Paolo Tolentino';
-    let ownerId = parseInt(p?.owner_id || p?.seller_id) || 104;
-
-    // If viewing own item or testing, connect inquiry thread to counter-party student seamlessly
-    if (ownerId === currentUserId) {
-        if (currentUserId === 104) {
-            ownerId = 105;
-            ownerName = 'Pogilameg Tester';
-        } else {
-            ownerId = 104;
-            ownerName = 'Romeo Paolo Tolentino';
-        }
-    }
+    const currentUserId = parseInt(currentUser.id || 0);
+    let ownerName = p?.owner_name || p?.seller_name || 'Equipment Owner';
+    let ownerId = parseInt(p?.owner_id || p?.seller_id) || 0;
 
     const title = p?.name || p?.title || 'Equipment Rental';
     const price = '₱' + (parseFloat(p?.price_per_day || p?.price || 0)).toLocaleString();
@@ -6009,8 +5936,8 @@ window.previewReportEvidence = function (input) {
 window.openReportItemModal = function () {
     let p = window.currentDetailProduct || (typeof currentDetailProduct !== 'undefined' ? currentDetailProduct : null);
     if (!p) {
-        const dTitle = document.getElementById('detailTitle')?.innerText || document.getElementById('detailHeaderTitle')?.innerText || 'POSPT';
-        p = (rentEaseInventory || []).find(it => it.name === dTitle) || { id: 19, name: dTitle, owner_name: 'Romeo Paolo Tolentino', owner_id: 104, owner_email: 'romeopaolotolentino@gmail.com' };
+        const dTitle = document.getElementById('detailTitle')?.innerText || document.getElementById('detailHeaderTitle')?.innerText || '';
+        p = (rentEaseInventory || []).find(it => it.name === dTitle) || { id: 0, name: dTitle, owner_name: '', owner_id: 0, owner_email: '' };
         window.currentDetailProduct = p;
     }
 
@@ -6412,8 +6339,7 @@ function initRentEaseAppBootstrap() {
     updateCartBadgeCount();
     try {
         const curUser = getRentEaseCurrentUser();
-        const isRomeo = (curUser.email === 'romeopaolotolentino@gmail.com');
-        const isVer = isRomeo || (curUser.is_verified === 1 || curUser.verification_status === 'VERIFIED');
+        const isVer = (curUser.is_verified === 1 || curUser.verification_status === 'VERIFIED');
         if (typeof updateSellVerificationState === 'function') {
             updateSellVerificationState(isVer);
         }

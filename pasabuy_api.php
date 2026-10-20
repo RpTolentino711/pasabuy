@@ -263,38 +263,29 @@ if (isset($_GET['clean_db']) || strpos($_SERVER['REQUEST_URI'], 'clean_db') !== 
         try { $db->exec("DELETE FROM `rental_drivers` WHERE 1=1;"); } catch (Exception $e) {}
         try { $db->exec("DELETE FROM `VerificationRequests` WHERE 1=1;"); } catch (Exception $e) {}
 
-        // 6. Reset Users (Keep ONLY Admin 100, Romeo 104, Pogilameg 105)
-        $db->exec("DELETE FROM `Users` WHERE `Id` NOT IN (100, 104, 105);");
+        // 6. Reset Users (Keep ONLY Admin 100)
+        $db->exec("DELETE FROM `Users` WHERE `Id` != 100 AND `Role` != 'ADMIN';");
         $db->exec("UPDATE `Users` SET 
             `rental_suspended_until` = NULL, 
             `rental_suspension_reason` = NULL, 
             `rental_suspension_report_id` = NULL, 
             `Status` = 'VERIFIED' 
-            WHERE `Id` IN (100, 104, 105);");
+            WHERE `Id` = 100;");
 
-        // Ensure Admin, Romeo & Pogilameg exist with clean credentials
-        $hashPogilameg = password_hash('Pogilameg@10', PASSWORD_DEFAULT);
-        
-        $stmtUser = $db->prepare("INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`, `CreatedAt`, `UpdatedAt`) VALUES 
-            (100, 'admin', 'Pogilameg@10', 'ADMIN', 'VERIFIED', NOW(), NOW()),
-            (104, 'romeopaolotolentino@gmail.com', ?, 'STUDENT', 'VERIFIED', NOW(), NOW()),
-            (105, 'pogilameg@gmail.com', ?, 'STUDENT', 'VERIFIED', NOW(), NOW())
-            ON DUPLICATE KEY UPDATE `PasswordHash` = VALUES(`PasswordHash`), `Role` = VALUES(`Role`), `Status` = 'VERIFIED', `rental_suspended_until` = NULL, `rental_suspension_reason` = NULL, `rental_suspension_report_id` = NULL");
-        $stmtUser->execute([$hashPogilameg, $hashPogilameg]);
+        // Ensure Admin exists
+        $db->exec("INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`, `CreatedAt`, `UpdatedAt`) VALUES 
+            (100, 'admin', 'Pogilameg@10', 'ADMIN', 'VERIFIED', NOW(), NOW())
+            ON DUPLICATE KEY UPDATE `PasswordHash` = VALUES(`PasswordHash`), `Role` = VALUES(`Role`), `Status` = 'VERIFIED'");
 
-        // 7. Clean StudentProfiles (Keep Romeo 104 and Pogilameg 105)
-        $db->exec("DELETE FROM `StudentProfiles` WHERE `UserId` NOT IN (104, 105);");
-        $db->exec("INSERT INTO `StudentProfiles` (`Id`, `UserId`, `FirstName`, `LastName`, `StudentNumber`, `PhoneNumber`, `SchoolEmail`, `Course`, `YearLevel`, `ProfileImage`, `VerificationStatus`, `Rating`, `CompletedTransactions`, `CreatedAt`, `UpdatedAt`) VALUES 
-            (2, 104, 'Romeo Paolo', 'Tolentino', '20261048', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80', 'VERIFIED', 5.0, 12, NOW(), NOW()),
-            (3, 105, 'Pogilameg', 'Tester', '20261058', '09171234567', 'pogilameg@gmail.com', 'BSCS', '3rd Yr', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', 'VERIFIED', 5.0, 8, NOW(), NOW())
-            ON DUPLICATE KEY UPDATE `FirstName` = VALUES(`FirstName`), `LastName` = VALUES(`LastName`), `StudentNumber` = VALUES(`StudentNumber`), `PhoneNumber` = VALUES(`PhoneNumber`), `VerificationStatus` = 'VERIFIED'");
+        // 7. Clean StudentProfiles (Keep only valid registered users)
+        $db->exec("DELETE FROM `StudentProfiles` WHERE `UserId` NOT IN (SELECT `Id` FROM `Users`);");
 
         // Deduplicate StudentProfiles
         try {
             $db->exec("DELETE p1 FROM `StudentProfiles` p1 INNER JOIN `StudentProfiles` p2 WHERE p1.Id > p2.Id AND p1.UserId = p2.UserId;");
         } catch (Exception $e) {}
 
-        // 8. Clean POSPT in rental_inventory (Reset strikes, termination, and rented count)
+        // 8. Reset active counts in rental_inventory
         try {
             $db->exec("UPDATE `rental_inventory` SET 
                 `status` = 'ACTIVE', 
@@ -310,7 +301,7 @@ if (isset($_GET['clean_db']) || strpos($_SERVER['REQUEST_URI'], 'clean_db') !== 
 
         echo json_encode([
             'success' => true,
-            'message' => '🧹 Hostinger MySQL Database cleaned successfully! Purged all dummy orders, tickets, reports, appeals, drivers, users, chats, and records. Admin (100), Romeo (104), and Pogilameg (105) preserved clean!'
+            'message' => '🧹 Hostinger MySQL Database cleaned successfully! Purged dummy orders, tickets, reports, appeals, drivers, chats, and test records.'
         ]);
         exit;
     } catch (Exception $ex) {
@@ -758,21 +749,6 @@ if ($action === 'chat_conversations') {
                 $isOwner = $ownerIsUser;
             }
 
-            // Strict role guard for Romeo (Owner) vs Pogilameg (Renter)
-            $isRomeo = (in_array((int)$userId, [1, 104]) || (!empty($uEmail) && str_contains(strtolower($uEmail), 'romeo')));
-            $isPogilameg = ((int)$userId === 105 || (!empty($uEmail) && str_contains(strtolower($uEmail), 'pogilameg')));
-            $roOwnerId = (int)($ro['owner_id'] ?? 0);
-            $roRenterId = (int)($ro['renter_id'] ?? 0);
-            $roOwnerEmail = strtolower(trim((string)($ro['owner_email'] ?? '')));
-            $roCustomerEmail = strtolower(trim((string)($ro['customer_email'] ?? '')));
-
-            if ($isRomeo && ($roRenterId === 105 || str_contains($roCustomerEmail, 'pogilameg'))) {
-                $isOwner = true;
-            } elseif ($isPogilameg && ($roOwnerId === 104 || $roOwnerId === 1 || str_contains($roOwnerEmail, 'romeo'))) {
-                $isOwner = false;
-            }
-
-
             // Skip if this conversation has been deleted by this user (ONLY IF COMPLETED/RATED/RETURNED)
             $checkSt = strtoupper(trim((string)$ro['order_status']));
             $checkRated = ((int)($ro['has_rated'] ?? 0) === 1 || (int)($ro['rating'] ?? 0) > 0);
@@ -787,9 +763,6 @@ if ($action === 'chat_conversations') {
             }
 
             $partnerId = $isOwner ? (int)$ro['renter_id'] : (int)$ro['owner_id'];
-            if ($partnerId <= 1 || $partnerId === 100 || in_array($partnerId, $userMatchIds)) {
-                $partnerId = ($userId == 104) ? 105 : 104;
-            }
 
             $rawOwnerName = trim((string)($ro['owner_name'] ?? ''));
             if ($rawOwnerName === '' || strtolower($rawOwnerName) === 'rentease system') {
@@ -800,13 +773,13 @@ if ($action === 'chat_conversations') {
                 $pName = trim(($ro['RenterFirstName'] ?? '') . ' ' . ($ro['RenterLastName'] ?? ''));
                 if ($pName === '') $pName = trim((string)($ro['customer_name'] ?? ''));
                 if ($pName === '' || strtolower($pName) === 'rentease system' || strtolower($pName) === 'campus renter') {
-                    $pName = ($partnerId == 104) ? 'Romeo Paolo Tolentino' : 'Pogilameg Tester';
+                    $pName = 'Student Member';
                 }
                 $pAvatar = !empty($ro['RenterProfileImage']) ? $ro['RenterProfileImage'] : '';
             } else {
                 $pName = $rawOwnerName !== '' ? $rawOwnerName : '';
                 if ($pName === '' || strtolower($pName) === 'rentease system' || strtolower($pName) === 'stock owner') {
-                    $pName = ($partnerId == 104) ? 'Romeo Paolo Tolentino' : 'Pogilameg Tester';
+                    $pName = 'Equipment Owner';
                 }
                 $pAvatar = !empty($ro['OwnerProfileImage']) ? $ro['OwnerProfileImage'] : '';
             }
@@ -1099,7 +1072,7 @@ if ($action === 'chat_conversations') {
             }
 
             if (empty($pName) || strtolower($pName) === 'rentease system') {
-                $pName = ($pId == 104) ? 'Romeo Paolo Tolentino' : 'Pogilameg Tester';
+                $pName = 'Chat Partner';
             }
 
             if (empty($pAvatar) || str_contains($pAvatar, 'dicebear') || strpos($pAvatar, 'data:') === 0) {
@@ -1125,7 +1098,7 @@ if ($action === 'chat_conversations') {
                         if ($roRow) {
                             $hasTx = true;
                             $txStatus = (string)($roRow['order_status'] ?? '');
-                            if (!empty($roRow['item_name']) && strtolower(trim($roRow['item_name'])) !== 'romeo') {
+                            if (!empty($roRow['item_name'])) {
                                 $itemTitle = $roRow['item_name'];
                             }
                             if (!empty($roRow['inv_image'])) {
@@ -1138,7 +1111,7 @@ if ($action === 'chat_conversations') {
 
                             if (in_array($ordOwnerId, $userMatchIds) || (!empty($uEmail) && !empty($ordOwnerEmail) && strtolower($uEmail) === $ordOwnerEmail)) {
                                 $isItemMine = true;
-                                $itemOwnerName = !empty($roRow['owner_name']) ? $roRow['owner_name'] : 'Romeo Paolo Tolentino';
+                                $itemOwnerName = !empty($roRow['owner_name']) ? $roRow['owner_name'] : 'Equipment Owner';
                             } elseif (in_array($ordRenterId, $userMatchIds) || (!empty($uEmail) && !empty($ordCustEmail) && strtolower($uEmail) === $ordCustEmail)) {
                                 $isItemMine = false;
                                 $itemOwnerName = !empty($roRow['owner_name']) ? $roRow['owner_name'] : $pName;
@@ -1150,14 +1123,14 @@ if ($action === 'chat_conversations') {
                 // 2. Check rental_inventory by title or item ID if ownership still uncertain
                 if (!$isItemMine && $itemTitle !== '' && $itemTitle !== 'General') {
                     try {
-                        $invStmt = $db->prepare("SELECT owner_id, owner_name, image_url, name FROM rental_inventory WHERE LOWER(name) = ? OR id = 23 LIMIT 1");
+                        $invStmt = $db->prepare("SELECT owner_id, owner_name, image_url, name FROM rental_inventory WHERE LOWER(name) = ? LIMIT 1");
                         $invStmt->execute([strtolower($itemTitle)]);
                         $invRow = $invStmt->fetch();
                         if ($invRow) {
                             $invOwnerId = (int)($invRow['owner_id'] ?? 0);
                             if (in_array($invOwnerId, $userMatchIds)) {
                                 $isItemMine = true;
-                                $itemOwnerName = !empty($invRow['owner_name']) ? $invRow['owner_name'] : 'Romeo Paolo Tolentino';
+                                $itemOwnerName = !empty($invRow['owner_name']) ? $invRow['owner_name'] : 'Equipment Owner';
                             } else {
                                 $isItemMine = false;
                                 $itemOwnerName = !empty($invRow['owner_name']) ? $invRow['owner_name'] : $pName;
@@ -1167,36 +1140,8 @@ if ($action === 'chat_conversations') {
                     } catch (Exception $eInv) {}
                 }
 
-                // 3. Message text heuristics
-                $msgLower = strtolower($c['MessageText'] ?? '');
-                if (str_contains($msgLower, 'waiting for romeo') || str_contains($msgLower, 'romeo paolo tolentino to agree')) {
-                    if (in_array($userId, [1, 104])) {
-                        $isItemMine = true;
-                        $itemOwnerName = 'Romeo Paolo Tolentino';
-                    } else {
-                        $isItemMine = false;
-                        $itemOwnerName = 'Romeo Paolo Tolentino';
-                    }
-                }
-
-                // 4. Strict Role Authority:
-                // Romeo Paolo Tolentino (#104, #1) is the Stock Owner & Lender.
-                // Pogilameg Tester (#105) is the Student Renter & Borrower.
-                $isRomeo = (in_array((int)$userId, [1, 104]) || (!empty($uEmail) && str_contains(strtolower($uEmail), 'romeo')));
-                $isPogilameg = ((int)$userId === 105 || (!empty($uEmail) && str_contains(strtolower($uEmail), 'pogilameg')));
-                $pIsRomeo = (in_array((int)$pId, [1, 104]) || str_contains(strtolower($pName), 'romeo'));
-                $pIsPogilameg = ((int)$pId === 105 || str_contains(strtolower($pName), 'pogilameg'));
-
-                if ($isRomeo && $pIsPogilameg) {
-                    $isItemMine = true;
-                    $itemOwnerName = 'Romeo Paolo Tolentino';
-                } elseif ($isPogilameg && $pIsRomeo) {
-                    $isItemMine = false;
-                    $itemOwnerName = 'Romeo Paolo Tolentino';
-                }
-
-                // Clean display for item title if it equals 'Romeo' or user's name
-                if (strtolower($itemTitle) === 'romeo' || strtolower($itemTitle) === strtolower($pName) || $itemTitle === '') {
+                // Clean display for item title if it equals user's name or empty
+                if (strtolower($itemTitle) === strtolower($pName) || $itemTitle === '') {
                     $itemTitle = 'Campus Equipment';
                 }
 
@@ -1302,12 +1247,12 @@ if ($action === 'chat_conversations') {
 }
 
 if ($action === 'chat_messages' || $action === 'get_messages') {
-    $senderId = (int)($_GET['sender_id'] ?? 104);
-    $receiverId = (int)($_GET['receiver_id'] ?? 104);
+    $senderId = (int)($_GET['sender_id'] ?? 0);
+    $receiverId = (int)($_GET['receiver_id'] ?? 0);
     $itemTitle = trim((string)($_GET['item_title'] ?? $_GET['itemTitle'] ?? ''));
-    if ($senderId <= 1) $senderId = 104;
-    if ($receiverId <= 1 || $receiverId === $senderId) {
-        $receiverId = ($senderId == 104) ? 105 : 104;
+    if ($senderId <= 0 || $receiverId <= 0 || $receiverId === $senderId) {
+        echo json_encode([]);
+        exit;
     }
 
     $sList = [$senderId];
@@ -1472,8 +1417,8 @@ if ($action === 'check_active_transaction') {
                 if ($e) $emails[(int)$r['Id']] = $e;
             }
 
-            $uEmail = $emails[$userId] ?? ($userId == 104 ? 'romeopaolotolentino@gmail.com' : ($userId == 105 ? 'pogilameg@gmail.com' : ''));
-            $pEmail = $emails[$partnerId] ?? ($partnerId == 104 ? 'romeopaolotolentino@gmail.com' : ($partnerId == 105 ? 'pogilameg@gmail.com' : ''));
+            $uEmail = $emails[$userId] ?? '';
+            $pEmail = $emails[$partnerId] ?? '';
 
             if ($uEmail && $pEmail) {
                 $rSql = "SELECT order_code, order_status FROM rental_orders 
@@ -1571,8 +1516,8 @@ if ($action === 'delete_conversation') {
                 if ($e) $emails[(int)$r['Id']] = $e;
             }
 
-            $uEmail = $emails[$userId] ?? ($userId == 104 ? 'romeopaolotolentino@gmail.com' : ($userId == 105 ? 'pogilameg@gmail.com' : ''));
-            $pEmail = $emails[$partnerId] ?? ($partnerId == 104 ? 'romeopaolotolentino@gmail.com' : ($partnerId == 105 ? 'pogilameg@gmail.com' : ''));
+            $uEmail = $emails[$userId] ?? '';
+            $pEmail = $emails[$partnerId] ?? '';
 
             if ($uEmail && $pEmail) {
                 $rSql = "SELECT order_code, order_status FROM rental_orders 
@@ -1913,20 +1858,20 @@ if ($action === 'get_verification_status') {
             $res['HomeAddress'] = '123 Katipunan Ave, Brgy. Loyola Heights, Quezon City';
         }
         if (empty($res['PhoneNumber'])) {
-            $res['PhoneNumber'] = !empty($res['StudentNumber']) ? $res['StudentNumber'] : '09668257301';
+            $res['PhoneNumber'] = !empty($res['StudentNumber']) ? $res['StudentNumber'] : '';
         }
         if (empty($res['GuardianName'])) {
-            $res['GuardianName'] = 'Maria Santos (09189876543)';
+            $res['GuardianName'] = '';
         }
         if (empty($res['IdType'])) {
             $res['IdType'] = 'School Student ID';
         }
         if (empty($res['IdNumber'])) {
-            $cleanId = (!empty($res['StudentNumber']) && strlen($res['StudentNumber']) <= 10 && strlen($res['StudentNumber']) >= 5) ? $res['StudentNumber'] : ($userId == 105 ? '20261058' : '20261048');
-            $res['IdNumber'] = 'PRN-' . $cleanId;
+            $cleanId = !empty($res['StudentNumber']) ? $res['StudentNumber'] : (string)$userId;
+            $res['IdNumber'] = !empty($cleanId) ? ('PRN-' . $cleanId) : '';
         }
         if (empty($res['IdFrontImage'])) {
-            $res['IdFrontImage'] = 'https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=600&q=80';
+            $res['IdFrontImage'] = '';
         }
     }
     echo json_encode($res);

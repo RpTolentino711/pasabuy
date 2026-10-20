@@ -951,7 +951,7 @@
                 </div>
                 <div>
                     <div class="fw-extrabold text-white" style="font-size:0.8rem; letter-spacing:0.2px;">Active Rental Period</div>
-                    <div class="text-white-50 fs-10 font-monospace" id="chatTimerItemTitle">POSPT • #RE-10000</div>
+                    <div class="text-white-50 fs-10 font-monospace" id="chatTimerItemTitle">Equipment • #RE-00000</div>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
@@ -1077,7 +1077,7 @@
                 </label>
                 <textarea class="form-control rounded-3 p-2 fs-8 mb-2" id="chatRatingReviewText" rows="2" 
                           placeholder="Please describe item condition, pickup/return smoothness, and your overall experience..."
-                          oninput="checkRentalRatingFormValidity()"></textarea>
+                          oninput="checkRentalRatingFormValidity(); try { const ok=window.currentActiveChatOrderCode||'rental_draft'; const d=JSON.parse(localStorage.getItem('rentrating_draft_'+ok)||'{}'); d.review=this.value; localStorage.setItem('rentrating_draft_'+ok,JSON.stringify(d)); } catch(e) {}"></textarea>
 
                 <button type="button" class="btn rentchat-agree-btn w-100 py-2 fw-extrabold" id="btnSubmitRentalRating" onclick="submitRentalRatingFromChat()" disabled>
                     <i class="fa-solid fa-paper-plane me-1"></i> Submit Rating &amp; Review
@@ -1229,7 +1229,7 @@
                     <img id="step1ModalRenterAvatar" src="https://ui-avatars.com/api/?name=Student&background=5B3FA8&color=fff" class="rounded-circle border" width="42" height="42" style="object-fit:cover;">
                     <div class="min-w-0">
                         <div class="text-muted" style="font-size: 0.68rem; font-weight: 600;">BORROWER REQUEST</div>
-                        <div class="fw-bold text-dark fs-8 text-truncate" id="step1ModalRenterName">Pogilameg Tester</div>
+                        <div class="fw-bold text-dark fs-8 text-truncate" id="step1ModalRenterName">Student Renter</div>
                         <span class="badge rounded-pill" style="background:#E0F2FE; color:#0369A1; font-size:0.60rem; padding: 2px 6px;">
                             <i class="fa-solid fa-cart-shopping me-0.5"></i> Student Renter
                         </span>
@@ -1403,7 +1403,7 @@
                 <button type="button" class="btn-close" style="font-size: 0.65rem;" onclick="dismissStep1IncomingToast()"></button>
             </div>
             <div class="fw-extrabold text-dark fs-8 text-truncate" id="step1ToastRenterAndItem">
-                Pogilameg Tester wants to rent your item!
+                A student wants to rent your item!
             </div>
             <div class="text-muted fs-9 text-truncate mb-2" id="step1ToastDetails">
                 Order #RE-00000 • ₱0.00 • Tap to Agree

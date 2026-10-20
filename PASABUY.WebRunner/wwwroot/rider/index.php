@@ -281,11 +281,11 @@ session_start();
                 <!-- Contacts -->
                 <div class="p-2.5 rounded-3 mb-3" style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155;">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary fs-8"><i class="fa-solid fa-user text-success me-1"></i> Customer: <strong class="text-white" id="riderJobCustomerName">Pogilameg Tester</strong></span>
+                        <span class="text-secondary fs-8"><i class="fa-solid fa-user text-success me-1"></i> Customer: <strong class="text-white" id="riderJobCustomerName">Customer</strong></span>
                         <a href="tel:09981234567" id="riderCallCustomerBtn" class="btn btn-outline-success btn-sm py-0 px-2 fs-9"><i class="fa-solid fa-phone me-1"></i> Call Customer</a>
                     </div>
                     <div class="d-flex align-items-center justify-content-between">
-                        <span class="text-secondary fs-8"><i class="fa-solid fa-store text-warning me-1"></i> Stock Owner: <strong class="text-white" id="riderJobOwnerName">Romeo Paolo Tolentino</strong></span>
+                        <span class="text-secondary fs-8"><i class="fa-solid fa-store text-warning me-1"></i> Stock Owner: <strong class="text-white" id="riderJobOwnerName">Stock Owner</strong></span>
                         <a href="tel:09668257301" id="riderCallOwnerBtn" class="btn btn-outline-warning btn-sm py-0 px-2 fs-9"><i class="fa-solid fa-phone me-1"></i> Call Owner</a>
                     </div>
                 </div>
@@ -376,7 +376,7 @@ session_start();
                 </div>
 
                 <div class="mb-2.5 p-2 rounded-3 bg-dark border border-secondary fs-9">
-                    <div class="text-secondary mb-1"><i class="fa-solid fa-user-tie text-info me-1"></i> Stock Owner: <strong class="text-white" id="popModalOwnerName">Romeo Paolo Tolentino</strong></div>
+                    <div class="text-secondary mb-1"><i class="fa-solid fa-user-tie text-info me-1"></i> Stock Owner: <strong class="text-white" id="popModalOwnerName">Stock Owner</strong></div>
                     <div class="text-secondary"><i class="fa-solid fa-location-dot text-danger me-1"></i> Pickup Location: <strong class="text-white" id="popModalAddress">Pasabuy Hub, Lipa City</strong></div>
                 </div>
 
@@ -513,7 +513,7 @@ session_start();
                     <label class="form-label text-white fs-8 fw-bold mb-1">
                         <i class="fa-solid fa-user-check me-1 text-success"></i> Received By (Student Name) <span class="text-danger">*</span>
                     </label>
-                    <input type="text" id="podRecipientInput" class="form-control form-control-sm text-white border-secondary fs-8 rounded-3" style="background:#0F172A;" placeholder="e.g. Pogilameg Tester / Roommate">
+                    <input type="text" id="podRecipientInput" class="form-control form-control-sm text-white border-secondary fs-8 rounded-3" style="background:#0F172A;" placeholder="e.g. Student Renter / Authorized Representative">
                 </div>
 
                 <!-- Handover Remarks -->
@@ -859,8 +859,8 @@ async function fetchRiderJobAlerts() {
             document.getElementById('riderJobTotalText').innerText = `₱${parseFloat(ord.total_amount || 0).toLocaleString('en-US', {minimumFractionDigits:2})}`;
             document.getElementById('riderPickupText').innerText = ord.pickup_address || 'Pasabuy Hub, Lipa City';
             document.getElementById('riderDropoffText').innerText = ord.delivery_address || 'San Pablo, Laguna';
-            document.getElementById('riderJobCustomerName').innerText = `${ord.customer_name || 'Pogilameg Tester'} (${ord.customer_phone || '09981234567'})`;
-            document.getElementById('riderJobOwnerName').innerText = `${ord.owner_name || 'Romeo Paolo Tolentino'}`;
+            document.getElementById('riderJobCustomerName').innerText = `${ord.customer_name || 'Customer'} (${ord.customer_phone || ''})`;
+            document.getElementById('riderJobOwnerName').innerText = `${ord.owner_name || 'Stock Owner'}`;
 
             if (ord.customer_phone) document.getElementById('riderCallCustomerBtn').href = `tel:${ord.customer_phone}`;
 
@@ -1127,7 +1127,7 @@ function openProofOfPickupModal() {
         return;
     }
     const orderCode = currentActiveOrder.order_code;
-    const owner = currentActiveOrder.owner_name || 'Romeo Paolo Tolentino';
+    const owner = currentActiveOrder.owner_name || 'Stock Owner';
     const address = currentActiveOrder.pickup_address || 'Pasabuy Hub, Lipa City';
 
     const codeEl = document.getElementById('popModalOrderCode');
@@ -1239,7 +1239,7 @@ function openProofOfDeliveryModal() {
         return;
     }
     const orderCode = currentActiveOrder.order_code;
-    const customer = currentActiveOrder.customer_name || 'Pogilameg Tester';
+    const customer = currentActiveOrder.customer_name || 'Student Renter';
     const address = currentActiveOrder.delivery_address || 'Campus Dormitory';
 
     document.getElementById('podModalOrderCode').innerText = orderCode;

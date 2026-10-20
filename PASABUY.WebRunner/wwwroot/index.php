@@ -805,19 +805,13 @@
                             document.getElementById('settingsFirstName').value = studentUser.firstName || nameParts[0] || '';
                             document.getElementById('settingsLastName').value = studentUser.lastName || (nameParts.slice(1).join(' ')) || '';
                             let snVal = (studentUser.studentNumber || '').toString().replace(/[^0-9]/g, '');
-                            if (!snVal) {
-                                snVal = (studentUser.id === 105 || (studentUser.email && studentUser.email.includes('pogilameg'))) ? '20261058' : '20261048';
-                            }
                             document.getElementById('settingsStudentNumber').value = snVal;
 
                             if (document.getElementById('settingsEmail')) {
-                                document.getElementById('settingsEmail').value = studentUser.email || studentUser.SchoolEmail || (studentUser.id === 105 ? 'pogilameg@gmail.com' : 'romeopaolotolentino@gmail.com');
+                                document.getElementById('settingsEmail').value = studentUser.email || studentUser.SchoolEmail || '';
                             }
                             if (document.getElementById('settingsPhone')) {
                                 let phoneVal = (studentUser.phoneNumber || studentUser.phone || '').toString().replace(/[^0-9+]/g, '');
-                                if (!phoneVal) {
-                                    phoneVal = (studentUser.id === 105 || (studentUser.email && studentUser.email.includes('pogilameg'))) ? '09171234567' : '09668257301';
-                                }
                                 document.getElementById('settingsPhone').value = phoneVal;
                             }
                             document.getElementById('settingsCourse').value = studentUser.course || '';
@@ -1078,7 +1072,7 @@
                                     firstName: firstName,
                                     lastName: lastName,
                                     sub: `${course} • ${yearLevel}`,
-                                    email: email || studentUser.email || 'romeopaolotolentino@gmail.com',
+                                    email: email || studentUser.email || '',
                                     phone: phone || studentNo,
                                     studentNumber: studentNo,
                                     course: course,
@@ -1351,8 +1345,7 @@
                                         const fullName = `${firstName} ${lastName}`.trim();
                                         const email = studentUser.email || studentUser.schoolEmail || '';
 
-                                        const isPogilameg = email.toLowerCase().includes('pogilameg') || studentUser.id === 105;
-                                        const finalAvatar = studentUser.profileImage || studentUser.avatar || (isPogilameg ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80');
+                                        const finalAvatar = studentUser.profileImage || studentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80';
 
                                         const profNameEl = document.getElementById('profileName');
                                         if (profNameEl) profNameEl.innerText = fullName;
@@ -1361,13 +1354,10 @@
                                         const profSubEl = document.getElementById('profileSub');
                                         if (profSubEl) profSubEl.innerText = studentUser.course ? `${studentUser.course} • ${studentUser.yearLevel || 'Student'}` : `${email} • Verified Student`;
                                         let cleanSn = (studentUser.studentNumber || '').toString().replace(/[^0-9]/g, '');
-                                        if (!cleanSn || cleanSn === '10' || cleanSn.length < 5) {
-                                            cleanSn = isPogilameg ? '20261058' : '20261048';
-                                        }
                                         studentUser.studentNumber = cleanSn;
                                         try { localStorage.setItem('pasabuy_student_user', JSON.stringify(studentUser)); } catch (e) {}
                                         const stuNoEl = document.getElementById('profileStudentNumber');
-                                        if (stuNoEl) stuNoEl.innerText = `ID: ${cleanSn}`;
+                                        if (stuNoEl) stuNoEl.innerText = cleanSn ? `ID: ${cleanSn}` : '';
                                         const rateEl = document.getElementById('profileRating');
                                         if (rateEl) rateEl.innerText = studentUser.rating || '5.0';
                                         const dealsEl = document.getElementById('profileDeals');
@@ -1428,11 +1418,7 @@
                         }
 
                         function quickFillRomeoCredentials() {
-                            const emailIn = document.getElementById('loginEmailInput');
-                            const passIn = document.getElementById('loginPasswordInput');
-                            if (emailIn) emailIn.value = 'romeopaolotolentino@gmail.com';
-                            if (passIn) passIn.value = 'Pogilameg@10';
-                            loginStudentWithPassword();
+                            // Test bypass removed
                         }
 
                         async function loginStudentWithPassword() {
@@ -1981,9 +1967,6 @@
                             const myFirstName = (storedUser && storedUser.firstName ? storedUser.firstName : '').toLowerCase();
                             const myLastName = (storedUser && storedUser.lastName ? storedUser.lastName : '').toLowerCase();
                             const myFullName = (myFirstName + ' ' + myLastName).trim();
-                            const isRomeo = myEmail.includes('romeo') || myFirstName.includes('romeo') || myLastName.includes('tolentino') || currentUserId === 104;
-                            const isPogilameg = myEmail.includes('pogilameg') || currentUserId === 105;
-
                             let convs = [];
                             try {
                                 const res = await fetch(`/pasabuy_api.php?action=chat_conversations&user_id=${currentUserId}`, { cache: 'no-store' });
@@ -1999,16 +1982,14 @@
                             if (!Array.isArray(convs)) convs = [];
 
                             convs = convs.filter(c => {
-                                const pId = parseInt(c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId)) || 0;
+                                let pId = parseInt(c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId)) || 0;
                                 const pName = (c.PartnerName || c.SenderName || '').toLowerCase().trim();
                                 const item = (c.ItemTitle || '').toLowerCase();
-                                const msg = (c.MessageText || '').toLowerCase();
                                 const sId = parseInt(c.SenderId) || 0;
                                 const rId = parseInt(c.ReceiverId) || 0;
                                 const isRentalConversation = !!c.HasTransaction || !!c.TransactionOrderCode;
 
-                                if (sId === rId && sId > 0) return false;
-                                if (pId === currentUserId) return false;
+                                if (sId === rId && sId > 0 && !isRentalConversation) return false;
 
                                 // Only filter out system/dispatch conversations for non-rental chats
                                 if (!isRentalConversation) {
@@ -2030,20 +2011,35 @@
                             // CRITICAL: Overdue rentals must automatically jump to the very top (index 0)
                             convs.sort((a, b) => {
                                 const aOverdue = (a.IsOverdue || a.isOverdue || a.ActionBadgeClass === 'badge-overdue' || a.TransactionStatus === 'OVERDUE' || a.TimerStatus === 'EXPIRED') ? 1 : 0;
-                                const bOverdue = (b.IsOverdue || b.isOverdue || a.ActionBadgeClass === 'badge-overdue' || b.TransactionStatus === 'OVERDUE' || b.TimerStatus === 'EXPIRED') ? 1 : 0;
+                                const bOverdue = (b.IsOverdue || b.isOverdue || b.ActionBadgeClass === 'badge-overdue' || b.TransactionStatus === 'OVERDUE' || b.TimerStatus === 'EXPIRED') ? 1 : 0;
                                 if (bOverdue !== aOverdue) return bOverdue - aOverdue;
                                 const aTime = new Date(a.CreatedAt || a.Timestamp || 0).getTime() || 0;
                                 const bTime = new Date(b.CreatedAt || b.Timestamp || 0).getTime() || 0;
                                 return bTime - aTime;
                             });
 
-                            // DEDUPLICATE: Group by partnerId, keep only most recent conversation per partner
+                            // DEDUPLICATE: Group by real partner (never treat system SenderId 0 as its own chat)
+                            const resolveChatPartnerId = (c) => {
+                                let partnerId = parseInt(c.PartnerId, 10);
+                                const sId = parseInt(c.SenderId, 10) || 0;
+                                const rId = parseInt(c.ReceiverId, 10) || 0;
+                                if (!partnerId || partnerId <= 0 || partnerId === currentUserId) {
+                                    partnerId = (sId === currentUserId) ? rId : sId;
+                                }
+                                return partnerId;
+                            };
                             const convsByPartner = new Map();
                             convs.forEach(c => {
-                                const partnerId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
+                                const partnerId = resolveChatPartnerId(c);
                                 const time = new Date(c.CreatedAt || c.Timestamp || 0).getTime() || 0;
-                                if (!convsByPartner.has(partnerId) || time > convsByPartner.get(partnerId).time) {
-                                    convsByPartner.set(partnerId, { conversation: c, time: time });
+                                const existing = convsByPartner.get(partnerId);
+                                if (!existing || time > existing.time || (!!c.HasTransaction && !existing.conversation.HasTransaction)) {
+                                    const merged = { ...c, PartnerId: partnerId };
+                                    if (existing && time < existing.time) {
+                                        merged.MessageText = existing.conversation.MessageText;
+                                        merged.CreatedAt = existing.conversation.CreatedAt;
+                                    }
+                                    convsByPartner.set(partnerId, { conversation: merged, time: Math.max(time, existing ? existing.time : 0) });
                                 }
                             });
                             convs = Array.from(convsByPartner.values()).map(v => v.conversation);
@@ -2051,15 +2047,18 @@
                             window._chatConversationsMap = window._chatConversationsMap || {};
                             let html = '';
                             convs.forEach((c, idx) => {
-                                const partnerId = c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId);
-                                const partnerName = c.PartnerName || (c.SenderId == currentUserId ? 'Campus Seller' : (c.SenderName || 'Campus Buyer'));
+                                let partnerId = parseInt(c.PartnerId || ((c.SenderId == currentUserId) ? c.ReceiverId : c.SenderId)) || 0;
+                                let partnerName = c.PartnerName || (c.SenderId == currentUserId ? 'Equipment Owner' : (c.SenderName || 'Student Renter'));
+                                if (!partnerName || partnerName.toLowerCase().includes('rentease system')) {
+                                    partnerName = 'Student Counterparty';
+                                }
                                 const itemTitle = c.ItemTitle || 'Campus Item';
-                                       let avatarUrl = c.PartnerAvatar || c.partnerAvatar || '';
+                                let avatarUrl = c.PartnerAvatar || c.partnerAvatar || '';
                                 if (!avatarUrl || avatarUrl === '' || avatarUrl.includes('dicebear')) {
                                     avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=5B3FA8&color=fff&bold=true&rounded=true`;
                                 }
 
-                                const isMyItem = !!c.IsMyItem;
+                                let isMyItem = !!c.IsMyItem;
                                 const ownerName = c.OwnerName || (isMyItem ? 'You' : partnerName);
                                 const safeOwnerName = ownerName.replace(/"/g, '&quot;');
                                 const itemImage = c.ItemImage || '';
@@ -3528,9 +3527,6 @@
                             let currentUserEmail = (storedUser && storedUser.email ? storedUser.email : '').toLowerCase().trim();
                             let currentUserName = (storedUser ? (storedUser.name || (storedUser.firstName || '') + ' ' + (storedUser.lastName || '')) : '').toLowerCase().trim();
                             let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 0) : 0;
-                            if (!currentUserId || currentUserId <= 0) {
-                                currentUserId = (currentUserEmail.includes('pogilameg') || currentUserName.includes('pogilameg')) ? 105 : 104;
-                            }
 
                             try {
                                 const activeTitle = document.getElementById('chatItemTitle')?.innerText || '';
@@ -4805,9 +4801,6 @@
                             let currentUserEmail = (storedUser && storedUser.email ? storedUser.email : '').toLowerCase().trim();
                             let currentUserName = (storedUser ? (storedUser.name || (storedUser.firstName || '') + ' ' + (storedUser.lastName || '')) : '').toLowerCase().trim();
                             let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 0) : 0;
-                            if (!currentUserId || currentUserId <= 0) {
-                                currentUserId = (currentUserEmail.includes('pogilameg') || currentUserName.includes('pogilameg')) ? 105 : 104;
-                            }
 
                             let isOwner = false;
                             if (typeof currentChatRentalOrder.is_owner === 'boolean') {
@@ -5382,9 +5375,9 @@
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
-                                        user_id: user.id || user.userId || 105,
-                                        user_name: user.name || (user.firstName ? (user.firstName + ' ' + (user.lastName || '')).trim() : 'Pogilameg Tester'),
-                                        user_email: user.email || 'pogilameg@gmail.com',
+                                        user_id: user.id || user.userId || 0,
+                                        user_name: user.name || (user.firstName ? (user.firstName + ' ' + (user.lastName || '')).trim() : 'Student'),
+                                        user_email: user.email || '',
                                         appeal_reason: reason,
                                         photo_url: photoUrl
                                     })
@@ -5422,34 +5415,21 @@
                             }
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
-                            if (currentUserId <= 1) currentUserId = 104;
+                            let currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 0) : 0;
 
                             const sId = parseInt(sellerId) || 0;
                             const pName = (sellerName || '').toLowerCase().trim();
-                            const myEmail = (storedUser && storedUser.email ? storedUser.email : '').toLowerCase();
                             const myFirstName = (storedUser && storedUser.firstName ? storedUser.firstName : '').toLowerCase();
                             const myLastName = (storedUser && storedUser.lastName ? storedUser.lastName : '').toLowerCase();
                             const myFullName = (myFirstName + ' ' + myLastName).trim();
-                            const isRomeo = myEmail.includes('romeo') || myFirstName.includes('romeo') || myLastName.includes('tolentino') || currentUserId === 104;
-                            const isPogilameg = myEmail.includes('pogilameg') || currentUserId === 105;
 
                             let targetSellerId = sId;
                             let targetSellerName = sellerName || 'Verified Student';
-                            const isSelf = (sId === currentUserId || (currentUserId === 104 && (sId === 1 || sId === 104)) ||
-                                (isRomeo && (pName.includes('romeo') || pName.includes('tolentino'))) ||
-                                (isPogilameg && pName.includes('pogilameg')) ||
-                                (myFullName && pName === myFullName));
+                            const isSelf = (sId === currentUserId && currentUserId > 0) || (myFullName && pName === myFullName);
 
                             if (isSelf) {
-                                // Seamless test / inquiry mode: connect to counter-party student
-                                if (currentUserId === 104) {
-                                    targetSellerId = 105;
-                                    targetSellerName = 'Pogilameg Tester';
-                                } else {
-                                    targetSellerId = 104;
-                                    targetSellerName = 'Romeo Paolo Tolentino';
-                                }
+                                alert('You cannot start a chat with yourself.');
+                                return;
                             }
 
                             // Cleanly dismiss any open modals and backdrops
@@ -5499,6 +5479,25 @@
                             // Set initial ownership badge & owner label if passed from conversation card
                             const ownershipBadge = document.getElementById('chatItemOwnershipBadge');
                             const chatOwnerLabel = document.getElementById('chatItemOwnerLabel');
+
+                            // Update header role badge immediately (describes the PARTNER's role)
+                            const partnerRoleBadge = document.getElementById('chatPartnerRoleBadge');
+                            if (partnerRoleBadge) {
+                                if (isMyItem) {
+                                    // Current user is OWNER → partner is Student Renter & Borrower
+                                    partnerRoleBadge.innerHTML = '<i class="fa-solid fa-user me-0.5"></i>Student Renter & Borrower';
+                                    partnerRoleBadge.style.background = '#EDE9FE';
+                                    partnerRoleBadge.style.color = '#5B3FA8';
+                                    partnerRoleBadge.style.borderColor = '#DDD6FE';
+                                } else {
+                                    // Current user is RENTER → partner is Stock Owner & Lender
+                                    partnerRoleBadge.innerHTML = '<i class="fa-solid fa-circle-check me-0.5"></i>Stock Owner & Lender';
+                                    partnerRoleBadge.style.background = '#ECFDF5';
+                                    partnerRoleBadge.style.color = '#059669';
+                                    partnerRoleBadge.style.borderColor = '#A7F3D0';
+                                }
+                            }
+
                             if (isMyItem !== undefined && isMyItem !== null) {
                                 if (ownershipBadge) {
                                     if (isMyItem) {
@@ -5519,6 +5518,7 @@
                                     chatOwnerLabel.innerText = isMyItem ? '• Owner: You' : ('• Owner: ' + (ownerName || targetSellerName));
                                 }
                             }
+
 
                             // Reset shown modals for fresh chat entry
                             window._shownStep1Modals = new Set();
@@ -5572,18 +5572,15 @@
 
                             let storedUser = null;
                             try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) { }
-                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 104) : 104;
+                            const currentUserId = storedUser ? (storedUser.id || storedUser.userId || storedUser.UserId || 0) : 0;
                             const senderName = storedUser ? (storedUser.firstName + ' ' + (storedUser.lastName || '')).trim() : 'Verified Student';
                             const itemTitle = document.getElementById('chatItemTitle')?.innerText || 'Campus Item';
 
                             // STEP 2 GUARD: If current user is Renter, and equipment is being prepared (Step 2) but owner has not yet submitted prep photo:
                             if (currentChatRentalOrder) {
                                 let currentUserEmail = (storedUser && storedUser.email ? storedUser.email : '').toLowerCase().trim();
-                                let currentUserName = (storedUser ? (storedUser.name || (storedUser.firstName || '') + ' ' + (storedUser.lastName || '')) : '').toLowerCase().trim();
-                                const isOwner = (currentUserId === parseInt(currentChatRentalOrder.owner_id)) ||
-                                    (currentUserEmail && currentChatRentalOrder.owner_email && currentUserEmail === currentChatRentalOrder.owner_email.toLowerCase()) ||
-                                    (currentUserName.includes('romeo') && !currentUserName.includes('pogilameg')) ||
-                                    (currentUserId === 104 && !currentUserEmail.includes('pogilameg'));
+                                const isOwner = (currentUserId > 0 && currentUserId === parseInt(currentChatRentalOrder.owner_id)) ||
+                                    (currentUserEmail && currentChatRentalOrder.owner_email && currentUserEmail === currentChatRentalOrder.owner_email.toLowerCase());
 
                                 if (!isOwner && parseInt(currentChatRentalOrder.owner_agreed) === 1 && parseInt(currentChatRentalOrder.prep_confirmed_by_renter) !== 1) {
                                     if (!currentChatRentalOrder.prep_photo_url || currentChatRentalOrder.prep_photo_url.trim() === '') {
@@ -6884,22 +6881,6 @@
                             <i class="fa-solid fa-exclamation-triangle fs-2 d-block mb-2"></i>
                             Failed to load conversations. Please refresh.
                         </div>`;
-                }
-            };
-        }
-                const userId = user.id || user.userId || user.UserId || 104;
-                try {
-                    const response = await fetch(`/pasabuy_api.php?action=chat_conversations&user_id=${encodeURIComponent(userId)}&_t=${Date.now()}`, { cache: 'no-store' });
-                    const conversations = await response.json();
-                    if (!Array.isArray(conversations) || !conversations.length) return;
-                    container.innerHTML = conversations.map(c => `
-                        <button type="button" class="w-100 text-start border rounded-4 bg-white p-3 d-flex align-items-center gap-3 shadow-2xs" onclick='window.openConversationCard(${JSON.stringify(c).replace(/</g, "\\u003c")} )'>
-                            <img src="${c.PartnerAvatar || 'https://ui-avatars.com/api/?name=Chat&background=5B3FA8&color=fff'}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" alt="">
-                            <span class="min-w-0"><strong class="d-block text-dark text-truncate">${c.PartnerName || 'Campus Student'}</strong><small class="text-muted text-truncate d-block">${c.ItemTitle || 'Rental conversation'}</small><small class="text-secondary text-truncate d-block">${c.MessageText || ''}</small></span>
-                        </button>
-                    `).join('');
-                } catch (e) {
-                    console.error('Messages fallback loader failed:', e);
                 }
             };
         }

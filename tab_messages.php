@@ -1014,7 +1014,7 @@
                 </div>
                 <div>
                     <div class="fw-extrabold text-white" style="font-size:0.8rem; letter-spacing:0.2px;">Active Rental Period</div>
-                    <div class="text-white-50 fs-10 font-monospace" id="chatTimerItemTitle">POSPT • #RE-10000</div>
+                    <div class="text-white-50 fs-10 font-monospace" id="chatTimerItemTitle">Equipment • #RE-00000</div>
                 </div>
             </div>
             <span class="badge rounded-pill fw-bold px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1.5" id="chatLiveTimerBadge" 
@@ -1284,7 +1284,7 @@
                     <img id="step1ModalRenterAvatar" src="https://ui-avatars.com/api/?name=Student&background=5B3FA8&color=fff" class="rounded-circle border" width="42" height="42" style="object-fit:cover;">
                     <div class="min-w-0">
                         <div class="text-muted" style="font-size: 0.68rem; font-weight: 600;">BORROWER REQUEST</div>
-                        <div class="fw-bold text-dark fs-8 text-truncate" id="step1ModalRenterName">Pogilameg Tester</div>
+                        <div class="fw-bold text-dark fs-8 text-truncate" id="step1ModalRenterName">Student Renter</div>
                         <span class="badge rounded-pill" style="background:#E0F2FE; color:#0369A1; font-size:0.60rem; padding: 2px 6px;">
                             <i class="fa-solid fa-cart-shopping me-0.5"></i> Student Renter
                         </span>
@@ -1458,7 +1458,7 @@
                 <button type="button" class="btn-close" style="font-size: 0.65rem;" onclick="dismissStep1IncomingToast()"></button>
             </div>
             <div class="fw-extrabold text-dark fs-8 text-truncate" id="step1ToastRenterAndItem">
-                Pogilameg Tester wants to rent your item!
+                A student wants to rent your item!
             </div>
             <div class="text-muted fs-9 text-truncate mb-2" id="step1ToastDetails">
                 Order #RE-00000 • ₱0.00 • Tap to Agree

@@ -683,10 +683,7 @@ window.validateSellEquipmentForm = function() {
         }
     } catch(e) {}
 
-    const email = (currentUser.email || currentUser.SchoolEmail || '').toLowerCase();
-    const isRomeo = (email === 'romeopaolotolentino@gmail.com' || (currentUser.id == 104));
-    const isPogilameg = (email.includes('pogilameg') || (currentUser.id == 105));
-    const isVerified = isRomeo || isPogilameg || (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED' || currentUser.Status === 'VERIFIED');
+    const isVerified = (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED' || currentUser.Status === 'VERIFIED');
 
     if (!isVerified) {
         btn.disabled = true;
@@ -941,17 +938,14 @@ window.checkRentOutVerification = function() {
         }
     } catch(e) {}
 
-    const email = (currentUser.email || currentUser.SchoolEmail || '').toLowerCase();
-    const isRomeo = (email === 'romeopaolotolentino@gmail.com' || (currentUser.id == 104));
-    const isPogilameg = (email.includes('pogilameg') || (currentUser.id == 105));
-    let isVerified = isRomeo || isPogilameg || (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED' || currentUser.Status === 'VERIFIED');
+    const isVerified = (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED' || currentUser.Status === 'VERIFIED');
 
     if (typeof updateSellVerificationState === 'function') {
         updateSellVerificationState(isVerified);
     }
 
     const uId = currentUser.id || currentUser.Id || currentUser.userId || currentUser.UserId || 0;
-    if (uId > 0 && !isRomeo && !isPogilameg) {
+    if (uId > 0) {
         fetch(`/pasabuy_api.php?action=get_verification_status&userId=${uId}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => {
@@ -994,10 +988,7 @@ window.openEquipmentReviewModal = function() {
         }
     } catch(e) {}
 
-    const email = (currentUser.email || currentUser.SchoolEmail || '').toLowerCase();
-    const isRomeo = (email === 'romeopaolotolentino@gmail.com' || (currentUser.id == 104));
-    const isPogilameg = (email.includes('pogilameg') || (currentUser.id == 105));
-    const isVerified = isRomeo || isPogilameg || (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED');
+    const isVerified = (currentUser.is_verified === 1 || currentUser.is_verified === '1' || currentUser.is_verified === true || currentUser.verification_status === 'VERIFIED' || currentUser.verification_status === 'APPROVED' || currentUser.Status === 'VERIFIED');
 
     if (!isVerified) {
         if (typeof openVerificationModal === 'function') {
@@ -1138,13 +1129,11 @@ window.executePostRentalItemLive = async function(fee) {
         const currentUser = typeof getRentEaseCurrentUser === 'function' ? getRentEaseCurrentUser() : {};
         const currentEmail = (currentUser.email || '').toLowerCase().trim();
         const currentName = (currentUser.name || '').trim();
-        const isPogilameg = currentEmail.includes('pogilameg') || (currentUser.id == 105) || currentName.toLowerCase().includes('pogilameg');
-        const isRomeo = currentEmail.includes('romeo') || (currentUser.id == 104) || currentName.toLowerCase().includes('romeo');
 
-        const resolvedOwnerId = parseInt(currentUser.id || 0) || (isPogilameg ? 105 : (isRomeo ? 104 : 105));
-        const resolvedOwnerName = currentName || (isPogilameg ? 'Pogilameg Tester' : (isRomeo ? 'Romeo Paolo Tolentino' : 'Verified Student'));
-        const resolvedOwnerEmail = currentUser.email || (isPogilameg ? 'pogilameg@gmail.com' : (isRomeo ? 'romeopaolotolentino@gmail.com' : 'student@campus.edu.ph'));
-        const resolvedOwnerPhone = currentUser.phone || (isPogilameg ? '09171234567' : '09668257301');
+        const resolvedOwnerId = parseInt(currentUser.id || 0);
+        const resolvedOwnerName = currentName || 'Verified Student';
+        const resolvedOwnerEmail = currentUser.email || '';
+        const resolvedOwnerPhone = currentUser.phone || '';
 
         const itemPayload = {
             name: title,

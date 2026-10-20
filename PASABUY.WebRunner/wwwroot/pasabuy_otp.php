@@ -98,10 +98,7 @@ if ($action === 'login') {
 
     $passHash = $user['PasswordHash'];
     $isValid = password_verify($password, $passHash) 
-            || ($password === $passHash) 
-            || (strtolower($password) === 'pogilameg') 
-            || (strtolower($password) === 'pogilameg#10') 
-            || (strtolower($password) === 'pogilameg@10');
+            || ($password === $passHash);
 
     if (!$isValid) {
         http_response_code(400);
@@ -124,8 +121,8 @@ if ($action === 'login') {
         'profile' => [
             'firstName' => $profile['FirstName'] ?? explode('@', $email)[0],
             'lastName' => $profile['LastName'] ?? '',
-            'studentNumber' => preg_replace('/[^0-9]/', '', (string)($profile['StudentNumber'] ?? '')) ?: ((int)$user['Id'] === 105 ? '20261058' : '20261048'),
-            'phoneNumber' => $profile['PhoneNumber'] ?? ((int)$user['Id'] === 105 ? '09171234567' : '09668257301'),
+            'studentNumber' => preg_replace('/[^0-9]/', '', (string)($profile['StudentNumber'] ?? '')),
+            'phoneNumber' => $profile['PhoneNumber'] ?? '',
             'course' => $profile['Course'] ?? '',
             'yearLevel' => $profile['YearLevel'] ?? '',
             'profileImage' => $profile['ProfileImage'] ?? '',

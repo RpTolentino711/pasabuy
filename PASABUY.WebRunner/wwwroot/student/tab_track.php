@@ -268,7 +268,7 @@
                     <span class="renttrack-online-dot"></span>
                 </div>
                 <div class="min-w-0">
-                    <h6 class="fw-extrabold text-dark mb-0 text-truncate" style="font-size:0.82rem;" id="trackPartnerName">Romeo Paolo Tolentino</h6>
+                    <h6 class="fw-extrabold text-dark mb-0 text-truncate" style="font-size:0.82rem;" id="trackPartnerName">Partner</h6>
                     <span class="badge rounded-pill fw-semibold text-truncate d-inline-block mt-0.5" 
                           style="background:#F1F5F9; color:#475569; font-size:0.63rem; padding:2px 7px; max-width:180px;" 
                           id="trackPartnerRole">Equipment Owner • Verified Student</span>

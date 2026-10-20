@@ -1,7 +1,7 @@
 <?php
 /**
  * PasaBuy Live Hostinger Database Cleaner
- * Purges all dummy test data, leaving ONLY Admin (100) and Romeo Paolo Tolentino (104).
+ * Purges dummy records without hardcoded test accounts.
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -63,31 +63,13 @@ try {
     try { $pdo->exec("DELETE FROM `rental_drivers` WHERE 1=1;"); } catch (Exception $e) {}
     try { $pdo->exec("DELETE FROM `VerificationRequests` WHERE 1=1;"); } catch (Exception $e) {}
 
-    // 6. Reset Users (Keep ONLY Admin 100, Romeo 104, Pogilameg 105)
-    $pdo->exec("DELETE FROM `Users` WHERE `Id` NOT IN (100, 104, 105);");
+    // 6. Reset Users (Keep Admin 100)
+    // Removed hardcoded test account seeding (104, 105)
     $pdo->exec("UPDATE `Users` SET 
         `rental_suspended_until` = NULL, 
         `rental_suspension_reason` = NULL, 
-        `rental_suspension_report_id` = NULL, 
-        `Status` = 'VERIFIED' 
-        WHERE `Id` IN (100, 104, 105);");
-
-    // Ensure Admin, Romeo & Pogilameg exist with clean credentials
-    $hashPogilameg = password_hash('Pogilameg@10', PASSWORD_DEFAULT);
-    
-    $stmtUser = $pdo->prepare("INSERT INTO `Users` (`Id`, `Email`, `PasswordHash`, `Role`, `Status`, `CreatedAt`, `UpdatedAt`) VALUES 
-        (100, 'admin', 'Pogilameg@10', 'ADMIN', 'VERIFIED', NOW(), NOW()),
-        (104, 'romeopaolotolentino@gmail.com', ?, 'STUDENT', 'VERIFIED', NOW(), NOW()),
-        (105, 'pogilameg@gmail.com', ?, 'STUDENT', 'VERIFIED', NOW(), NOW())
-        ON DUPLICATE KEY UPDATE `PasswordHash` = VALUES(`PasswordHash`), `Role` = VALUES(`Role`), `Status` = 'VERIFIED', `rental_suspended_until` = NULL, `rental_suspension_reason` = NULL, `rental_suspension_report_id` = NULL");
-    $stmtUser->execute([$hashPogilameg, $hashPogilameg]);
-
-    // 7. Clean StudentProfiles (Keep Romeo 104 and Pogilameg 105)
-    $pdo->exec("DELETE FROM `StudentProfiles` WHERE `UserId` NOT IN (104, 105);");
-    $pdo->exec("INSERT INTO `StudentProfiles` (`Id`, `UserId`, `FirstName`, `LastName`, `StudentNumber`, `PhoneNumber`, `SchoolEmail`, `Course`, `YearLevel`, `ProfileImage`, `VerificationStatus`, `Rating`, `CompletedTransactions`, `CreatedAt`, `UpdatedAt`) VALUES 
-        (2, 104, 'Romeo Paolo', 'Tolentino', '20261048', '09668257301', 'romeopaolotolentino@gmail.com', 'BSIT', '4th Yr', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80', 'VERIFIED', 5.0, 12, NOW(), NOW()),
-        (3, 105, 'Pogilameg', 'Tester', '20261058', '09171234567', 'pogilameg@gmail.com', 'BSCS', '3rd Yr', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', 'VERIFIED', 5.0, 8, NOW(), NOW())
-        ON DUPLICATE KEY UPDATE `FirstName` = VALUES(`FirstName`), `LastName` = VALUES(`LastName`), `StudentNumber` = VALUES(`StudentNumber`), `PhoneNumber` = VALUES(`PhoneNumber`), `VerificationStatus` = 'VERIFIED'");
+        `rental_suspension_report_id` = NULL 
+        WHERE 1=1;");
 
     // Deduplicate StudentProfiles
     try {
@@ -110,7 +92,7 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => '🧹 Hostinger MySQL Database cleaned successfully! Purged all dummy orders, tickets, reports, appeals, drivers, users, chats, and records. Admin (100), Romeo (104), and Pogilameg (105) preserved clean!'
+        'message' => '🧹 Hostinger MySQL Database cleaned successfully!'
     ]);
 } catch (Exception $ex) {
     echo json_encode(['success' => false, 'error' => $ex->getMessage()]);
