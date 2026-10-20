@@ -1610,7 +1610,7 @@
                             <div class="rounded-3 p-1.5 bg-light d-flex align-items-center justify-content-center" style="width:30px; height:30px; color:#5B3FA8;">
                                 <i class="fa-solid fa-id-card fs-8"></i>
                             </div>
-                            <span class="fw-bold text-dark fs-8">Student ID Verification</span>
+                            <span id="settingsHubVerificationTitle" class="fw-bold text-dark fs-8">Verification</span>
                         </div>
                         <div class="d-flex align-items-center gap-1.5">
                             <span id="settingsHubVerificationBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2 py-0.5 fs-9 fw-bold">Verified</span>
@@ -1618,17 +1618,6 @@
                         </div>
                     </a>
 
-                    <!-- Payment Methods -->
-                    <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between py-2.5 px-3 text-decoration-none border-bottom" 
-                       onclick="switchFromSettingsHub('openPaymentMethodsModal')">
-                        <div class="d-flex align-items-center gap-2.5">
-                            <div class="rounded-3 p-1.5 bg-light d-flex align-items-center justify-content-center" style="width:30px; height:30px; color:#5B3FA8;">
-                                <i class="fa-regular fa-credit-card fs-8"></i>
-                            </div>
-                            <span class="fw-bold text-dark fs-8">Payment Methods</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-right text-muted fs-9"></i>
-                    </a>
 
                     <!-- Customer Support (Issue Center) -->
                     <a href="javascript:void(0)" class="d-flex align-items-center justify-content-between py-2.5 px-3 text-decoration-none border-bottom" 
@@ -1909,15 +1898,29 @@
         <div class="modal-content rounded-4 border-0 p-4 shadow-lg">
             <div class="modal-header border-0 pb-2">
                 <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-id-card text-primary fs-4"></i> Student Seller Verification Request
+                    <i class="fa-solid fa-id-card text-primary fs-4"></i> <span id="verificationModalTitle">Student Verification</span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body pt-1">
                 <div id="verificationStatusBanner" class="p-3 rounded-3 mb-3 fs-8 fw-semibold" style="display:none;"></div>
 
-                <p class="fs-8 text-muted mb-3">
-                    To maintain safety and trust on campus, all student sellers must submit their valid ID and residential details for Admin verification before posting items to sell.
+                <!-- Verified Student Identity Preview Card -->
+                <div id="vStudentCardHeader" class="p-3 rounded-3 mb-3 border bg-light d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <img id="vStudentAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" class="rounded-circle border" style="width:42px; height:42px; object-fit:cover;">
+                        <div>
+                            <div class="fw-bold text-dark fs-7" id="vStudentName">Romeo Paolo Tolentino</div>
+                            <div class="fs-9 text-muted" id="vStudentCourseYear">BSIT • 4th Yr • Student ID: 20261048</div>
+                        </div>
+                    </div>
+                    <span id="vStudentStatusBadge" class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fs-9 fw-bold">
+                        <i class="fa-solid fa-circle-check me-1"></i> Verified
+                    </span>
+                </div>
+
+                <p class="fs-8 text-muted mb-3" id="verificationIntroText">
+                    Your student identity and credentials have been verified by Admin. You are authorized to rent and post equipment on campus.
                 </p>
 
                 <form id="verificationForm" onsubmit="event.preventDefault(); submitSellerVerificationRequest();">
