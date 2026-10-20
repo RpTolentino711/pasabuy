@@ -239,6 +239,14 @@ if ($db) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $e) {}
 
+    // Auto-purge test item 'Romeo' and its transaction from database
+    try {
+        $db->exec("DELETE FROM `rental_inventory` WHERE LOWER(`name`) = 'romeo' OR `id` = 23");
+        $db->exec("DELETE FROM `rental_transactions` WHERE `transaction_code` = '#TRX-POST-23' OR `order_code` LIKE '%Romeo%' OR `customer_name` LIKE '%Romeo Paolo Tolentino%'");
+        $db->exec("DELETE FROM `rental_orders` WHERE `equipment_name` = 'Romeo' OR `equipment_id` = 23");
+        $db->exec("DELETE FROM `ChatMessages` WHERE `ItemTitle` = 'Romeo' OR `MessageText` LIKE '%Order #RE-40622%'");
+    } catch (Exception $ePurgeRomeo) {}
+
     // 2b. Registered Delivery Drivers / Fleet table
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS `rental_drivers` (
@@ -454,50 +462,7 @@ if ($action === 'get_dashboard') {
         }
     }
 
-    // Auto-sync student equipment posting fee transactions into rental_transactions
-    try {
-        $postedItems = $db->query("SELECT id, name, owner_name, posting_fee, price_per_day, created_at FROM `rental_inventory`")->fetchAll();
-        foreach ($postedItems as $pItem) {
-            $fee = (float)($pItem['posting_fee'] > 0 ? $pItem['posting_fee'] : calculatePostingFee($pItem['price_per_day']));
-            $trxCode = '#TRX-POST-' . $pItem['id'];
-            $chk = $db->prepare("SELECT id FROM `rental_transactions` WHERE `transaction_code` = ?");
-            $chk->execute([$trxCode]);
-            if (!$chk->fetch()) {
-                $insTrx = $db->prepare("INSERT INTO `rental_transactions` 
-                    (`transaction_code`, `order_code`, `customer_name`, `amount`, `type`, `status`, `payment_channel`, `created_at`) 
-                    VALUES (?, ?, ?, ?, 'PAYMENT', 'SUCCESSFUL', 'PayMongo Live Gateway', COALESCE(?, NOW()))");
-                $insTrx->execute([
-                    $trxCode,
-                    'Post Fee: ' . $pItem['name'],
-                    $pItem['owner_name'] ?: 'Verified Student',
-                    $fee,
-                    $pItem['created_at'] ?? null
-                ]);
-            }
-        }
-    } catch (Exception $eSyncPost) {}
-
-    // Auto-sync active handover rental orders into rental_transactions
-    try {
-        $activeOrders = $db->query("SELECT id, order_code, customer_name, total_amount, created_at FROM `rental_orders` WHERE `payment_status` = 'PAID' OR `order_status` IN ('IN_PROGRESS', 'DELIVERED', 'COMPLETED') OR `timer_status` = 'RUNNING' OR `handed_over` = 1")->fetchAll();
-        foreach ($activeOrders as $aOrd) {
-            $trxCode = '#TRX-ORD-' . $aOrd['id'];
-            $chk = $db->prepare("SELECT id FROM `rental_transactions` WHERE `transaction_code` = ?");
-            $chk->execute([$trxCode]);
-            if (!$chk->fetch()) {
-                $insTrx = $db->prepare("INSERT INTO `rental_transactions` 
-                    (`transaction_code`, `order_code`, `customer_name`, `amount`, `type`, `status`, `payment_channel`, `created_at`) 
-                    VALUES (?, ?, ?, ?, 'PAYMENT', 'SUCCESSFUL', 'Campus Handover', COALESCE(?, NOW()))");
-                $insTrx->execute([
-                    $trxCode,
-                    $aOrd['order_code'],
-                    $aOrd['customer_name'] ?: 'Student Renter',
-                    $aOrd['total_amount'],
-                    $aOrd['created_at'] ?? null
-                ]);
-            }
-        }
-    } catch (Exception $eSyncOrd) {}
+    // (Removed auto-sync insertion into rental_transactions to preserve user/admin deletions)
 
     // 1. Calculate posting fee revenue from student equipment posts
     $postingFeesRevenue = (float)$db->query("SELECT COALESCE(SUM(posting_fee), 0) FROM `rental_inventory` WHERE `posting_fee` > 0")->fetchColumn();
@@ -621,7 +586,7 @@ if ($action === 'get_dashboard') {
                                            ri.owner_name,
                                            COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) as hearts_count
                                     FROM `rental_inventory` ri
-                                    WHERE (`ri`.`status` != 'TERMINATED' OR `ri`.`status` IS NULL)
+                                    WHERE (`ri`.`status` != 'TERMINATED' OR `ri`.`status` IS NULL) AND `ri`.`id` != 23 AND LOWER(`ri`.`name`) != 'romeo'
                                     ORDER BY hearts_count DESC, COALESCE(ri.rating, 0) DESC, ri.id DESC
                                     LIMIT 6")->fetchAll();
         foreach ($popularItems as &$pi) {
@@ -817,6 +782,7 @@ if ($action === 'delete_product') {
     $id = (int)($req['id'] ?? 0);
     try { $db->prepare("DELETE FROM `rental_item_hearts` WHERE `item_id` = ?")->execute([$id]); } catch (Exception $e) {}
     try { $db->prepare("DELETE FROM `rental_reviews` WHERE `item_id` = ?")->execute([$id]); } catch (Exception $e) {}
+    try { $db->prepare("DELETE FROM `rental_transactions` WHERE `transaction_code` = ? OR `order_code` LIKE ?")->execute(['#TRX-POST-' . $id, "%{$id}%"]); } catch (Exception $e) {}
     $stmt = $db->prepare("DELETE FROM `rental_inventory` WHERE `id` = ?");
     $stmt->execute([$id]);
     echo json_encode(['success' => true, 'message' => 'Equipment listing permanently deleted successfully by Admin.']);

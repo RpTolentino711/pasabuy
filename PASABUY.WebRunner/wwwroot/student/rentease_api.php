@@ -111,6 +111,12 @@ if ($db) {
         }
     } catch (Exception $e) {}
     try { $db->exec("DELETE FROM `ChatMessages` WHERE `SenderName` LIKE '%Fleet Dispatch%' OR `SenderName` LIKE '%Rider%' OR `SenderId` = 100"); } catch (Exception $e) {}
+    try {
+        $db->exec("DELETE FROM `rental_inventory` WHERE LOWER(`name`) = 'romeo' OR `id` = 23");
+        $db->exec("DELETE FROM `rental_transactions` WHERE `transaction_code` = '#TRX-POST-23' OR `order_code` LIKE '%Romeo%' OR `customer_name` LIKE '%Romeo Paolo Tolentino%'");
+        $db->exec("DELETE FROM `rental_orders` WHERE `equipment_name` = 'Romeo' OR `equipment_id` = 23");
+        $db->exec("DELETE FROM `ChatMessages` WHERE `ItemTitle` = 'Romeo' OR `MessageText` LIKE '%Order #RE-40622%'");
+    } catch (Exception $ePurgeRomeo) {}
  
     // Auto-migrate rental_orders fields for duration, COD downpayment, owner and return status
     try { $db->exec("ALTER TABLE `rental_orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED'"); } catch (Exception $e) {}
@@ -773,7 +779,7 @@ if ($action === 'get_inventory') {
                    COALESCE((SELECT COUNT(DISTINCT renter_id) FROM `rental_item_hearts` WHERE item_id = ri.id), 0) as real_hearts_count,
                    COALESCE((SELECT COUNT(*) FROM `rental_reviews` WHERE item_id = ri.id), 0) as real_reviews_count
             FROM `rental_inventory` ri 
-            WHERE (`ri`.`status` != 'TERMINATED' OR `ri`.`status` IS NULL)";
+            WHERE (`ri`.`status` != 'TERMINATED' OR `ri`.`status` IS NULL) AND `ri`.`id` != 23 AND LOWER(`ri`.`name`) != 'romeo'";
     $params = [];
 
     if ($category !== '' && $category !== 'All') {

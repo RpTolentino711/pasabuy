@@ -3113,8 +3113,9 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                     // Render most popular equipment table
                     const popTbody = document.getElementById('dashPopularItemsTableBody');
                     if (popTbody) {
-                        if (data.popular_items && data.popular_items.length > 0) {
-                            popTbody.innerHTML = data.popular_items.map((pi, idx) => {
+                        const popularList = (data.popular_items || []).filter(pi => pi && pi.id != 23 && (pi.name || '').trim().toLowerCase() !== 'romeo');
+                        if (popularList.length > 0) {
+                            popTbody.innerHTML = popularList.map((pi, idx) => {
                                 const rank = idx + 1;
                                 let rankBadge = `<span class="badge rounded-circle bg-secondary text-white" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">${rank}</span>`;
                                 if (rank === 1) rankBadge = `<span class="badge rounded-circle bg-warning text-dark fw-extrabold shadow-xs" style="width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; font-size:0.85rem;" title="1st Place - Campus Favorite">🥇</span>`;

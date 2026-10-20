@@ -142,7 +142,9 @@ async function loadRentEaseCatalog() {
         const res = await fetch(getRentEaseApiUrl('get_inventory'));
         if (res.ok) {
             const data = await res.json();
-            rentEaseInventory = Array.isArray(data.items) ? data.items : [];
+            rentEaseInventory = (Array.isArray(data.items) ? data.items : []).filter(item => {
+                return item && item.id != 23 && (item.name || '').trim().toLowerCase() !== 'romeo';
+            });
         } else {
             rentEaseInventory = [];
         }
