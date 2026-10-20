@@ -3134,10 +3134,12 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                     <td><span class="fs-8 fw-semibold text-dark">${pi.owner_name || 'Romeo Paolo Tolentino'}</span></td>
                                     <td class="fw-bold fs-8">₱${Number(pi.price_per_day).toLocaleString()}/day</td>
                                     <td>
+                                        ${parseInt(pi.reviews_count || 0) > 0 ? `
                                         <div class="d-flex align-items-center gap-1 text-warning fs-9 fw-bold">
                                             <i class="fa-solid fa-star"></i>
                                             <span class="text-dark">${parseFloat(pi.rating || 5.0).toFixed(1)}</span>
                                         </div>
+                                        ` : '<span class="text-muted fs-9">No reviews</span>'}
                                     </td>
                                     <td>
                                         <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 fw-extrabold fs-8 d-inline-flex align-items-center gap-1.5 shadow-2xs">
@@ -3214,9 +3216,15 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                             <td><span class="badge ${p.badge_class}">${p.stock_status}</span></td>
                             <td>${p.qty_total}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger py-1 px-2.5 fs-9 fw-bold d-inline-flex align-items-center gap-1" onclick="deleteProductItem(${p.id}, '${(p.name || 'Equipment').replace(/'/g, "\\'")}')" title="Take down equipment listing from platform">
-                                    <i class="fa-solid fa-ban"></i> Take Down
-                                </button>
+                                ${isTerminated ? `
+                                    <button class="btn btn-sm btn-danger py-1 px-2.5 fs-9 fw-bold d-inline-flex align-items-center gap-1 shadow-2xs" onclick="deleteProductItem(${p.id}, '${(p.name || 'Equipment').replace(/'/g, "\\'")}', true)" title="Permanently delete taken down listing">
+                                        <i class="fa-solid fa-trash-can"></i> Delete
+                                    </button>
+                                ` : `
+                                    <button class="btn btn-sm btn-outline-danger py-1 px-2.5 fs-9 fw-bold d-inline-flex align-items-center gap-1" onclick="deleteProductItem(${p.id}, '${(p.name || 'Equipment').replace(/'/g, "\\'")}', false)" title="Take down equipment listing from platform">
+                                        <i class="fa-solid fa-ban"></i> Take Down
+                                    </button>
+                                `}
                             </td>
                         </tr>
                     `;}).join('');
@@ -3264,23 +3272,41 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
             }
         }
 
-        async function deleteProductItem(id, name) {
+        async function deleteProductItem(id, name, isTakenDown = false) {
             const safeName = name || 'this equipment listing';
-            if (!confirm(`Are you sure you want to TAKE DOWN "${safeName}" from the platform?\n\nAs admin, you have moderation power to remove this listing. (Note: Stock and pricing adjustments can only be made by the student lender who listed it).`)) return;
-            try {
-                const res = await fetch(`${API_URL}?action=delete_product&id=${id}`);
-                const data = await res.json();
-                if (data.success) {
-                    alert(`✅ Equipment "${safeName}" has been taken down successfully.`);
-                    loadProducts();
-                    loadInventory();
-                } else {
-                    alert(data.message || 'Error taking down listing.');
+            if (isTakenDown) {
+                if (!confirm(`Are you sure you want to permanently DELETE "${safeName}" from the platform?\n\nThis equipment is already taken down. Deleting will permanently remove it from the catalog.`)) return;
+                try {
+                    const res = await fetch(`${API_URL}?action=delete_product&id=${id}`);
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(`🗑️ Equipment "${safeName}" has been permanently deleted.`);
+                        loadProducts();
+                        loadInventory();
+                    } else {
+                        alert(data.message || 'Error deleting listing.');
+                    }
+                } catch (e) {
+                    alert('Connection error: ' + e.message);
                 }
-            } catch (e) {
-                alert('Connection error: ' + e.message);
+            } else {
+                if (!confirm(`Are you sure you want to TAKE DOWN "${safeName}" from the platform?\n\nAs admin, you have moderation power to remove this listing so students cannot rent it.`)) return;
+                try {
+                    const res = await fetch(`${API_URL}?action=takedown_product&id=${id}`);
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(`✅ Equipment "${safeName}" has been taken down successfully.`);
+                        loadProducts();
+                        loadInventory();
+                    } else {
+                        alert(data.message || 'Error taking down listing.');
+                    }
+                } catch (e) {
+                    alert('Connection error: ' + e.message);
+                }
             }
         }
+
 
         async function adminWipeAllStock() {
             if (!confirm("⚠️ Are you sure you want to delete ALL equipment stock in the system?\n\nThis will wipe all inventory units to 0.")) return;
@@ -3333,9 +3359,15 @@ $isAdminLoggedIn = !empty($_SESSION['admin_logged_in']);
                                 <td class="text-muted">5</td>
                                 <td><span class="badge ${p.badge_class}">${p.stock_status}</span></td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-danger py-1 px-2.5 fs-9 fw-bold d-inline-flex align-items-center gap-1" onclick="deleteProductItem(${p.id}, '${(p.name || 'Equipment').replace(/'/g, "\\'")}')" title="Take down equipment listing from platform">
-                                        <i class="fa-solid fa-ban"></i> Take Down
-                                    </button>
+                                    ${p.status === 'TERMINATED' ? `
+                                        <button class="btn btn-sm btn-danger py-1 px-2.5 fs-9 fw-bold d-inline-flex align-items-center gap-1 shadow-2xs" onclick="deleteProductItem(${p.id}, '${(p.name || 'Equipment').replace(/'/g, "\\'")}', true)" title="Permanently delete taken down listing">
+                                            <i class="fa-solid fa-trash-can"></i> Delete
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-sm btn-outline-danger py-1 px-2.5 fs-9 fw-bold d-inline-flex align-items-center gap-1" onclick="deleteProductItem(${p.id}, '${(p.name || 'Equipment').replace(/'/g, "\\'")}', false)" title="Take down equipment listing from platform">
+                                            <i class="fa-solid fa-ban"></i> Take Down
+                                        </button>
+                                    `}
                                 </td>
                             </tr>
                         `).join('');

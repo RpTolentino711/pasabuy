@@ -339,6 +339,24 @@ if ($db) {
         $db->exec("DELETE FROM `rental_transactions` WHERE `transaction_code` = '#TRX-8801'");
         $db->exec("DELETE FROM `rental_issues` WHERE `ticket_number` = '#TKT-0012'");
         $db->exec("UPDATE `rental_inventory` SET `qty_rented` = 0, `qty_available` = `qty_total` WHERE `qty_rented` > 0");
+        $db->exec("UPDATE `rental_inventory` SET `qty_available` = LEAST(`qty_total`, GREATEST(0, `qty_available`)) WHERE `qty_available` > `qty_total` OR `qty_available` < 0");
+        try {
+            $db->exec("UPDATE `ChatMessages` SET `SenderId` = 104 WHERE `SenderId` IN (0, 1) AND `ReceiverId` = 105");
+            $db->exec("UPDATE `ChatMessages` SET `SenderId` = 105 WHERE `SenderId` IN (0, 1) AND `ReceiverId` = 104");
+            // Auto-deduplicate duplicate return chat messages for the same order code
+            $dupMsgs = $db->query("SELECT Id, MessageText FROM `ChatMessages` WHERE `MessageText` LIKE '%verified and restocked%' OR `MessageText` LIKE '%is verified by the renter%' ORDER BY Id ASC")->fetchAll();
+            $seenOrders = [];
+            foreach ($dupMsgs as $dm) {
+                if (preg_match('/#RE-[A-Za-z0-9-]+/', $dm['MessageText'], $m)) {
+                    $code = $m[0];
+                    if (isset($seenOrders[$code])) {
+                        $db->prepare("DELETE FROM `ChatMessages` WHERE `Id` = ?")->execute([$dm['Id']]);
+                    } else {
+                        $seenOrders[$code] = $dm['Id'];
+                    }
+                }
+            }
+        } catch (Exception $eFixSysChat) {}
 
         // One-time auto-wipe of demo/legacy stock so that total stock is reset to 0
         $isPurged = $db->query("SELECT `setting_value` FROM `rental_settings` WHERE `setting_key` = 'stock_purged_zero'")->fetchColumn();
@@ -815,12 +833,23 @@ if ($action === 'update_product') {
     exit;
 }
 
+if ($action === 'takedown_product') {
+    if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
+    $id = (int)($req['id'] ?? 0);
+    $stmt = $db->prepare("UPDATE `rental_inventory` SET `status` = 'TERMINATED', `qty_available` = 0, `termination_reason` = 'Taken down by Admin', `terminated_at` = NOW() WHERE `id` = ?");
+    $stmt->execute([$id]);
+    echo json_encode(['success' => true, 'message' => 'Equipment listing taken down successfully by Admin.']);
+    exit;
+}
+
 if ($action === 'delete_product') {
     if (!$db) { echo json_encode(['success' => false, 'message' => 'No database']); exit; }
     $id = (int)($req['id'] ?? 0);
+    try { $db->prepare("DELETE FROM `rental_item_hearts` WHERE `item_id` = ?")->execute([$id]); } catch (Exception $e) {}
+    try { $db->prepare("DELETE FROM `rental_reviews` WHERE `item_id` = ?")->execute([$id]); } catch (Exception $e) {}
     $stmt = $db->prepare("DELETE FROM `rental_inventory` WHERE `id` = ?");
     $stmt->execute([$id]);
-    echo json_encode(['success' => true, 'message' => 'Equipment listing taken down successfully by Admin.']);
+    echo json_encode(['success' => true, 'message' => 'Equipment listing permanently deleted successfully by Admin.']);
     exit;
 }
 
@@ -1087,8 +1116,12 @@ if ($action === 'update_order_status') {
             // Notification
             $ordRow = $db->query("SELECT order_code, owner_name, customer_name FROM `rental_orders` WHERE id = {$id}")->fetch();
             $ordCode = $ordRow['order_code'] ?? "#ORD-{$id}";
-            $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Admin Operations', ?, 'Order Returned', NOW())");
-            $chatStmt->execute(["✅ Admin confirmed return for Order {$ordCode}: Equipment has been safely returned to inventory stock!"]);
+            $checkAdminChat = $db->prepare("SELECT Id FROM `ChatMessages` WHERE `MessageText` LIKE ? LIMIT 1");
+            $checkAdminChat->execute(["%Order {$ordCode}%safely returned%"]);
+            if (!$checkAdminChat->fetchColumn()) {
+                $chatStmt = $db->prepare("INSERT INTO `ChatMessages` (`SenderId`, `ReceiverId`, `SenderName`, `MessageText`, `ItemTitle`, `CreatedAt`) VALUES (104, 105, 'Admin Operations', ?, 'Order Returned', NOW())");
+                $chatStmt->execute(["✅ Admin confirmed return for Order {$ordCode}: Equipment has been safely returned to inventory stock!"]);
+            }
         } catch (Exception $eRestock) {}
     }
 
