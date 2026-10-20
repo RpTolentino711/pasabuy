@@ -7224,6 +7224,138 @@
         }
     </script>
     <script src="rentease_app.js?v=<?= time() ?>"></script>
+
+    <!-- ============================================================ -->
+    <!-- VERIFIED CONGRATULATIONS MODAL -->
+    <!-- ============================================================ -->
+    <div class="modal fade" id="verifiedCongratulationsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="background: linear-gradient(145deg, #1a0533, #2d1060);">
+                <!-- Animated confetti dots -->
+                <div class="verified-confetti-bg" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="modal-body text-center p-5 position-relative">
+                    <!-- Glowing checkmark icon -->
+                    <div class="verified-glow-icon mx-auto mb-4">
+                        <div class="verified-icon-ring">
+                            <i class="fa-solid fa-circle-check" style="font-size: 3.2rem; color: #10AC84;"></i>
+                        </div>
+                    </div>
+
+                    <!-- Badge -->
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3" style="background: rgba(16,172,132,0.15); border: 1px solid rgba(16,172,132,0.4);">
+                        <i class="fa-solid fa-shield-check text-success fs-8"></i>
+                        <span class="text-success fw-bold fs-8">Official RentEase Verified</span>
+                    </div>
+
+                    <!-- Heading -->
+                    <h3 class="fw-black mb-2" style="color: #fff; font-size: 1.55rem; letter-spacing: -0.5px;">
+                        🎉 Congratulations!
+                    </h3>
+                    <p class="mb-1" style="color: rgba(255,255,255,0.85); font-size: 0.96rem; font-weight: 600;">
+                        You have been verified on RentEase!
+                    </p>
+                    <p class="mb-4" style="color: rgba(255,255,255,0.55); font-size: 0.82rem; line-height: 1.5;">
+                        Your student account has been approved by the campus admin.<br>
+                        You can now <strong style="color: #a78bfa;">post equipment</strong>, <strong style="color: #a78bfa;">rent items</strong>, and enjoy full access to RentEase.
+                    </p>
+
+                    <!-- Perks list -->
+                    <div class="d-flex flex-column gap-2 mb-4 text-start mx-auto" style="max-width: 280px;">
+                        <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.06);">
+                            <i class="fa-solid fa-box-open text-warning fs-7"></i>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.82rem;">List your equipment for rent</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.06);">
+                            <i class="fa-solid fa-handshake text-info fs-7"></i>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.82rem;">Rent from other verified students</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.06);">
+                            <i class="fa-solid fa-comments text-success fs-7"></i>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.82rem;">Chat &amp; coordinate with lenders</span>
+                        </div>
+                    </div>
+
+                    <!-- CTA Button -->
+                    <button type="button" id="verifiedCongratsDismissBtn"
+                        class="btn w-100 fw-bold py-3 rounded-3 shadow-sm"
+                        style="background: linear-gradient(135deg, #5F27CD, #10AC84); color: #fff; font-size: 1rem; border: none; letter-spacing: 0.2px;"
+                        onclick="document.getElementById('verifiedCongratulationsModal') && bootstrap.Modal.getInstance(document.getElementById('verifiedCongratulationsModal'))?.hide()">
+                        <i class="fa-solid fa-rocket me-2"></i>Start Exploring RentEase!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    /* Verified Congratulations Modal Animations */
+    .verified-confetti-bg {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 0;
+    }
+    .verified-confetti-bg span {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.18;
+        animation: confettiFloat 5s infinite ease-in-out;
+    }
+    .verified-confetti-bg span:nth-child(1)  { width: 60px; height: 60px; background: #5F27CD; top: 10%; left: 5%;  animation-delay: 0s;    animation-duration: 6s; }
+    .verified-confetti-bg span:nth-child(2)  { width: 30px; height: 30px; background: #10AC84; top: 20%; right: 8%; animation-delay: 0.5s;  animation-duration: 7s; }
+    .verified-confetti-bg span:nth-child(3)  { width: 20px; height: 20px; background: #FF9F43; top: 60%; left: 12%; animation-delay: 1s;    animation-duration: 5s; }
+    .verified-confetti-bg span:nth-child(4)  { width: 45px; height: 45px; background: #a78bfa; top: 75%; right: 5%; animation-delay: 1.5s;  animation-duration: 8s; }
+    .verified-confetti-bg span:nth-child(5)  { width: 15px; height: 15px; background: #10AC84; top: 40%; left: 3%;  animation-delay: 2s;    animation-duration: 6s; }
+    .verified-confetti-bg span:nth-child(6)  { width: 80px; height: 80px; background: #341F97; top: 5%;  right: 2%; animation-delay: 0.8s;  animation-duration: 9s; }
+    .verified-confetti-bg span:nth-child(7)  { width: 25px; height: 25px; background: #FF9F43; top: 85%; left: 40%; animation-delay: 2.5s;  animation-duration: 5s; }
+    .verified-confetti-bg span:nth-child(8)  { width: 12px; height: 12px; background: #a78bfa; top: 30%; right: 20%;animation-delay: 3s;    animation-duration: 7s; }
+    .verified-confetti-bg span:nth-child(9)  { width: 35px; height: 35px; background: #5F27CD; top: 50%; right: 15%;animation-delay: 1.2s;  animation-duration: 6s; }
+    .verified-confetti-bg span:nth-child(10) { width: 18px; height: 18px; background: #10AC84; top: 90%; left: 20%; animation-delay: 0.3s;  animation-duration: 8s; }
+    .verified-confetti-bg span:nth-child(11) { width: 50px; height: 50px; background: #FF9F43; top: 5%;  left: 30%; animation-delay: 4s;    animation-duration: 7s; }
+    .verified-confetti-bg span:nth-child(12) { width: 22px; height: 22px; background: #341F97; top: 70%; left: 60%; animation-delay: 1.8s;  animation-duration: 5s; }
+    .verified-confetti-bg span:nth-child(13) { width: 14px; height: 14px; background: #a78bfa; top: 15%; left: 60%; animation-delay: 2.2s;  animation-duration: 9s; }
+    .verified-confetti-bg span:nth-child(14) { width: 40px; height: 40px; background: #5F27CD; top: 80%; right: 30%;animation-delay: 3.5s;  animation-duration: 6s; }
+    .verified-confetti-bg span:nth-child(15) { width: 10px; height: 10px; background: #10AC84; top: 45%; left: 50%; animation-delay: 0.7s;  animation-duration: 7s; }
+    @keyframes confettiFloat {
+        0%, 100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0.18; }
+        50%       { transform: translateY(-18px) scale(1.15) rotate(15deg); opacity: 0.32; }
+    }
+    .verified-glow-icon {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: rgba(16, 172, 132, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: verifiedPulse 2.5s infinite ease-in-out;
+        box-shadow: 0 0 0 0 rgba(16,172,132,0.4);
+    }
+    .verified-icon-ring {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: rgba(16, 172, 132, 0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    @keyframes verifiedPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(16,172,132,0.4); }
+        50%       { box-shadow: 0 0 0 16px rgba(16,172,132,0); }
+    }
+    #verifiedCongratulationsModal .modal-content {
+        position: relative;
+    }
+    #verifiedCongratulationsModal .modal-body {
+        z-index: 1;
+    }
+    </style>
 </body>
 
 </html>

@@ -4041,8 +4041,35 @@ window.syncRentEaseProfileUI = function syncRentEaseProfileUI() {
                 const st = (data.VerificationStatus || data.Status || '').toUpperCase();
                 const liveVer = (st === 'VERIFIED' || st === 'APPROVED' || isVer);
                 renderVerificationBadges(liveVer);
+
+                // ── Show Congratulations Modal on First Verification ──
+                // Only trigger when student is now VERIFIED but wasn't before (per localStorage flag)
+                if (liveVer) {
+                    const seenKey = `rentease_verified_popup_shown_${user.id}`;
+                    const alreadySeen = localStorage.getItem(seenKey);
+                    if (!alreadySeen) {
+                        // Mark as seen immediately so it won't show again
+                        localStorage.setItem(seenKey, '1');
+                        // Show congratulations modal with a small delay for smooth UX
+                        setTimeout(function () {
+                            try {
+                                const modalEl = document.getElementById('verifiedCongratulationsModal');
+                                if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                                    modal.show();
+                                }
+                            } catch (e) {}
+                        }, 800);
+                    }
+                } else {
+                    // If user is not verified (e.g. unverified by admin), reset the flag
+                    // so they get the popup again next time they're verified
+                    const seenKey = `rentease_verified_popup_shown_${user.id}`;
+                    localStorage.removeItem(seenKey);
+                }
             }).catch(() => {});
     }
+
 
     // Immediately calculate and update user's rental inventory count and items
     try {
