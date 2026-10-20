@@ -174,7 +174,9 @@ async function loadRentEaseCatalog() {
     }
 
     renderFeaturedRentals();
+    try { initHeroBannerCarousel(); } catch (e) { console.warn('Hero carousel init failed:', e); }
     renderExploreCatalog();
+
     enableRentEaseHorizontalDrag('exploreFilterChipsContainer');
     enableRentEaseHorizontalDrag('categoryScrollWheel');
     updateCartBadgeCount();
@@ -190,6 +192,174 @@ async function loadRentEaseCatalog() {
     } catch (e) {}
 }
 window.loadRentEaseCatalog = loadRentEaseCatalog;
+
+// ─── Hero Banner Carousel ─────────────────────────────────────────────────────
+// Builds up to 3 dynamic slides based on live data:
+//   Slide A: Most-hearted item  (only if hearts_count > 0)
+//   Slide B: Get Verified CTA   (only if user is NOT verified)
+//   Slide C: Rent Now CTA       (always shown — even unverified can browse)
+// Auto-advances every 4 s. Pauses on touch.
+let _heroBannerTimer = null;
+let _heroBannerIdx   = 0;
+let _heroBannerSlides = [];
+
+function initHeroBannerCarousel() {
+    const carousel = document.getElementById('heroBannerCarousel');
+    if (!carousel) return;
+
+    // --- Gather user verification status ---
+    let storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('pasabuy_student_user')); } catch (e) {}
+    const isVerified = storedUser
+        ? (storedUser.is_verified === 1 || storedUser.is_verified === '1' || storedUser.is_verified === true
+           || storedUser.verification_status === 'VERIFIED' || storedUser.VerificationStatus === 'VERIFIED')
+        : false;
+
+    // --- Build slide definitions ---
+    const slides = [];
+
+    // Slide A: Most-hearted item (skip if none have hearts)
+    const topItem = [...(rentEaseInventory || [])]
+        .filter(it => parseInt(it.hearts_count || 0) > 0)
+        .sort((a, b) => parseInt(b.hearts_count || 0) - parseInt(a.hearts_count || 0))[0];
+
+    if (topItem) {
+        const itemImg = getRentEaseItemImage(topItem);
+        const hearts  = parseInt(topItem.hearts_count || 0);
+        const safeName = (topItem.name || 'Equipment').replace(/"/g, '&quot;');
+        slides.push({
+            id: 'hero-slide-popular',
+            bg: 'linear-gradient(135deg, #4C2F9F 0%, #2D1875 100%)',
+            html: `
+                <div class="hero-slide-inner">
+                    <div class="hero-slide-text">
+                        <div class="d-inline-flex align-items-center gap-1 badge rounded-pill px-2 py-0.5 mb-1.5 text-white"
+                             style="background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);font-size:0.6rem;border:1px solid rgba(255,255,255,0.22);">
+                            <i class="fa-solid fa-fire text-warning" style="font-size:0.58rem;"></i> #1 Most Loved on Campus
+                        </div>
+                        <h5 class="fw-extrabold mb-1 text-white text-truncate" style="font-size:0.88rem;letter-spacing:-0.2px;line-height:1.2;max-width:150px;" title="${safeName}">
+                            ${safeName}
+                        </h5>
+                        <div class="d-flex align-items-center gap-1 mb-1.5">
+                            <i class="fa-solid fa-heart text-danger" style="font-size:0.68rem;"></i>
+                            <span class="text-white fw-bold" style="font-size:0.7rem;">${hearts} student${hearts!==1?'s':''} loved this</span>
+                        </div>
+                        <button type="button" class="btn btn-sm rounded-pill fw-bold d-inline-flex align-items-center gap-1"
+                                style="background:#F4B942;border:none;color:#1a1a2e;font-size:0.7rem;padding:3px 11px;"
+                                onclick="event.stopPropagation(); openEquipmentDetail(${topItem.id})">
+                            <i class="fa-solid fa-eye" style="font-size:0.6rem;"></i> View Item
+                        </button>
+                    </div>
+                    <div class="hero-slide-media">
+                        <img src="${itemImg}" alt="${safeName}"
+                             onerror="this.onerror=null;this.src='https://via.placeholder.com/300x200/4C2F9F/FFFFFF?text=No+Image';">
+                    </div>
+                </div>`
+        });
+    }
+
+    // Slide B: Get Verified CTA (only for unverified users)
+    if (!isVerified) {
+        slides.push({
+            id: 'hero-slide-verify',
+            bg: 'linear-gradient(135deg, #0F766E 0%, #065F46 100%)',
+            html: `
+                <div class="hero-slide-inner">
+                    <div class="hero-slide-text" style="padding-right:10px;">
+                        <div class="d-inline-flex align-items-center gap-1 badge rounded-pill px-2 py-0.5 mb-1.5 text-white"
+                             style="background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);font-size:0.6rem;border:1px solid rgba(255,255,255,0.22);">
+                            <i class="fa-solid fa-shield-halved text-warning" style="font-size:0.58rem;"></i> Student Verification
+                        </div>
+                        <h5 class="fw-extrabold mb-1 text-white" style="font-size:0.88rem;letter-spacing:-0.2px;line-height:1.2;">
+                            Get Verified to Post Items
+                        </h5>
+                        <p class="mb-1.5" style="font-size:0.68rem;line-height:1.3;color:rgba(255,255,255,0.75);">
+                            Submit your Student ID and unlock the ability to list your own equipment for rent.
+                        </p>
+                        <button type="button" class="btn btn-sm rounded-pill fw-bold d-inline-flex align-items-center gap-1"
+                                style="background:#F4B942;border:none;color:#1a1a2e;font-size:0.7rem;padding:3px 11px;"
+                                onclick="event.stopPropagation(); if(typeof openVerificationModal==='function') openVerificationModal();">
+                            <i class="fa-solid fa-id-card" style="font-size:0.6rem;"></i> Get Verified
+                        </button>
+                    </div>
+                    <div class="hero-slide-media" style="flex:0 0 36%;">
+                        <img src="https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=300&q=80" alt="Student Verification"
+                             onerror="this.onerror=null;this.src='https://via.placeholder.com/300x200/0F766E/FFFFFF?text=Verify';">
+                    </div>
+                </div>`
+        });
+    }
+
+    // Slide C: Rent Now CTA (always — even unverified can rent)
+    slides.push({
+        id: 'hero-slide-rent',
+        bg: 'linear-gradient(135deg, #7C3AED 0%, #4338CA 100%)',
+        html: `
+            <div class="hero-slide-inner">
+                <div class="hero-slide-text" style="padding-right:10px;">
+                    <div class="d-inline-flex align-items-center gap-1 badge rounded-pill px-2 py-0.5 mb-1.5 text-white"
+                         style="background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);font-size:0.6rem;border:1px solid rgba(255,255,255,0.22);">
+                        <i class="fa-solid fa-sparkles text-yellow-300" style="font-size:0.58rem;color:#fbbf24;"></i> RentEase Campus
+                    </div>
+                    <h5 class="fw-extrabold mb-1 text-white" style="font-size:0.88rem;letter-spacing:-0.2px;line-height:1.2;">
+                        Make Your Event Special
+                    </h5>
+                    <p class="mb-1.5" style="font-size:0.68rem;line-height:1.3;color:rgba(255,255,255,0.75);">
+                        Browse & rent top-rated event equipment from fellow students.
+                    </p>
+                    <button type="button" class="btn btn-sm rounded-pill fw-bold d-inline-flex align-items-center gap-1"
+                            style="background:#F4B942;border:none;color:#1a1a2e;font-size:0.7rem;padding:3px 11px;"
+                            onclick="event.stopPropagation(); if(typeof switchTab==='function') switchTab('explore');">
+                        <i class="fa-solid fa-magnifying-glass" style="font-size:0.6rem;"></i> Rent Now
+                    </button>
+                </div>
+                <div class="hero-slide-media" style="flex:0 0 36%;">
+                    <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=300&q=80" alt="Event Equipment"
+                         onerror="this.onerror=null;this.src='https://via.placeholder.com/300x200/7C3AED/FFFFFF?text=Rent';">
+                </div>
+            </div>`
+    });
+
+    // --- Render slides into DOM ---
+    _heroBannerSlides = slides;
+    _heroBannerIdx    = 0;
+
+    const dotsEl = document.getElementById('heroBannerDots');
+
+    carousel.innerHTML = slides.map((s, i) => `
+        <div class="hero-slide${i === 0 ? ' active-slide' : ''}" id="${s.id}"
+             style="background:${s.bg};">
+            ${s.html}
+        </div>
+    `).join('') + `<div id="heroBannerDots">${slides.map((_, i) =>
+        `<div class="hero-dot${i === 0 ? ' active' : ''}" onclick="heroBannerGoTo(${i})"></div>`
+    ).join('')}</div>`;
+
+    // Stop previous timer if re-initialised
+    if (_heroBannerTimer) clearInterval(_heroBannerTimer);
+
+    if (slides.length > 1) {
+        _heroBannerTimer = setInterval(() => heroBannerGoTo((_heroBannerIdx + 1) % slides.length), 4000);
+
+        // Pause on touch
+        carousel.addEventListener('touchstart', () => { if (_heroBannerTimer) clearInterval(_heroBannerTimer); }, { passive: true });
+        carousel.addEventListener('touchend',   () => {
+            _heroBannerTimer = setInterval(() => heroBannerGoTo((_heroBannerIdx + 1) % _heroBannerSlides.length), 4000);
+        }, { passive: true });
+    }
+}
+
+function heroBannerGoTo(idx) {
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots   = document.querySelectorAll('.hero-dot');
+    if (!slides.length) return;
+    idx = ((idx % slides.length) + slides.length) % slides.length;
+    slides.forEach((s, i) => s.classList.toggle('active-slide', i === idx));
+    dots.forEach((d, i)   => d.classList.toggle('active', i === idx));
+    _heroBannerIdx = idx;
+}
+window.heroBannerGoTo      = heroBannerGoTo;
+window.initHeroBannerCarousel = initHeroBannerCarousel;
 
 function renderFeaturedRentals() {
     const container = document.getElementById('homeFeaturedContainer');
