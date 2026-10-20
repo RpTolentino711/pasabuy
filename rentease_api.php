@@ -4658,6 +4658,140 @@ if ($action === 'submit_rental_suspension_appeal') {
     exit;
 }
 
+// ----------------------------------------------------------
+// POST ITEM / CREATE NEW RENTAL LISTING (Student "Rent Out" Tab)
+// ----------------------------------------------------------
+if ($action === 'post_item' || $action === 'add_item' || $action === 'create_listing') {
+    $name           = trim((string)($data['name'] ?? $data['title'] ?? ''));
+    $category       = trim((string)($data['category'] ?? 'Others'));
+    $materialTag    = trim((string)($data['material_tag'] ?? $data['tag'] ?? 'Standard'));
+    $pricePerDay    = (float)($data['price_per_day'] ?? $data['price'] ?? 0);
+    $qtyTotal       = max(1, (int)($data['qty_total'] ?? $data['quantity'] ?? 1));
+    $qtyAvailable   = max(0, (int)($data['qty_available'] ?? $qtyTotal));
+    $imageUrl       = trim((string)($data['image_url'] ?? ''));
+    $photos         = $data['photos'] ?? ($imageUrl ? [$imageUrl] : []);
+    $videoUrl       = trim((string)($data['video_url'] ?? ''));
+    $itemCondition  = trim((string)($data['item_condition'] ?? $data['condition'] ?? 'Good'));
+    $location       = trim((string)($data['location'] ?? 'Campus / In-App Chat'));
+    $description    = trim((string)($data['description'] ?? ''));
+    $postingFee     = (float)($data['posting_fee'] ?? calculatePostingFee($pricePerDay));
+    $ownerId        = (int)($data['owner_id'] ?? 0);
+    $ownerName      = trim((string)($data['owner_name'] ?? 'Verified Student'));
+    $ownerEmail     = trim((string)($data['owner_email'] ?? ''));
+    $ownerContact   = trim((string)($data['owner_contact'] ?? ''));
+
+    if (empty($name) || $pricePerDay <= 0) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'message' => 'Item name and a valid daily rate are required.']);
+        exit;
+    }
+
+    if (empty($imageUrl) && !empty($photos) && is_array($photos) && !empty($photos[0])) {
+        $imageUrl = $photos[0];
+    }
+    if (empty($imageUrl)) {
+        $imageUrl = 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80';
+    }
+
+    $photosJson = json_encode(is_array($photos) ? array_values($photos) : [$imageUrl]);
+
+    $newItem = null;
+
+    if ($db) {
+        try {
+            $stmt = $db->prepare("
+                INSERT INTO `rental_inventory`
+                    (`name`, `category`, `material_tag`, `price_per_day`, `qty_total`, `qty_available`,
+                     `qty_rented`, `qty_maintenance`, `image_url`, `photos`, `video_url`,
+                     `item_condition`, `location`, `description`, `posting_fee`,
+                     `owner_id`, `owner_name`, `owner_email`, `owner_contact`,
+                     `is_featured`, `rating`, `reviews_count`, `hearts_count`, `status`, `created_at`)
+                VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 5.0, 0, 0, 'ACTIVE', NOW())
+            ");
+            $stmt->execute([
+                $name, $category, $materialTag, $pricePerDay, $qtyTotal, $qtyAvailable,
+                $imageUrl, $photosJson, $videoUrl,
+                $itemCondition, $location, $description, $postingFee,
+                $ownerId, $ownerName, $ownerEmail, $ownerContact
+            ]);
+            $newId = (int)$db->lastInsertId();
+
+            // Record posting fee transaction
+            try {
+                $txCode = '#TRX-POST-' . $newId;
+                $db->prepare("
+                    INSERT INTO `rental_transactions`
+                        (`transaction_code`, `order_code`, `customer_name`, `customer_email`,
+                         `amount`, `payment_method`, `status`, `type`, `created_at`)
+                    VALUES (?, ?, ?, ?, ?, 'POSTING_FEE', 'COMPLETED', 'POSTING_FEE', NOW())
+                ")->execute([$txCode, $txCode, $ownerName, $ownerEmail, $postingFee]);
+            } catch (Exception $eTx) {}
+
+            // Fetch the full newly inserted row to return to client
+            $fetchStmt = $db->prepare("SELECT * FROM `rental_inventory` WHERE `id` = ? LIMIT 1");
+            $fetchStmt->execute([$newId]);
+            $newItem = $fetchStmt->fetch();
+            if ($newItem) {
+                $newItem['photos'] = is_string($newItem['photos']) ? json_decode($newItem['photos'], true) : $photos;
+            }
+        } catch (Exception $ePost) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Database error saving item: ' . $ePost->getMessage()]);
+            exit;
+        }
+    }
+
+    // Always save to JSON fallback (works even if DB is down)
+    $fallbackId = $newItem ? (int)$newItem['id'] : time();
+    $fallbackItem = [
+        'id'             => $fallbackId,
+        'name'           => $name,
+        'category'       => $category,
+        'material_tag'   => $materialTag,
+        'price_per_day'  => $pricePerDay,
+        'qty_total'      => $qtyTotal,
+        'qty_available'  => $qtyAvailable,
+        'qty_rented'     => 0,
+        'qty_maintenance'=> 0,
+        'image_url'      => $imageUrl,
+        'photos'         => is_array($photos) ? $photos : [$imageUrl],
+        'video_url'      => $videoUrl,
+        'item_condition' => $itemCondition,
+        'location'       => $location,
+        'description'    => $description,
+        'posting_fee'    => $postingFee,
+        'owner_id'       => $ownerId,
+        'owner_name'     => $ownerName,
+        'owner_email'    => $ownerEmail,
+        'owner_contact'  => $ownerContact,
+        'is_featured'    => 0,
+        'rating'         => 5.0,
+        'reviews_count'  => 0,
+        'hearts_count'   => 0,
+        'status'         => 'ACTIVE',
+        'created_at'     => date('Y-m-d H:i:s')
+    ];
+
+    try {
+        $existing = getRentEaseItemsFallback();
+        // Remove any old entry with same id
+        $existing = array_values(array_filter($existing, fn($i) => (int)$i['id'] !== $fallbackId));
+        array_unshift($existing, $fallbackItem);
+        saveRentEaseItemsFallback($existing);
+    } catch (Exception $eFb) {}
+
+    $returnItem = $newItem ?: $fallbackItem;
+
+    echo json_encode([
+        'success'     => true,
+        'message'     => "'{$name}' has been published successfully on RentEase!",
+        'id'          => $returnItem['id'],
+        'item'        => $returnItem,
+        'posting_fee' => $postingFee
+    ]);
+    exit;
+}
+
 // Fallback
 echo json_encode(['success' => false, 'message' => "Unknown action '{$action}'."]);
 exit;
